@@ -12,7 +12,7 @@ import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { ISolverNetInbox } from "solve/src/interfaces/ISolverNetInbox.sol";
 
 import { GenesisStake } from "src/token/GenesisStake.sol";
-import { DebugMerkleDistributorWithDeadline } from "./DebugMerkleDistributorWithDeadline.sol";
+import { MerkleDistributorWithoutDeadline } from "src/token/MerkleDistributorWithoutDeadline.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract OmegaGenesisStakeScript is Script {
@@ -25,18 +25,16 @@ contract OmegaGenesisStakeScript is Script {
 
     address internal validator = 0xdBd26a685DB4475b6c58ADEC0DE06c6eE387EAa8;
 
-    GenesisStake internal genesisStake = GenesisStake(0x97AF0935B32933dd0194dFA5caAeAc082a79a2F1);
-    DebugMerkleDistributorWithDeadline internal merkleDistributor =
-        DebugMerkleDistributorWithDeadline(0xF2e42789BdA143e616c7d0f9BC1c182106AAABeA);
+    GenesisStake internal genesisStake;
+    MerkleDistributorWithoutDeadline internal merkleDistributor;
 
-    uint256 internal endTime = block.timestamp + 30 days;
     uint256 internal depositAmount = 100 ether;
     uint256 internal rewardAmount = 5 ether;
     bytes32[] internal leaves = new bytes32[](64);
     bytes32[][] internal proofs = new bytes32[][](64);
     bytes32 internal root;
 
-    function deploy() public {
+    function run() public {
         vm.startBroadcast();
 
         _prepMerkleTree();
@@ -190,12 +188,21 @@ contract OmegaGenesisStakeScript is Script {
                 )
             )
         );
-        merkleDistributor = DebugMerkleDistributorWithDeadline(
+
+        address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(address(omni), root));
+        merkleDistributor = MerkleDistributorWithoutDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
                 abi.encodePacked(
-                    type(DebugMerkleDistributorWithDeadline).creationCode,
-                    abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox))
+                    type(TransparentUpgradeableProxy).creationCode,
+                    abi.encode(
+                        merkleDistributorImpl,
+                        msg.sender,
+                        abi.encodeCall(
+                            MerkleDistributorWithoutDeadline.initialize,
+                            (msg.sender, address(portal), address(genesisStake), address(inbox))
+                        )
+                    )
                 )
             )
         );
@@ -212,9 +219,21 @@ contract OmegaGenesisStakeScript is Script {
             abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender)))
         );
         console2.log("");
-        console2.log("MerkleDistributor address:", address(merkleDistributor));
-        console2.log("MerkleDistributor constructor args:");
-        console2.logBytes(abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox)));
+        console2.log("MerkleDistributor implementation:", address(merkleDistributorImpl));
+        console2.log("MerkleDistributor implementation constructor args:");
+        console2.logBytes(abi.encode(address(omni), root));
+        console2.log("MerkleDistributor proxy address:", address(merkleDistributor));
+        console2.log("MerkleDistributor proxy constructor args:");
+        console2.logBytes(
+            abi.encode(
+                merkleDistributorImpl,
+                msg.sender,
+                abi.encodeCall(
+                    MerkleDistributorWithoutDeadline.initialize,
+                    (msg.sender, address(portal), address(genesisStake), address(inbox))
+                )
+            )
+        );
     }
 
     function _approveStakeAndFund() internal {

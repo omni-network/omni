@@ -13,7 +13,7 @@ import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { ISolverNetInbox } from "solve/src/interfaces/ISolverNetInbox.sol";
 
 import { GenesisStake } from "src/token/GenesisStake.sol";
-import { DebugMerkleDistributorWithDeadline } from "./DebugMerkleDistributorWithDeadline.sol";
+import { MerkleDistributorWithoutDeadline } from "src/token/MerkleDistributorWithoutDeadline.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract StagingGenesisStakeScript is Script {
@@ -24,12 +24,11 @@ contract StagingGenesisStakeScript is Script {
     IOmniPortal internal portal;
     ISolverNetInbox internal inbox;
 
-    address internal validator = 0xD6CD71dF91a6886f69761826A9C4D123178A8d9D;
+    address internal validator;
 
     GenesisStake internal genesisStake;
-    DebugMerkleDistributorWithDeadline internal merkleDistributor;
+    MerkleDistributorWithoutDeadline internal merkleDistributor;
 
-    uint256 internal endTime = block.timestamp + 30 days;
     uint256 internal depositAmount = 100 ether;
     uint256 internal rewardAmount = 5 ether;
     bytes32[] internal leaves = new bytes32[](64);
@@ -37,11 +36,13 @@ contract StagingGenesisStakeScript is Script {
     bytes32 internal root;
 
     function setUp() public {
-        string memory stagingAddrsJson = _getStagingAddresses();
-        _setStagingAddresses(stagingAddrsJson);
+        omni = IERC20(vm.envAddress("OMNI_TOKEN"));
+        portal = IOmniPortal(vm.envAddress("OMNI_PORTAL"));
+        inbox = ISolverNetInbox(vm.envAddress("SOLVERNET_INBOX"));
+        validator = vm.envAddress("VALIDATOR");
     }
 
-    function deploy() public {
+    function run() public {
         vm.startBroadcast();
 
         _prepMerkleTree();
@@ -76,34 +77,6 @@ contract StagingGenesisStakeScript is Script {
         console2.logBytes32(root);
         console2.log("Merkle proofs:");
         console2.logBytes(abi.encode(proofs));
-    }
-
-    function merkleTest() public {
-        m = new CompleteMerkle();
-
-        leaves[0] = keccak256(
-            abi.encodePacked(
-                uint256(7956), 0xA779fC675Db318dab004Ab8D538CB320D0013F42, uint256(1_305_710_306_500_000_000)
-            )
-        );
-        proofs[0].push(hex"00e7dad07181b59b1f038181844e40254aa180d3b04b7e473faf4c960a99eded");
-        proofs[0].push(hex"463978574b00aa05219cd93135c1d787a4565ba1a5001b7063e48419e9d6719d");
-        proofs[0].push(hex"fb0c0e87305db129fb1acb5aa5e75e055c584c3d7109754b343438f0256a7c96");
-        proofs[0].push(hex"893f87ead4b105b5af0389dfbc354e06c38026ece5c94411de9d78e5f928e294");
-        proofs[0].push(hex"cbf387b1cd966ed9aa8549af125c0039b96062a13e3f7053d245635c19d004fb");
-        proofs[0].push(hex"12a296264c3483bf23456a745feb1f0afbb423b50ed04800b3f4bf3203f58104");
-        proofs[0].push(hex"4d5f5a35000501ba7c713fbe0663ef0325fdeaca3de2ff79c16f1193aa2d3688");
-        proofs[0].push(hex"00599b87e2278d1778c5872df387af6530dbfcc7d9c56601a8af14452d6a7c52");
-        proofs[0].push(hex"3dc163521a23ea985c1908f9fef2267cd3be23452f92218f8d72362e9efa6159");
-        proofs[0].push(hex"866bf35be46662c6de366bcdd17c89f6fa4167528f599bcd9dc6fed4a1216697");
-        proofs[0].push(hex"108e8afc22ef50935d515b90522e4155a96d762d018fb11275bde0719608fb08");
-        proofs[0].push(hex"cf736f928c4819ad0219d7c32179e6cddc474132d775792b206b804e42ababba");
-        proofs[0].push(hex"ebf7bdce15089351b96d633be463d1e6d327624db7ae7e8c94d3fe27a7cb34ba");
-        proofs[0].push(hex"0c17dbcd20b4f15264b9b382cc1cc57b05c2e0dd309a23d7f08e35743a3f5dde");
-
-        root = hex"2fe059bec6dd8491e5aa41329711a14bce8108f8b00aa4b9cb8795579836c5c2";
-
-        m.verifyProof(root, proofs[0], leaves[0]);
     }
 
     function _prepMerkleTree() internal {
@@ -172,7 +145,7 @@ contract StagingGenesisStakeScript is Script {
         leaves[60] = keccak256(abi.encodePacked(uint256(60), 0xA6C9c842dc0C9C16338444e8bB77b885986Ef38b, rewardAmount));
         leaves[61] = keccak256(abi.encodePacked(uint256(61), 0xc83629D6A24851b7B90A2fa7f63a762dFE1021BC, rewardAmount));
         leaves[62] = keccak256(abi.encodePacked(uint256(62), 0xF6CDB1E733EA00D0eEa1A32F218B0ec76ABF1517, rewardAmount));
-        leaves[63] = keccak256(abi.encodePacked(uint256(63), 0xBeD17aa3E1c99ea86e19e7B38356C54007BB6CDe, rewardAmount));
+        leaves[63] = keccak256(abi.encodePacked(uint256(63), 0xB11B58188102dB2f32286675E24191d22B772593, rewardAmount));
 
         // Generate the Merkle root
         root = m.getRoot(leaves);
@@ -211,12 +184,21 @@ contract StagingGenesisStakeScript is Script {
                 )
             )
         );
-        merkleDistributor = DebugMerkleDistributorWithDeadline(
+
+        address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(address(omni), root));
+        merkleDistributor = MerkleDistributorWithoutDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
                 abi.encodePacked(
-                    type(DebugMerkleDistributorWithDeadline).creationCode,
-                    abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox))
+                    type(TransparentUpgradeableProxy).creationCode,
+                    abi.encode(
+                        merkleDistributorImpl,
+                        msg.sender,
+                        abi.encodeCall(
+                            MerkleDistributorWithoutDeadline.initialize,
+                            (msg.sender, address(portal), address(genesisStake), address(inbox))
+                        )
+                    )
                 )
             )
         );
@@ -233,9 +215,21 @@ contract StagingGenesisStakeScript is Script {
             abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender)))
         );
         console2.log("");
-        console2.log("MerkleDistributor address:", address(merkleDistributor));
-        console2.log("MerkleDistributor constructor args:");
-        console2.logBytes(abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox)));
+        console2.log("MerkleDistributor implementation:", address(merkleDistributorImpl));
+        console2.log("MerkleDistributor implementation constructor args:");
+        console2.logBytes(abi.encode(address(omni), root));
+        console2.log("MerkleDistributor proxy address:", address(merkleDistributor));
+        console2.log("MerkleDistributor proxy constructor args:");
+        console2.logBytes(
+            abi.encode(
+                merkleDistributorImpl,
+                msg.sender,
+                abi.encodeCall(
+                    MerkleDistributorWithoutDeadline.initialize,
+                    (msg.sender, address(portal), address(genesisStake), address(inbox))
+                )
+            )
+        );
     }
 
     function _approveStakeAndFund() internal {
@@ -244,36 +238,5 @@ contract StagingGenesisStakeScript is Script {
         }
         genesisStake.stake(depositAmount);
         omni.transfer(address(merkleDistributor), rewardAmount);
-    }
-
-    function _getStagingAddresses() internal returns (string memory) {
-        string[] memory inputs = new string[](3);
-        inputs[0] = "go";
-        inputs[1] = "run";
-        inputs[2] = "../../scripts/stagingaddrs/main.go";
-
-        bytes memory stagingAddrsJson = vm.ffi(inputs);
-        return string(stagingAddrsJson);
-    }
-
-    function _setStagingAddresses(string memory stagingAddrsJson) internal {
-        JSONParserLib.Item memory object = JSONParserLib.parse(stagingAddrsJson);
-        /* solhint-disable quotes */
-        JSONParserLib.Item memory omniItem = JSONParserLib.at(object, '"token"');
-        JSONParserLib.Item memory portalItem = JSONParserLib.at(object, '"portal"');
-        JSONParserLib.Item memory inboxItem = JSONParserLib.at(object, '"solvernetinbox"');
-        /* solhint-enable quotes */
-
-        string memory omniAddr = JSONParserLib.value(omniItem);
-        omniAddr = LibString.slice(omniAddr, 1, bytes(omniAddr).length - 1);
-        omni = IERC20(vm.parseAddress(omniAddr));
-
-        string memory portalAddr = JSONParserLib.value(portalItem);
-        portalAddr = LibString.slice(portalAddr, 1, bytes(portalAddr).length - 1);
-        portal = IOmniPortal(vm.parseAddress(portalAddr));
-
-        string memory inboxAddr = JSONParserLib.value(inboxItem);
-        inboxAddr = LibString.slice(inboxAddr, 1, bytes(inboxAddr).length - 1);
-        inbox = ISolverNetInbox(vm.parseAddress(inboxAddr));
     }
 }
