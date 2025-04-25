@@ -5,6 +5,7 @@ import (
 
 	attestmodule "github.com/omni-network/omni/halo/attest/module"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/evmdistribution"
 	"github.com/omni-network/omni/halo/evmslashing"
 	evmstakingmodule "github.com/omni-network/omni/halo/evmstaking/module"
 	evmstakingtypes "github.com/omni-network/omni/halo/evmstaking/types"
@@ -257,6 +258,7 @@ var (
 	diProviders = []any{
 		evmslashing.DIProvide,
 		evmupgrade.DIProvide,
+		evmdistribution.DIProvide,
 		withdraw.DIProvide,
 	}
 )

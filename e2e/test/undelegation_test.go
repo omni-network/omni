@@ -62,18 +62,21 @@ func TestUndelegations(t *testing.T) {
 			t.Skip()
 		}
 		var validator cchain.SDKValidator
-		for _, v := range validators {
+		var valIndex int
+		for i, v := range validators {
 			if !v.Jailed {
 				validator = v
+				valIndex = i
+
 				break
 			}
 		}
-		altValidator := validators[1]
 		validatorAddr, err := validator.OperatorEthAddr()
 		require.NoError(t, err)
+		// for some tests, we need a valid alternative validator address
+		altValidator := validators[(valIndex+1)%len(validators)]
 
 		stakingContractAddr := common.HexToAddress(predeploys.Staking)
-
 		contract, err := bindings.NewStaking(stakingContractAddr, omniBackend)
 		require.NoError(t, err)
 
