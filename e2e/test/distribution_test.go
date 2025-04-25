@@ -24,7 +24,9 @@ import (
 )
 
 // TestDistribution tests:
-// - that after withdrawals, the queried rewards are smaller.
+// - after a rewards withdrawal, the ETH balance increases,
+// - no balance increase if withdrawals are triggered without any delegations,
+// - no balance increase if delegations exist, but the validator address is wrong.
 func TestDistribution(t *testing.T) {
 	t.Parallel()
 
@@ -52,18 +54,29 @@ func TestDistribution(t *testing.T) {
 			t.Skip()
 		}
 		var validator cchain.SDKValidator
-		for _, v := range validators {
+		var valIndex int
+		for i, v := range validators {
 			if !v.Jailed {
 				validator = v
+				valIndex = i
+
 				break
 			}
 		}
 		validatorAddr, err := validator.OperatorEthAddr()
 		require.NoError(t, err)
-		altValidator := validators[1]
+		// for some tests, we need a valid alternative validator address
+		altValidator := validators[(valIndex+1)%len(validators)]
 
 		var anyBlock *big.Int
 		delegation := bi.Ether(50)
+		distrContractAddr := common.HexToAddress(predeploys.Distribution)
+		dContract, err := bindings.NewDistribution(distrContractAddr, omniBackend)
+		require.NoError(t, err)
+
+		stakingContractAddr := common.HexToAddress(predeploys.Staking)
+		stContract, err := bindings.NewStaking(stakingContractAddr, omniBackend)
+		require.NoError(t, err)
 
 		t.Run("don't delegate and withdraw rewards", func(t *testing.T) {
 			t.Parallel()
@@ -79,30 +92,27 @@ func TestDistribution(t *testing.T) {
 			require.NoError(t, err)
 			txOpts.Value = delegation
 
-			// make sure no rewards are pendign
+			// make sure no rewards are pending
 			_, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, val.OperatorAddress)
 			require.False(t, ok)
 
 			// try to withdraw rewards
-			distrContractAddr := common.HexToAddress(predeploys.Distribution)
-			dContract, err := bindings.NewDistribution(distrContractAddr, omniBackend)
-			require.NoError(t, err)
 			tx, err := dContract.Withdraw(txOpts, validatorAddr)
 			require.NoError(t, err)
 			receipt, err := omniBackend.WaitMined(ctx, tx)
 			require.NoError(t, err)
 
-			// fetch balance at the block when rewards were mined
+			// fetch balance at the block when withdrawal request was mined
 			balanceBeforeWithdrawal, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, receipt.BlockNumber)
 			require.NoError(t, err)
 
-			// Wait for 5 blocks and make sure the balance stays the same
-			waitForBlocks(ctx, t, cprov, 5)
+			// Wait and make sure the balance stays the same
+			waitForBlocks(ctx, t, cprov, 3)
 
 			balanceAfterWithdrawal, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
 			require.NoError(t, err)
 
-			require.Equal(t, balanceAfterWithdrawal, balanceBeforeWithdrawal)
+			require.Equal(t, balanceBeforeWithdrawal, balanceAfterWithdrawal)
 		})
 
 		t.Run("delegate and withdraw rewards from a wrong validator", func(t *testing.T) {
@@ -119,10 +129,7 @@ func TestDistribution(t *testing.T) {
 			require.NoError(t, err)
 			txOpts.Value = delegation
 
-			stakingContractAddr := common.HexToAddress(predeploys.Staking)
-			contract, err := bindings.NewStaking(stakingContractAddr, omniBackend)
-			require.NoError(t, err)
-			tx, err := contract.Delegate(txOpts, validatorAddr)
+			tx, err := stContract.Delegate(txOpts, validatorAddr)
 			require.NoError(t, err)
 
 			_, err = omniBackend.WaitMined(ctx, tx)
@@ -135,32 +142,30 @@ func TestDistribution(t *testing.T) {
 			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 
 			// Wait for rewards to accrue
-			waitForBlocks(ctx, t, cprov, 5)
+			waitForBlocks(ctx, t, cprov, 3)
 			_, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, val.OperatorAddress)
 			require.True(t, ok)
 
 			// withdraw rewards from the wrong validator
-			distrContractAddr := common.HexToAddress(predeploys.Distribution)
-			dContract, err := bindings.NewDistribution(distrContractAddr, omniBackend)
+			altValAddr, err := altValidator.OperatorEthAddr()
 			require.NoError(t, err)
-			validatorAddr, err := altValidator.OperatorEthAddr()
-			require.NoError(t, err)
-			tx, err = dContract.Withdraw(txOpts, validatorAddr)
+			require.NotEqual(t, validatorAddr, altValAddr)
+			tx, err = dContract.Withdraw(txOpts, altValAddr)
 			require.NoError(t, err)
 			receipt, err := omniBackend.WaitMined(ctx, tx)
 			require.NoError(t, err)
 
-			// fetch balance at the block when rewards were mined
+			// fetch balance at the block when withdrawal request was mined
 			balanceBeforeWithdrawal, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, receipt.BlockNumber)
 			require.NoError(t, err)
 
-			// Wait for 5 blocks and make sure the balance stays the same
-			waitForBlocks(ctx, t, cprov, 5)
+			// Wait and make sure the balance stays the same
+			waitForBlocks(ctx, t, cprov, 3)
 
 			balanceAfterWithdrawal, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
 			require.NoError(t, err)
 
-			require.Equal(t, balanceAfterWithdrawal, balanceBeforeWithdrawal)
+			require.Equal(t, balanceBeforeWithdrawal, balanceAfterWithdrawal)
 		})
 
 		t.Run("delegate and withdraw rewards", func(t *testing.T) {
@@ -177,10 +182,7 @@ func TestDistribution(t *testing.T) {
 			require.NoError(t, err)
 			txOpts.Value = delegation
 
-			stakingContractAddr := common.HexToAddress(predeploys.Staking)
-			contract, err := bindings.NewStaking(stakingContractAddr, omniBackend)
-			require.NoError(t, err)
-			tx, err := contract.Delegate(txOpts, validatorAddr)
+			tx, err := stContract.Delegate(txOpts, validatorAddr)
 			require.NoError(t, err)
 
 			_, err = omniBackend.WaitMined(ctx, tx)
@@ -193,24 +195,21 @@ func TestDistribution(t *testing.T) {
 			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 
 			// Wait for rewards to accrue
-			waitForBlocks(ctx, t, cprov, 5)
+			waitForBlocks(ctx, t, cprov, 3)
 			_, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, val.OperatorAddress)
 			require.True(t, ok)
 
 			// withdraw rewards
-			distrContractAddr := common.HexToAddress(predeploys.Distribution)
-			dContract, err := bindings.NewDistribution(distrContractAddr, omniBackend)
-			require.NoError(t, err)
 			tx, err = dContract.Withdraw(txOpts, validatorAddr)
 			require.NoError(t, err)
 			receipt, err := omniBackend.WaitMined(ctx, tx)
 			require.NoError(t, err)
 
-			// fetch balance at the block when rewards were mined
+			// fetch balance at the block when withdrawal request was mined
 			balanceBeforeWithdrawal, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, receipt.BlockNumber)
 			require.NoError(t, err)
 
-			// Make sure the rewards balance decreases eventually
+			// Make sure the ETH balance increases eventually
 			require.Eventuallyf(t, func() bool {
 				balanceAfterWithdrawal, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
 				require.NoError(t, err)
