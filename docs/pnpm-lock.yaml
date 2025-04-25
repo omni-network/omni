@@ -1257,9 +1257,6 @@ packages:
   '@types/babel__traverse@7.20.7':
     resolution: {integrity: sha512-dkO5fhS7+/oos4ciWxyEyjWe48zmG6wbCheo/G2ZnHx4fs3EU6YC6UM8rk56gAjNJ9P3MTH2jo5jb92/K6wbng==}
 
-  '@types/cookie@0.6.0':
-    resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
-
   '@types/debug@4.1.12':
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
 
@@ -2397,8 +2394,8 @@ packages:
       '@types/react':
         optional: true
 
-  react-router@7.5.0:
-    resolution: {integrity: sha512-estOHrRlDMKdlQa6Mj32gIks4J+AxNsYoE0DbTTxiMy2mPzZuWSDU+N85/r1IlNR7kGfznF3VCUlvc5IUO+B9g==}
+  react-router@7.5.2:
+    resolution: {integrity: sha512-9Rw8r199klMnlGZ8VAsV/I8WrIF6IyJ90JQUdboupx1cdkgYqwnrYjH+I/nY/7cA1X5zia4mDJqH36npP7sxGQ==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: '>=18'
@@ -3994,8 +3991,6 @@ snapshots:
     dependencies:
       '@babel/types': 7.27.0
 
-  '@types/cookie@0.6.0': {}
-
   '@types/debug@4.1.12':
     dependencies:
       '@types/ms': 2.1.0
@@ -5542,9 +5537,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.1.2
 
-  react-router@7.5.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  react-router@7.5.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
-      '@types/cookie': 0.6.0
       cookie: 1.0.2
       react: 19.1.0
       set-cookie-parser: 2.7.1
@@ -6062,7 +6056,7 @@ snapshots:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
       react-intersection-observer: 9.16.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      react-router: 7.5.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react-router: 7.5.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       rehype-autolink-headings: 7.1.0
       rehype-class-names: 2.0.0
       rehype-slug: 6.0.0
