@@ -18,7 +18,30 @@ import (
 
 // hlChains define solvernet chains secured by hyperlane.
 var hlChains = map[netconf.ID][]uint64{
-	// TODO(zodomo): add hyperlane chains here
+	// Mainnet
+	netconf.Mainnet: {
+		56,    // BSC
+		137,   // Polygon
+		999,   // HyperEVM
+		5000,  // Mantle
+		80094, // Berachain
+		98866, // Plume
+	},
+
+	// Testnet
+	netconf.Omega: {
+		97,       // BSC Testnet
+		998,      // HyperEVM Testnet
+		80002,    // Polygon Amoy
+		80084,    // Berachain bArtio
+		98867,    // Plume Testnet
+		11155111, // Ethereum Sepolia
+	},
+
+	// Staging
+	netconf.Staging: {
+		11155111, // Ethereum Sepolia
+	},
 }
 
 // HLChains returns the list of hyperlane-secured chains for a given solvernet network.

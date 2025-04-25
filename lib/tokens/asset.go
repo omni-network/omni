@@ -41,6 +41,20 @@ var (
 		CoingeckoID: "weth",
 	}
 
+	STETH = Asset{
+		Symbol:      "stETH",
+		Name:        "Lido Staked Ether",
+		Decimals:    18,
+		CoingeckoID: "staked-ether",
+	}
+
+	WSTETH = Asset{
+		Symbol:      "wstETH",
+		Name:        "Wrapped Staked Ether",
+		Decimals:    18,
+		CoingeckoID: "wrapped-steth",
+	}
+
 	USDC = Asset{
 		Symbol:      "USDC",
 		Name:        "USD Coin",
@@ -55,18 +69,46 @@ var (
 		CoingeckoID: "tether",
 	}
 
-	STETH = Asset{
-		Symbol:      "stETH",
-		Name:        "Lido Staked Ether",
+	BNB = Asset{
+		Symbol:      "BNB",
+		Name:        "BNB",
 		Decimals:    18,
-		CoingeckoID: "staked-ether",
+		CoingeckoID: "binancecoin",
 	}
 
-	WSTETH = Asset{
-		Symbol:      "wstETH",
-		Name:        "Wrapped Staked Ether",
+	POL = Asset{
+		Symbol:      "POL",
+		Name:        "POL",
 		Decimals:    18,
-		CoingeckoID: "wrapped-steth",
+		CoingeckoID: "polygon-ecosystem-token",
+	}
+
+	HYPE = Asset{
+		Symbol:      "HYPE",
+		Name:        "Hyperliquid",
+		Decimals:    18,
+		CoingeckoID: "hyperliquid",
+	}
+
+	MNT = Asset{
+		Symbol:      "MNT",
+		Name:        "Mantle",
+		Decimals:    18,
+		CoingeckoID: "mantle",
+	}
+
+	BERA = Asset{
+		Symbol:      "BERA",
+		Name:        "Berachain",
+		Decimals:    18,
+		CoingeckoID: "berachain-bera",
+	}
+
+	PLUME = Asset{
+		Symbol:      "PLUME",
+		Name:        "Plume",
+		Decimals:    18,
+		CoingeckoID: "plume",
 	}
 )
 
