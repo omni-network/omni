@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	dkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 )
@@ -83,12 +84,15 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog evmengi
 }
 
 // deliverWithdraw processes a Withdraw event.
-func (p EventProcessor) deliverWithdraw(ctx context.Context, event *bindings.DistributionWithdraw) error {
-	log.Info(ctx, "EVM rewards withdrawal detected", "delegator", event.Delegator, "validator", event.Validator)
+func (p EventProcessor) deliverWithdraw(ctx context.Context, ev *bindings.DistributionWithdraw) error {
+	log.Info(ctx, "EVM rewards withdrawal detected", "delegator", ev.Delegator, "validator", ev.Validator)
+
+	delAddr := sdk.AccAddress(ev.Delegator.Bytes())
+	valAddr := sdk.ValAddress(ev.Validator.Bytes())
 
 	msg := dtypes.MsgWithdrawDelegatorReward{
-		DelegatorAddress: event.Delegator.String(),
-		ValidatorAddress: event.Validator.String(),
+		DelegatorAddress: delAddr.String(),
+		ValidatorAddress: valAddr.String(),
 	}
 
 	_, err := dkeeper.NewMsgServerImpl(p.dKeeper).WithdrawDelegatorReward(ctx, &msg)
