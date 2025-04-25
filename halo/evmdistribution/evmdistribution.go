@@ -84,7 +84,7 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog evmengi
 
 // deliverWithdraw processes a Withdraw event.
 func (p EventProcessor) deliverWithdraw(ctx context.Context, event *bindings.DistributionWithdraw) error {
-	log.Info(ctx, "EVM rewards withdraw detected", "delegator", event.Delegator, "validator", event.Validator)
+	log.Info(ctx, "EVM rewards withdrawal detected", "delegator", event.Delegator, "validator", event.Validator)
 
 	msg := dtypes.MsgWithdrawDelegatorReward{
 		DelegatorAddress: event.Delegator.String(),
