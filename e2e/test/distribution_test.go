@@ -47,6 +47,10 @@ func TestDistribution(t *testing.T) {
 
 		validators, err := cprov.SDKValidators(ctx)
 		require.NoError(t, err)
+		// Skip if not enough validators
+		if len(validators) < 2 {
+			t.Skip()
+		}
 		var validator cchain.SDKValidator
 		for _, v := range validators {
 			if !v.Jailed {
@@ -56,13 +60,111 @@ func TestDistribution(t *testing.T) {
 		}
 		validatorAddr, err := validator.OperatorEthAddr()
 		require.NoError(t, err)
+		altValidator := validators[1]
 
 		var anyBlock *big.Int
+		delegation := bi.Ether(50)
+
+		t.Run("don't delegate and withdraw rewards", func(t *testing.T) {
+			t.Parallel()
+
+			_, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
+			delegatorCosmosAddr := sdk.AccAddress(delegatorEthAddr.Bytes())
+
+			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
+			require.True(t, ok)
+			require.NoError(t, err)
+
+			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
+			require.NoError(t, err)
+			txOpts.Value = delegation
+
+			// make sure no rewards are pendign
+			_, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, val.OperatorAddress)
+			require.False(t, ok)
+
+			// try to withdraw rewards
+			distrContractAddr := common.HexToAddress(predeploys.Distribution)
+			dContract, err := bindings.NewDistribution(distrContractAddr, omniBackend)
+			require.NoError(t, err)
+			tx, err := dContract.Withdraw(txOpts, validatorAddr)
+			require.NoError(t, err)
+			receipt, err := omniBackend.WaitMined(ctx, tx)
+			require.NoError(t, err)
+
+			// fetch balance at the block when rewards were mined
+			balanceBeforeWithdrawal, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, receipt.BlockNumber)
+			require.NoError(t, err)
+
+			// Wait for 5 blocks and make sure the balance stays the same
+			waitForBlocks(ctx, t, cprov, 5)
+
+			balanceAfterWithdrawal, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
+			require.NoError(t, err)
+
+			require.Equal(t, balanceAfterWithdrawal, balanceBeforeWithdrawal)
+		})
+
+		t.Run("delegate and withdraw rewards from a wrong validator", func(t *testing.T) {
+			t.Parallel()
+
+			_, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
+			delegatorCosmosAddr := sdk.AccAddress(delegatorEthAddr.Bytes())
+
+			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
+			require.True(t, ok)
+			require.NoError(t, err)
+
+			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
+			require.NoError(t, err)
+			txOpts.Value = delegation
+
+			stakingContractAddr := common.HexToAddress(predeploys.Staking)
+			contract, err := bindings.NewStaking(stakingContractAddr, omniBackend)
+			require.NoError(t, err)
+			tx, err := contract.Delegate(txOpts, validatorAddr)
+			require.NoError(t, err)
+
+			_, err = omniBackend.WaitMined(ctx, tx)
+			require.NoError(t, err)
+
+			// make sure the delegation can be found
+			require.Eventuallyf(t, func() bool {
+				delegatedAmt := delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).Amount.BigInt()
+				return bi.EQ(delegatedAmt, delegation)
+			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
+
+			// Wait for rewards to accrue
+			waitForBlocks(ctx, t, cprov, 5)
+			_, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, val.OperatorAddress)
+			require.True(t, ok)
+
+			// withdraw rewards from the wrong validator
+			distrContractAddr := common.HexToAddress(predeploys.Distribution)
+			dContract, err := bindings.NewDistribution(distrContractAddr, omniBackend)
+			require.NoError(t, err)
+			validatorAddr, err := altValidator.OperatorEthAddr()
+			require.NoError(t, err)
+			tx, err = dContract.Withdraw(txOpts, validatorAddr)
+			require.NoError(t, err)
+			receipt, err := omniBackend.WaitMined(ctx, tx)
+			require.NoError(t, err)
+
+			// fetch balance at the block when rewards were mined
+			balanceBeforeWithdrawal, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, receipt.BlockNumber)
+			require.NoError(t, err)
+
+			// Wait for 5 blocks and make sure the balance stays the same
+			waitForBlocks(ctx, t, cprov, 5)
+
+			balanceAfterWithdrawal, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
+			require.NoError(t, err)
+
+			require.Equal(t, balanceAfterWithdrawal, balanceBeforeWithdrawal)
+		})
 
 		t.Run("delegate and withdraw rewards", func(t *testing.T) {
 			t.Parallel()
-
-			delegation := bi.Ether(50)
 
 			_, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
 			delegatorCosmosAddr := sdk.AccAddress(delegatorEthAddr.Bytes())
