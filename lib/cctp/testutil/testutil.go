@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"crypto/ecdsa"
 	crand "crypto/rand"
 	"math/big"
 	mrand "math/rand"
@@ -80,4 +81,15 @@ func AssertMsgsEqual(t *testing.T, expected, got []types.MsgSendUSDC) {
 	for _, e := range expected {
 		require.Containsf(t, got, e, "expected message (tx_hash=%s, msg_hash=%s)", e.TxHash, e.MessageHash)
 	}
+}
+
+// NewAccount returns a new eth account (private key and address).
+func NewAccount(t *testing.T) (*ecdsa.PrivateKey, common.Address) {
+	t.Helper()
+
+	pk, err := crypto.GenerateKey()
+	require.NoError(t, err)
+	addr := crypto.PubkeyToAddress(pk.PublicKey)
+
+	return pk, addr
 }
