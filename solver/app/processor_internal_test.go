@@ -139,9 +139,10 @@ func TestEventProcessor(t *testing.T) {
 
 					return nil
 				},
-				ChainName:     func(uint64) string { return "" },
-				TargetName:    func(PendingData) string { return "" },
-				InstrumentAge: func(context.Context, uint64, uint64, Order) slog.Attr { return slog.Attr{} },
+				ChainName:         func(uint64) string { return "" },
+				TargetName:        func(PendingData) string { return "" },
+				DebugPendingOrder: func(context.Context, Order, types.Log) {},
+				InstrumentAge:     func(context.Context, uint64, uint64, Order) slog.Attr { return slog.Attr{} },
 			}
 
 			proc := newEventProcFunc(deps, chainID)

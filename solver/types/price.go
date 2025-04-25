@@ -42,19 +42,19 @@ func (p Price) WithFeeBips(fee int64) Price {
 	return clone
 }
 
-func (p Price) String() string {
-	// Convert *big.Rat to big.Float with high precision
-	f := new(big.Float).SetPrec(256).SetRat(p.Price)
-
-	// Format with up to 6 decimal places
-	s := f.Text('f', -1)
+func (p Price) FormatF64() string {
+	s := new(big.Float).SetPrec(256).SetRat(p.Price).Text('f', 6)
 
 	// Trim trailing zeroes and dot if needed
 	s = strings.TrimRight(s, "0")
 	s = strings.TrimRight(s, ".")
 
+	return s
+}
+
+func (p Price) String() string {
 	return fmt.Sprintf("%s %s/%s",
-		s,
+		p.FormatF64(),
 		p.Expense.Symbol,
 		p.Deposit.Symbol,
 	)

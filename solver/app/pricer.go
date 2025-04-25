@@ -2,11 +2,14 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
@@ -84,4 +87,61 @@ func wrapPriceHandlerFunc(priceFunc priceFunc) priceHandlerFunc {
 
 		return price.WithFeeBips(feeBips(srcToken.Asset, dstToken.Asset)), nil // Add fee to the price.
 	}
+}
+
+// debugOrderPrice log order amounts and prices if applicable.
+func debugOrderPrice(ctx context.Context, priceFunc priceFunc, order Order) {
+	pendingData, err := order.PendingData()
+	if err != nil {
+		return
+	}
+
+	if len(pendingData.MinReceived) == 0 || len(pendingData.MaxSpent) == 0 {
+		return
+	}
+
+	depositAmt := pendingData.MinReceived[0].Amount
+	depositTkn, ok := tokenByAddr32(order.SourceChainID, pendingData.MinReceived[0].Token)
+	if !ok {
+		return
+	}
+
+	expenseAmt := pendingData.MaxSpent[0].Amount
+	expenseTkn, ok := tokenByAddr32(pendingData.DestinationChainID, pendingData.MaxSpent[0].Token)
+	if !ok {
+		return
+	}
+
+	orderPrice := types.Price{
+		Price:   new(big.Rat).SetFrac(expenseAmt, depositAmt),
+		Deposit: depositTkn.Asset,
+		Expense: expenseTkn.Asset,
+	}
+
+	currentPrice, err := priceFunc(ctx, depositTkn, expenseTkn)
+	if err != nil {
+		return
+	}
+
+	currentF64, _ := currentPrice.Price.Float64()
+	orderF64, _ := orderPrice.Price.Float64()
+	profitBips := math.Round((currentF64 - orderF64) / orderF64 * 10_000)
+	slippageBips := int64(profitBips) - feeBips(depositTkn.Asset, expenseTkn.Asset)
+
+	log.Debug(ctx, "Pending order amounts",
+		"deposit", depositTkn.FormatAmt(depositAmt),
+		"expense", expenseTkn.FormatAmt(expenseAmt),
+		"slippage_bips", slippageBips,
+		"current_price", currentPrice.FormatF64(),
+		"price_assets", fmt.Sprintf("%s/%s", orderPrice.Expense, orderPrice.Deposit),
+	)
+}
+
+func tokenByAddr32(chainID uint64, addr32 [32]byte) (tokens.Token, bool) {
+	addr, err := toEthAddr(addr32)
+	if err != nil {
+		return tokens.Token{}, false
+	}
+
+	return tokens.ByAddress(chainID, addr)
 }

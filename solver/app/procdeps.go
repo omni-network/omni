@@ -18,6 +18,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -35,10 +36,11 @@ type procDeps struct {
 	Claim  func(ctx context.Context, order Order) error
 
 	// Monitoring helpers
-	ProcessorName string
-	TargetName    func(PendingData) string
-	ChainName     func(chainID uint64) string
-	InstrumentAge func(ctx context.Context, chainID uint64, height uint64, order Order) slog.Attr
+	ProcessorName     string
+	TargetName        func(PendingData) string
+	ChainName         func(chainID uint64) string
+	DebugPendingOrder func(ctx context.Context, order Order, elog types.Log)
+	InstrumentAge     func(ctx context.Context, chainID uint64, height uint64, order Order) slog.Attr
 }
 
 func newClaimer(
@@ -318,4 +320,33 @@ func newOrderGetter(inboxContracts map[uint64]*bindings.SolverNetInbox) func(ctx
 
 		return order, true, nil
 	}
+}
+
+func debugPendingData(ctx context.Context, targetName targetFunc, order Order, elog types.Log) {
+	pendingData, err := order.PendingData()
+	if err != nil {
+		log.Warn(ctx, "Order not pending [BUG]", err)
+		return
+	}
+
+	fill, err := pendingData.ParsedFillOriginData()
+	if err != nil {
+		log.Warn(ctx, "Failed to parse fill origin data", err)
+		return
+	}
+
+	// use last call target for logs
+	lastCall := fill.Calls[len(fill.Calls)-1]
+
+	log.Debug(ctx, "Pending order data",
+		"calls", len(fill.Calls),
+		"call_target", lastCall.Target.Hex(),
+		"call_selector", hexutil.Encode(lastCall.Selector[:]),
+		"call_params", hexutil.Encode(lastCall.Params),
+		"call_value", lastCall.Value.String(),
+		"dst_chain", evmchain.Name(pendingData.DestinationChainID),
+		"full_order_id", order.ID.Hex(),
+		"target", targetName(pendingData),
+		"tx", elog.TxHash.Hex(),
+	)
 }

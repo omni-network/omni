@@ -290,6 +290,11 @@ func startProcessingEvents(
 		return call.Target.Hex()[:7] // Short hex.
 	}
 
+	debugFunc := func(ctx context.Context, order Order, elog types.Log) {
+		debugPendingData(ctx, targetName, order, elog)
+		debugOrderPrice(ctx, priceFunc, order)
+	}
+
 	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
 
 	ageCache := newAgeCache(backends)
@@ -307,18 +312,19 @@ func startProcessingEvents(
 		}
 
 		deps := procDeps{
-			ParseID:       newIDParser(),
-			GetOrder:      newOrderGetter(inboxContracts),
-			ShouldReject:  newShouldRejector(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
-			DidFill:       newDidFiller(outboxContracts),
-			Reject:        newRejector(inboxContracts, backends, solverAddr, updatePnL),
-			Fill:          newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
-			Claim:         newClaimer(network.ID, inboxContracts, backends, solverAddr, updatePnL),
-			SetCursor:     cursorSetter,
-			ChainName:     network.ChainName,
-			ProcessorName: network.ChainVersionName(chainVer),
-			TargetName:    targetName,
-			InstrumentAge: ageCache.InstrumentAge,
+			ParseID:           newIDParser(),
+			GetOrder:          newOrderGetter(inboxContracts),
+			ShouldReject:      newShouldRejector(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
+			DidFill:           newDidFiller(outboxContracts),
+			Reject:            newRejector(inboxContracts, backends, solverAddr, updatePnL),
+			Fill:              newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
+			Claim:             newClaimer(network.ID, inboxContracts, backends, solverAddr, updatePnL),
+			SetCursor:         cursorSetter,
+			ChainName:         network.ChainName,
+			ProcessorName:     network.ChainVersionName(chainVer),
+			TargetName:        targetName,
+			InstrumentAge:     ageCache.InstrumentAge,
+			DebugPendingOrder: debugFunc,
 		}
 
 		procs[chainID] = newEventProcFunc(deps, chainID)
