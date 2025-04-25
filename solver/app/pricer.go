@@ -39,25 +39,6 @@ func newPricer(ctx context.Context, network netconf.ID, apiKey string) tokenpric
 //	depositAmount = expenseAmount / priceFunc(deposit, expense)
 type priceFunc func(ctx context.Context, deposit, expense tokens.Token) (types.Price, error)
 
-// unaryPrice is a priceFunc that returns a price for like-for-like 1-to-1 pairs or an error.
-// This is the legacy (pre-swaps) behavior.
-func unaryPrice(_ context.Context, deposit, expense tokens.Token) (types.Price, error) {
-	if !areEqualBySymbol(deposit, expense) {
-		return types.Price{}, errors.New("deposit token must match expense token", "deposit", deposit, "expense", expense)
-	}
-
-	if deposit.ChainClass != expense.ChainClass {
-		// we should reject with UnsupportedDestChain before quoting tokens of different chain classes.
-		return types.Price{}, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)", "deposit", deposit.ChainClass, "expense", expense.ChainClass)
-	}
-
-	return types.Price{
-		Price:   big.NewRat(1, 1),
-		Deposit: deposit.Asset,
-		Expense: expense.Asset,
-	}, nil
-}
-
 // newPriceFunc returns a priceFunc that uses the provided tokenpricer.Pricer to get the price.
 func newPriceFunc(pricer tokenpricer.Pricer) priceFunc {
 	return func(ctx context.Context, deposit, expense tokens.Token) (types.Price, error) {

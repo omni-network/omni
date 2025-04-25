@@ -114,11 +114,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	pricer := newPricer(ctx, network.ID, cfg.CoinGeckoAPIKey)
-
-	priceFunc := unaryPrice
-	if network.ID != netconf.Mainnet {
-		priceFunc = newPriceFunc(pricer)
-	}
+	priceFunc := newPriceFunc(pricer)
 
 	err = startProcessingEvents(ctx, network, xprov, jobDB, backends, solverAddr, addrs, cursors, pricer, priceFunc)
 	if err != nil {
