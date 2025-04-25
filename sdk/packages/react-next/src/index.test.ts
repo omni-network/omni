@@ -5,12 +5,12 @@ import * as lib from './index.js'
 it('exports the expected APIs', () => {
   expect(Object.keys(lib)).toEqual([
     'useOmniContracts',
-    // 'useOrder',
-    // 'useQuote',
-    // 'useValidateOrder',
+    'useOrder',
+    'useQuote',
+    'useValidateOrder',
     'useGetOrder',
-    // 'useGetOrderStatus',
-    // 'useParseOpenEvent',
+    'useGetOrderStatus',
+    'useParseOpenEvent',
     'OmniProvider',
     'useOmniContext',
   ])
