@@ -132,8 +132,8 @@ func debugOrderPrice(ctx context.Context, priceFunc priceFunc, order Order) {
 		"deposit", depositTkn.FormatAmt(depositAmt),
 		"expense", expenseTkn.FormatAmt(expenseAmt),
 		"slippage_bips", slippageBips,
-		"current_price", currentPrice.FormatF64(),
-		"price_assets", fmt.Sprintf("%s/%s", orderPrice.Expense, orderPrice.Deposit),
+		"price_current", currentPrice.FormatF64(),
+		"price_pair", fmt.Sprintf("%s/%s", orderPrice.Expense, orderPrice.Deposit),
 	)
 }
 
@@ -144,4 +144,52 @@ func tokenByAddr32(chainID uint64, addr32 [32]byte) (tokens.Token, bool) {
 	}
 
 	return tokens.ByAddress(chainID, addr)
+}
+
+// monitorPricesForever blocks and instruments all supported asset prices (in USD) periodically.
+func monitorPricesForever(ctx context.Context, priceFunc priceFunc) {
+	timer := time.NewTimer(0) // Start immediately
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-timer.C:
+			timer.Reset(time.Minute)
+
+			for asset := range supportedAssets {
+				err := monitorPriceOnce(ctx, asset, tokens.USDC, priceFunc)
+				if err != nil {
+					log.Warn(ctx, "Failed monitoring price (will retry)", err, "asset", asset)
+					break
+				}
+			}
+		}
+	}
+}
+
+func monitorPriceOnce(ctx context.Context, deposit, expense tokens.Asset, priceFunc priceFunc) error {
+	if deposit == expense {
+		return nil
+	}
+
+	expenseTkn, ok := tokens.ByAsset(evmchain.IDEthereum, expense)
+	if !ok {
+		return nil
+	}
+
+	depositTkn, ok := tokens.ByAsset(evmchain.IDEthereum, deposit)
+	if !ok {
+		return nil
+	}
+
+	price, err := priceFunc(ctx, depositTkn, expenseTkn)
+	if err != nil {
+		return err
+	}
+
+	priceGauge.WithLabelValues(price.FormatPair()).Set(price.F64())
+
+	return nil
 }

@@ -93,4 +93,11 @@ var (
 		Name:      "job_error_total",
 		Help:      "Total job errors by chain and event status",
 	}, []string{"chain", "status"})
+
+	priceGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "solver",
+		Subsystem: "pricer",
+		Name:      "price",
+		Help:      "Current price of pair of tokens (expense/deposit)",
+	}, []string{"pair"})
 )
