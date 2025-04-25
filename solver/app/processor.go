@@ -7,7 +7,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -89,7 +88,7 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 				break
 			}
 
-			debugPendingData(ctx, deps, order, elog)
+			deps.DebugPendingOrder(ctx, order, elog)
 
 			if didReject, err := maybeReject(); err != nil {
 				return err
@@ -116,33 +115,4 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 
 		return nil
 	}
-}
-
-func debugPendingData(ctx context.Context, deps procDeps, order Order, elog types.Log) {
-	pendingData, err := order.PendingData()
-	if err != nil {
-		log.Warn(ctx, "Order not pending [BUG]", err)
-		return
-	}
-
-	fill, err := pendingData.ParsedFillOriginData()
-	if err != nil {
-		log.Warn(ctx, "Failed to parse fill origin data", err)
-		return
-	}
-
-	// use last call target for logs
-	lastCall := fill.Calls[len(fill.Calls)-1]
-
-	log.Debug(ctx, "Pending order data",
-		"calls", len(fill.Calls),
-		"call_target", lastCall.Target.Hex(),
-		"call_selector", hexutil.Encode(lastCall.Selector[:]),
-		"call_params", hexutil.Encode(lastCall.Params),
-		"call_value", lastCall.Value.String(),
-		"dst_chain", deps.ChainName(pendingData.DestinationChainID),
-		"full_order_id", order.ID.Hex(),
-		"target", deps.TargetName(pendingData),
-		"tx", elog.TxHash.Hex(),
-	)
 }
