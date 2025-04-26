@@ -22,6 +22,7 @@ func Start(
 	ctx context.Context,
 	cfg Config,
 	network netconf.Network,
+	cctpClient cctp.Client,
 	backends ethbackend.Backends,
 	solver common.Address,
 	dbDir string,
@@ -40,8 +41,6 @@ func Start(
 		return errors.Wrap(err, "new cctp db")
 	}
 
-	cctpClient := newCCTPClient(network.ID)
-
 	if err := cctp.MintForever(ctx, db, cctpClient, backends, chains, solver); err != nil {
 		return errors.Wrap(err, "mint forever")
 	}
@@ -53,15 +52,6 @@ func Start(
 	go rebalanceForever(ctx, cfg, db, network, backends, solver)
 
 	return nil
-}
-
-// newCCTPClient returns a new CCTP client for the given network ID.
-func newCCTPClient(networkID netconf.ID) cctp.Client {
-	if networkID == netconf.Mainnet {
-		return cctp.NewClient(cctp.MainnetAPI)
-	}
-
-	return cctp.NewClient(cctp.TestnetAPI)
 }
 
 // newCCTPDB returns a new CCTP DB instance based on the given directory.
