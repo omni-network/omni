@@ -28,8 +28,8 @@ contract OmegaGenesisStakeScript is Script {
     GenesisStake internal genesisStake;
     MerkleDistributorWithoutDeadline internal merkleDistributor;
 
-    uint256 internal depositAmount = 100 ether;
-    uint256 internal rewardAmount = 5 ether;
+    uint256 internal depositAmount = .2 ether;
+    uint256 internal rewardAmount = .1 ether;
     bytes32[] internal leaves = new bytes32[](64);
     bytes32[][] internal proofs = new bytes32[][](64);
     bytes32 internal root;
@@ -37,10 +37,15 @@ contract OmegaGenesisStakeScript is Script {
     function run() public {
         vm.startBroadcast();
 
+        // debug logging
+        console2.log("Deployer address:", msg.sender);
+        console2.log("OMNI balance:", omni.balanceOf(msg.sender));
+        console2.log("OMNI token address:", address(omni));
+
         _prepMerkleTree();
         _deployContracts();
 
-        omni.transfer(address(merkleDistributor), 10_000 ether);
+        omni.transfer(address(merkleDistributor), 2 ether);
 
         vm.stopBroadcast();
     }
