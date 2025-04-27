@@ -48,7 +48,7 @@ contract OmegaGenesisStakeScript is Script {
     /**
      * @dev This assumes the four relevant addresses above have been set and that a new GenesisStake contract should be
      * deployed. It also assumes that the broadcaster has 200 OMNI ERC20 tokens to spend on the network.
-     */
+    */
     function deployAndTest() public {
         vm.startBroadcast();
 
