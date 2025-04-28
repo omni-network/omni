@@ -12,7 +12,10 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         refunder = new Refunder();
     }
 
-    function test_fill_reverts() public {
+    function test_fill_reverts(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
         vm.chainId(destChainId);
         bytes32 orderId = inbox.getNextOrderId(user);
         SolverNet.FillOriginData memory fillData = SolverNet.FillOriginData({
@@ -58,7 +61,15 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.expectRevert(ISolverNetOutbox.InsufficientFee.selector);
         outbox.fill(orderId, fillDataBytes, fillerData);
 
+        // fill must be for a configured source chain
+        fillData.srcChainId = destChainId + 1;
+        fillDataBytes = abi.encode(fillData);
+        vm.expectRevert(ISolverNetOutbox.InvalidConfig.selector);
+        outbox.fill{ value: fillFee }(orderId, fillDataBytes, fillerData);
+
         // `fill` cannot be called twice for the same order
+        fillData.srcChainId = srcChainId;
+        fillDataBytes = abi.encode(fillData);
         outbox.fill{ value: fillFee }(orderId, fillDataBytes, fillerData);
         vm.expectRevert(ISolverNetOutbox.AlreadyFilled.selector);
         outbox.fill{ value: fillFee }(orderId, fillDataBytes, fillerData);
@@ -66,7 +77,10 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.stopPrank();
     }
 
-    function test_fill_nativeExpense_succeeds() public {
+    function test_fill_nativeExpense_succeeds(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -75,6 +89,15 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
+
+        // simple check to make sure the correct event type is emitted
+        if (provider == 1) {
+            vm.expectEmit(false, false, false, false, address(portal));
+            emit IOmniPortal.XMsg(0, 0, 0, address(0), address(0), bytes(""), 0, 0);
+        } else {
+            vm.expectEmit(false, false, false, false, address(mailboxes[uint32(destChainId)]));
+            emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
+        }
 
         vm.chainId(destChainId);
         vm.prank(solver);
@@ -89,7 +112,10 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(address(nativeVault).balance, defaultAmount, "vault native balance after");
     }
 
-    function test_fill_erc20Expense_succeeds() public {
+    function test_fill_erc20Expense_succeeds(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -98,6 +124,15 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
+
+        // simple check to make sure the correct event type is emitted
+        if (provider == 1) {
+            vm.expectEmit(false, false, false, false, address(portal));
+            emit IOmniPortal.XMsg(0, 0, 0, address(0), address(0), bytes(""), 0, 0);
+        } else {
+            vm.expectEmit(false, false, false, false, address(mailboxes[uint32(destChainId)]));
+            emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
+        }
 
         vm.chainId(destChainId);
         vm.prank(solver);
@@ -112,7 +147,10 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(token2.balanceOf(address(erc20Vault)), defaultAmount, "vault token2 balance after");
     }
 
-    function test_fill_call_refund_succeeds() public {
+    function test_fill_call_refund_succeeds(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
         (SolverNet.OrderData memory orderData,) = getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         orderData.calls[0].target = address(refunder);
         IERC7683.OnchainCrossChainOrder memory order = getOrder(block.timestamp + 1, orderData);
@@ -122,6 +160,15 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
+
+        // simple check to make sure the correct event type is emitted
+        if (provider == 1) {
+            vm.expectEmit(false, false, false, false, address(portal));
+            emit IOmniPortal.XMsg(0, 0, 0, address(0), address(0), bytes(""), 0, 0);
+        } else {
+            vm.expectEmit(false, false, false, false, address(mailboxes[uint32(destChainId)]));
+            emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
+        }
 
         vm.chainId(destChainId);
         vm.prank(solver);
@@ -135,7 +182,10 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(address(refunder).balance, 0, "refunder balance after");
     }
 
-    function test_fill_native_overpayment_refund_succeeds() public {
+    function test_fill_native_overpayment_refund_succeeds(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -144,6 +194,15 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee * 2);
+
+        // simple check to make sure the correct event type is emitted
+        if (provider == 1) {
+            vm.expectEmit(false, false, false, false, address(portal));
+            emit IOmniPortal.XMsg(0, 0, 0, address(0), address(0), bytes(""), 0, 0);
+        } else {
+            vm.expectEmit(false, false, false, false, address(mailboxes[uint32(destChainId)]));
+            emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
+        }
 
         vm.chainId(destChainId);
         vm.prank(solver);
@@ -158,7 +217,10 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(address(nativeVault).balance, defaultAmount, "vault native balance after");
     }
 
-    function test_fill_erc20_overpayment_refund_succeeds() public {
+    function test_fill_erc20_overpayment_refund_succeeds(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
         (SolverNet.OrderData memory orderData,) = getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         orderData.expenses[0].amount = defaultAmount * 2;
         IERC7683.OnchainCrossChainOrder memory order = getOrder(block.timestamp + 1, orderData);
@@ -168,6 +230,15 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
+
+        // simple check to make sure the correct event type is emitted
+        if (provider == 1) {
+            vm.expectEmit(false, false, false, false, address(portal));
+            emit IOmniPortal.XMsg(0, 0, 0, address(0), address(0), bytes(""), 0, 0);
+        } else {
+            vm.expectEmit(false, false, false, false, address(mailboxes[uint32(destChainId)]));
+            emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
+        }
 
         vm.chainId(destChainId);
         vm.prank(solver);

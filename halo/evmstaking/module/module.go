@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	ConsensusVersion = 1
+	ConsensusVersion = 2
 )
 
 var (

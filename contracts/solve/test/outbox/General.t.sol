@@ -7,9 +7,19 @@ contract SolverNet_Inbox_General_Test is TestBase {
     function test_setOutboxes_reverts() public {
         uint64[] memory chainIds = new uint64[](1);
         chainIds[0] = srcChainId;
-        address[] memory inboxes = new address[](0);
+        ISolverNetOutbox.InboxConfig[] memory configs = new ISolverNetOutbox.InboxConfig[](0);
 
         vm.expectRevert(ISolverNetOutbox.InvalidArrayLength.selector);
-        outbox.setInboxes(chainIds, inboxes);
+        outbox.setInboxes(chainIds, configs);
+    }
+
+    function test_fillFee_reverts() public {
+        setRoutes(ISolverNetOutbox.Provider.None);
+
+        (, IERC7683.OnchainCrossChainOrder memory order) = getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        vm.expectRevert(ISolverNetOutbox.InvalidConfig.selector);
+        outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
     }
 }

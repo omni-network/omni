@@ -6,6 +6,7 @@ import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { DeployedAt } from "./util/DeployedAt.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
+import { MailboxClient } from "./ext/MailboxClient.sol";
 import { IERC7683 } from "./erc7683/IERC7683.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
@@ -17,9 +18,18 @@ import { IOmniPortalPausable } from "core/src/interfaces/IOmniPortalPausable.sol
  * @title SolverNetInbox
  * @notice Entrypoint and alt-mempool for user solve orders.
  */
-contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetInbox {
+contract SolverNetInbox is
+    OwnableRoles,
+    ReentrancyGuard,
+    Initializable,
+    DeployedAt,
+    XAppBase,
+    MailboxClient,
+    ISolverNetInbox
+{
     using SafeTransferLib for address;
     using AddrUtils for address;
+    using AddrUtils for bytes32;
 
     /**
      * @notice Maximum number of calls and expenses in an order.
@@ -132,7 +142,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         _;
     }
 
-    constructor() {
+    constructor(address _mailbox) MailboxClient(_mailbox) {
         _disableInitializers();
     }
 
@@ -311,29 +321,26 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @notice Fill an order.
+     * @notice Fill an order via Omni Core.
      * @dev Only callable by the outbox.
      * @param id         ID of the order.
      * @param fillHash   Hash of fill instructions origin data.
      * @param creditedTo Address deposits are credited to, provided by the filler.
      */
     function markFilled(bytes32 id, bytes32 fillHash, address creditedTo) external xrecv {
-        SolverNet.Header memory header = _orderHeader[id];
-        OrderState memory state = _orderState[id];
+        _markFilled(id, fillHash, creditedTo, xmsg.sourceChainId, xmsg.sender);
+    }
 
-        if (state.status != Status.Pending) revert OrderNotPending();
-        if (xmsg.sourceChainId != header.destChainId) revert WrongSourceChain();
-        if (xmsg.sender != _outboxes[xmsg.sourceChainId]) revert Unauthorized();
-
-        // Ensure reported fill hash matches origin data
-        if (fillHash != _fillHash(id)) {
-            revert WrongFillHash();
-        }
-
-        _upsertOrder(id, Status.Filled, 0, creditedTo);
-        _purgeState(id, Status.Filled);
-
-        emit Filled(id, fillHash, creditedTo);
+    /**
+     * @notice Fill an order via Hyperlane.
+     * @dev Only callable by the outbox.
+     * @param origin  The origin domain
+     * @param sender  The sender address
+     * @param message The message
+     */
+    function handle(uint32 origin, bytes32 sender, bytes calldata message) external payable override onlyMailbox {
+        (bytes32 id, bytes32 fillHash, address creditedTo) = abi.decode(message, (bytes32, bytes32, address));
+        _markFilled(id, fillHash, creditedTo, origin, sender.toAddress());
     }
 
     /**
@@ -557,6 +564,33 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         _upsertOrder(id, Status.Pending, 0, msg.sender);
 
         return resolved;
+    }
+
+    /**
+     * @dev Mark an order as filled.
+     * @param id ID of the order.
+     * @param fillHash Hash of fill instructions origin data.
+     * @param creditedTo Address deposits are credited to, provided by the filler.
+     * @param origin Origin chain ID.
+     * @param sender Remote sender address.
+     */
+    function _markFilled(bytes32 id, bytes32 fillHash, address creditedTo, uint64 origin, address sender) internal {
+        SolverNet.Header memory header = _orderHeader[id];
+        OrderState memory state = _orderState[id];
+
+        if (state.status != Status.Pending) revert OrderNotPending();
+        if (origin != header.destChainId) revert WrongSourceChain();
+        if (sender != _outboxes[origin]) revert Unauthorized();
+
+        // Ensure reported fill hash matches origin data
+        if (fillHash != _fillHash(id)) {
+            revert WrongFillHash();
+        }
+
+        _upsertOrder(id, Status.Filled, 0, creditedTo);
+        _purgeState(id, Status.Filled);
+
+        emit Filled(id, fillHash, creditedTo);
     }
 
     /**

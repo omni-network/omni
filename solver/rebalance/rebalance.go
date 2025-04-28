@@ -1,18 +1,27 @@
-//nolint:revive,staticcheck,unparam // WIP
 package rebalance
 
 import (
 	"context"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/cctp"
 	cctpdb "github.com/omni-network/omni/lib/cctp/db"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/uniswap"
 
 	"github.com/ethereum/go-ethereum/common"
+)
+
+var (
+	// minSend is the minimum amount of surplus USDC to send to other chains.
+	minSend = bi.Dec6(1000) // 1000 USDC
 )
 
 // rebalanceForever starts rebalancing loops for each chain in the network.
@@ -27,7 +36,7 @@ func rebalanceForever(
 	for _, chain := range network.EVMChains() {
 		ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
 
-		go swapSurplusForever(ctx, cfg, db, network, backends, solver, chain.ID)
+		go swapSurplusForever(ctx, cfg, backends, solver, chain.ID)
 		go sendSurplusForever(ctx, cfg, db, network, backends, solver, chain.ID)
 		go fillDeficitForever(ctx, cfg, db, network, backends, solver, chain.ID)
 	}
@@ -37,13 +46,11 @@ func rebalanceForever(
 func swapSurplusForever(
 	ctx context.Context,
 	cfg Config,
-	db *cctpdb.DB,
-	network netconf.Network,
 	backends ethbackend.Backends,
 	solver common.Address,
 	chainID uint64,
 ) {
-	ticker := time.NewTicker(0)
+	ticker := time.NewTimer(0)
 	defer ticker.Stop()
 
 	for {
@@ -54,7 +61,7 @@ func swapSurplusForever(
 			ticker.Reset(cfg.Interval)
 
 			do := func() error {
-				return swapSurplusOnce(ctx, db, network.ID, backends, chainID, solver)
+				return swapSurplusOnce(ctx, backends, chainID, solver)
 			}
 
 			if err := expbackoff.Retry(ctx, do); err != nil {
@@ -74,7 +81,7 @@ func sendSurplusForever(
 	solver common.Address,
 	chainID uint64,
 ) {
-	ticker := time.NewTicker(0)
+	ticker := time.NewTimer(0)
 	defer ticker.Stop()
 
 	for {
@@ -105,7 +112,7 @@ func fillDeficitForever(
 	solver common.Address,
 	chainID uint64,
 ) {
-	ticker := time.NewTicker(0)
+	ticker := time.NewTimer(0)
 	defer ticker.Stop()
 
 	for {
@@ -137,6 +144,43 @@ func sendSurplusOnce(
 ) error {
 	if chainID != evmchain.IDBase {
 		// Only sending surplus wstETH on Base.
+		return nil
+	}
+
+	backend, err := backends.Backend(chainID)
+	if err != nil {
+		return errors.Wrap(err, "get backend")
+	}
+
+	usdc, ok := tokens.ByAsset(chainID, tokens.USDC)
+	if !ok {
+		return errors.New("token not found")
+	}
+
+	surplus, err := getSurplus(ctx, backend, usdc, solver)
+	if err != nil {
+		return errors.Wrap(err, "get surplus")
+	}
+
+	if bi.LT(surplus, minSend) {
+		// Only send if surplus is above minSend.
+		log.Debug(ctx, "No surplus to send", "amount", usdc.FormatAmt(surplus))
+		return nil
+	}
+
+	log.Debug(ctx, "Sending surplus", "amount", usdc.FormatAmt(surplus))
+
+	// Just send surplus to Ethereum for now.
+	// TODO: calculate chain deficits, send to most in-need chain.
+
+	if _, err = cctp.SendUSDC(ctx, db, networkID, backend, cctp.SendUSDCArgs{
+		Sender:      solver,
+		Recipient:   solver,
+		SrcChainID:  chainID,
+		DestChainID: evmchain.IDEthereum,
+		Amount:      surplus,
+	}); err != nil {
+		return errors.Wrap(err, "send usdc")
 	}
 
 	return nil
@@ -145,17 +189,44 @@ func sendSurplusOnce(
 // swapSurplusOnce swaps surplus tokens to USDC on `chainID`.
 func swapSurplusOnce(
 	ctx context.Context,
-	db *cctpdb.DB,
-	networkID netconf.ID,
 	backends ethbackend.Backends,
 	chainID uint64,
 	solver common.Address,
 ) error {
 	if chainID != evmchain.IDBase {
 		// Only swapping surplus wstETH on Base.
+		return nil
 	}
 
-	// TODO
+	backend, err := backends.Backend(chainID)
+	if err != nil {
+		return errors.Wrap(err, "get backend")
+	}
+
+	wsteth, ok := tokens.ByAsset(chainID, tokens.WSTETH)
+	if !ok {
+		return errors.New("token not found")
+	}
+
+	surplus, err := getSurplus(ctx, backend, wsteth, solver)
+	if err != nil {
+		return errors.Wrap(err, "get surplus")
+	}
+
+	if bi.LTE(surplus, GetFundThreshold(wsteth).MinSwap()) {
+		// Surplus <= minSwap, do nothing.
+		log.Debug(ctx, "No surplus to swap", "amount", wsteth.FormatAmt(surplus))
+		return nil
+	}
+
+	log.Debug(ctx, "Swapping surplus", "amount", wsteth.FormatAmt(surplus))
+
+	// Swap surplus WSTETH to USDC.
+	_, err = uniswap.SwapToUSDC(ctx, backend, solver, wsteth, surplus)
+	if err != nil {
+		return errors.Wrap(err, "swap to usdc")
+	}
+
 	return nil
 }
 
@@ -173,7 +244,55 @@ func fillDeficitOnce(
 		return nil
 	}
 
-	// TODO
+	// will be used when calculating deficits
+	_ = db
+	_ = networkID
+
+	wsteth, ok := tokens.ByAsset(chainID, tokens.WSTETH)
+	if !ok {
+		return errors.New("token not found")
+	}
+
+	usdc, ok := tokens.ByAsset(chainID, tokens.USDC)
+	if !ok {
+		return errors.New("token not found")
+	}
+
+	backend, err := backends.Backend(chainID)
+	if err != nil {
+		return errors.Wrap(err, "get backend")
+	}
+
+	surplusUSDC, err := getSurplus(ctx, backend, usdc, solver)
+	if err != nil {
+		return errors.Wrap(err, "get surplus")
+	}
+
+	if bi.IsZero(surplusUSDC) {
+		// No surplus, nothing to fill deficit.
+		log.Debug(ctx, "No surplus", "amount", usdc.FormatAmt(surplusUSDC))
+		return nil
+	}
+
+	deficit, err := getDeficit(ctx, backend, wsteth, solver)
+	if err != nil {
+		return errors.Wrap(err, "get deficit")
+	}
+
+	if bi.IsZero(deficit) {
+		// No deficit, nothing to fill.
+		log.Debug(ctx, "No deficit", "amount", wsteth.FormatAmt(deficit))
+		return nil
+	}
+
+	log.Debug(ctx, "Filling deficit", "deficit", wsteth.FormatAmt(deficit), "usdc", usdc.FormatAmt(surplusUSDC))
+
+	// Swap all surplus USDC to wstETH.
+	// TODO: only swap enough to fill deficit.
+
+	if _, err = uniswap.SwapFromUSDC(ctx, backend, solver, wsteth, surplusUSDC); err != nil {
+		return errors.Wrap(err, "swap from usdc")
+	}
 
 	return nil
 }

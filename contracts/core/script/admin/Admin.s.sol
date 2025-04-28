@@ -440,8 +440,11 @@ contract Admin is Script {
      * @param admin     The address of the admin account, owner of the proxy admin
      * @param deployer  The address of the account that will deploy the new implementation.
      * @param proxy     The address of the SolverNetInbox proxy to upgrade.
+     * @param mailbox   The address of the mailbox to use for the SolverNetInbox.
      */
-    function upgradeSolverNetInbox(address admin, address deployer, address proxy, bytes calldata data) public {
+    function upgradeSolverNetInbox(address admin, address deployer, address proxy, address mailbox, bytes calldata data)
+        public
+    {
         SolverNetInbox inbox = SolverNetInbox(proxy);
 
         address owner = inbox.owner();
@@ -452,7 +455,7 @@ contract Admin is Script {
         uint248 offset = inbox.getLatestOrderOffset();
 
         vm.startBroadcast(deployer);
-        address impl = address(new SolverNetInbox());
+        address impl = address(new SolverNetInbox(mailbox));
         vm.stopBroadcast();
 
         _upgradeProxy(admin, proxy, impl, data, true, true);
@@ -474,8 +477,15 @@ contract Admin is Script {
      * @param admin     The address of the admin account, owner of the proxy admin
      * @param deployer  The address of the account that will deploy the new implementation.
      * @param proxy     The address of the SolverNetOutbox proxy to upgrade.
+     * @param mailbox   The address of the mailbox to use for the SolverNetOutbox.
      */
-    function upgradeSolverNetOutbox(address admin, address deployer, address proxy, bytes calldata data) public {
+    function upgradeSolverNetOutbox(
+        address admin,
+        address deployer,
+        address proxy,
+        address mailbox,
+        bytes calldata data
+    ) public {
         SolverNetOutbox outbox = SolverNetOutbox(proxy);
 
         address owner = outbox.owner();
@@ -484,7 +494,7 @@ contract Admin is Script {
         address executor = outbox.executor();
 
         vm.startBroadcast(deployer);
-        address impl = address(new SolverNetOutbox());
+        address impl = address(new SolverNetOutbox(mailbox));
         vm.stopBroadcast();
 
         _upgradeProxy(admin, proxy, impl, data, true, true);

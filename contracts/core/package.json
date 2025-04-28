@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@nomad-xyz/excessively-safe-call": "github:nomad-xyz/ExcessivelySafeCall",
+    "@hyperlane-xyz/core": "^7.0.0",
     "@openzeppelin-v4/contracts": "npm:@openzeppelin/contracts@4.9.6",
     "@openzeppelin-v4/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.9.6",
     "@openzeppelin/contracts": "^5.2.0",

@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -103,6 +104,13 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
 
+	chainID, err := backend.ChainID(ctx)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get chain id")
+	}
+
+	mailbox, _ := solvernet.HyperlaneMailbox(chainID.Uint64())
+
 	txOpts, err := backend.BindOpts(ctx, cfg.Deployer)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "bind opts")
@@ -122,7 +130,7 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
-	impl, tx, _, err := bindings.DeploySolverNetOutbox(txOpts, backend)
+	impl, tx, _, err := bindings.DeploySolverNetOutbox(txOpts, backend, mailbox)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
 	}
@@ -147,22 +155,26 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
 	}
 
-	chainID, err := backend.ChainID(ctx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get chain id")
-	}
-
 	// setInboxes
-	// TODO: put in initializer
 	var chainIDs []uint64
-	var inboxes []common.Address
+	var inboxes []bindings.ISolverNetOutboxInboxConfig
 	for _, chain := range network.EVMChains() {
 		if chain.ID == chainID.Uint64() {
 			continue
 		}
 
-		chainIDs = append(chainIDs, chain.ID)
-		inboxes = append(inboxes, cfg.Inbox)
+		provider, err := solvernet.Provider(chain.ID)
+		if err != nil {
+			return common.Address{}, nil, errors.Wrap(err, "get provider")
+		}
+
+		if provider != 0 {
+			chainIDs = append(chainIDs, chain.ID)
+			inboxes = append(inboxes, bindings.ISolverNetOutboxInboxConfig{
+				Inbox:    cfg.Inbox,
+				Provider: provider,
+			})
+		}
 	}
 
 	txOpts, err = backend.BindOpts(ctx, cfg.Owner)

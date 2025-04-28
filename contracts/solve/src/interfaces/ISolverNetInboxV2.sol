@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.24;
+pragma solidity ^0.8.24;
 
 import { IOriginSettler } from "../erc7683/IOriginSettler.sol";
 import { SolverNet } from "../lib/SolverNet.sol";
