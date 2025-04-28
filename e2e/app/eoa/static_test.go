@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
@@ -39,8 +39,11 @@ func TestThresholdReference(t *testing.T) {
 
 func TestStatic(t *testing.T) {
 	t.Parallel()
-	for _, chain := range evmchain.All() {
-		for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
+	for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
+		chains, err := manifests.EVMChains(network)
+		require.NoError(t, err)
+
+		for _, chain := range chains {
 			for _, role := range eoa.AllRoles() {
 				if !shouldExist(role, network) {
 					continue

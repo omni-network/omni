@@ -3,8 +3,8 @@ package types_test
 import (
 	"testing"
 
+	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/e2e/types"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
@@ -23,11 +23,17 @@ func TestAttestIntervals(t *testing.T) {
 	}
 
 	resp := make(map[string]tuple)
-	for _, metadata := range evmchain.All() {
-		resp[metadata.Name] = tuple{
-			BlockPeriod:             metadata.BlockPeriod.String(),
-			EphemeralAttestInterval: types.EVMChain{Metadata: metadata}.AttestInterval(netconf.Staging),
-			ProtectedAttestInterval: types.EVMChain{Metadata: metadata}.AttestInterval(netconf.Mainnet),
+
+	for _, network := range []netconf.ID{netconf.Omega, netconf.Mainnet} {
+		chains, err := manifests.EVMChains(network)
+		require.NoError(t, err)
+
+		for _, metadata := range chains {
+			resp[metadata.Name] = tuple{
+				BlockPeriod:             metadata.BlockPeriod.String(),
+				EphemeralAttestInterval: types.EVMChain{Metadata: metadata}.AttestInterval(netconf.Staging),
+				ProtectedAttestInterval: types.EVMChain{Metadata: metadata}.AttestInterval(netconf.Mainnet),
+			}
 		}
 	}
 
