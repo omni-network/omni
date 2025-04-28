@@ -37,7 +37,7 @@ export function parseOpenEvent(logs: Log[]): ResolvedOrder {
 
     return openEvent.args.resolvedOrder
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof ParseOpenEventError) {
       throw error
     }
     throw new ParseOpenEventError(`Failed to parse open event: ${error}`)
