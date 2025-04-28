@@ -15,7 +15,7 @@ export type ParseInboxStatusReturn = InboxStatus
 // 3: ISolvernetInbox.Status.Closed
 // 4: ISolvernetInbox.Status.Filled
 // 5: ISolvernetInbox.Status.Claimed (reported as 'filled' to user)
-const status = {
+export const status = {
   0: 'not-found',
   1: 'open',
   2: 'rejected',
