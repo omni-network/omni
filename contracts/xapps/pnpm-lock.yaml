@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@openzeppelin/contracts':
-        specifier: ^5.2.0
-        version: 5.2.0
+        specifier: ^5.3.0
+        version: 5.3.0
       '@openzeppelin/contracts-upgradeable':
-        specifier: ^5.2.0
-        version: 5.2.0(@openzeppelin/contracts@5.2.0)
+        specifier: ^5.3.0
+        version: 5.3.0(@openzeppelin/contracts@5.3.0)
       createx:
         specifier: github:pcaversaccio/createx
         version: https://codeload.github.com/pcaversaccio/createx/tar.gz/ff43c668db7381216ce4e0059ff44ac0d119bfd6
@@ -33,13 +33,13 @@ importers:
 
 packages:
 
-  '@openzeppelin/contracts-upgradeable@5.2.0':
-    resolution: {integrity: sha512-mZIu9oa4tQTlGiOJHk6D3LdJlqFqF6oNOSn6S6UVJtzfs9UsY9/dhMEbAVTwElxUtJnjpf6yA062+oBp+eOyPg==}
+  '@openzeppelin/contracts-upgradeable@5.3.0':
+    resolution: {integrity: sha512-yVzSSyTMWO6rapGI5tuqkcLpcGGXA0UA1vScyV5EhE5yw8By3Ewex9rDUw8lfVw0iTkvR/egjfcW5vpk03lqZg==}
     peerDependencies:
-      '@openzeppelin/contracts': 5.2.0
+      '@openzeppelin/contracts': 5.3.0
 
-  '@openzeppelin/contracts@5.2.0':
-    resolution: {integrity: sha512-bxjNie5z89W1Ea0NZLZluFh8PrFNn9DH8DQlujEok2yjsOlraUPKID5p1Wk3qdNbf6XkQ1Os2RvfiHrrXLHWKA==}
+  '@openzeppelin/contracts@5.3.0':
+    resolution: {integrity: sha512-zj/KGoW7zxWUE8qOI++rUM18v+VeLTTzKs/DJFkSzHpQFPD/jKKF0TrMxBfGLl3kpdELCNccvB3zmofSzm4nlA==}
 
   RLUSD-Implementation@https://codeload.github.com/ripple/RLUSD-Implementation/tar.gz/07a27d74863a22f6ad403b5a9f8bb3aea76e05eb:
     resolution: {tarball: https://codeload.github.com/ripple/RLUSD-Implementation/tar.gz/07a27d74863a22f6ad403b5a9f8bb3aea76e05eb}
@@ -62,11 +62,11 @@ packages:
 
 snapshots:
 
-  '@openzeppelin/contracts-upgradeable@5.2.0(@openzeppelin/contracts@5.2.0)':
+  '@openzeppelin/contracts-upgradeable@5.3.0(@openzeppelin/contracts@5.3.0)':
     dependencies:
-      '@openzeppelin/contracts': 5.2.0
+      '@openzeppelin/contracts': 5.3.0
 
-  '@openzeppelin/contracts@5.2.0': {}
+  '@openzeppelin/contracts@5.3.0': {}
 
   RLUSD-Implementation@https://codeload.github.com/ripple/RLUSD-Implementation/tar.gz/07a27d74863a22f6ad403b5a9f8bb3aea76e05eb: {}
 
