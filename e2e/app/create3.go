@@ -6,9 +6,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -42,7 +40,19 @@ func Create3Deploy(ctx context.Context, def Definition, cfg Create3DeployConfig)
 	return nil
 }
 
-func DeployAllCreate3(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+func deployAllCreate3(ctx context.Context, def Definition) error {
+	for _, chain := range def.Testnet.EVMChains() {
+		_, _, err := deployCreate3(ctx, def, chain.ChainID)
+		if err != nil {
+			return errors.Wrap(err, "deploy create3", "chain", chain.Name)
+		}
+	}
+
+	return nil
+}
+
+// Replaces deployAllCreate3 with public function that supports new network/backends
+/* func DeployAllCreate3(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	for _, chain := range network.EVMChains() {
 		backend, err := backends.Backend(chain.ID)
 		if err != nil {
@@ -56,7 +66,7 @@ func DeployAllCreate3(ctx context.Context, network netconf.Network, backends eth
 	}
 
 	return nil
-}
+} */
 
 func deployCreate3(ctx context.Context, def Definition, chainID uint64) (common.Address, *ethclient.Receipt, error) {
 	backend, err := def.Backends().Backend(chainID)
