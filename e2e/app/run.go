@@ -93,7 +93,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "fund anvil")
 	}
 
-	if err = deployAllCreate3(ctx, def); err != nil {
+	if err = DeployAllCreate3(ctx, networkFromDef(def), def.Backends()); err != nil {
 		return nil, errors.Wrap(err, "deploy create3")
 	}
 
