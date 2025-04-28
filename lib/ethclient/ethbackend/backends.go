@@ -83,6 +83,30 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 	}, nil
 }
 
+func FireBackendsFromNetwork(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, fireCl fireblocks.Client) (Backends, error) {
+	inner := make(map[uint64]*Backend)
+	for _, chain := range network.EVMChains() {
+		endpoint, err := endpoints.ByNameOrID(chain.Name, chain.ID)
+		if err != nil {
+			return Backends{}, err
+		}
+
+		ethCl, err := ethclient.DialContext(ctx, chain.Name, endpoint)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "dial")
+		}
+
+		inner[chain.ID], err = NewFireBackend(ctx, chain.Name, chain.ID, chain.BlockPeriod, ethCl, fireCl)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "new backend")
+		}
+	}
+
+	return Backends{
+		backends: inner,
+	}, nil
+}
+
 func BackendsFromNetwork(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, privKeys ...*ecdsa.PrivateKey) (Backends, error) {
 	inner := make(map[uint64]*Backend)
 	for _, chain := range network.EVMChains() {

@@ -174,21 +174,32 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 		return ethbackend.BackendsFromTestnet(ctx, testnet)
 	}
 
-	key, err := fireblocks.LoadKey(cfg.FireKeyPath)
-	if err != nil {
-		return ethbackend.Backends{}, errors.Wrap(err, "load fireblocks key")
-	}
 
-	opts := []fireblocks.Option{
-		fireblocks.WithSignNote(fmt.Sprintf("omni e2e %s %s", commandName, testnet.Network)),
-		fireblocks.WithQueryInterval(5 * time.Second), // If we retry too often we get rate limited.
-	}
-	fireCl, err := fireblocks.New(testnet.Network, cfg.FireAPIKey, key, opts...)
+	fireCl, err := NewFireblocksClient(ctx, cfg, testnet.Network, commandName)
 	if err != nil {
-		return ethbackend.Backends{}, errors.Wrap(err, "new fireblocks")
+		return ethbackend.Backends{}, errors.Wrap(err, "new fireblocks client")
 	}
 
 	return ethbackend.NewFireBackends(ctx, testnet, fireCl)
+}
+
+func NewFireblocksClient(ctx context.Context, cfg DefinitionConfig, networkID netconf.ID, commandName string) (fireblocks.Client, error) {
+	key, err := fireblocks.LoadKey(cfg.FireKeyPath)
+	if err != nil {
+		return fireblocks.Client{}, errors.Wrap(err, "load fireblocks key")
+	}
+
+	opts := []fireblocks.Option{
+		fireblocks.WithSignNote(fmt.Sprintf("omni e2e %s %s", commandName, networkID)),
+		fireblocks.WithQueryInterval(5 * time.Second), // If we retry too often we get rate limited.
+	}
+
+	fireCl, err := fireblocks.New(networkID, cfg.FireAPIKey, key, opts...)
+	if err != nil {
+		return fireblocks.Client{}, errors.Wrap(err, "new fireblocks")
+	}
+
+	return fireCl, nil
 }
 
 // adaptCometTestnet adapts the default comet testnet for omni specific changes and custom config.
