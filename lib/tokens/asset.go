@@ -16,7 +16,7 @@ type Asset struct {
 	Symbol      string
 	Name        string
 	Decimals    uint
-	CoingeckoID string
+	CoingeckoID string // See `Info > API ID` on asset's coingecko page.
 }
 
 var (
@@ -38,14 +38,14 @@ var (
 		Symbol:      "WETH",
 		Name:        "Wrapped Ether",
 		Decimals:    18,
-		CoingeckoID: "ethereum",
+		CoingeckoID: "weth",
 	}
 
 	USDC = Asset{
 		Symbol:      "USDC",
 		Name:        "USD Coin",
 		Decimals:    6,
-		CoingeckoID: "usdc",
+		CoingeckoID: "usd-coin",
 	}
 
 	USDT = Asset{
@@ -59,7 +59,7 @@ var (
 		Symbol:      "stETH",
 		Name:        "Lido Staked Ether",
 		Decimals:    18,
-		CoingeckoID: "lido-staked-ether",
+		CoingeckoID: "staked-ether",
 	}
 
 	WSTETH = Asset{
