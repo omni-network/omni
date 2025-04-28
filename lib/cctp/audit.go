@@ -24,13 +24,13 @@ type getMessageSentFunc func(logs []ethtypes.Log) (*MessageTransmitterMessageSen
 type getDepositForBurnFunc func(logs []ethtypes.Log) (*TokenMessengerDepositForBurn, bool, error)
 type isReceivedFunc func(ctx context.Context, msg types.MsgSendUSDC) (bool, error)
 
-// AuditForever streams finalized CCTP SendUSDC messages to `recipient`, and reconiles them db state.
+// auditForever streams finalized CCTP SendUSDC messages to `recipient`, and reconiles them db state.
 // It does this for all chains in `chains`.
 // - messages missed are inserted
 // - messages with incorrect fields are corrected
 // - messages marked as `minted` are cofirmed minted, else re-marked as `submitted`.
 // The audit process progresses db cursors.
-func AuditForever(
+func auditForever(
 	ctx context.Context,
 	db *db.DB,
 	networkID netconf.ID,

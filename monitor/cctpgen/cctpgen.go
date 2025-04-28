@@ -16,18 +16,11 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
-	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	cosmosdb "github.com/cosmos/cosmos-db"
-)
-
-var (
-	baseSepolia     = mustMeta(evmchain.IDBaseSepolia)
-	opSepolia       = mustMeta(evmchain.IDArbSepolia)
-	arbitrumSepolia = mustMeta(evmchain.IDOpSepolia)
 )
 
 // Start starts bridging usdc via cctp. Metrics managed by lib/cctp.
@@ -44,14 +37,6 @@ func Start(
 	}
 
 	log.Info(ctx, "Starting CCTP test process")
-
-	chains := []evmchain.Metadata{
-		baseSepolia,
-		opSepolia,
-		arbitrumSepolia,
-	}
-
-	xprov := xprovider.New(network, clients, nil)
 
 	privKey, err := crypto.LoadECDSA(privKeyPath)
 	if err != nil {
@@ -74,17 +59,10 @@ func Start(
 		return errors.Wrap(err, "create db")
 	}
 
-	err = cctp.MintForever(ctx, db, cctpClient, backends, chains, minter)
+	err = cctp.MintAuditForever(ctx, db, cctpClient, network, backends, recipient, minter)
 	if err != nil {
-		return errors.Wrap(err, "mint forever")
+		return errors.Wrap(err, "mint audit forever")
 	}
-
-	err = cctp.AuditForever(ctx, db, network.ID, xprov, clients, chains, recipient)
-	if err != nil {
-		return errors.Wrap(err, "audit forever")
-	}
-
-	cctp.MonitorForever(ctx, db)
 
 	go doSendsForever(ctx, db, network.ID, backends, sender)
 
@@ -185,14 +163,4 @@ func doSendsOnce(
 	}
 
 	return nil
-}
-
-// mustMeta returns the metadata for a chain ID, panicking if not found.
-func mustMeta(chainID uint64) evmchain.Metadata {
-	meta, ok := evmchain.MetadataByID(chainID)
-	if !ok {
-		panic("chain not found")
-	}
-
-	return meta
 }

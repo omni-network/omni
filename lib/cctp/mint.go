@@ -21,46 +21,17 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-// MintForeverOption is a functional option for configuring MintForever.
-type MintForeverOption func(*mintForeverOpts)
-
-type mintForeverOpts struct {
-	mintInterval  time.Duration
-	purgeInterval time.Duration
-}
-
-// WithMintInterval sets the cadence for the mint loop.
-func WithMintInterval(interval time.Duration) MintForeverOption {
-	return func(c *mintForeverOpts) {
-		c.mintInterval = interval
-	}
-}
-
-// WithPurgeInterval sets the cadence for the purge loop.
-func WithPurgeInterval(interval time.Duration) MintForeverOption {
-	return func(c *mintForeverOpts) {
-		c.purgeInterval = interval
-	}
-}
-
-func defaultMintOpts() *mintForeverOpts {
-	return &mintForeverOpts{
-		mintInterval:  30 * time.Second,
-		purgeInterval: 20 * time.Minute,
-	}
-}
-
-// MintForever mints submitted CCTP MsgSendUSDC messages (from the db) on all chains.
-func MintForever(
+// mintForever mints submitted CCTP MsgSendUSDC messages (from the db) on all chains.
+func mintForever(
 	ctx context.Context,
 	db *cctpdb.DB,
 	client Client,
 	backends ethbackend.Backends,
 	chains []evmchain.Metadata,
 	minter common.Address,
-	opts ...MintForeverOption,
+	opts ...Option,
 ) error {
-	o := defaultMintOpts()
+	o := defaultOpts()
 	for _, opt := range opts {
 		opt(o)
 	}
