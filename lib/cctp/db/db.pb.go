@@ -10,6 +10,7 @@ import (
 	_ "cosmossdk.io/api/cosmos/orm/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -82,6 +83,7 @@ type MsgSendUSDC struct {
 	Amount        []byte                 `protobuf:"bytes,7,opt,name=amount,proto3" json:"amount,omitempty"`                                 // Amount of USDC sent
 	Recipient     []byte                 `protobuf:"bytes,8,opt,name=recipient,proto3" json:"recipient,omitempty"`                           // Recipient address
 	Status        int32                  `protobuf:"varint,9,opt,name=status,proto3" json:"status,omitempty"`                                // Status (submitted|minted)
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`         // Creation timestamp
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -179,6 +181,13 @@ func (x *MsgSendUSDC) GetStatus() int32 {
 	return 0
 }
 
+func (x *MsgSendUSDC) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
 type Cursor struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ChainId       uint64                 `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
@@ -235,7 +244,7 @@ var File_lib_cctp_db_db_proto protoreflect.FileDescriptor
 
 const file_lib_cctp_db_db_proto_rawDesc = "" +
 	"\n" +
-	"\x14lib/cctp/db/db.proto\x12\vlib.cctp.db\x1a\x17cosmos/orm/v1/orm.proto\"\xba\x02\n" +
+	"\x14lib/cctp/db/db.proto\x12\vlib.cctp.db\x1a\x17cosmos/orm/v1/orm.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf5\x02\n" +
 	"\vMsgSendUSDC\x12\x17\n" +
 	"\atx_hash\x18\x01 \x01(\fR\x06txHash\x12!\n" +
 	"\fblock_height\x18\x02 \x01(\x04R\vblockHeight\x12!\n" +
@@ -246,7 +255,10 @@ const file_lib_cctp_db_db_proto_rawDesc = "" +
 	"\rdest_chain_id\x18\x06 \x01(\x04R\vdestChainId\x12\x16\n" +
 	"\x06amount\x18\a \x01(\fR\x06amount\x12\x1c\n" +
 	"\trecipient\x18\b \x01(\fR\trecipient\x12\x16\n" +
-	"\x06status\x18\t \x01(\x05R\x06status:\x13\xf2\x9eӎ\x03\r\n" +
+	"\x06status\x18\t \x01(\x05R\x06status\x129\n" +
+	"\n" +
+	"created_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt:\x13\xf2\x9eӎ\x03\r\n" +
 	"\t\n" +
 	"\atx_hash\x18\x01\"\\\n" +
 	"\x06Cursor\x12\x19\n" +
@@ -276,16 +288,18 @@ func file_lib_cctp_db_db_proto_rawDescGZIP() []byte {
 var file_lib_cctp_db_db_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_lib_cctp_db_db_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_lib_cctp_db_db_proto_goTypes = []any{
-	(MsgStatus)(0),      // 0: lib.cctp.db.MsgStatus
-	(*MsgSendUSDC)(nil), // 1: lib.cctp.db.MsgSendUSDC
-	(*Cursor)(nil),      // 2: lib.cctp.db.Cursor
+	(MsgStatus)(0),                // 0: lib.cctp.db.MsgStatus
+	(*MsgSendUSDC)(nil),           // 1: lib.cctp.db.MsgSendUSDC
+	(*Cursor)(nil),                // 2: lib.cctp.db.Cursor
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_lib_cctp_db_db_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	3, // 0: lib.cctp.db.MsgSendUSDC.created_at:type_name -> google.protobuf.Timestamp
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_lib_cctp_db_db_proto_init() }

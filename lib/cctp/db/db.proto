@@ -3,6 +3,7 @@ syntax = "proto3";
 package lib.cctp.db;
 
 import "cosmos/orm/v1/orm.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/omni-network/omni/lib/cctp/db";
 
@@ -27,6 +28,7 @@ message MsgSendUSDC {
   bytes amount = 7;         // Amount of USDC sent
   bytes recipient = 8;      // Recipient address
   int32 status = 9;         // Status (submitted|minted)
+  google.protobuf.Timestamp created_at = 10; // Creation timestamp
 }
 
 message Cursor {
