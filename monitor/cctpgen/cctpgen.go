@@ -84,6 +84,8 @@ func Start(
 		return errors.Wrap(err, "audit forever")
 	}
 
+	cctp.MonitorForever(ctx, db)
+
 	go doSendsForever(ctx, db, network.ID, backends, sender)
 
 	return nil

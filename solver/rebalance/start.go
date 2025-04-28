@@ -49,6 +49,8 @@ func Start(
 		return errors.Wrap(err, "rebalance forever")
 	}
 
+	cctp.MonitorForever(ctx, db)
+
 	go rebalanceForever(ctx, cfg, db, network, backends, solver)
 
 	return nil

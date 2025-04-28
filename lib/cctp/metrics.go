@@ -1,6 +1,8 @@
 package cctp
 
 import (
+	"github.com/omni-network/omni/lib/promutil"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -40,4 +42,11 @@ var (
 		Name:      "missed_msgs_total",
 		Help:      "The total number of messages inserted by audit",
 	}, []string{"chain", "recipient"})
+
+	oldestMsg = promutil.NewResetGaugeVec(prometheus.GaugeOpts{
+		Namespace: "solver",
+		Subsystem: "processor",
+		Name:      "oldest_msg",
+		Help:      "Oldest msg by status (submitted | minted)",
+	}, []string{"status"})
 )
