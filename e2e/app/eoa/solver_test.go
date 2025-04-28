@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
+
+	"github.com/stretchr/testify/require"
 )
 
 //go:generate go test . -run=TestSolverThresholds -golden
@@ -17,7 +19,10 @@ func TestSolverThresholds(t *testing.T) {
 
 	solverGolden := make(map[netconf.ID]map[string]map[string]map[string]string)
 	for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
-		for _, chain := range evmchain.All() {
+		chains, err := manifests.EVMChains(network)
+		require.NoError(t, err)
+
+		for _, chain := range chains {
 			for _, role := range eoa.SolverNetRoles() {
 				for _, token := range tokens.UniqueAssets() {
 					thresholds, ok := eoa.GetSolverNetThreshold(role, network, chain.ChainID, token)
