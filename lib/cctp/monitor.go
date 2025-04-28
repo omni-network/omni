@@ -13,12 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 )
 
-// MonitorForever monitors the CCTP messages in the database indefinitely.
-func MonitorForever(ctx context.Context, db *cctpdb.DB) {
-	go monitorForver(ctx, db)
-}
-
-func monitorForver(ctx context.Context, db *cctpdb.DB) {
+func monitorForever(ctx context.Context, db *cctpdb.DB) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 

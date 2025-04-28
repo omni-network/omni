@@ -78,6 +78,8 @@ func TestIntegration(t *testing.T) {
 	}()
 
 	devPk, devAddr := testutil.NewAccount(t) // Test user
+	minter := devAddr
+	recipient := devAddr
 
 	backends, err := ethbackend.BackendsFromClients(clients, devPk)
 	require.NoError(t, err)
@@ -96,14 +98,8 @@ func TestIntegration(t *testing.T) {
 	db, err := cctpdb.New(memDB)
 	require.NoError(t, err)
 
-	// Mint forever
-	err = cctp.MintForever(ctx, db, cctpClient, backends, chains, devAddr,
-		cctp.WithMintInterval(1*time.Second),
-		cctp.WithPurgeInterval(10*time.Second))
-	require.NoError(t, err)
-
-	// Audit forever
-	err = cctp.AuditForever(ctx, db, netconf.Mainnet, xprov, clients, chains, devAddr)
+	// Mint / audit forever
+	err = cctp.MintAuditForever(ctx, db, cctpClient, network, backends, minter, recipient)
 	require.NoError(t, err)
 
 	// Track initial balances
@@ -273,7 +269,7 @@ func getChains(t *testing.T) []evmchain.Metadata {
 func makeNetwork(t *testing.T, chains []evmchain.Metadata) netconf.Network {
 	t.Helper()
 
-	network := netconf.Network{ID: netconf.Devnet}
+	network := netconf.Network{ID: netconf.Mainnet}
 	network.Chains = make([]netconf.Chain, len(chains))
 	for i, chain := range chains {
 		network.Chains[i] = netconf.Chain{
