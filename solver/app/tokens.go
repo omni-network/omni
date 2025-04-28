@@ -65,7 +65,7 @@ var (
 		tokens.OMNI: {
 			tokens.ClassMainnet: {
 				MinSpend: bi.Ether(0.1),     // 0.1 OMNI
-				MaxSpend: bi.Ether(500_000), // 500k OMNI
+				MaxSpend: bi.Ether(450_000), // 450k OMNI
 			},
 			tokens.ClassTestnet: {
 				MinSpend: bi.Ether(0.1),   // 0.1 OMNI
