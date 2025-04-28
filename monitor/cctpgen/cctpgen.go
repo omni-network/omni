@@ -14,6 +14,8 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -106,7 +108,7 @@ func newDB(dbDir string) (*cctpdb.DB, error) {
 // doSendsForever continuously bridges USDC between chains.
 func doSendsForever(ctx context.Context, db *cctpdb.DB, networkID netconf.ID, backends ethbackend.Backends, bridger common.Address) {
 	interval := 30 * time.Minute
-	retryInterval := 10 * time.Second
+	retryInterval := 1 * time.Minute
 
 	timer := time.NewTimer(0)
 	defer timer.Stop()
@@ -144,6 +146,24 @@ func doSendsOnce(
 		{evmchain.IDOpSepolia, evmchain.IDArbSepolia, bi.Dec6(1)},   // Optimism Sepolia -> Arbitrum Sepolia
 	}
 
+	// make sure we have enough balance for all sends
+	for _, send := range sends {
+		backend, err := backends.Backend(send.srcChain)
+		if err != nil {
+			return errors.Wrap(err, "backend")
+		}
+
+		balance, err := tokenutil.BalanceOfAsset(ctx, backend, tokens.USDC, bridger)
+		if err != nil {
+			return errors.Wrap(err, "balance of")
+		}
+
+		if bi.LT(balance, send.amount) {
+			return errors.New("insufficient balance")
+		}
+	}
+
+	// do sends
 	for _, send := range sends {
 		backend, err := backends.Backend(send.srcChain)
 		if err != nil {
