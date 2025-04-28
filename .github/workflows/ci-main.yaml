@@ -36,3 +36,6 @@ jobs:
     needs: [release-snapshot]
   sdk-unit-tests:
     uses: ./.github/workflows/sdk-unit-test.yaml
+  rebalance-test:
+    uses: ./.github/workflows/rebalance-test.yaml
+    secrets: inherit

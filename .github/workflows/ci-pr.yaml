@@ -33,3 +33,6 @@ jobs:
     uses: ./.github/workflows/pr-label.yaml
   sdk-unit-tests:
     uses: ./.github/workflows/sdk-unit-test.yaml
+  rebalance-test:
+    uses: ./.github/workflows/rebalance-test.yaml
+    secrets: inherit
