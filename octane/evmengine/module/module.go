@@ -119,6 +119,7 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingCo
 func (m AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServiceServer(cfg.MsgServer(), keeper.NewMsgServerImpl(m.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), m.keeper)
+	registerMigrations(cfg)
 }
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
