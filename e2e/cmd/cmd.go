@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/xbridge"
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -326,12 +327,14 @@ func newDeploySolverNetCmd(def *app.Definition) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
-			network, err := networkFromDef(ctx, *def)
+			initialNetwork, err := networkFromDef(ctx, *def)
 			if err != nil {
 				return errors.Wrap(err, "network")
 			}
 
-			return solve.Deploy(cmd.Context(), network, def.Backends())
+			fullNetwork := solvernet.AddHLNetwork(initialNetwork)
+
+			return solve.Deploy(cmd.Context(), fullNetwork, def.Backends())
 		},
 	}
 
