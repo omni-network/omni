@@ -52,12 +52,17 @@ func (p Price) FormatF64() string {
 	return s
 }
 
+func (p Price) F64() float64 {
+	resp, _ := p.Price.Float64()
+	return resp
+}
+
+func (p Price) FormatPair() string {
+	return fmt.Sprintf("%s/%s", p.Expense.Symbol, p.Deposit.Symbol)
+}
+
 func (p Price) String() string {
-	return fmt.Sprintf("%s %s/%s",
-		p.FormatF64(),
-		p.Expense.Symbol,
-		p.Deposit.Symbol,
-	)
+	return fmt.Sprintf("%s %s", p.FormatF64(), p.FormatPair())
 }
 
 func (p Price) Inverse() Price {

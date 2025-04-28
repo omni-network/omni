@@ -117,6 +117,8 @@ func Run(ctx context.Context, cfg Config) error {
 	pricer := newPricer(ctx, network.ID, cfg.CoinGeckoAPIKey)
 	priceFunc := newPriceFunc(pricer)
 
+	go monitorPricesForever(ctx, priceFunc)
+
 	err = startProcessingEvents(ctx, network, xprov, jobDB, backends, solverAddr, addrs, cursors, pricer, priceFunc)
 	if err != nil {
 		return errors.Wrap(err, "start event streams")
