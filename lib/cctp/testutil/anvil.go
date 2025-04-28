@@ -30,7 +30,7 @@ func StartAnvilForks(t *testing.T, ctx context.Context, rpcs map[uint64]string, 
 		)
 		require.NoError(t, err)
 
-		log.Info(ctx, "Stated anvil fork", "chain", chain.Name, "fork_rpc", rpcs[chain.ChainID])
+		log.Info(ctx, "Stated anvil fork", "chain", chain.Name)
 
 		clients[chain.ChainID] = ethCl
 		stops = append(stops, stop)

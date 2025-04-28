@@ -1,0 +1,28 @@
+name: Solver Rebalance Test
+
+on:
+  workflow_call:
+
+jobs:
+  rebalance_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'v1.24'
+
+      - name: Install foundry
+        uses: ./.github/actions/setup-foundry
+
+      - name: Run rebalance integration tests
+        env:
+          ETH_RPC: ${{ secrets.ETH_RPC }}
+          ARB_RPC: ${{ secrets.ARB_RPC }}
+          OP_RPC: ${{ secrets.OP_RPC }}
+          BASE_RPC: ${{ secrets.BASE_RPC }}
+        run: |
+          go test ./solver/rebalance -integration -v -run=TestIntegration
