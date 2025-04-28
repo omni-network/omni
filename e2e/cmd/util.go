@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
@@ -53,7 +54,7 @@ func makePortalRegistry(ctx context.Context, network netconf.ID, endpoints xchai
 	return resp, nil
 }
 
-// getSolverNetwork returns the solvernet network for the given definition, including HL chains
+// getSolverNetwork returns the solvernet network for the given definition, including HL chains.
 func getSolverNetwork(ctx context.Context, def app.Definition) (netconf.Network, error) {
 	network, err := networkFromDef(ctx, def)
 	if err != nil {
@@ -75,8 +76,10 @@ func getSolverEndpoints(networkID netconf.ID, def app.Definition) (xchain.RPCEnd
 
 		rpc, ok := def.Cfg.RPCOverrides[meta.Name]
 		if !ok {
-			// TODO: add static public rpcs
-			return xchain.RPCEndpoints{}, errors.New("missing rpc override", "chain", meta.Name)
+			rpc = types.PublicRPCByName(meta.Name)
+			if rpc == "" {
+				return xchain.RPCEndpoints{}, errors.New("missing rpc override", "chain", meta.Name)
+			}
 		}
 
 		endpoints[meta.Name] = rpc

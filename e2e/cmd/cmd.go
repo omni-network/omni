@@ -337,7 +337,7 @@ func newDeploySolverNetCmd(def *app.Definition) *cobra.Command {
 				return errors.Wrap(err, "get endpoints")
 			}
 
-			fireCl, err := app.NewFireblocksClient(ctx, def.Cfg, network.ID, cmd.Name())
+			fireCl, err := app.NewFireblocksClient(def.Cfg, network.ID, cmd.Name())
 			if err != nil {
 				return errors.Wrap(err, "fireblocks client")
 			}

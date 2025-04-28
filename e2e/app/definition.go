@@ -174,8 +174,7 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 		return ethbackend.BackendsFromTestnet(ctx, testnet)
 	}
 
-
-	fireCl, err := NewFireblocksClient(ctx, cfg, testnet.Network, commandName)
+	fireCl, err := NewFireblocksClient(cfg, testnet.Network, commandName)
 	if err != nil {
 		return ethbackend.Backends{}, errors.Wrap(err, "new fireblocks client")
 	}
@@ -183,7 +182,7 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 	return ethbackend.NewFireBackends(ctx, testnet, fireCl)
 }
 
-func NewFireblocksClient(ctx context.Context, cfg DefinitionConfig, networkID netconf.ID, commandName string) (fireblocks.Client, error) {
+func NewFireblocksClient(cfg DefinitionConfig, networkID netconf.ID, commandName string) (fireblocks.Client, error) {
 	key, err := fireblocks.LoadKey(cfg.FireKeyPath)
 	if err != nil {
 		return fireblocks.Client{}, errors.Wrap(err, "load fireblocks key")
