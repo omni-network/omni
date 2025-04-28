@@ -1,4 +1,4 @@
-import { testOrder } from '@omni-network/test-utils'
+import { mockL1Client, testOrder } from '@omni-network/test-utils'
 import { type Client, zeroAddress } from 'viem'
 import { expect, test, vi } from 'vitest'
 import { inboxABI } from '../constants/abis.js'
@@ -16,20 +16,19 @@ test('default: opens order and returns the transaction hash', async () => {
   writeContract.mockResolvedValueOnce('0xtxHash')
   vi.spyOn(encode, 'encodeOrderData').mockReturnValueOnce('0xencodedOrder')
 
-  const client = {
-    account: {},
-    chain: {},
-  } as Client
-
   await expect(
-    openOrder({ client, inboxAddress: '0xaddress', order: testOrder }),
+    openOrder({
+      client: mockL1Client,
+      inboxAddress: '0xaddress',
+      order: testOrder,
+    }),
   ).resolves.toEqual('0xtxHash')
-  expect(writeContract).toHaveBeenLastCalledWith(client, {
+  expect(writeContract).toHaveBeenLastCalledWith(mockL1Client, {
     abi: inboxABI,
     address: '0xaddress',
     functionName: 'open',
-    account: client.account,
-    chain: client.chain,
+    account: mockL1Client.account,
+    chain: mockL1Client.chain,
     value: 0n,
     args: [
       {
@@ -55,24 +54,19 @@ test('behaviour: sets the order value when the deposit does not set a token addr
   writeContract.mockResolvedValueOnce('0xtxHash')
   vi.spyOn(encode, 'encodeOrderData').mockReturnValueOnce('0xencodedOrder')
 
-  const client = {
-    account: {},
-    chain: {},
-  } as Client
-
   await expect(
     openOrder({
-      client,
+      client: mockL1Client,
       inboxAddress: '0xaddress',
       order: { ...testOrder, deposit: { amount: 2n } },
     }),
   ).resolves.toEqual('0xtxHash')
-  expect(writeContract).toHaveBeenLastCalledWith(client, {
+  expect(writeContract).toHaveBeenLastCalledWith(mockL1Client, {
     abi: inboxABI,
     address: '0xaddress',
     functionName: 'open',
-    account: client.account,
-    chain: client.chain,
+    account: mockL1Client.account,
+    chain: mockL1Client.chain,
     value: 2n,
     args: [
       {
@@ -88,24 +82,19 @@ test('behaviour: sets the order value when the deposit token address is zero', a
   writeContract.mockResolvedValueOnce('0xtxHash')
   vi.spyOn(encode, 'encodeOrderData').mockReturnValueOnce('0xencodedOrder')
 
-  const client = {
-    account: {},
-    chain: {},
-  } as Client
-
   await expect(
     openOrder({
-      client,
+      client: mockL1Client,
       inboxAddress: '0xaddress',
       order: { ...testOrder, deposit: { token: zeroAddress, amount: 3n } },
     }),
   ).resolves.toEqual('0xtxHash')
-  expect(writeContract).toHaveBeenLastCalledWith(client, {
+  expect(writeContract).toHaveBeenLastCalledWith(mockL1Client, {
     abi: inboxABI,
     address: '0xaddress',
     functionName: 'open',
-    account: client.account,
-    chain: client.chain,
+    account: mockL1Client.account,
+    chain: mockL1Client.chain,
     value: 3n,
     args: [
       {
@@ -121,24 +110,19 @@ test('behaviour: sets the order value to zero when the deposit token address is 
   writeContract.mockResolvedValueOnce('0xtxHash')
   vi.spyOn(encode, 'encodeOrderData').mockReturnValueOnce('0xencodedOrder')
 
-  const client = {
-    account: {},
-    chain: {},
-  } as Client
-
   await expect(
     openOrder({
-      client,
+      client: mockL1Client,
       inboxAddress: '0xaddress',
       order: { ...testOrder, deposit: { token: '0x123', amount: 4n } },
     }),
   ).resolves.toEqual('0xtxHash')
-  expect(writeContract).toHaveBeenLastCalledWith(client, {
+  expect(writeContract).toHaveBeenLastCalledWith(mockL1Client, {
     abi: inboxABI,
     address: '0xaddress',
     functionName: 'open',
-    account: client.account,
-    chain: client.chain,
+    account: mockL1Client.account,
+    chain: mockL1Client.chain,
     value: 0n,
     args: [
       {
