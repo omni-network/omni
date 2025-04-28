@@ -18,7 +18,7 @@
    "address": "0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4",
    "decimals": 18,
    "expenseMin": "0x16345785d8a0000",
-   "expenseMax": "0x1969368974c05b000000"
+   "expenseMax": "0x69e10de76676d0800000"
   },
   {
    "enabled": true,
@@ -98,7 +98,7 @@
    "address": "0x0000000000000000000000000000000000000000",
    "decimals": 18,
    "expenseMin": "0x16345785d8a0000",
-   "expenseMax": "0x1969368974c05b000000"
+   "expenseMax": "0x69e10de76676d0800000"
   },
   {
    "enabled": true,
