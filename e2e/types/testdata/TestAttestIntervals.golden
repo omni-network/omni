@@ -19,26 +19,6 @@
   "ephemeral_attest_interval": 300,
   "protected_attest_interval": 1800
  },
- "berachain": {
-  "block_period": "2s",
-  "ephemeral_attest_interval": 300,
-  "protected_attest_interval": 1800
- },
- "berachain_bartio": {
-  "block_period": "2s",
-  "ephemeral_attest_interval": 300,
-  "protected_attest_interval": 1800
- },
- "bsc": {
-  "block_period": "3s",
-  "ephemeral_attest_interval": 200,
-  "protected_attest_interval": 1200
- },
- "bsc_testnet": {
-  "block_period": "1s",
-  "ephemeral_attest_interval": 600,
-  "protected_attest_interval": 3600
- },
  "ethereum": {
   "block_period": "12s",
   "ephemeral_attest_interval": 50,
@@ -48,41 +28,6 @@
   "block_period": "12s",
   "ephemeral_attest_interval": 50,
   "protected_attest_interval": 300
- },
- "hyper_evm": {
-  "block_period": "2s",
-  "ephemeral_attest_interval": 300,
-  "protected_attest_interval": 1800
- },
- "hyper_evm_testnet": {
-  "block_period": "2s",
-  "ephemeral_attest_interval": 300,
-  "protected_attest_interval": 1800
- },
- "mantle": {
-  "block_period": "2s",
-  "ephemeral_attest_interval": 300,
-  "protected_attest_interval": 1800
- },
- "mock_arb": {
-  "block_period": "1s",
-  "ephemeral_attest_interval": 600,
-  "protected_attest_interval": 3600
- },
- "mock_l1": {
-  "block_period": "1s",
-  "ephemeral_attest_interval": 600,
-  "protected_attest_interval": 3600
- },
- "mock_l2": {
-  "block_period": "1s",
-  "ephemeral_attest_interval": 600,
-  "protected_attest_interval": 3600
- },
- "mock_op": {
-  "block_period": "2s",
-  "ephemeral_attest_interval": 300,
-  "protected_attest_interval": 1800
  },
  "omni_evm": {
   "block_period": "2s",
@@ -98,30 +43,5 @@
   "block_period": "2s",
   "ephemeral_attest_interval": 300,
   "protected_attest_interval": 1800
- },
- "plume": {
-  "block_period": "1s",
-  "ephemeral_attest_interval": 600,
-  "protected_attest_interval": 3600
- },
- "plume_testnet": {
-  "block_period": "1s",
-  "ephemeral_attest_interval": 600,
-  "protected_attest_interval": 3600
- },
- "polygon": {
-  "block_period": "2s",
-  "ephemeral_attest_interval": 300,
-  "protected_attest_interval": 1800
- },
- "polygon_amoy": {
-  "block_period": "2s",
-  "ephemeral_attest_interval": 300,
-  "protected_attest_interval": 1800
- },
- "sepolia": {
-  "block_period": "12s",
-  "ephemeral_attest_interval": 50,
-  "protected_attest_interval": 300
  }
 }
