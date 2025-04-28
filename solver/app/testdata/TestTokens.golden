@@ -142,7 +142,7 @@
  {
   "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
   "chainId": 1,
-  "coingeckoId": "usdc",
+  "coingeckoId": "usd-coin",
   "isMock": false,
   "maxSpend": "100000 USDC",
   "minSpend": "0.1 USDC",
@@ -152,7 +152,7 @@
  {
   "address": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
   "chainId": 42161,
-  "coingeckoId": "usdc",
+  "coingeckoId": "usd-coin",
   "isMock": false,
   "maxSpend": "10000 USDC",
   "minSpend": "0.1 USDC",
@@ -162,7 +162,7 @@
  {
   "address": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
   "chainId": 10,
-  "coingeckoId": "usdc",
+  "coingeckoId": "usd-coin",
   "isMock": false,
   "maxSpend": "10000 USDC",
   "minSpend": "0.1 USDC",
@@ -172,7 +172,7 @@
  {
   "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "chainId": 8453,
-  "coingeckoId": "usdc",
+  "coingeckoId": "usd-coin",
   "isMock": false,
   "maxSpend": "10000 USDC",
   "minSpend": "0.1 USDC",
@@ -182,7 +182,7 @@
  {
   "address": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
   "chainId": 11155111,
-  "coingeckoId": "usdc",
+  "coingeckoId": "usd-coin",
   "isMock": false,
   "maxSpend": "10 USDC",
   "minSpend": "0.1 USDC",
@@ -192,7 +192,7 @@
  {
   "address": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
   "chainId": 421614,
-  "coingeckoId": "usdc",
+  "coingeckoId": "usd-coin",
   "isMock": false,
   "maxSpend": "10 USDC",
   "minSpend": "0.1 USDC",
@@ -202,7 +202,7 @@
  {
   "address": "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
   "chainId": 11155420,
-  "coingeckoId": "usdc",
+  "coingeckoId": "usd-coin",
   "isMock": false,
   "maxSpend": "10 USDC",
   "minSpend": "0.1 USDC",
@@ -212,7 +212,7 @@
  {
   "address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   "chainId": 84532,
-  "coingeckoId": "usdc",
+  "coingeckoId": "usd-coin",
   "isMock": false,
   "maxSpend": "10 USDC",
   "minSpend": "0.1 USDC",
@@ -332,7 +332,7 @@
  {
   "address": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
   "chainId": 1,
-  "coingeckoId": "lido-staked-ether",
+  "coingeckoId": "staked-ether",
   "isMock": false,
   "maxSpend": "6 stETH",
   "minSpend": "0.001 stETH",
@@ -342,7 +342,7 @@
  {
   "address": "0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034",
   "chainId": 17000,
-  "coingeckoId": "lido-staked-ether",
+  "coingeckoId": "staked-ether",
   "isMock": false,
   "maxSpend": "0.1 stETH",
   "minSpend": "0.001 stETH",
@@ -372,7 +372,7 @@
  {
   "address": "0xFaC41d3e0777E7F5611bcedDD827A05C0cea985f",
   "chainId": 1652,
-  "coingeckoId": "usdc",
+  "coingeckoId": "usd-coin",
   "isMock": true,
   "maxSpend": "10 USDC",
   "minSpend": "0.1 USDC",
@@ -392,7 +392,7 @@
  {
   "address": "0xFaC41d3e0777E7F5611bcedDD827A05C0cea985f",
   "chainId": 1654,
-  "coingeckoId": "usdc",
+  "coingeckoId": "usd-coin",
   "isMock": true,
   "maxSpend": "10 USDC",
   "minSpend": "0.1 USDC",
