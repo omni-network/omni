@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/cctp/types"
@@ -16,6 +17,7 @@ import (
 	"cosmossdk.io/orm/model/ormdb"
 	"cosmossdk.io/orm/types/ormerrors"
 	db "github.com/cosmos/cosmos-db"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // DB provides access to CCTP storage.
@@ -88,7 +90,10 @@ func (db *DB) InsertMsg(ctx context.Context, msg types.MsgSendUSDC) error {
 		return errors.Wrap(err, "validate msg")
 	}
 
-	if err := db.msgTable.Insert(ctx, msgToProto(msg)); err != nil {
+	proto := msgToProto(msg)
+	proto.CreatedAt = timestamppb.Now()
+
+	if err := db.msgTable.Insert(ctx, proto); err != nil {
 		return errors.Wrap(err, "insert msg")
 	}
 
@@ -104,11 +109,36 @@ func (db *DB) SetMsg(ctx context.Context, msg types.MsgSendUSDC) error {
 		return errors.Wrap(err, "validate msg")
 	}
 
-	if err := db.msgTable.Save(ctx, msgToProto(msg)); err != nil {
+	stored, ok, err := db.getMsgUnsafe(ctx, msg.TxHash)
+	if err != nil {
+		return errors.Wrap(err, "get msg")
+	} else if !ok {
+		return errors.New("msg not found")
+	}
+
+	update := msgToProto(msg)
+	update.CreatedAt = stored.GetCreatedAt() // keep original created at timestamp
+
+	if err := db.msgTable.Save(ctx, update); err != nil {
 		return errors.Wrap(err, "save msg")
 	}
 
 	return nil
+}
+
+// GetMsgCreatedAt retrieves the created at timestamp of a message by tx hash.
+func (db *DB) GetMsgCreatedAt(ctx context.Context, txHash common.Hash) (time.Time, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	msg, ok, err := db.getMsgUnsafe(ctx, txHash)
+	if err != nil {
+		return time.Time{}, errors.Wrap(err, "get msg")
+	} else if !ok {
+		return time.Time{}, errors.New("msg not found")
+	}
+
+	return msg.GetCreatedAt().AsTime(), nil
 }
 
 // GetMsg retrieves a message by tx hash.
@@ -116,11 +146,11 @@ func (db *DB) GetMsg(ctx context.Context, txHash common.Hash) (types.MsgSendUSDC
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	proto, err := db.msgTable.Get(ctx, txHash[:])
-	if ormerrors.IsNotFound(err) {
+	proto, ok, err := db.getMsgUnsafe(ctx, txHash)
+	if err != nil {
+		return types.MsgSendUSDC{}, false, err
+	} else if !ok {
 		return types.MsgSendUSDC{}, false, nil
-	} else if err != nil {
-		return types.MsgSendUSDC{}, false, errors.Wrap(err, "get msg")
 	}
 
 	msg, err := msgFromProto(proto)
@@ -129,6 +159,18 @@ func (db *DB) GetMsg(ctx context.Context, txHash common.Hash) (types.MsgSendUSDC
 	}
 
 	return msg, true, nil
+}
+
+// getMsgUnsafe retrieves a message by tx hash without locking the mutex.
+func (db *DB) getMsgUnsafe(ctx context.Context, txHash common.Hash) (*MsgSendUSDC, bool, error) {
+	proto, err := db.msgTable.Get(ctx, txHash[:])
+	if ormerrors.IsNotFound(err) {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, errors.Wrap(err, "get msg")
+	}
+
+	return proto, true, nil
 }
 
 // MsgFilter contains optional filters for GetMsgsBy.

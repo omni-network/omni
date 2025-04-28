@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/cctp/db"
 	"github.com/omni-network/omni/lib/cctp/testutil"
@@ -84,8 +85,17 @@ func TestMsgDB(t *testing.T) {
 		require.Contains(t, gotMsgs, msg)
 	}
 
+	// Asset all timestamps non-zero, save to check they remain unchanged
+	timestamps := make([]time.Time, numMsgs)
+	for i, msg := range msgs {
+		createdAt, err := db.GetMsgCreatedAt(ctx, msg.TxHash)
+		require.NoError(t, err)
+		require.NotZero(t, createdAt)
+		timestamps[i] = createdAt
+	}
+
 	// Test SetMsg
-	for _, msg := range msgs {
+	for i, msg := range msgs {
 		// Modify the message hash / bytes (simulates reorg)
 		updated := msg
 		updated.MessageBytes = testutil.RandBytes(200)
@@ -101,6 +111,11 @@ func TestMsgDB(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, updated, gotMsg)
 		require.NotEqual(t, msg, gotMsg)
+
+		// Asset timestamp remains unchanged
+		createdAt, err := db.GetMsgCreatedAt(ctx, msg.TxHash)
+		require.NoError(t, err)
+		require.Equal(t, timestamps[i], createdAt)
 	}
 
 	// Test DeleteMsg
