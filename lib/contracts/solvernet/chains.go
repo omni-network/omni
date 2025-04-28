@@ -20,27 +20,27 @@ import (
 var hlChains = map[netconf.ID][]uint64{
 	// Mainnet
 	netconf.Mainnet: {
-		56,    // BSC
-		137,   // Polygon
-		999,   // HyperEVM
-		5000,  // Mantle
-		80094, // Berachain
-		98866, // Plume
+		evmchain.IDBSC,
+		evmchain.IDPolygon,
+		evmchain.IDHyperEVM,
+		evmchain.IDMantle,
+		evmchain.IDBerachain,
+		evmchain.IDPlume,
 	},
 
 	// Testnet
 	netconf.Omega: {
-		97,       // BSC Testnet
-		998,      // HyperEVM Testnet
-		80002,    // Polygon Amoy
-		80084,    // Berachain bArtio
-		98867,    // Plume Testnet
-		11155111, // Ethereum Sepolia
+		evmchain.IDBSCTestnet,
+		evmchain.IDHyperEVMTestnet,
+		evmchain.IDPolygonAmoy,
+		evmchain.IDBerachainbArtio,
+		evmchain.IDPlumeTestnet,
+		evmchain.IDSepolia,
 	},
 
 	// Staging
 	netconf.Staging: {
-		11155111, // Ethereum Sepolia
+		evmchain.IDSepolia,
 	},
 }
 
