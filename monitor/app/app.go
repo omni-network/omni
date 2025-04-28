@@ -98,8 +98,7 @@ func Run(ctx context.Context, cfg Config) error {
 		log.Error(ctx, "Failed to start xfee manager [BUG]", err)
 	}
 
-	cctpDBDir := "" // use in-memory db TODO(kevin): use lvl db when schema stable
-	if err := cctpgen.Start(ctx, network, ethClients, cfg.PrivateKey, cctpDBDir); err != nil {
+	if err := cctpgen.Start(ctx, network, ethClients, cfg.PrivateKey, cfg.DBDir); err != nil {
 		log.Error(ctx, "Failed to start cctpgen [BUG]", err)
 	}
 
