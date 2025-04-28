@@ -97,7 +97,7 @@ func newDB(dbDir string) (*cctpdb.DB, error) {
 	}
 
 	var err error
-	lvlDB, err := cosmosdb.NewGoLevelDB("monitor.cctptest", dbDir, nil)
+	lvlDB, err := cosmosdb.NewGoLevelDB("cctpgen", dbDir, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "new golevel db")
 	}
