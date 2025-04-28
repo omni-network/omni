@@ -16,7 +16,7 @@ func TestDecimals(t *testing.T) {
 		if asset == tokens.USDC || asset == tokens.USDT {
 			require.Equal(t, uint(6), asset.Decimals)
 		} else {
-			require.Equal(t, uint(18), asset.Decimals)
+			require.Equal(t, uint(18), asset.Decimals, "unexpected decimals for %s", asset.Symbol)
 		}
 	}
 }

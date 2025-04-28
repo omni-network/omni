@@ -1,6 +1,11 @@
 package tokens_test
 
 import (
+	"encoding/json"
+	"flag"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 
 	e2e "github.com/omni-network/omni/e2e/solve"
@@ -12,9 +17,13 @@ import (
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/stretchr/testify/require"
 )
 
-//go:generate go test . -golden
+var integration = flag.Bool("integration", false, "run integration tests")
+
+//go:generate go test . -golden -integration
 
 // TestGenTokens generates tokens.json
 //
@@ -111,6 +120,23 @@ func TestGenTokens(t *testing.T) {
 	)
 
 	tutil.RequireGoldenJSON(t, tkns, tutil.WithFilename("../tokens.json"))
+}
+
+// TestAssetCGIDs tests that all assets have a valid CoingeckoIDs.
+func TestAssetCGIDs(t *testing.T) {
+	t.Parallel()
+	if !*integration {
+		t.Skip("integration test")
+	}
+
+	coins, err := listCGCoins()
+	require.NoError(t, err)
+
+	for _, asset := range tokens.UniqueAssets() {
+		symbol, ok := coins[asset.CoingeckoID]
+		require.True(t, ok, "missing asset %s", asset.CoingeckoID)
+		require.Equal(t, strings.ToLower(asset.Symbol), symbol, "asset %s has different symbol", asset.CoingeckoID)
+	}
 }
 
 func nativeETH(chainID uint64) tokens.Token {
@@ -239,4 +265,38 @@ func chainClass(chainID uint64) (tokens.ChainClass, error) {
 
 func addr(hex string) common.Address {
 	return common.HexToAddress(hex)
+}
+
+// listCGCount returns all supported coins from CoinGecko; map[CoinGeckoID]Symbol.
+func listCGCoins() (map[string]string, error) {
+	var bodyJSON []struct {
+		ID     string `json:"id"`
+		Symbol string `json:"symbol"`
+		Name   string `json:"name"`
+	}
+
+	resp, err := http.Get("https://api.coingecko.com/api/v3/coins/list")
+	if err != nil {
+		return nil, errors.Wrap(err, "get")
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "read")
+	}
+
+	if err := json.Unmarshal(body, &bodyJSON); err != nil {
+		return nil, errors.Wrap(err, "unmarshal")
+	}
+
+	coins := make(map[string]string)
+	for _, coin := range bodyJSON {
+		if coin.ID == "" {
+			continue
+		}
+		coins[coin.ID] = coin.Symbol
+	}
+
+	return coins, nil
 }
