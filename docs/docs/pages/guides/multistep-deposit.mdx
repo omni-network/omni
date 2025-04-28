@@ -25,7 +25,7 @@ We can bundle these destination chain actions into a single Omni SDK order.
 
 ## Key Considerations
 
-*   **SolverNet Executor:** The `calls` array you define in your order is executed sequentially by the `SolverNet Executor` contract on the destination chain. This Executor contract is the actual `msg.sender` for each call in the sequence. Therefore, any intermediate tokens generated (like `newUSD` in our example) are held by the Executor, and any necessary approvals must be performed by the Executor.
+*   **SolverNet Executor:** The `calls` array you define in your order is executed sequentially by the `SolverNetExecutor` contract on the destination chain. This Executor contract is the actual `msg.sender` for each call in the sequence. Therefore, any intermediate tokens generated (like `newUSD` in our example) are held by the Executor, and any necessary approvals must be performed by the Executor.
 
 *   **Token Approvals:** Since the Executor receives the intermediate `newUSD` token, *it* must call `approve` on the `newUSD` token contract, granting the Staking contract permission to spend *its* (`Executor`'s) tokens in the subsequent staking step.
 
