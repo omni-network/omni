@@ -12,7 +12,7 @@ import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { ISolverNetInbox } from "solve/src/interfaces/ISolverNetInbox.sol";
 
 import { GenesisStake } from "src/token/GenesisStake.sol";
-import { DebugMerkleDistributorWithDeadline } from "./DebugMerkleDistributorWithDeadline.sol";
+import { MerkleDistributorWithoutDeadline } from "src/token/MerkleDistributorWithoutDeadline.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract OmegaGenesisStakeScript is Script {
@@ -25,24 +25,27 @@ contract OmegaGenesisStakeScript is Script {
 
     address internal validator = 0xdBd26a685DB4475b6c58ADEC0DE06c6eE387EAa8;
 
-    GenesisStake internal genesisStake = GenesisStake(0x97AF0935B32933dd0194dFA5caAeAc082a79a2F1);
-    DebugMerkleDistributorWithDeadline internal merkleDistributor =
-        DebugMerkleDistributorWithDeadline(0xF2e42789BdA143e616c7d0f9BC1c182106AAABeA);
+    GenesisStake internal genesisStake;
+    MerkleDistributorWithoutDeadline internal merkleDistributor;
 
-    uint256 internal endTime = block.timestamp + 30 days;
-    uint256 internal depositAmount = 100 ether;
-    uint256 internal rewardAmount = 5 ether;
+    uint256 internal depositAmount = .2 ether;
+    uint256 internal rewardAmount = .1 ether;
     bytes32[] internal leaves = new bytes32[](64);
     bytes32[][] internal proofs = new bytes32[][](64);
     bytes32 internal root;
 
-    function deploy() public {
+    function run() public {
         vm.startBroadcast();
+
+        // debug logging
+        console2.log("Deployer address:", msg.sender);
+        console2.log("OMNI balance:", omni.balanceOf(msg.sender));
+        console2.log("OMNI token address:", address(omni));
 
         _prepMerkleTree();
         _deployContracts();
 
-        omni.transfer(address(merkleDistributor), 10_000 ether);
+        omni.transfer(address(merkleDistributor), 2 ether);
 
         vm.stopBroadcast();
     }
@@ -50,7 +53,7 @@ contract OmegaGenesisStakeScript is Script {
     /**
      * @dev This assumes the four relevant addresses above have been set and that a new GenesisStake contract should be
      * deployed. It also assumes that the broadcaster has 200 OMNI ERC20 tokens to spend on the network.
-     */
+    */
     function deployAndTest() public {
         vm.startBroadcast();
 
@@ -151,7 +154,7 @@ contract OmegaGenesisStakeScript is Script {
         leaves[60] = keccak256(abi.encodePacked(uint256(60), 0xA6C9c842dc0C9C16338444e8bB77b885986Ef38b, rewardAmount));
         leaves[61] = keccak256(abi.encodePacked(uint256(61), 0xc83629D6A24851b7B90A2fa7f63a762dFE1021BC, rewardAmount));
         leaves[62] = keccak256(abi.encodePacked(uint256(62), 0xF6CDB1E733EA00D0eEa1A32F218B0ec76ABF1517, rewardAmount));
-        leaves[63] = keccak256(abi.encodePacked(uint256(63), 0xBeD17aa3E1c99ea86e19e7B38356C54007BB6CDe, rewardAmount));
+        leaves[63] = keccak256(abi.encodePacked(uint256(63), 0xB11B58188102dB2f32286675E24191d22B772593, rewardAmount));
 
         // Generate the Merkle root
         root = m.getRoot(leaves);
@@ -179,23 +182,52 @@ contract OmegaGenesisStakeScript is Script {
             createX.computeCreate3Address(keccak256(abi.encodePacked(merkleDistributorSalt)));
 
         address genesisStakeImpl = address(new GenesisStake(address(omni), merkleDistributorAddr));
-        genesisStake = GenesisStake(
-            createX.deployCreate3(
-                genesisStakeSalt,
-                abi.encodePacked(
-                    type(TransparentUpgradeableProxy).creationCode,
-                    abi.encode(
-                        genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender, 30 days))
-                    )
+        
+        // Deploy proxy without initialization
+        address proxyAddress = createX.deployCreate3(
+            genesisStakeSalt,
+            abi.encodePacked(
+                type(TransparentUpgradeableProxy).creationCode,
+                abi.encode(
+                    genesisStakeImpl,
+                    msg.sender,  // admin
+                    new bytes(0) // empty initialization data
                 )
             )
         );
-        merkleDistributor = DebugMerkleDistributorWithDeadline(
+        
+        genesisStake = GenesisStake(proxyAddress);
+        
+        // Initialize separately after deployment
+        (bool success, bytes memory result) = proxyAddress.call(
+            abi.encodeCall(GenesisStake.initialize, (msg.sender))
+        );
+        require(success, "Initialization call failed");
+        
+        // Verify initialization immediately
+        address actualOwner = genesisStake.owner();
+        bool isActuallyOpen = genesisStake.isOpen();
+        
+        console2.log("Verification - Owner address:", actualOwner);
+        console2.log("Verification - Is open:", isActuallyOpen);
+        
+        require(actualOwner == msg.sender, "Initialization failed: owner not set correctly");
+        require(isActuallyOpen, "Initialization failed: not open");
+        
+        address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(address(omni), root));
+        merkleDistributor = MerkleDistributorWithoutDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
                 abi.encodePacked(
-                    type(DebugMerkleDistributorWithDeadline).creationCode,
-                    abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox))
+                    type(TransparentUpgradeableProxy).creationCode,
+                    abi.encode(
+                        merkleDistributorImpl,
+                        msg.sender,
+                        abi.encodeCall(
+                            MerkleDistributorWithoutDeadline.initialize,
+                            (msg.sender, address(portal), address(genesisStake), address(inbox))
+                        )
+                    )
                 )
             )
         );
@@ -208,13 +240,23 @@ contract OmegaGenesisStakeScript is Script {
         console2.logBytes(abi.encode(address(omni), merkleDistributorAddr));
         console2.log("GenesisStake proxy address:", address(genesisStake));
         console2.log("GenesisStake proxy constructor args:");
-        console2.logBytes(
-            abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender, 30 days)))
-        );
+        console2.logBytes(new bytes(0));
         console2.log("");
-        console2.log("MerkleDistributor address:", address(merkleDistributor));
-        console2.log("MerkleDistributor constructor args:");
-        console2.logBytes(abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox)));
+        console2.log("MerkleDistributor implementation:", address(merkleDistributorImpl));
+        console2.log("MerkleDistributor implementation constructor args:");
+        console2.logBytes(abi.encode(address(omni), root));
+        console2.log("MerkleDistributor proxy address:", address(merkleDistributor));
+        console2.log("MerkleDistributor proxy constructor args:");
+        console2.logBytes(
+            abi.encode(
+                merkleDistributorImpl,
+                msg.sender,
+                abi.encodeCall(
+                    MerkleDistributorWithoutDeadline.initialize,
+                    (msg.sender, address(portal), address(genesisStake), address(inbox))
+                )
+            )
+        );
     }
 
     function _approveStakeAndFund() internal {
