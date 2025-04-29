@@ -25,6 +25,11 @@ func Start(
 	solver common.Address,
 	dbDir string,
 ) error {
+	if network.ID != netconf.Mainnet {
+		// Rebalancing is only supported on mainnet.
+		return nil
+	}
+
 	ctx = log.WithCtx(ctx, "process", "rebalance")
 
 	network = newRebalanceNetwork(network)
@@ -64,7 +69,7 @@ func newRebalanceNetwork(network netconf.Network) netconf.Network {
 	out := netconf.Network{ID: network.ID}
 
 	for _, chain := range network.EVMChains() {
-		if !canRebalance(chain.ID) {
+		if !CanRebalance(chain.ID) {
 			continue
 		}
 
@@ -74,7 +79,7 @@ func newRebalanceNetwork(network netconf.Network) netconf.Network {
 	return out
 }
 
-// canRebalance returns true if the chain can be rebalanced.
-func canRebalance(chainID uint64) bool {
+// CanRebalance returns true if the chain can be rebalanced.
+func CanRebalance(chainID uint64) bool {
 	return cctp.IsSupportedChain(chainID)
 }
