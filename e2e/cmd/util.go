@@ -61,7 +61,7 @@ func getSolverNetwork(ctx context.Context, def app.Definition) (netconf.Network,
 		return netconf.Network{}, errors.Wrap(err, "network")
 	}
 
-	return solvernet.AddHLNetwork(network), nil
+	return solvernet.AddHLNetwork(ctx, network), nil
 }
 
 func getSolverEndpoints(networkID netconf.ID, def app.Definition) (xchain.RPCEndpoints, error) {
