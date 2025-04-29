@@ -347,11 +347,10 @@ func newDeploySolverNetCmd(def *app.Definition) *cobra.Command {
 				return errors.Wrap(err, "fire backends")
 			}
 
-			// Call new public DeployAllCreate3
-			/* err = app.DeployAllCreate3(ctx, network, backends)
+			err = app.DeployAllCreate3(ctx, network, backends)
 			if err != nil {
 				return errors.Wrap(err, "deploy create3")
-			} */
+			}
 
 			return solve.Deploy(cmd.Context(), network, backends)
 		},
