@@ -233,7 +233,7 @@ func PublicRPCByName(name string) string {
 	case chainBerachain.Name:
 		return "https://berachain-rpc.publicnode.com"
 	case chainPlume.Name:
-		return "https://rpc.plumenetwork.xyz"
+		return "https://rpc.plume.org"
 	// Testnet
 	case chainBSCTestnet.Name:
 		return "https://bsc-testnet-rpc.publicnode.com"
