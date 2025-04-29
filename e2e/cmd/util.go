@@ -5,12 +5,9 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
-	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
-	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -52,38 +49,4 @@ func makePortalRegistry(ctx context.Context, network netconf.ID, endpoints xchai
 	}
 
 	return resp, nil
-}
-
-// getSolverNetwork returns the solvernet network for the given definition, including HL chains.
-func getSolverNetwork(ctx context.Context, def app.Definition) (netconf.Network, error) {
-	network, err := networkFromDef(ctx, def)
-	if err != nil {
-		return netconf.Network{}, errors.Wrap(err, "network")
-	}
-
-	return solvernet.AddHLNetwork(ctx, network), nil
-}
-
-func getSolverEndpoints(networkID netconf.ID, def app.Definition) (xchain.RPCEndpoints, error) {
-	endpoints := app.ExternalEndpoints(def)
-
-	// extend endpoints w/ hl chains
-	for _, chain := range solvernet.HLChains(networkID) {
-		meta, ok := evmchain.MetadataByID(chain.ID)
-		if !ok {
-			return xchain.RPCEndpoints{}, errors.New("unknown chain", "chain_id", chain.ID)
-		}
-
-		rpc, ok := def.Cfg.RPCOverrides[meta.Name]
-		if !ok {
-			rpc = types.PublicRPCByName(meta.Name)
-			if rpc == "" {
-				return xchain.RPCEndpoints{}, errors.New("missing rpc override", "chain", meta.Name)
-			}
-		}
-
-		endpoints[meta.Name] = rpc
-	}
-
-	return endpoints, nil
 }

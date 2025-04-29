@@ -14,7 +14,6 @@ import (
 	"github.com/omni-network/omni/e2e/xbridge"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -327,24 +326,9 @@ func newDeploySolverNetCmd(def *app.Definition) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
-			network, err := getSolverNetwork(ctx, *def)
+			network, backends, err := app.GetSolverNetworkAndBackends(ctx, *def, cmd.Name())
 			if err != nil {
-				return errors.Wrap(err, "get network")
-			}
-
-			endpoints, err := getSolverEndpoints(network.ID, *def)
-			if err != nil {
-				return errors.Wrap(err, "get endpoints")
-			}
-
-			fireCl, err := app.NewFireblocksClient(def.Cfg, network.ID, cmd.Name())
-			if err != nil {
-				return errors.Wrap(err, "fireblocks client")
-			}
-
-			backends, err := ethbackend.FireBackendsFromNetwork(ctx, network, endpoints, fireCl)
-			if err != nil {
-				return errors.Wrap(err, "fire backends")
+				return errors.Wrap(err, "get solver network and backends")
 			}
 
 			err = app.DeployAllCreate3(ctx, network, backends)

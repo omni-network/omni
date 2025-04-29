@@ -24,19 +24,22 @@ const saneMaxOmni = 60420 // Maximum amount of OMNI to fund (in ether OMNI).
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
 func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool) error {
-	network := def.Testnet.Network
+	network, backends, err := GetSolverNetworkAndBackends(ctx, def, "fund")
+	if err != nil {
+		return errors.Wrap(err, "get solver network and backends")
+	}
 
 	var funderRole eoa.Role
 	var accounts []eoa.Account
 	if hotOnly {
-		funder, ok := eoa.AccountForRole(network, eoa.RoleHot)
+		funder, ok := eoa.AccountForRole(network.ID, eoa.RoleHot)
 		if !ok {
 			return errors.New("hot wallet not found")
 		}
 		accounts = []eoa.Account{funder}
 		funderRole = eoa.RoleCold
 	} else {
-		for _, account := range eoa.AllAccounts(network) {
+		for _, account := range eoa.AllAccounts(network.ID) {
 			if account.Role == eoa.RoleCold || account.Role == eoa.RoleHot {
 				continue // Don't fund cold or hot
 			}
@@ -46,18 +49,23 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 	}
 	log.Info(ctx, "Checking accounts to fund", "network", network, "count", len(accounts))
 
-	for _, chain := range def.Testnet.EVMChains() {
-		if evmchain.IsDisabled(chain.ChainID) {
+	for _, chain := range network.EVMChains() {
+		if evmchain.IsDisabled(chain.ID) {
 			log.Warn(ctx, "Ignoring disabled chain", nil, "chain", chain.Name)
 			continue
 		}
 
-		backend, err := def.Backends().Backend(chain.ChainID)
+		backend, err := backends.Backend(chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "backend")
 		}
 
-		funderAddr := eoa.MustAddress(network, funderRole)
+		metadata, ok := evmchain.MetadataByID(chain.ID)
+		if !ok {
+			return errors.New("unknown chain", "chain", chain.Name)
+		}
+
+		funderAddr := eoa.MustAddress(network.ID, funderRole)
 		funderBal, err := backend.BalanceAt(ctx, funderAddr, nil)
 		if err != nil {
 			return err
@@ -83,7 +91,7 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 				continue
 			}
 
-			thresholds, ok := eoa.GetFundThresholds(chain.NativeToken, network, account.Role)
+			thresholds, ok := eoa.GetFundThresholds(metadata.NativeToken, network.ID, account.Role)
 			if !ok {
 				log.Warn(accCtx, "Skipping account without fund thresholds", nil)
 				continue
@@ -94,7 +102,7 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 				account:       account.Address,
 				minBalance:    thresholds.MinBalance(),
 				targetBalance: thresholds.TargetBalance(),
-				saneMax:       saneMax(chain.NativeToken),
+				saneMax:       saneMax(metadata.NativeToken),
 				dryRun:        dryRun,
 				funder:        funderAddr,
 			}); err != nil {
@@ -106,8 +114,8 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 			continue // Skip contract / sponsor funding if hotOnly.
 		}
 
-		for _, sponsor := range eoa.AllSponsors(network) {
-			if sponsor.ChainID != chain.ChainID {
+		for _, sponsor := range eoa.AllSponsors(network.ID) {
+			if sponsor.ChainID != chain.ID {
 				continue
 			}
 
@@ -122,7 +130,7 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 				account:       sponsor.Address,
 				minBalance:    sponsor.FundThresholds.MinBalance(),
 				targetBalance: sponsor.FundThresholds.TargetBalance(),
-				saneMax:       saneMax(chain.NativeToken),
+				saneMax:       saneMax(metadata.NativeToken),
 				dryRun:        dryRun,
 				funder:        funderAddr,
 			}); err != nil {
@@ -130,7 +138,7 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 			}
 		}
 
-		toFund, err := contracts.ToFund(ctx, network)
+		toFund, err := contracts.ToFund(ctx, network.ID)
 		if err != nil {
 			return errors.Wrap(err, "get contracts to fund")
 		}
@@ -144,8 +152,8 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 				"address", contract.Address,
 			)
 
-			if !contract.IsDeployedOn(chain.ChainID, def.Testnet.Network) {
-				log.Info(ctrCtx, "Skipping chain without deplyment", "chain", chain.ChainID, "contract", contract.Name)
+			if !contract.IsDeployedOn(chain.ID, network.ID) {
+				log.Info(ctrCtx, "Skipping chain without deplyment", "chain", chain.ID, "contract", contract.Name)
 				continue
 			}
 
@@ -154,7 +162,7 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 				account:       contract.Address,
 				minBalance:    contract.FundThresholds.MinBalance(),
 				targetBalance: contract.FundThresholds.TargetBalance(),
-				saneMax:       saneMax(chain.NativeToken),
+				saneMax:       saneMax(metadata.NativeToken),
 				dryRun:        dryRun,
 				funder:        funderAddr,
 			}); err != nil {
