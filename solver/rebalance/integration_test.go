@@ -83,14 +83,22 @@ func TestIntegration(t *testing.T) {
 	l1USDC := mustToken(t, evmchain.IDEthereum, tokens.USDC)
 	l1WSTETH := mustToken(t, evmchain.IDEthereum, tokens.WSTETH)
 	baseWSTETH := mustToken(t, evmchain.IDBase, tokens.WSTETH)
+	baseUSDC := mustToken(t, evmchain.IDBase, tokens.USDC)
 
-	// Fund L1 USDC above suprluse threshold, so we have some to swap
+	// Fund L1 USDC above suprluse threshold, so we have some to swap after briding from base
 	err = anvil.FundUSDC(ctx, clients[evmchain.IDEthereum], l1USDC.Address, rebalance.GetFundThreshold(l1USDC).Surplus(), solver)
 	tutil.RequireNoError(t, err)
 
-	// Fund 10 wstETH on base (all surplus)
+	// Fund 10 base wstETH above surplus
 	surplusBaseWSETH := bi.Ether(10)
-	err = anvil.FundERC20(ctx, clients[evmchain.IDBase], baseWSTETH.Address, surplusBaseWSETH, solver, anvil.WithSlotIdx(1))
+	err = anvil.FundERC20(ctx, clients[evmchain.IDBase], baseWSTETH.Address,
+		bi.Add(rebalance.GetFundThreshold(baseWSTETH).Surplus(), surplusBaseWSETH), // fund above surplus
+		solver,
+		anvil.WithSlotIdx(1)) // wstETH balance map at slot 1
+	tutil.RequireNoError(t, err)
+
+	// Fund base USDC at surplus threshold, so we can send some after swapping wstETH
+	err = anvil.FundUSDC(ctx, clients[evmchain.IDBase], baseUSDC.Address, rebalance.GetFundThreshold(baseUSDC).Surplus(), solver)
 	tutil.RequireNoError(t, err)
 
 	// Start rebalancing
