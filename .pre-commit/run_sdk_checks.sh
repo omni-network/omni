@@ -24,4 +24,4 @@ pnpm install
 # clean + build
 pnpm build
 
-pnpm pnpm check
+pnpm run check
