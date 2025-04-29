@@ -41,9 +41,6 @@ importers:
       elliptic-curve-solidity:
         specifier: github:witnet/elliptic-curve-solidity
         version: https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0
-      ethers:
-        specifier: ^6.13.7
-        version: 6.13.7(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       murky:
         specifier: github:dmfxyz/murky
         version: https://codeload.github.com/dmfxyz/murky/tar.gz/6f67641219549ca78f575a12493e25fe193da727

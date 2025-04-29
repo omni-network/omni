@@ -10,7 +10,7 @@ import { MockPortal } from "test/utils/MockPortal.sol";
 import { MockSolverNetInbox } from "solve/test/utils/MockSolverNetInbox.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import { GenesisStakeV2 } from "src/token/GenesisStakeV2.sol";
+import { GenesisStake } from "src/token/GenesisStake.sol";
 import { MerkleDistributor } from "src/token/MerkleDistributor.sol";
 import { MerkleDistributorWithoutDeadline } from "src/token/MerkleDistributorWithoutDeadline.sol";
 
@@ -26,7 +26,7 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
     MockPortal omniPortal;
     MockSolverNetInbox inbox;
 
-    GenesisStakeV2 genesisStake;
+    GenesisStake genesisStake;
     MerkleDistributorWithoutDeadline merkleDistributor;
 
     address admin = makeAddr("admin");
@@ -99,14 +99,14 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
         address merkleDistributorAddr = create3.getDeployed(address(this), keccak256("merkleDistributor"));
 
         // Deploy contracts
-        address genesisStakeImpl = address(new GenesisStakeV2(address(omni), merkleDistributorAddr));
-        genesisStake = GenesisStakeV2(
+        address genesisStakeImpl = address(new GenesisStake(address(omni), merkleDistributorAddr));
+        genesisStake = GenesisStake(
             create3.deploy(
                 keccak256("genesisStake"),
                 abi.encodePacked(
                     type(TransparentUpgradeableProxy).creationCode,
                     abi.encode(
-                        genesisStakeImpl, proxyAdmin, abi.encodeCall(GenesisStakeV2.initialize, (address(this)))
+                        genesisStakeImpl, proxyAdmin, abi.encodeCall(GenesisStake.initialize, (address(this)))
                     )
                 )
             )
@@ -132,7 +132,7 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
         );
 
         // Verify precomputed addresses
-        require(address(genesisStake) == genesisStakeAddr, "GenesisStakeV2 address mismatch");
+        require(address(genesisStake) == genesisStakeAddr, "GenesisStake address mismatch");
         require(address(merkleDistributor) == merkleDistributorAddr, "MerkleDistributorWithoutDeadline address mismatch");
     }
 

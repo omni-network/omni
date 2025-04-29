@@ -18,9 +18,7 @@ contract GenesisStakeUpgradeTest is Test {
     address internal admin;
     address internal owner;
     address internal token;
-    uint256 internal unbondingPeriod;
     uint256 internal userBalance;
-    uint256 internal userUnstakedAt;
     bool internal isOpen;
 
     address internal rewardsDistributor = makeAddr("rewardsDistributor");
@@ -31,7 +29,7 @@ contract GenesisStakeUpgradeTest is Test {
         require(mode == VmSafe.CallerMode.None, "no broadcast");
 
         _setup();
-        _openStakeUnstakeClose();
+        _openStakeClose();
         _cacheState();
         _upgrade();
         _checkState();
@@ -45,12 +43,10 @@ contract GenesisStakeUpgradeTest is Test {
         owner = genesisStake.owner();
 
         token = address(genesisStake.token());
-        unbondingPeriod = genesisStake.unbondingPeriod();
     }
 
-    // Open staking, user stake, warp past timelock, user unstake, and then close staking
-    // This eliminates the need to retrieve a valid staker address
-    function _openStakeUnstakeClose() internal {
+    // Open staking, user stake, and then close staking
+    function _openStakeClose() internal {
         vm.startPrank(owner);
         if (!genesisStake.isOpen()) genesisStake.open();
         vm.stopPrank();
@@ -59,8 +55,6 @@ contract GenesisStakeUpgradeTest is Test {
         vm.startPrank(user);
         token.safeApprove(address(genesisStake), type(uint256).max);
         genesisStake.stake(1000 ether);
-        vm.warp(block.timestamp + unbondingPeriod + 1);
-        genesisStake.unstake();
         vm.stopPrank();
 
         vm.prank(owner);
@@ -70,7 +64,6 @@ contract GenesisStakeUpgradeTest is Test {
     // Cache values relevant for testing post-upgrade
     function _cacheState() internal {
         userBalance = genesisStake.balanceOf(user);
-        userUnstakedAt = genesisStake.unstakedAt(user);
         isOpen = genesisStake.isOpen();
     }
 
@@ -86,9 +79,7 @@ contract GenesisStakeUpgradeTest is Test {
     function _checkState() internal view {
         assertEq(address(genesisStake.token()), token, "token mismatch");
         assertEq(genesisStake.rewardsDistributor(), rewardsDistributor, "rewardsDistributor mismatch");
-        assertEq(genesisStake.unbondingPeriod(), unbondingPeriod, "unbondingPeriod mismatch");
         assertEq(genesisStake.balanceOf(user), userBalance, "balanceOf(user) mismatch");
-        assertEq(genesisStake.unstakedAt(user), userUnstakedAt, "unstakedAt(user) mismatch");
         assertEq(genesisStake.isOpen(), isOpen, "isOpen mismatch");
     }
 

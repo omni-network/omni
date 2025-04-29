@@ -29,7 +29,6 @@
     "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",
     "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware",
     "elliptic-curve-solidity": "github:witnet/elliptic-curve-solidity",
-    "ethers": "^6.13.7",
     "murky": "github:dmfxyz/murky",
     "solady": "^0.1.14",
     "solmate": "^6.8.0"
