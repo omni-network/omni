@@ -20,7 +20,7 @@ import (
 )
 
 const saneMaxETH = 121    // Maximum amount of ETH to fund (in ether).
-const saneMaxOmni = 60230 // Maximum amount of OMNI to fund (in ether OMNI).
+const saneMaxOmni = 60420 // Maximum amount of OMNI to fund (in ether OMNI).
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
 func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool) error {

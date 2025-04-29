@@ -58,7 +58,7 @@ var (
 		RoleRelayer:         thresholdMedium, // Relayer needs sufficient balance to operator for 2 weeks
 		RoleMonitor:         thresholdMedium, // Dynamic Fee updates every few hours.
 		RoleCreate3Deployer: thresholdTiny,   // Only 1 contract per chain
-		RoleManager:         thresholdTiny,   // Rarely used
+		RoleManager:         thresholdSmall,  // Rarely used
 		RoleUpgrader:        thresholdTiny,   // Rarely used
 		RoleDeployer:        thresholdTiny,   // Protected chains are only deployed once
 		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc, on non-mainnet.

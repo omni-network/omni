@@ -2,8 +2,8 @@
  "mainnet": {
   "ETH": {
    "cold": {
-    "min": "4.067999999 ETH",
-    "target": "16.48 ETH"
+    "min": "4.106 ETH",
+    "target": "16.86 ETH"
    },
    "create3-deployer": {
     "min": "0.001 ETH",
@@ -18,12 +18,12 @@
     "target": "1 ETH"
    },
    "hot": {
-    "min": "4.067999999 ETH",
-    "target": "16.48 ETH"
+    "min": "4.106 ETH",
+    "target": "16.86 ETH"
    },
    "manager": {
-    "min": "0.001 ETH",
-    "target": "0.01 ETH"
+    "min": "0.02 ETH",
+    "target": "0.2 ETH"
    },
    "monitor": {
     "min": "0.5 ETH",
@@ -52,8 +52,8 @@
   },
   "OMNI": {
    "cold": {
-    "min": "2033.9999995 OMNI",
-    "target": "8240 OMNI"
+    "min": "2053 OMNI",
+    "target": "8430 OMNI"
    },
    "create3-deployer": {
     "min": "0.5 OMNI",
@@ -68,12 +68,12 @@
     "target": "500 OMNI"
    },
    "hot": {
-    "min": "2033.999999999 OMNI",
-    "target": "8240 OMNI"
+    "min": "2053 OMNI",
+    "target": "8430 OMNI"
    },
    "manager": {
-    "min": "0.5 OMNI",
-    "target": "5 OMNI"
+    "min": "10 OMNI",
+    "target": "100 OMNI"
    },
    "monitor": {
     "min": "250 OMNI",
@@ -104,8 +104,8 @@
  "omega": {
   "ETH": {
    "cold": {
-    "min": "24.068 ETH",
-    "target": "116.48 ETH"
+    "min": "24.106 ETH",
+    "target": "116.86 ETH"
    },
    "create3-deployer": {
     "min": "0.001 ETH",
@@ -120,12 +120,12 @@
     "target": "1 ETH"
    },
    "hot": {
-    "min": "24.068 ETH",
-    "target": "116.48 ETH"
+    "min": "24.106 ETH",
+    "target": "116.86 ETH"
    },
    "manager": {
-    "min": "0.001 ETH",
-    "target": "0.01 ETH"
+    "min": "0.02 ETH",
+    "target": "0.2 ETH"
    },
    "monitor": {
     "min": "0.5 ETH",
@@ -154,8 +154,8 @@
   },
   "OMNI": {
    "cold": {
-    "min": "12034 OMNI",
-    "target": "58240 OMNI"
+    "min": "12053 OMNI",
+    "target": "58430 OMNI"
    },
    "create3-deployer": {
     "min": "0.5 OMNI",
@@ -170,12 +170,12 @@
     "target": "500 OMNI"
    },
    "hot": {
-    "min": "12034 OMNI",
-    "target": "58240 OMNI"
+    "min": "12053 OMNI",
+    "target": "58430 OMNI"
    },
    "manager": {
-    "min": "0.5 OMNI",
-    "target": "5 OMNI"
+    "min": "10 OMNI",
+    "target": "100 OMNI"
    },
    "monitor": {
     "min": "250 OMNI",
@@ -206,8 +206,8 @@
  "staging": {
   "ETH": {
    "cold": {
-    "min": "25.066 ETH",
-    "target": "120.46 ETH"
+    "min": "25.104 ETH",
+    "target": "120.84 ETH"
    },
    "create3-deployer": {
     "min": "0.001 ETH",
@@ -222,12 +222,12 @@
     "target": "1 ETH"
    },
    "hot": {
-    "min": "25.066 ETH",
-    "target": "120.46 ETH"
+    "min": "25.104 ETH",
+    "target": "120.84 ETH"
    },
    "manager": {
-    "min": "0.001 ETH",
-    "target": "0.01 ETH"
+    "min": "0.02 ETH",
+    "target": "0.2 ETH"
    },
    "monitor": {
     "min": "0.5 ETH",
@@ -256,8 +256,8 @@
   },
   "OMNI": {
    "cold": {
-    "min": "12533 OMNI",
-    "target": "60230 OMNI"
+    "min": "12552 OMNI",
+    "target": "60420 OMNI"
    },
    "create3-deployer": {
     "min": "0.5 OMNI",
@@ -272,12 +272,12 @@
     "target": "500 OMNI"
    },
    "hot": {
-    "min": "12533 OMNI",
-    "target": "60230 OMNI"
+    "min": "12552 OMNI",
+    "target": "60420 OMNI"
    },
    "manager": {
-    "min": "0.5 OMNI",
-    "target": "5 OMNI"
+    "min": "10 OMNI",
+    "target": "100 OMNI"
    },
    "monitor": {
     "min": "250 OMNI",
