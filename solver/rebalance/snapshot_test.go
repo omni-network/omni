@@ -28,8 +28,8 @@ type tokenAmt struct {
 	amt   *big.Int
 }
 
-// Usage: go test . -simulate -v -run=TestSimulate.
-func TestSimulate(t *testing.T) {
+// Usage: go test . -snapshot -v -run=TestSnapshot.
+func TestSnapshot(t *testing.T) {
 	t.Parallel()
 
 	if !*simulate {
