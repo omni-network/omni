@@ -33,7 +33,6 @@ var hlChains = map[netconf.ID][]uint64{
 		evmchain.IDBSCTestnet,
 		evmchain.IDHyperEVMTestnet,
 		evmchain.IDPolygonAmoy,
-		evmchain.IDBerachainbArtio,
 		evmchain.IDPlumeTestnet,
 		evmchain.IDSepolia,
 	},

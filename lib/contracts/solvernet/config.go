@@ -32,7 +32,6 @@ var (
 		998:      common.HexToAddress("0x589C201a07c26b4725A4A829d772f24423da480B"), // HyperEVM Testnet
 		17000:    common.HexToAddress("0x46f7C5D896bbeC89bE1B19e4485e59b4Be49e9Cc"), // Ethereum Holesky
 		80002:    common.HexToAddress("0x54148470292C24345fb828B003461a9444414517"), // Polygon Amoy
-		80084:    common.HexToAddress("0xDDcFEcF17586D08A5740B7D91735fcCE3dfe3eeD"), // Berachain bArtio
 		84532:    common.HexToAddress("0x6966b0E55883d49BFB24539356a2f8A673E02039"), // Base Sepolia
 		98867:    common.HexToAddress("0xDDcFEcF17586D08A5740B7D91735fcCE3dfe3eeD"), // Plume Testnet
 		421614:   common.HexToAddress("0x598facE78a4302f11E3de0bee1894Da0b2Cb71F8"), // Arbitrum Sepolia
@@ -61,7 +60,6 @@ var (
 		998:      Hyperlane, // HyperEVM Testnet
 		17000:    OmniCore,  // Ethereum Holesky
 		80002:    Hyperlane, // Polygon Amoy
-		80084:    Hyperlane, // Berachain bArtio
 		84532:    OmniCore,  // Base Sepolia
 		98867:    Hyperlane, // Plume Testnet
 		421614:   OmniCore,  // Arbitrum Sepolia

@@ -34,7 +34,6 @@ const (
 	IDHyperEVMTestnet uint64 = 998
 	IDHolesky         uint64 = 17000
 	IDPolygonAmoy     uint64 = 80002
-	IDBerachainbArtio uint64 = 80084
 	IDBaseSepolia     uint64 = 84532
 	IDPlumeTestnet    uint64 = 98867
 	IDArbSepolia      uint64 = 421614
@@ -207,14 +206,6 @@ var static = map[uint64]Metadata{
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.POL,
 		Reorgs:      true,
-	},
-	IDBerachainbArtio: {
-		ChainID:     IDBerachainbArtio,
-		Name:        "berachain_bartio",
-		PrettyName:  "Berachain bArtio",
-		BlockPeriod: 2 * time.Second,
-		NativeToken: tokens.BERA,
-		// (zodomo): Cannot find any information about Berachain reorgs
 	},
 	IDBaseSepolia: {
 		ChainID:     IDBaseSepolia,

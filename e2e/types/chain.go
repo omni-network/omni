@@ -99,12 +99,6 @@ var (
 		Shards:   []xchain.ShardID{},
 	}
 
-	chainBerachainbArtio = EVMChain{
-		Metadata: mustMetadata(evmchain.IDBerachainbArtio),
-		IsPublic: true,
-		Shards:   []xchain.ShardID{},
-	}
-
 	chainBaseSepolia = EVMChain{
 		Metadata: mustMetadata(evmchain.IDBaseSepolia),
 		IsPublic: true,
@@ -201,8 +195,6 @@ func PublicChainByName(name string) (EVMChain, error) {
 		return chainHolesky, nil
 	case chainPolygonAmoy.Name:
 		return chainPolygonAmoy, nil
-	case chainBerachainbArtio.Name:
-		return chainBerachainbArtio, nil
 	case chainBaseSepolia.Name:
 		return chainBaseSepolia, nil
 	case chainPlumeTestnet.Name:
@@ -251,8 +243,6 @@ func PublicRPCByName(name string) string {
 		return "https://ethereum-holesky-rpc.publicnode.com"
 	case chainPolygonAmoy.Name:
 		return "https://polygon-amoy-bor-rpc.publicnode.com"
-	case chainBerachainbArtio.Name:
-		return "https://berachain-bepolia-rpc.publicnode.com"
 	case chainBaseSepolia.Name:
 		return "https://sepolia.base.org"
 	case chainPlumeTestnet.Name:
