@@ -5,6 +5,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@omni-network/core": "workspace:*",
     "@omni-network/react": "workspace:*",
     "@tanstack/react-query": "^5.69.0",
     "react": "^19.0.0",

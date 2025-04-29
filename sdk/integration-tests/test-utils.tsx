@@ -1,4 +1,14 @@
 import {
+  type DidFillParams,
+  type GetOrderParameters,
+  didFillOutbox,
+  getOrder,
+  openOrder,
+  parseInboxStatus,
+  parseOpenEvent,
+  validateOrder,
+} from '@omni-network/core'
+import {
   OmniProvider,
   type Order,
   useOrder,
@@ -6,6 +16,7 @@ import {
 } from '@omni-network/react'
 import {
   createClient,
+  inbox,
   mockChains,
   mockL1Chain,
   mockL1Client,
@@ -25,7 +36,15 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { createRef } from 'react'
-import { type Abi, pad, parseEther, zeroAddress } from 'viem'
+import {
+  type Abi,
+  type Address,
+  type Client,
+  pad,
+  parseEther,
+  zeroAddress,
+} from 'viem'
+import { waitForTransactionReceipt } from 'viem/actions'
 import { expect } from 'vitest'
 import {
   type Config,
@@ -35,6 +54,110 @@ import {
   mock,
   useConnect,
 } from 'wagmi'
+
+export const devnetApiUrl = 'http://localhost:26661/api/v1'
+
+const txHashRegexp = /^0x[0-9a-f]{64}$/
+
+type WaitForInboxOrderFilledParams = GetOrderParameters & {
+  pollingInterval?: number
+  timeout?: number
+}
+
+function waitForInboxOrderFilled(
+  params: WaitForInboxOrderFilledParams,
+): Promise<void> {
+  const { pollingInterval, timeout, ...getOrderParams } = params
+  return new Promise<void>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      clearInterval(pollId)
+      reject(new Error('Timeout waiting for order to be filled on inbox'))
+    }, timeout ?? 60_000)
+    const pollId = setInterval(async () => {
+      const order = await getOrder(getOrderParams)
+      const status = parseInboxStatus({ order })
+      if (status === 'filled') {
+        clearInterval(pollId)
+        clearTimeout(timeoutId)
+        resolve()
+      }
+    }, pollingInterval ?? getOrderParams.client.pollingInterval)
+  })
+}
+
+type WaitForOutboxOrderFilledParams = DidFillParams & {
+  pollingInterval?: number
+  timeout?: number
+}
+
+function waitForOutboxOrderFilled(
+  params: WaitForOutboxOrderFilledParams,
+): Promise<void> {
+  const { pollingInterval, timeout, ...didFillParams } = params
+  return new Promise<void>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      clearInterval(pollId)
+      reject(new Error('Timeout waiting for order to be filled on outbox'))
+    }, timeout ?? 60_000)
+    const pollId = setInterval(async () => {
+      const isFilled = await didFillOutbox(didFillParams)
+      if (isFilled) {
+        clearInterval(pollId)
+        clearTimeout(timeoutId)
+        resolve()
+      }
+    }, pollingInterval ?? didFillParams.client.pollingInterval)
+  })
+}
+
+type ExecuteTestOrderUsingCoreParams = { order: AnyOrder } & (
+  | { rejectReason: string }
+  | { outboxClient: Client; rejectReason?: never }
+)
+
+export async function executeTestOrderUsingCore(
+  params: ExecuteTestOrderUsingCoreParams,
+) {
+  const { order, rejectReason } = params
+  if (rejectReason != null) {
+    await expect(validateOrder(devnetApiUrl, order)).resolves.toMatchObject({
+      rejected: true,
+      rejectReason,
+    })
+    return
+  }
+
+  await expect(validateOrder(devnetApiUrl, order)).resolves.toMatchObject({
+    accepted: true,
+  })
+
+  const txHash = await openOrder({
+    client: mockL1Client,
+    inboxAddress: inbox,
+    order,
+  })
+  expect(txHash).toMatch(txHashRegexp)
+
+  const receipt = await waitForTransactionReceipt(mockL1Client, {
+    hash: txHash,
+  })
+  const resolvedOrder = parseOpenEvent(receipt.logs)
+
+  await Promise.all([
+    waitForInboxOrderFilled({
+      client: mockL1Client,
+      inboxAddress: inbox,
+      orderId: resolvedOrder.orderId,
+      pollingInterval: 100,
+    }),
+    waitForOutboxOrderFilled({
+      client: params.outboxClient,
+      outboxAddress: outbox,
+      resolvedOrder,
+      pollingInterval: 100,
+    }),
+  ])
+}
 
 const mockConnector = mock({ accounts: [testAccount.address] as const })
 
@@ -153,7 +276,7 @@ export function useOrderRef(
   return orderRef
 }
 
-export async function executeTestOrder(
+export async function executeTestOrderUsingReact(
   order: AnyOrder,
   rejectReason?: string,
 ): Promise<void> {

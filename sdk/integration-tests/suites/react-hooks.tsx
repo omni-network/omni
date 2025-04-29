@@ -21,7 +21,7 @@ import {
   ContextProvider,
   assertResolvedOrder,
   createRenderHook,
-  executeTestOrder,
+  executeTestOrderUsingReact,
   testConnector,
   useOrderRef,
 } from '../test-utils.js'
@@ -47,7 +47,7 @@ async function execOrder() {
   return orderRef
 }
 
-describe('useQuote()', () => {
+describe.concurrent('useQuote()', () => {
   test('parameters: gets a quote in expense mode', async () => {
     const { result } = renderHook(
       () => {
@@ -169,7 +169,7 @@ describe('useQuote()', () => {
   })
 })
 
-describe('useValidateOrder()', () => {
+describe.concurrent('useValidateOrder()', () => {
   test('default: returns the "accepted" status if the validation is successful', async () => {
     const amount = parseEther('1') / 2n
     const order: AnyOrder = {
@@ -214,19 +214,7 @@ describe('useValidateOrder()', () => {
   })
 })
 
-describe('useOrder()', () => {
-  test('default: succeeds with valid order', async () => {
-    const amount = parseEther('1') / 2n
-    const order: AnyOrder = {
-      srcChainId: mockL1Id,
-      destChainId: mockL2Id,
-      expense: { token: zeroAddress, amount },
-      deposit: { token: zeroAddress, amount: parseEther('1') },
-      calls: [{ target: testAccount.address, value: amount }],
-    }
-    await executeTestOrder(order)
-  })
-
+describe.concurrent('useOrder()', () => {
   test('behaviour: rejects when using invalid source chain', async () => {
     const order: AnyOrder = {
       srcChainId: invalidChainId,
@@ -235,7 +223,7 @@ describe('useOrder()', () => {
       deposit: { token: zeroAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
-    await executeTestOrder(order, 'UnsupportedSrcChain')
+    await executeTestOrderUsingReact(order, 'UnsupportedSrcChain')
   })
 
   test('behaviour: rejects when using invalid destination chain', async () => {
@@ -246,7 +234,7 @@ describe('useOrder()', () => {
       deposit: { token: zeroAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
-    await executeTestOrder(order, 'UnsupportedDestChain')
+    await executeTestOrderUsingReact(order, 'UnsupportedDestChain')
   })
 
   test('behaviour: rejects when source and destination chains are the same', async () => {
@@ -257,7 +245,7 @@ describe('useOrder()', () => {
       deposit: { token: zeroAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
-    await executeTestOrder(order, 'SameChain')
+    await executeTestOrderUsingReact(order, 'SameChain')
   })
 
   test('behaviour: rejects when using an unsupported expense token', async () => {
@@ -268,11 +256,11 @@ describe('useOrder()', () => {
       deposit: { token: tokenAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
-    await executeTestOrder(order, 'UnsupportedExpense')
+    await executeTestOrderUsingReact(order, 'UnsupportedExpense')
   })
 })
 
-describe('useParseOpenEvent()', () => {
+describe.concurrent('useParseOpenEvent()', () => {
   test('default: returns order details from the open event logs', async () => {
     const renderHook = createRenderHook()
 
@@ -304,7 +292,7 @@ describe('useParseOpenEvent()', () => {
   })
 })
 
-describe('useGetOrder()', () => {
+describe.concurrent('useGetOrder()', () => {
   test('default: returns expected order data from the getOrder inbox contract method', async () => {
     const renderHook = createRenderHook()
 
@@ -395,7 +383,7 @@ describe('useGetOrder()', () => {
   })
 })
 
-describe('useOmniContracts()', () => {
+describe.concurrent('useOmniContracts()', () => {
   test('default: returns the expected contract addresses', async () => {
     const renderHook = createRenderHook()
 

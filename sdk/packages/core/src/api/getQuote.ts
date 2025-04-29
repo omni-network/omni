@@ -22,13 +22,21 @@ export async function getQuote(
   apiBaseUrl: string,
   quote: GetQuoteParams,
 ): Promise<Quote> {
+  const {
+    srcChainId,
+    destChainId,
+    deposit: depositInput,
+    expense: expenseInput,
+    mode,
+  } = quote
   const json = await fetchJSON(`${apiBaseUrl}/quote`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: toJSON({
-      ...quote,
-      deposit: toQuoteUnit(quote.deposit, quote.mode === 'deposit'),
-      expense: toQuoteUnit(quote.expense, quote.mode === 'expense'),
+      sourceChainId: srcChainId,
+      destChainId: destChainId,
+      deposit: toQuoteUnit(depositInput, mode === 'deposit'),
+      expense: toQuoteUnit(expenseInput, mode === 'expense'),
     }),
   })
 
