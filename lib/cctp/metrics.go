@@ -44,8 +44,8 @@ var (
 	}, []string{"chain", "recipient"})
 
 	oldestMsg = promutil.NewResetGaugeVec(prometheus.GaugeOpts{
-		Namespace: "solver",
-		Subsystem: "processor",
+		Namespace: "lib",
+		Subsystem: "cctp",
 		Name:      "oldest_msg",
 		Help:      "Oldest msg by status (submitted | minted)",
 	}, []string{"status"})
