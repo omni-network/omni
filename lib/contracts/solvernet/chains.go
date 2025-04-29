@@ -34,7 +34,7 @@ var hlChains = map[netconf.ID][]uint64{
 		// evmchain.IDHyperEVMTestnet,
 		// evmchain.IDPolygonAmoy,
 		// evmchain.IDPlumeTestnet,
-		evmchain.IDSepolia,
+		// evmchain.IDSepolia,
 	},
 
 	// Staging

@@ -97,11 +97,6 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "deploy create3")
 	}
 
-	// Replaces above
-	/* if err = DeployAllCreate3(ctx, networkFromDef(def), def.Backends()); err != nil {
-		return nil, errors.Wrap(err, "deploy create3")
-	} */
-
 	// Deploy portals (allowing networkFromDef to succeed)
 	if err := def.Netman().DeployPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, errors.Wrap(err, "deploy portals")
