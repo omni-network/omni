@@ -107,7 +107,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
                 abi.encodePacked(
                     type(TransparentUpgradeableProxy).creationCode,
                     abi.encode(
-                        genesisStakeImpl, proxyAdmin, abi.encodeCall(GenesisStake.initialize, (address(this)))
+                        genesisStakeImpl, proxyAdmin, abi.encodeCall(GenesisStake.initialize, (address(this), 30 days))
                     )
                 )
             )
