@@ -117,7 +117,7 @@ contract OmegaGenesisStakeQAScript is Script {
                 abi.encodePacked(
                     type(TransparentUpgradeableProxy).creationCode,
                     abi.encode(
-                        genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender, 30 days))
+                        genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender))
                     )
                 )
             )
@@ -141,7 +141,7 @@ contract OmegaGenesisStakeQAScript is Script {
         console2.log("GenesisStake proxy address:", address(genesisStake));
         console2.log("GenesisStake proxy constructor args:");
         console2.logBytes(
-            abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender, 30 days)))
+            abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender)))
         );
         console2.log("");
         console2.log("MerkleDistributor address:", address(merkleDistributor));
