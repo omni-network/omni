@@ -66,8 +66,12 @@ func (t FundThreshold) balance(f float64) *big.Int {
 func GetFundThreshold(token tokens.Token) FundThreshold {
 	t, ok := thresholds[token]
 	if !ok {
-		// Return zero thresholds for token.
-		return FundThreshold{token: token}
+		// If threshold not explicitly set, return 0 target w/ inf surplus.
+		// So that the token is never considered in deficit / surplus.
+		return FundThreshold{
+			token:   token,
+			surplus: inf,
+		}
 	}
 
 	return FundThreshold{
@@ -93,6 +97,11 @@ var (
 		},
 		mustToken(evmchain.IDBase, tokens.WSTETH): {
 			minSwap: 1,
+		},
+		mustToken(evmchain.IDBase, tokens.USDC): {
+			min:     20_000,
+			target:  50_000,
+			surplus: 50_000,
 		},
 	}
 )
