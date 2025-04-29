@@ -31,12 +31,12 @@ func Start(
 	privKeyPath string,
 	dbDir string,
 ) error {
-	if network.ID != netconf.Omega && network.ID != netconf.Staging {
-		// Only run for omega and staging
+	if network.ID == netconf.Devnet {
+		// Devnet is not supported.
 		return nil
 	}
 
-	log.Info(ctx, "Starting CCTP test process")
+	log.Info(ctx, "Starting cctpgen")
 
 	network = trimNetwork(network)
 
@@ -49,8 +49,6 @@ func Start(
 	recipient := sender
 	minter := sender
 
-	cctpClient := cctp.NewClient(cctp.TestnetAPI)
-
 	backends, err := ethbackend.BackendsFromClients(clients, privKey)
 	if err != nil {
 		return errors.Wrap(err, "create backends")
@@ -61,7 +59,7 @@ func Start(
 		return errors.Wrap(err, "create db")
 	}
 
-	err = cctp.MintAuditForever(ctx, db, cctpClient, network, backends, recipient, minter)
+	err = cctp.MintAuditForever(ctx, db, newCCTPClient(network.ID), network, backends, recipient, minter)
 	if err != nil {
 		return errors.Wrap(err, "mint audit forever")
 	}
@@ -69,6 +67,15 @@ func Start(
 	go doSendsForever(ctx, db, network.ID, backends, sender)
 
 	return nil
+}
+
+func newCCTPClient(networkID netconf.ID) cctp.Client {
+	api := cctp.TestnetAPI
+	if networkID == netconf.Mainnet {
+		api = cctp.MainnetAPI
+	}
+
+	return cctp.NewClient(api)
 }
 
 // newDB returns a new CCTP DB instance based on the given directory.
@@ -118,19 +125,11 @@ func doSendsOnce(
 	backends ethbackend.Backends,
 	bridger common.Address,
 ) error {
-	sends := []struct {
-		srcChain  uint64
-		destChain uint64
-		amount    *big.Int
-	}{
-		{evmchain.IDArbSepolia, evmchain.IDBaseSepolia, bi.Dec6(1)}, // Arbitrum Sepolia -> Base Sepolia
-		{evmchain.IDBaseSepolia, evmchain.IDOpSepolia, bi.Dec6(1)},  // Base Sepolia -> Optimism Sepolia
-		{evmchain.IDOpSepolia, evmchain.IDArbSepolia, bi.Dec6(1)},   // Optimism Sepolia -> Arbitrum Sepolia
-	}
+	sends := getSends(networkID)
 
 	// make sure we have enough balance for all sends
 	for _, send := range sends {
-		backend, err := backends.Backend(send.srcChain)
+		backend, err := backends.Backend(send.SrcChain)
 		if err != nil {
 			return errors.Wrap(err, "backend")
 		}
@@ -140,14 +139,14 @@ func doSendsOnce(
 			return errors.Wrap(err, "balance of")
 		}
 
-		if bi.LT(balance, send.amount) {
+		if bi.LT(balance, send.Amount) {
 			return errors.New("insufficient balance")
 		}
 	}
 
 	// do sends
 	for _, send := range sends {
-		backend, err := backends.Backend(send.srcChain)
+		backend, err := backends.Backend(send.SrcChain)
 		if err != nil {
 			return errors.Wrap(err, "get backend")
 		}
@@ -155,9 +154,9 @@ func doSendsOnce(
 		_, err = cctp.SendUSDC(ctx, db, networkID, backend, cctp.SendUSDCArgs{
 			Sender:      bridger,
 			Recipient:   bridger,
-			SrcChainID:  send.srcChain,
-			DestChainID: send.destChain,
-			Amount:      send.amount,
+			SrcChainID:  send.SrcChain,
+			DestChainID: send.DestChain,
+			Amount:      send.Amount,
 		})
 		if err != nil {
 			return errors.Wrap(err, "send usdc")
@@ -165,6 +164,32 @@ func doSendsOnce(
 	}
 
 	return nil
+}
+
+// Send represents a single send operation.
+type Send struct {
+	SrcChain  uint64
+	DestChain uint64
+	Amount    *big.Int
+}
+
+// getSends returns list of sends based on the network ID.
+func getSends(networkID netconf.ID) []Send {
+	if networkID == netconf.Mainnet {
+		return []Send{
+			{evmchain.IDArbitrumOne, evmchain.IDBase, bi.Dec6(1)},     // Arbitrum One -> Base
+			{evmchain.IDBase, evmchain.IDEthereum, bi.Dec6(1)},        // Base -> Ethereum
+			{evmchain.IDEthereum, evmchain.IDOptimism, bi.Dec6(1)},    // Ethereum -> Optimism
+			{evmchain.IDOptimism, evmchain.IDArbitrumOne, bi.Dec6(1)}, // Optimism -> Arbitrum One
+		}
+	}
+
+	// omega / staging
+	return []Send{
+		{evmchain.IDArbSepolia, evmchain.IDBaseSepolia, bi.Dec6(1)}, // Arbitrum Sepolia -> Base Sepolia
+		{evmchain.IDBaseSepolia, evmchain.IDOpSepolia, bi.Dec6(1)},  // Base Sepolia -> Optimism Sepolia
+		{evmchain.IDOpSepolia, evmchain.IDArbSepolia, bi.Dec6(1)},   // Optimism Sepolia -> Arbitrum Sepolia
+	}
 }
 
 // trimNetwork to only include chains with CCTP support.
