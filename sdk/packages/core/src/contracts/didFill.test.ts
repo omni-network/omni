@@ -7,7 +7,7 @@ import type { Client } from 'viem'
 import { readContract } from 'viem/actions'
 import { expect, test, vi } from 'vitest'
 import { outboxABI } from '../constants/abis.js'
-import { didFillOutbox } from './didFillOutbox.js'
+import { didFill } from './didFill.js'
 
 vi.mock('viem/actions', () => {
   return {
@@ -20,7 +20,7 @@ test('default: returns true when outbox read is truthy', async () => {
   const outboxAddress = '0xaddress'
 
   await expect(
-    didFillOutbox({ client, outboxAddress, resolvedOrder: testResolvedOrder }),
+    didFill({ client, outboxAddress, resolvedOrder: testResolvedOrder }),
   ).resolves.toBe(true)
 
   expect(readContract).toHaveBeenCalledWith(client, {

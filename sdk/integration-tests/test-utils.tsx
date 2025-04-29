@@ -1,7 +1,7 @@
 import {
   type DidFillParams,
   type GetOrderParameters,
-  didFillOutbox,
+  didFill,
   getOrder,
   openOrder,
   parseInboxStatus,
@@ -100,7 +100,7 @@ function waitForOutboxOrderFilled(
       reject(new Error('Timeout waiting for order to be filled on outbox'))
     }, timeout ?? 60_000)
     const pollId = setInterval(async () => {
-      const isFilled = await didFillOutbox(didFillParams)
+      const isFilled = await didFill(didFillParams)
       if (isFilled) {
         clearInterval(pollId)
         clearTimeout(timeoutId)
