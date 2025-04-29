@@ -38,6 +38,8 @@ func Start(
 
 	log.Info(ctx, "Starting CCTP test process")
 
+	network = trimNetwork(network)
+
 	privKey, err := crypto.LoadECDSA(privKeyPath)
 	if err != nil {
 		return errors.Wrap(err, "load private key")
@@ -163,4 +165,17 @@ func doSendsOnce(
 	}
 
 	return nil
+}
+
+// trimNetwork to only include chains with CCTP support.
+func trimNetwork(network netconf.Network) netconf.Network {
+	trimmed := netconf.Network{ID: network.ID}
+
+	for _, chain := range network.Chains {
+		if cctp.IsSupportedChain(chain.ID) {
+			trimmed.Chains = append(trimmed.Chains, chain)
+		}
+	}
+
+	return trimmed
 }
