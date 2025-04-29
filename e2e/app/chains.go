@@ -18,6 +18,7 @@ func GetSolverNetwork(ctx context.Context, def Definition) (netconf.Network, err
 	return solvernet.AddHLNetwork(ctx, network), nil
 }
 
+// getSolverEndpoints returns the RPC endpoints for the given solvernet network, including HL chains.
 func GetSolverEndpoints(networkID netconf.ID, def Definition) (xchain.RPCEndpoints, error) {
 	endpoints := ExternalEndpoints(def)
 
@@ -42,6 +43,7 @@ func GetSolverEndpoints(networkID netconf.ID, def Definition) (xchain.RPCEndpoin
 	return endpoints, nil
 }
 
+// GetSolverNetworkAndBackends returns the solvernet network and backends for the given definition.
 func GetSolverNetworkAndBackends(ctx context.Context, def Definition, cmdName string) (netconf.Network, ethbackend.Backends, error) {
 	network, err := GetSolverNetwork(ctx, def)
 	if err != nil {
