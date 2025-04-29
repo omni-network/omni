@@ -11,7 +11,7 @@ import { MerkleProofLib } from "solady/src/utils/MerkleProofLib.sol";
 import { LibBitmap } from "solady/src/utils/LibBitmap.sol";
 import { IStaking } from "../interfaces/IStaking.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
-import { IGenesisStake } from "../interfaces/IGenesisStake.sol";
+import { IGenesisStakeV2 } from "../interfaces/IGenesisStakeV2.sol";
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { SolverNet } from "solve/src/lib/SolverNet.sol";
 
@@ -32,7 +32,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
     address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
 
     IOmniPortal public omniPortal;
-    IGenesisStake public genesisStaking;
+    IGenesisStakeV2 public genesisStaking;
     IOriginSettler public solvernetInbox;
 
     mapping(address account => uint256) public nonces;
@@ -45,7 +45,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
      * @notice Initialize the contract
      * @param admin_            The admin of the contract
      * @param omniPortal_      The OmniPortal contract
-     * @param genesisStaking_  The GenesisStake contract
+     * @param genesisStaking_  The GenesisStakeV2 contract
      * @param solverNetInbox_  The SolverNet inbox contract
      */
     function initialize(
@@ -61,7 +61,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
         token.safeApprove(solverNetInbox_, type(uint256).max);
 
         omniPortal = IOmniPortal(omniPortal_);
-        genesisStaking = IGenesisStake(genesisStaking_);
+        genesisStaking = IGenesisStakeV2(genesisStaking_);
         solvernetInbox = IOriginSettler(solverNetInbox_);
     }
 
@@ -163,7 +163,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
         if (validator == address(0)) revert ZeroAddress();
 
         // Migrate user's stake, if any
-        uint256 stake = IGenesisStake(genesisStaking).migrateStake(account);
+        uint256 stake = IGenesisStakeV2(genesisStaking).migrateStake(account);
 
         // If proofs are provided, check if the user is eligible for rewards and add them to their stake
         if (merkleProof.length > 0) {
