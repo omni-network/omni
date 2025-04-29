@@ -42,16 +42,10 @@ function getNextAccount(): PrivateKeyAccount {
 }
 
 describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
-  const account = getNextAccount()
-  const srcClient = createClient({ account, chain: mockL1Chain })
-  const destClient = createClient({ chain: omniDevnetChain })
-  const connector = createTestConnector(account)
-
-  beforeAll(async () => {
-    await mintOMNI(srcClient)
-  })
-
-  describe.concurrent('default: succeeds with valid expense', async () => {
+  describe.sequential('default: succeeds with valid expense', async () => {
+    const account = getNextAccount()
+    const srcClient = createClient({ account, chain: mockL1Chain })
+    const destClient = createClient({ chain: omniDevnetChain })
     const amount = parseEther('10')
     const order: AnyOrder = {
       owner: account.address,
@@ -62,16 +56,26 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
       deposit: { token: tokenAddress, amount },
     }
 
+    beforeAll(async () => {
+      await mintOMNI(srcClient)
+    })
+
     test('using core APIs', async () => {
       await executeTestOrderUsingCore({ order, srcClient, destClient })
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact({ order, connector })
+      await executeTestOrderUsingReact({
+        order,
+        connector: createTestConnector(account),
+      })
     })
   })
 
-  describe.concurrent('default: succeeds with native deposit', () => {
+  describe.sequential('default: succeeds with native deposit', () => {
+    const account = getNextAccount()
+    const srcClient = createClient({ account, chain: mockL1Chain })
+    const destClient = createClient({ chain: omniDevnetChain })
     const amount = parseEther('10')
     const order: AnyOrder = {
       owner: account.address,
@@ -82,12 +86,19 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
       deposit: { token: zeroAddress, amount },
     }
 
+    beforeAll(async () => {
+      await mintOMNI(srcClient)
+    })
+
     test('using core APIs', async () => {
       await executeTestOrderUsingCore({ order, srcClient, destClient })
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact({ order, connector })
+      await executeTestOrderUsingReact({
+        order,
+        connector: createTestConnector(account),
+      })
     })
   })
 

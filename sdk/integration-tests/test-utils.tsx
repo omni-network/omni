@@ -44,7 +44,7 @@ import {
   parseEther,
   zeroAddress,
 } from 'viem'
-import { waitForTransactionReceipt } from 'viem/actions'
+import { waitForTransactionReceipt, watchBlocks } from 'viem/actions'
 import { expect } from 'vitest'
 import {
   type Config,
@@ -70,18 +70,21 @@ function waitForInboxOrderFilled(
   const { pollingInterval, timeout, ...getOrderParams } = params
   return new Promise<void>((resolve, reject) => {
     const timeoutId = setTimeout(() => {
-      clearInterval(pollId)
+      stopWatching()
       reject(new Error('Timeout waiting for order to be filled on inbox'))
     }, timeout ?? 60_000)
-    const pollId = setInterval(async () => {
-      const order = await getOrder(getOrderParams)
-      const status = parseInboxStatus({ order })
-      if (status === 'filled') {
-        clearInterval(pollId)
-        clearTimeout(timeoutId)
-        resolve()
-      }
-    }, pollingInterval ?? getOrderParams.client.pollingInterval)
+    const stopWatching = watchBlocks(params.client, {
+      onBlock: async () => {
+        const order = await getOrder(getOrderParams)
+        const status = parseInboxStatus({ order })
+        if (status === 'filled') {
+          stopWatching
+          clearTimeout(timeoutId)
+          resolve()
+        }
+      },
+      pollingInterval,
+    })
   })
 }
 
@@ -96,17 +99,20 @@ function waitForOutboxOrderFilled(
   const { pollingInterval, timeout, ...didFillParams } = params
   return new Promise<void>((resolve, reject) => {
     const timeoutId = setTimeout(() => {
-      clearInterval(pollId)
+      stopWatching()
       reject(new Error('Timeout waiting for order to be filled on outbox'))
     }, timeout ?? 60_000)
-    const pollId = setInterval(async () => {
-      const isFilled = await didFill(didFillParams)
-      if (isFilled) {
-        clearInterval(pollId)
-        clearTimeout(timeoutId)
-        resolve()
-      }
-    }, pollingInterval ?? didFillParams.client.pollingInterval)
+    const stopWatching = watchBlocks(params.client, {
+      onBlock: async () => {
+        const isFilled = await didFill(didFillParams)
+        if (isFilled) {
+          stopWatching()
+          clearTimeout(timeoutId)
+          resolve()
+        }
+      },
+      pollingInterval,
+    })
   })
 }
 
@@ -142,6 +148,7 @@ export async function executeTestOrderUsingCore(
 
   const receipt = await waitForTransactionReceipt(params.srcClient, {
     hash: txHash,
+    pollingInterval: 100,
   })
   const resolvedOrder = parseOpenEvent(receipt.logs)
 
