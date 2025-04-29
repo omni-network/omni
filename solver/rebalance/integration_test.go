@@ -57,7 +57,7 @@ func TestIntegration(t *testing.T) {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	rpcs := getForkRPCs(t)
+	rpcs := getRPCs(t)
 	chains := getChains(t)
 	network := makeNetwork(t, chains)
 
@@ -141,8 +141,8 @@ func fundETH(t *testing.T, ctx context.Context, clients map[uint64]ethclient.Cli
 	}
 }
 
-// getForkRPCs returns mainnet rpcs urls from env vars.
-func getForkRPCs(t *testing.T) map[uint64]string {
+// getRPCs returns mainnet rpcs urls from env vars.
+func getRPCs(t *testing.T) map[uint64]string {
 	t.Helper()
 
 	notEmpty := func(env string) string {
@@ -153,8 +153,10 @@ func getForkRPCs(t *testing.T) map[uint64]string {
 	}
 
 	return map[uint64]string{
-		evmchain.IDEthereum: notEmpty("ETH_RPC"),
-		evmchain.IDBase:     notEmpty("BASE_RPC"),
+		evmchain.IDEthereum:    notEmpty("ETH_RPC"),
+		evmchain.IDBase:        notEmpty("BASE_RPC"),
+		evmchain.IDArbitrumOne: notEmpty("ARB_RPC"),
+		evmchain.IDOptimism:    notEmpty("OP_RPC"),
 	}
 }
 

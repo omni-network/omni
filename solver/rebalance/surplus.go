@@ -13,8 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// getSurplus returns surplus balance of `token` for `solver`.
-func getSurplus(
+// GetSurplus returns surplus balance of `token` for `solver`.
+func GetSurplus(
 	ctx context.Context,
 	client ethclient.Client,
 	token tokens.Token,

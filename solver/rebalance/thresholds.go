@@ -70,7 +70,13 @@ func GetFundThreshold(token tokens.Token) FundThreshold {
 		return FundThreshold{token: token}
 	}
 
-	return t
+	return FundThreshold{
+		token:   token,
+		min:     t.min,
+		target:  t.target,
+		surplus: t.surplus,
+		minSwap: t.minSwap,
+	}
 }
 
 var (
