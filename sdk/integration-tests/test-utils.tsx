@@ -1,7 +1,7 @@
 import {
   type DidFillParams,
   type GetOrderParameters,
-  didFillOutbox,
+  didFill,
   getOrder,
   openOrder,
   parseInboxStatus,
@@ -104,7 +104,7 @@ function waitForOutboxOrderFilled(
     }, timeout ?? 60_000)
     const stopWatching = watchBlocks(params.client, {
       onBlock: async () => {
-        const isFilled = await didFillOutbox(didFillParams)
+        const isFilled = await didFill(didFillParams)
         if (isFilled) {
           stopWatching()
           clearTimeout(timeoutId)

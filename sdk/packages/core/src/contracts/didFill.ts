@@ -11,7 +11,7 @@ export type DidFillParams = {
 
 export type DidFillReturn = boolean
 
-export async function didFillOutbox({
+export async function didFill({
   client,
   outboxAddress,
   resolvedOrder,

@@ -13,8 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// getDeficit returns deficit balance of `token` for `solver`.
-func getDeficit(
+// GetDeficit returns deficit balance of `token` for `solver`.
+func GetDeficit(
 	ctx context.Context,
 	client ethclient.Client,
 	token tokens.Token,

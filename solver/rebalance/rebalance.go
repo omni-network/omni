@@ -157,7 +157,7 @@ func sendSurplusOnce(
 		return errors.New("token not found")
 	}
 
-	surplus, err := getSurplus(ctx, backend, usdc, solver)
+	surplus, err := GetSurplus(ctx, backend, usdc, solver)
 	if err != nil {
 		return errors.Wrap(err, "get surplus")
 	}
@@ -208,7 +208,7 @@ func swapSurplusOnce(
 		return errors.New("token not found")
 	}
 
-	surplus, err := getSurplus(ctx, backend, wsteth, solver)
+	surplus, err := GetSurplus(ctx, backend, wsteth, solver)
 	if err != nil {
 		return errors.Wrap(err, "get surplus")
 	}
@@ -263,7 +263,7 @@ func fillDeficitOnce(
 		return errors.Wrap(err, "get backend")
 	}
 
-	surplusUSDC, err := getSurplus(ctx, backend, usdc, solver)
+	surplusUSDC, err := GetSurplus(ctx, backend, usdc, solver)
 	if err != nil {
 		return errors.Wrap(err, "get surplus")
 	}
@@ -274,7 +274,7 @@ func fillDeficitOnce(
 		return nil
 	}
 
-	deficit, err := getDeficit(ctx, backend, wsteth, solver)
+	deficit, err := GetDeficit(ctx, backend, wsteth, solver)
 	if err != nil {
 		return errors.Wrap(err, "get deficit")
 	}

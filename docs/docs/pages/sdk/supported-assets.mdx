@@ -9,7 +9,7 @@ import Testnet from './assets/testnet.mdx'
 
 # Supported Assets
 
-Currently, SolverNet primarily supports **like-asset** operations, meaning you deposit an asset on the source chain to cover the expense of the *same type* of asset on the destination chain. This is true for any asset that is pegged 1:1, such as USDC on Base to USDC on Arbitrum; but it also works for ETH to stETH in the same way, since they're directly pegged. Swaps between different assets are not yet enabled via the SDK.
+SolverNet supports both **like-asset** operations (depositing an asset on the source chain and receiving the same asset type on the destination chain) and **swaps** between different supported assets. They are treated the same way - just input different token addresses. For details on executing swaps, see the [Swaps page](/sdk/swaps.mdx).
 
 ## Asset List
 

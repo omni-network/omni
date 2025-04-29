@@ -6,11 +6,11 @@ import {
 } from '../../test/index.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 
-const { useGetOrder, useInboxStatus, useDidFillOutbox } = vi.hoisted(() => {
+const { useGetOrder, useInboxStatus, useDidFill } = vi.hoisted(() => {
   return {
     useGetOrder: vi.fn(),
     useInboxStatus: vi.fn(),
-    useDidFillOutbox: vi.fn(),
+    useDidFill: vi.fn(),
   }
 })
 
@@ -26,16 +26,16 @@ vi.mock('./useInboxStatus.js', async () => {
   }
 })
 
-vi.mock('./useDidFillOutbox.js', async () => {
+vi.mock('./useDidFill.js', async () => {
   return {
-    useDidFillOutbox: useDidFillOutbox,
+    useDidFill: useDidFill,
   }
 })
 
 beforeEach(() => {
   useGetOrder.mockReturnValue(createMockQueryResult())
   useInboxStatus.mockRestore()
-  useDidFillOutbox.mockImplementation(() => ({
+  useDidFill.mockImplementation(() => ({
     data: false,
     error: null,
   }))
@@ -63,13 +63,13 @@ test('default: if inbox status is open, returned status is open', async () => {
 
   // once on mount only
   expect(useInboxStatus).toHaveBeenCalledOnce()
-  expect(useDidFillOutbox).toHaveBeenCalledOnce()
+  expect(useDidFill).toHaveBeenCalledOnce()
   expect(result.current.status).toBe('open')
   expect(result.current.error).toBeUndefined()
 })
 
-test('behaviour: error defined if didFillOutbox error', async () => {
-  useDidFillOutbox.mockReturnValue(
+test('behaviour: error defined if didFill error', async () => {
+  useDidFill.mockReturnValue(
     createMockQueryResult({
       error: new Error('test error'),
     }),
@@ -94,8 +94,8 @@ test('behaviour: error defined if getOrder error', async () => {
   expect(result.current.error).toBeDefined()
 })
 
-test('behaviour: status filled if didFillOutbox is true', async () => {
-  useDidFillOutbox.mockReturnValue({ data: true })
+test('behaviour: status filled if didFill is true', async () => {
+  useDidFill.mockReturnValue({ data: true })
 
   const { result } = renderGetOrderStatusHook()
 

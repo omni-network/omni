@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
@@ -64,7 +65,9 @@ func Start(
 		return errors.Wrap(err, "mint audit forever")
 	}
 
-	go doSendsForever(ctx, db, network.ID, backends, sender)
+	for _, send := range getSends(network.ID) {
+		go sendForever(ctx, db, network.ID, send, backends, sender)
+	}
 
 	return nil
 }
@@ -94,83 +97,11 @@ func newDB(dbDir string) (*cctpdb.DB, error) {
 	return cctpdb.New(lvlDB)
 }
 
-// doSendsForever continuously bridges USDC between chains.
-func doSendsForever(ctx context.Context, db *cctpdb.DB, networkID netconf.ID, backends ethbackend.Backends, bridger common.Address) {
-	interval := 30 * time.Minute
-	retryInterval := 1 * time.Minute
-
-	timer := time.NewTimer(0)
-	defer timer.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-timer.C:
-			timer.Reset(interval)
-
-			err := doSendsOnce(ctx, db, networkID, backends, bridger)
-			if err != nil {
-				log.Warn(ctx, "CCTP sends failed (will retry)", err)
-				timer.Reset(retryInterval)
-			}
-		}
-	}
-}
-
-func doSendsOnce(
-	ctx context.Context,
-	db *cctpdb.DB,
-	networkID netconf.ID,
-	backends ethbackend.Backends,
-	bridger common.Address,
-) error {
-	sends := getSends(networkID)
-
-	// make sure we have enough balance for all sends
-	for _, send := range sends {
-		backend, err := backends.Backend(send.SrcChain)
-		if err != nil {
-			return errors.Wrap(err, "backend")
-		}
-
-		balance, err := tokenutil.BalanceOfAsset(ctx, backend, tokens.USDC, bridger)
-		if err != nil {
-			return errors.Wrap(err, "balance of")
-		}
-
-		if bi.LT(balance, send.Amount) {
-			return errors.New("insufficient balance")
-		}
-	}
-
-	// do sends
-	for _, send := range sends {
-		backend, err := backends.Backend(send.SrcChain)
-		if err != nil {
-			return errors.Wrap(err, "get backend")
-		}
-
-		_, err = cctp.SendUSDC(ctx, db, networkID, backend, cctp.SendUSDCArgs{
-			Sender:      bridger,
-			Recipient:   bridger,
-			SrcChainID:  send.SrcChain,
-			DestChainID: send.DestChain,
-			Amount:      send.Amount,
-		})
-		if err != nil {
-			return errors.Wrap(err, "send usdc")
-		}
-	}
-
-	return nil
-}
-
 // Send represents a single send operation.
 type Send struct {
-	SrcChain  uint64
-	DestChain uint64
-	Amount    *big.Int
+	SrcChainID  uint64
+	DestChainID uint64
+	Amount      *big.Int
 }
 
 // getSends returns list of sends based on the network ID.
@@ -190,6 +121,71 @@ func getSends(networkID netconf.ID) []Send {
 		{evmchain.IDBaseSepolia, evmchain.IDOpSepolia, bi.Dec6(1)},  // Base Sepolia -> Optimism Sepolia
 		{evmchain.IDOpSepolia, evmchain.IDArbSepolia, bi.Dec6(1)},   // Optimism Sepolia -> Arbitrum Sepolia
 	}
+}
+
+// sendForever continuously sends USDC from one chain to another.
+func sendForever(ctx context.Context, db *cctpdb.DB, networkID netconf.ID, send Send, backends ethbackend.Backends, bridger common.Address) {
+	interval := 30 * time.Minute
+
+	timer := time.NewTimer(0)
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-timer.C:
+			timer.Reset(interval)
+
+			do := func() error {
+				return maybeSendOnce(ctx, db, networkID, send, backends, bridger)
+			}
+
+			// retry each send (max 3 times) with exponential backoff
+			// monitor private key is used elsewhere, and we often see nonce issues
+			err := expbackoff.Retry(ctx, do)
+			if err != nil {
+				log.Warn(ctx, "CCTP sends failed (will retry)", err)
+			}
+		}
+	}
+}
+
+func maybeSendOnce(
+	ctx context.Context,
+	db *cctpdb.DB,
+	networkID netconf.ID,
+	send Send,
+	backends ethbackend.Backends,
+	bridger common.Address,
+) error {
+	backend, err := backends.Backend(send.SrcChainID)
+	if err != nil {
+		return errors.Wrap(err, "backend")
+	}
+
+	balance, err := tokenutil.BalanceOfAsset(ctx, backend, tokens.USDC, bridger)
+	if err != nil {
+		return errors.Wrap(err, "balance of")
+	}
+
+	// if we don't have enough balance, just wait (no retry)
+	if bi.LT(balance, send.Amount) {
+		return nil
+	}
+
+	_, err = cctp.SendUSDC(ctx, db, networkID, backend, cctp.SendUSDCArgs{
+		Sender:      bridger,
+		Recipient:   bridger,
+		SrcChainID:  send.SrcChainID,
+		DestChainID: send.DestChainID,
+		Amount:      send.Amount,
+	})
+	if err != nil {
+		return errors.Wrap(err, "send usdc")
+	}
+
+	return nil
 }
 
 // trimNetwork to only include chains with CCTP support.

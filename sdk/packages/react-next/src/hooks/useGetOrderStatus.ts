@@ -5,7 +5,7 @@ import {
   type OrderStatus,
 } from '@omni-network/core'
 import type { Hex } from 'viem'
-import { useDidFillOutbox } from './useDidFillOutbox.js'
+import { useDidFill } from './useDidFill.js'
 import { useGetOrder } from './useGetOrder.js'
 import { useInboxStatus } from './useInboxStatus.js'
 import type { useParseOpenEvent } from './useParseOpenEvent.js'
@@ -35,13 +35,13 @@ export function useGetOrderStatus({
     chainId: srcChainId,
   })
 
-  const didFillOutbox = useDidFillOutbox({
+  const didFill = useDidFill({
     destChainId,
     resolvedOrder: resolved,
   })
 
-  const status = deriveStatus(inboxStatus, didFillOutbox)
-  const error = deriveError(getOrder, didFillOutbox)
+  const status = deriveStatus(inboxStatus, didFill)
+  const error = deriveError(getOrder, didFill)
 
   return {
     status,
@@ -51,19 +51,19 @@ export function useGetOrderStatus({
 
 function deriveError(
   getOrder: ReturnType<typeof useGetOrder>,
-  didFillOutbox: ReturnType<typeof useDidFillOutbox>,
+  didFill: ReturnType<typeof useDidFill>,
 ) {
   if (getOrder.error) return new GetOrderError(getOrder.error.message)
-  if (didFillOutbox.error) return new DidFillError(didFillOutbox.error.message)
+  if (didFill.error) return new DidFillError(didFill.error.message)
   return
 }
 
 function deriveStatus(
   inboxStatus: InboxStatus,
-  didFillOutbox: ReturnType<typeof useDidFillOutbox>,
+  didFill: ReturnType<typeof useDidFill>,
 ): OrderStatus {
-  if (didFillOutbox.error) return 'error'
-  if (didFillOutbox?.data === true) return 'filled'
+  if (didFill.error) return 'error'
+  if (didFill?.data === true) return 'filled'
   if (inboxStatus === 'filled') return 'filled'
   if (inboxStatus === 'open') return 'open'
   if (inboxStatus === 'rejected') return 'rejected'
