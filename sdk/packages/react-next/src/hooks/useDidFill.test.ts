@@ -1,14 +1,11 @@
 import { waitFor } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { renderHook, resolvedOrder } from '../../test/index.js'
-import {
-  type UseDidFillOutboxParams,
-  useDidFillOutbox,
-} from './useDidFillOutbox.js'
+import { type UseDidFillParams, useDidFill } from './useDidFill.js'
 
-const { didFillOutbox } = vi.hoisted(() => {
+const { didFill } = vi.hoisted(() => {
   return {
-    didFillOutbox: vi.fn().mockImplementation(() => {
+    didFill: vi.fn().mockImplementation(() => {
       return Promise.reject(new Error('No mock'))
     }),
   }
@@ -16,13 +13,13 @@ const { didFillOutbox } = vi.hoisted(() => {
 
 vi.mock('@omni-network/core', async () => {
   const actual = await vi.importActual('@omni-network/core')
-  return { ...actual, didFillOutbox }
+  return { ...actual, didFill }
 })
 
-const renderDidFillOutboxHook = (withResolvedOrder = false) => {
+const renderDidFillHook = (withResolvedOrder = false) => {
   return renderHook(
-    (props: Partial<UseDidFillOutboxParams>) =>
-      useDidFillOutbox({
+    (props: Partial<UseDidFillParams>) =>
+      useDidFill({
         destChainId: 1,
         resolvedOrder: withResolvedOrder ? resolvedOrder : undefined,
         ...props,
@@ -32,12 +29,12 @@ const renderDidFillOutboxHook = (withResolvedOrder = false) => {
 }
 
 test('default: returns true when core api returns truthy', async () => {
-  const { result, rerender } = renderDidFillOutboxHook()
+  const { result, rerender } = renderDidFillHook()
 
   expect(result.current.data).toBeUndefined()
-  expect(didFillOutbox).not.toHaveBeenCalled()
+  expect(didFill).not.toHaveBeenCalled()
 
-  didFillOutbox.mockResolvedValue(true)
+  didFill.mockResolvedValue(true)
 
   rerender({
     destChainId: 1,
@@ -45,25 +42,25 @@ test('default: returns true when core api returns truthy', async () => {
   })
 
   await waitFor(() => expect(result.current.data).toBe(true))
-  expect(didFillOutbox).toHaveBeenCalled()
+  expect(didFill).toHaveBeenCalled()
 })
 
 test('behaviour: no exception if core api throws', async () => {
-  didFillOutbox.mockRejectedValue(new Error('Contract read failed'))
+  didFill.mockRejectedValue(new Error('Contract read failed'))
 
-  const { result } = renderDidFillOutboxHook(true)
+  const { result } = renderDidFillHook(true)
 
   await waitFor(() => expect(result.current.status).toBe('error'))
   expect(result.current.isError).toBe(true)
   expect(result.current.data).toBeUndefined()
-  expect(didFillOutbox).toHaveBeenCalled()
+  expect(didFill).toHaveBeenCalled()
 })
 
 test('behaviour: no core api call when resolvedOrder is undefined', async () => {
-  const { result } = renderDidFillOutboxHook()
+  const { result } = renderDidFillHook()
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
   expect(result.current.isFetched).toBe(false)
-  expect(didFillOutbox).not.toHaveBeenCalledOnce()
+  expect(didFill).not.toHaveBeenCalledOnce()
 })
