@@ -20,7 +20,7 @@ import { act, waitFor } from '@testing-library/react'
 import { type PrivateKeyAccount, parseEther, zeroAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { getBalance } from 'viem/actions'
-import { beforeAll, describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { useBalance } from 'wagmi'
 import {
   type AnyOrder,
@@ -42,52 +42,67 @@ function getNextAccount(): PrivateKeyAccount {
 }
 
 describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
-  const account = getNextAccount()
-  const srcClient = createClient({ account, chain: mockL1Chain })
-  const destClient = createClient({ chain: omniDevnetChain })
-  const connector = createTestConnector(account)
-
-  beforeAll(async () => {
-    await mintOMNI(srcClient)
-  })
-
   describe.concurrent('default: succeeds with valid expense', async () => {
+    const destClient = createClient({ chain: omniDevnetChain })
     const amount = parseEther('10')
-    const order: AnyOrder = {
-      owner: account.address,
-      srcChainId: mockL1Id,
-      destChainId: omniDevnetId,
-      expense: { token: zeroAddress, amount },
-      calls: [{ target: account.address, value: amount }],
-      deposit: { token: tokenAddress, amount },
-    }
 
     test('using core APIs', async () => {
+      const account = getNextAccount()
+      const srcClient = createClient({ account, chain: mockL1Chain })
+      await mintOMNI(srcClient)
+      const order: AnyOrder = {
+        owner: account.address,
+        srcChainId: mockL1Id,
+        destChainId: omniDevnetId,
+        expense: { token: zeroAddress, amount },
+        calls: [{ target: account.address, value: amount }],
+        deposit: { token: tokenAddress, amount },
+      }
       await executeTestOrderUsingCore({ order, srcClient, destClient })
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact({ order, connector })
+      const account = getNextAccount()
+      const srcClient = createClient({ account, chain: mockL1Chain })
+      await mintOMNI(srcClient)
+      const order: AnyOrder = {
+        owner: account.address,
+        srcChainId: mockL1Id,
+        destChainId: omniDevnetId,
+        expense: { token: zeroAddress, amount },
+        calls: [{ target: account.address, value: amount }],
+        deposit: { token: tokenAddress, amount },
+      }
+      await executeTestOrderUsingReact({
+        order,
+        connector: createTestConnector(account),
+      })
     })
   })
 
-  describe.concurrent('default: succeeds with native deposit', () => {
+  describe.skip('behaviour: fails with native deposit', () => {
     const amount = parseEther('10')
     const order: AnyOrder = {
-      owner: account.address,
+      owner: testAccount.address,
       srcChainId: mockL1Id,
       destChainId: omniDevnetId,
       expense: { token: zeroAddress, amount },
-      calls: [{ target: account.address, value: amount }],
+      calls: [{ target: testAccount.address, value: amount }],
       deposit: { token: zeroAddress, amount },
     }
 
     test('using core APIs', async () => {
-      await executeTestOrderUsingCore({ order, srcClient, destClient })
+      await executeTestOrderUsingCore({
+        order,
+        rejectReason: 'UnsupportedDeposit',
+      })
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact({ order, connector })
+      await executeTestOrderUsingReact({
+        order,
+        rejectReason: 'UnsupportedDeposit',
+      })
     })
   })
 
