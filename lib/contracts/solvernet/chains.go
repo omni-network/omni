@@ -20,20 +20,20 @@ import (
 var hlChains = map[netconf.ID][]uint64{
 	// Mainnet
 	netconf.Mainnet: {
-		evmchain.IDBSC,
-		evmchain.IDPolygon,
-		evmchain.IDHyperEVM,
-		evmchain.IDMantle,
-		evmchain.IDBerachain,
-		evmchain.IDPlume,
+		// evmchain.IDBSC,
+		// evmchain.IDPolygon,
+		// evmchain.IDHyperEVM,
+		// evmchain.IDMantle,
+		// evmchain.IDBerachain,
+		// evmchain.IDPlume,
 	},
 
 	// Testnet
 	netconf.Omega: {
-		evmchain.IDBSCTestnet,
-		evmchain.IDHyperEVMTestnet,
-		evmchain.IDPolygonAmoy,
-		evmchain.IDPlumeTestnet,
+		// evmchain.IDBSCTestnet,
+		// evmchain.IDHyperEVMTestnet,
+		// evmchain.IDPolygonAmoy,
+		// evmchain.IDPlumeTestnet,
 		evmchain.IDSepolia,
 	},
 
