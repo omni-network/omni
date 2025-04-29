@@ -1,0 +1,101 @@
+---
+sidebar_position: 2
+title: Transfers
+---
+
+# Transfers
+
+This guide demonstrates how to open orders for ERC20 and native token transfers. Both can be paid for with any supported token on the source chain.
+
+## Native Transfers
+
+Send native tokens on the destination chain to any address.
+
+### 1. Get Quote
+
+Determine how much of a source chain token is required to pay for the native transfer on the destination chain. You can use any supported token. In this example. we'll use USDC on Optimism to pay for a 1 ETH transfer on Ethereum.
+
+```tsx
+const opChainId = 10;  // Optimism
+const ethChainId = 1;  // Ethereum
+const opUSDC = '0x0b2c639c533813f4aa9d7837caf62653d097ff85'
+const desiredETH = parseEther('1'); // 1 ETH
+
+const quote = useQuote({
+    srcChainId: opChainId,
+    destChainId: ethChainId,
+    deposit: { isNative: false, token: opUSDC },
+    expense: { isNative: true, amount: desiredETH },
+    mode: 'deposit', // Quote me the required deposit
+    enabled: true,
+})
+```
+
+### 2. Open Order
+
+Open an order with a single call, only specifying `target` and `value`.
+
+```tsx
+const recipient = '0x...'; // Recipient address on destination chain
+const requiredUSDC = quote.isSuccess ? quote.deposit.amount : 0n
+
+const order = useOrder({
+  srcChainId: opChainId,
+  destChainId: ethChainId,
+  calls: [{ target: recipient, value: desiredETH }],
+  deposit: { token: opUSDC, amount: requiredUSDC },
+  expense: { amount: desiredETH },
+  validateEnabled: quote.isSuccess,
+})
+
+// Call order.open() to open
+```
+
+
+## ERC20 Transfers
+
+ERC20 transfers work similarly. Though instead of requesting a call with no calldata and `target == recipient`, call the `ERC20.transfer` function on the desination token directly. Consider the reverse of the example above - using ETH on Ethereum to pay for a 1000 USDC transfer on Optimism.
+
+### 1. Get Quote
+
+```tsx
+const opChainId = 10;  // Optimism
+const ethChainId = 1;  // Ethereum
+const opUSDC = '0x0b2c639c533813f4aa9d7837caf62653d097ff85'
+const desiredUSDC = parseUnits('1000', 6); // 1000 USDC
+
+const quote = useQuote({
+  srcChainId: ethChainId,
+  destChainId: opChainId,
+  deposit: { isNative: true },
+  expense: { isNative: false, token: opUSDC, amount: desiredUSDC },
+  mode: 'deposit', // Quote me the required deposit
+  enabled: true,
+})
+```
+
+### 2. Open Order
+
+```tsx
+const recipient = '0x...'; // Recipient address on destination chain
+const requiredETH = quote.isSuccess ? quote.deposit.amount : 0n
+
+const order = useOrder({
+  srcChainId: ethChainId,
+  destChainId: opChainId,
+  calls: [
+    // Call ERC20.transfer(recipient, desiredUSDC) on OP USDC
+    {
+        target: opUSDC,
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: [recipient, desiredUSDC]
+     }
+  ],
+  deposit: { amount: requiredETH },
+  expense: { amount: desiredUSDC, token: opUSDC  },
+  validateEnabled: quote.isSuccess,
+})
+
+// Call order.open() to open
+```
