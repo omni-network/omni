@@ -1,12 +1,20 @@
 import type { FetchJSONError, GetQuoteParams, Quote } from '@omni-network/core'
 import { getQuote } from '@omni-network/core'
-import { type UseQueryResult, useQuery } from '@tanstack/react-query'
+import {
+  type UseQueryOptions,
+  type UseQueryResult,
+  useQuery,
+} from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useOmniContext } from '../context/omni.js'
 import { hashFn } from '../utils/query.js'
 
 type UseQuoteParams = GetQuoteParams & {
   enabled: boolean
+  queryOpts?: Omit<
+    UseQueryOptions<Quote, QuoteError>,
+    'queryKey' | 'queryFn' | 'enabled'
+  >
 }
 
 type UseQuoteSuccess = Quote & {
@@ -39,6 +47,7 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
   const { apiBaseUrl } = useOmniContext()
   const { enabled, ...quoteParams } = params
   const query = useQuery<Quote, QuoteError>({
+    ...params.queryOpts,
     queryKey: ['quote', quoteParams],
     queryFn: async () => getQuote(apiBaseUrl, quoteParams),
     queryKeyHashFn: hashFn,
