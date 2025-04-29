@@ -78,11 +78,11 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
     const destClient = createClient({ chain: omniDevnetChain })
     const amount = parseEther('10')
     const order: AnyOrder = {
-      owner: testAccount.address,
+      owner: account.address,
       srcChainId: mockL1Id,
       destChainId: omniDevnetId,
       expense: { token: zeroAddress, amount },
-      calls: [{ target: testAccount.address, value: amount }],
+      calls: [{ target: account.address, value: amount }],
       deposit: { token: zeroAddress, amount },
     }
 
