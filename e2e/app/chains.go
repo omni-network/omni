@@ -12,14 +12,14 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-// getSolverNetwork returns the solvernet network for the given definition, including HL chains.
-func GetSolverNetwork(ctx context.Context, def Definition) (netconf.Network, error) {
+// AddSolverNetworks returns the solvernet network for the given definition, including HL chains.
+func AddSolverNetworks(ctx context.Context, def Definition) (netconf.Network, error) {
 	network := networkFromDef(def)
 	return solvernet.AddHLNetwork(ctx, network), nil
 }
 
-// getSolverEndpoints returns the RPC endpoints for the given solvernet network, including HL chains.
-func GetSolverEndpoints(networkID netconf.ID, def Definition) (xchain.RPCEndpoints, error) {
+// AddSolverEndpoints returns the RPC endpoints for the given solvernet network, including HL chains.
+func AddSolverEndpoints(networkID netconf.ID, def Definition) (xchain.RPCEndpoints, error) {
 	endpoints := ExternalEndpoints(def)
 
 	// extend endpoints w/ hl chains
@@ -43,14 +43,14 @@ func GetSolverEndpoints(networkID netconf.ID, def Definition) (xchain.RPCEndpoin
 	return endpoints, nil
 }
 
-// GetSolverNetworkAndBackends returns the solvernet network and backends for the given definition.
-func GetSolverNetworkAndBackends(ctx context.Context, def Definition, cmdName string) (netconf.Network, ethbackend.Backends, error) {
-	network, err := GetSolverNetwork(ctx, def)
+// AddSolverNetworkAndBackends returns the solvernet network and backends for the given definition.
+func AddSolverNetworkAndBackends(ctx context.Context, def Definition, cmdName string) (netconf.Network, ethbackend.Backends, error) {
+	network, err := AddSolverNetworks(ctx, def)
 	if err != nil {
 		return netconf.Network{}, ethbackend.Backends{}, errors.Wrap(err, "get network")
 	}
 
-	endpoints, err := GetSolverEndpoints(network.ID, def)
+	endpoints, err := AddSolverEndpoints(network.ID, def)
 	if err != nil {
 		return netconf.Network{}, ethbackend.Backends{}, errors.Wrap(err, "get endpoints")
 	}
