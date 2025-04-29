@@ -214,7 +214,19 @@ describe.concurrent('useValidateOrder()', () => {
   })
 })
 
-describe.concurrent('useOrder()', () => {
+describe('useOrder()', () => {
+  test('default: succeeds with valid order', async () => {
+    const amount = parseEther('1') / 2n
+    const order: AnyOrder = {
+      srcChainId: mockL1Id,
+      destChainId: mockL2Id,
+      expense: { token: zeroAddress, amount },
+      deposit: { token: zeroAddress, amount: parseEther('1') },
+      calls: [{ target: testAccount.address, value: amount }],
+    }
+    await executeTestOrderUsingReact({ order })
+  })
+
   test('behaviour: rejects when using invalid source chain', async () => {
     const order: AnyOrder = {
       srcChainId: invalidChainId,
@@ -223,7 +235,10 @@ describe.concurrent('useOrder()', () => {
       deposit: { token: zeroAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
-    await executeTestOrderUsingReact(order, 'UnsupportedSrcChain')
+    await executeTestOrderUsingReact({
+      order,
+      rejectReason: 'UnsupportedSrcChain',
+    })
   })
 
   test('behaviour: rejects when using invalid destination chain', async () => {
@@ -234,7 +249,10 @@ describe.concurrent('useOrder()', () => {
       deposit: { token: zeroAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
-    await executeTestOrderUsingReact(order, 'UnsupportedDestChain')
+    await executeTestOrderUsingReact({
+      order,
+      rejectReason: 'UnsupportedDestChain',
+    })
   })
 
   test('behaviour: rejects when source and destination chains are the same', async () => {
@@ -245,7 +263,7 @@ describe.concurrent('useOrder()', () => {
       deposit: { token: zeroAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
-    await executeTestOrderUsingReact(order, 'SameChain')
+    await executeTestOrderUsingReact({ order, rejectReason: 'SameChain' })
   })
 
   test('behaviour: rejects when using an unsupported expense token', async () => {
@@ -256,11 +274,14 @@ describe.concurrent('useOrder()', () => {
       deposit: { token: tokenAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
-    await executeTestOrderUsingReact(order, 'UnsupportedExpense')
+    await executeTestOrderUsingReact({
+      order,
+      rejectReason: 'UnsupportedExpense',
+    })
   })
 })
 
-describe.concurrent('useParseOpenEvent()', () => {
+describe('useParseOpenEvent()', () => {
   test('default: returns order details from the open event logs', async () => {
     const renderHook = createRenderHook()
 
@@ -292,7 +313,7 @@ describe.concurrent('useParseOpenEvent()', () => {
   })
 })
 
-describe.concurrent('useGetOrder()', () => {
+describe('useGetOrder()', () => {
   test('default: returns expected order data from the getOrder inbox contract method', async () => {
     const renderHook = createRenderHook()
 

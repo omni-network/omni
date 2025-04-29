@@ -5,74 +5,89 @@ import {
   invalidTokenAddress,
   middleman,
   mintOMNI,
+  mockL1Chain,
   mockL1Id,
   mockL2Chain,
   mockL2Id,
   omniDevnetChain,
   omniDevnetId,
   testAccount,
+  testAccountPrivateKeys,
   tokenAddress,
   vault,
 } from '@omni-network/test-utils'
 import { act, waitFor } from '@testing-library/react'
-import { parseEther, zeroAddress } from 'viem'
+import { type PrivateKeyAccount, parseEther, zeroAddress } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 import { getBalance } from 'viem/actions'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { useBalance } from 'wagmi'
 import {
   type AnyOrder,
   createRenderHook,
+  createTestConnector,
   devnetApiUrl,
   executeTestOrderUsingCore,
   executeTestOrderUsingReact,
-  testConnector,
   useOrderRef,
 } from '../test-utils.js'
 
+let nextAccountIndex = 1
+function getNextAccount(): PrivateKeyAccount {
+  const pk = testAccountPrivateKeys[nextAccountIndex++]
+  if (pk == null) {
+    throw new Error('No next private key available')
+  }
+  return privateKeyToAccount(pk)
+}
+
 describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
-  const outboxClient = createClient({ chain: omniDevnetChain })
+  const account = getNextAccount()
+  const srcClient = createClient({ account, chain: mockL1Chain })
+  const destClient = createClient({ chain: omniDevnetChain })
+  const connector = createTestConnector(account)
 
   beforeAll(async () => {
-    await mintOMNI()
+    await mintOMNI(srcClient)
   })
 
-  describe.sequential('default: succeeds with valid expense', async () => {
+  describe.concurrent('default: succeeds with valid expense', async () => {
     const amount = parseEther('10')
     const order: AnyOrder = {
-      owner: testAccount.address,
+      owner: account.address,
       srcChainId: mockL1Id,
       destChainId: omniDevnetId,
       expense: { token: zeroAddress, amount },
-      calls: [{ target: testAccount.address, value: amount }],
+      calls: [{ target: account.address, value: amount }],
       deposit: { token: tokenAddress, amount },
     }
 
     test('using core APIs', async () => {
-      await executeTestOrderUsingCore({ order, outboxClient })
+      await executeTestOrderUsingCore({ order, srcClient, destClient })
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact(order)
+      await executeTestOrderUsingReact({ order, connector })
     })
   })
 
-  describe.sequential('default: succeeds with native deposit', () => {
+  describe.concurrent('default: succeeds with native deposit', () => {
     const amount = parseEther('10')
     const order: AnyOrder = {
-      owner: testAccount.address,
+      owner: account.address,
       srcChainId: mockL1Id,
       destChainId: omniDevnetId,
       expense: { token: zeroAddress, amount },
-      calls: [{ target: testAccount.address, value: amount }],
+      calls: [{ target: account.address, value: amount }],
       deposit: { token: zeroAddress, amount },
     }
 
     test('using core APIs', async () => {
-      await executeTestOrderUsingCore({ order, outboxClient })
+      await executeTestOrderUsingCore({ order, srcClient, destClient })
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact(order)
+      await executeTestOrderUsingReact({ order, connector })
     })
   })
 
@@ -95,15 +110,18 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact(order, 'UnsupportedDeposit')
+      await executeTestOrderUsingReact({
+        order,
+        rejectReason: 'UnsupportedDeposit',
+      })
     })
   })
 })
 
-describe.sequential('ETH transfer orders', () => {
-  const outboxClient = createClient({ chain: mockL2Chain })
+describe.concurrent('ETH transfer orders', () => {
+  const destClient = createClient({ chain: mockL2Chain })
 
-  describe.sequential(
+  describe.concurrent(
     'default: successfully processes order from quote to filled',
     () => {
       const quoteParams = {
@@ -121,18 +139,20 @@ describe.sequential('ETH transfer orders', () => {
         },
       } as const
 
-      const orderParams = {
-        deposit: { token: zeroAddress, amount: parseEther('2') },
-        expense: { token: zeroAddress, amount: parseEther('1') },
-        calls: [{ target: testAccount.address, value: parseEther('1') }],
-        srcChainId: mockL1Id,
-        destChainId: mockL2Id,
-        validateEnabled: false,
-      }
-
       test('using core APIs', async () => {
-        const preDestBalance = await getBalance(outboxClient, {
-          address: testAccount.address,
+        const account = getNextAccount()
+        const srcClient = createClient({ account, chain: mockL1Chain })
+        const orderParams = {
+          deposit: { token: zeroAddress, amount: parseEther('2') },
+          expense: { token: zeroAddress, amount: parseEther('1') },
+          calls: [{ target: account.address, value: parseEther('1') }],
+          srcChainId: mockL1Id,
+          destChainId: mockL2Id,
+          validateEnabled: false,
+        }
+
+        const preDestBalance = await getBalance(destClient, {
+          address: account.address,
         })
 
         const quote = await getQuote(devnetApiUrl, quoteParams)
@@ -142,10 +162,14 @@ describe.sequential('ETH transfer orders', () => {
         })
         expect(quote.expense.amount).toBeLessThan(parseEther('2'))
 
-        await executeTestOrderUsingCore({ order: orderParams, outboxClient })
+        await executeTestOrderUsingCore({
+          order: orderParams,
+          srcClient,
+          destClient,
+        })
 
-        const postDestBalance = await getBalance(outboxClient, {
-          address: testAccount.address,
+        const postDestBalance = await getBalance(destClient, {
+          address: account.address,
         })
         expect(postDestBalance).toBe(
           preDestBalance + orderParams.calls[0].value,
@@ -153,10 +177,20 @@ describe.sequential('ETH transfer orders', () => {
       })
 
       test('using React APIs', async () => {
+        const account = getNextAccount()
+        const orderParams = {
+          deposit: { token: zeroAddress, amount: parseEther('2') },
+          expense: { token: zeroAddress, amount: parseEther('1') },
+          calls: [{ target: account.address, value: parseEther('1') }],
+          srcChainId: mockL1Id,
+          destChainId: mockL2Id,
+          validateEnabled: false,
+        }
+
         const renderHook = createRenderHook()
         const preDestBalance = renderHook(() => {
           return useBalance({
-            address: testAccount.address,
+            address: account.address,
             chainId: mockL2Id,
           })
         })
@@ -196,7 +230,7 @@ describe.sequential('ETH transfer orders', () => {
           expect(validateHook.result.current.status === 'accepted').toBe(true)
         })
 
-        const orderRef = useOrderRef(testConnector, orderParams)
+        const orderRef = useOrderRef(createTestConnector(account), orderParams)
         await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 
         act(() => {
@@ -218,7 +252,7 @@ describe.sequential('ETH transfer orders', () => {
 
         const postDestBalance = renderHook(() => {
           return useBalance({
-            address: testAccount.address,
+            address: account.address,
             chainId: mockL2Id,
           })
         })
@@ -238,32 +272,44 @@ describe.sequential('ETH transfer orders', () => {
     },
   )
 
-  describe.sequential('default: succeeds with valid expense', () => {
-    const account = testAccount
-    const amount = parseEther('1')
-    const order: AnyOrder = {
-      owner: account.address,
-      srcChainId: mockL1Id,
-      destChainId: mockL2Id,
-      expense: { token: zeroAddress, amount },
-      calls: [{ target: account.address, value: amount }],
-      deposit: { token: zeroAddress, amount: 2n * amount },
-    }
-
+  describe.concurrent('default: succeeds with valid expense', () => {
     test('using core APIs', async () => {
-      await executeTestOrderUsingCore({ order, outboxClient })
+      const account = getNextAccount()
+      const srcClient = createClient({ account, chain: mockL1Chain })
+      const amount = parseEther('1')
+      const order: AnyOrder = {
+        owner: account.address,
+        srcChainId: mockL1Id,
+        destChainId: mockL2Id,
+        expense: { token: zeroAddress, amount },
+        calls: [{ target: account.address, value: amount }],
+        deposit: { token: zeroAddress, amount: 2n * amount },
+      }
+      await executeTestOrderUsingCore({ order, srcClient, destClient })
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact(order)
+      const account = getNextAccount()
+      const amount = parseEther('1')
+      const order: AnyOrder = {
+        owner: account.address,
+        srcChainId: mockL1Id,
+        destChainId: mockL2Id,
+        expense: { token: zeroAddress, amount },
+        calls: [{ target: account.address, value: amount }],
+        deposit: { token: zeroAddress, amount: 2n * amount },
+      }
+      await executeTestOrderUsingReact({
+        order,
+        connector: createTestConnector(account),
+      })
     })
   })
 
-  describe.sequential(
+  describe.concurrent(
     'behaviour: successfully processes ETH deposit via middleman contract',
     () => {
       const amount = parseEther('1')
-
       const quoteParams = {
         mode: 'expense',
         srcChainId: mockL1Id,
@@ -278,8 +324,10 @@ describe.sequential('ETH transfer orders', () => {
       } as const
 
       test('using core APIs', async () => {
-        const preDestBalance = await getBalance(outboxClient, {
-          address: testAccount.address,
+        const account = getNextAccount()
+        const srcClient = createClient({ account, chain: mockL1Chain })
+        const preDestBalance = await getBalance(destClient, {
+          address: account.address,
         })
 
         const quote = await getQuote(devnetApiUrl, quoteParams)
@@ -306,13 +354,13 @@ describe.sequential('ETH transfer orders', () => {
           },
           transfer: {
             token: zeroAddress,
-            to: testAccount.address,
+            to: account.address,
           },
           middlemanAddress: middleman,
         })
 
         const order = {
-          owner: testAccount.address,
+          owner: account.address,
           srcChainId: mockL1Id,
           destChainId: mockL2Id,
           expense: { token: zeroAddress, amount: quote.expense.amount },
@@ -322,21 +370,23 @@ describe.sequential('ETH transfer orders', () => {
         }
         await executeTestOrderUsingCore({
           order: order as AnyOrder,
-          outboxClient,
+          srcClient,
+          destClient,
         })
 
-        const postDestBalance = await getBalance(outboxClient, {
-          address: testAccount.address,
+        const postDestBalance = await getBalance(destClient, {
+          address: account.address,
         })
         expect(postDestBalance).toBe(preDestBalance + quote.expense.amount)
       })
 
       test('using React APIs', async () => {
+        const account = getNextAccount()
         const renderHook = createRenderHook()
 
         const preDestBalance = renderHook(() => {
           return useBalance({
-            address: testAccount.address,
+            address: account.address,
             chainId: mockL2Id,
           })
         })
@@ -378,13 +428,13 @@ describe.sequential('ETH transfer orders', () => {
           },
           transfer: {
             token: zeroAddress,
-            to: testAccount.address,
+            to: account.address,
           },
           middlemanAddress: middleman,
         })
 
         const order = {
-          owner: testAccount.address,
+          owner: account.address,
           srcChainId: mockL1Id,
           destChainId: mockL2Id,
           expense: { token: zeroAddress, amount: quote.expense.amount },
@@ -401,7 +451,7 @@ describe.sequential('ETH transfer orders', () => {
           expect(validateHook.result.current.status === 'accepted').toBe(true)
         })
 
-        const orderRef = useOrderRef(testConnector, order)
+        const orderRef = useOrderRef(createTestConnector(account), order)
 
         await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 
@@ -424,7 +474,7 @@ describe.sequential('ETH transfer orders', () => {
 
         const postDestBalance = renderHook(() => {
           return useBalance({
-            address: testAccount.address,
+            address: account.address,
             chainId: mockL2Id,
           })
         })
@@ -463,7 +513,10 @@ describe.sequential('ETH transfer orders', () => {
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact(order, 'ExpenseOverMax')
+      await executeTestOrderUsingReact({
+        order,
+        rejectReason: 'ExpenseOverMax',
+      })
     })
   })
 
@@ -487,7 +540,10 @@ describe.sequential('ETH transfer orders', () => {
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact(order, 'ExpenseUnderMin')
+      await executeTestOrderUsingReact({
+        order,
+        rejectReason: 'ExpenseUnderMin',
+      })
     })
   })
 })

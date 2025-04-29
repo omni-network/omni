@@ -34,10 +34,11 @@ export type Client<ChainType extends Chain> = WalletClient<
   PublicActions<HttpTransport, ChainType, Account>
 
 export function createClient<ChainType extends Chain>({
+  account,
   chain,
-}: { chain: ChainType }): Client<ChainType> {
+}: { account?: Account; chain: ChainType }): Client<ChainType> {
   return createWalletClient({
-    account: testAccount,
+    account: account ?? testAccount,
     chain,
     transport: http(),
   }).extend(publicActions)
@@ -47,22 +48,32 @@ export const mockL1Client: Client<typeof mockL1Chain> = createClient({
   chain: mockL1Chain,
 })
 
-export async function mintOMNI(): Promise<void> {
+export async function mintOMNI(client: Client<Chain>): Promise<void> {
+  const account = client.account?.address
+  if (account == null) {
+    throw new Error('Missing account on client')
+  }
   const amount = parseEther('100')
-  const mintHash = await mockL1Client.writeContract({
-    account: testAccount.address,
+  const mintHash = await client.writeContract({
+    account,
     address: tokenAddress,
     abi: omniTokenAbi,
     functionName: 'mint',
-    args: [testAccount.address, amount],
+    args: [account, amount],
   })
-  await mockL1Client.waitForTransactionReceipt({ hash: mintHash })
-  const approveHash = await mockL1Client.writeContract({
-    account: testAccount.address,
+  await client.waitForTransactionReceipt({
+    hash: mintHash,
+    pollingInterval: 500,
+  })
+  const approveHash = await client.writeContract({
+    account,
     address: tokenAddress,
     abi: omniTokenAbi,
     functionName: 'approve',
     args: [inbox, amount],
   })
-  await mockL1Client.waitForTransactionReceipt({ hash: approveHash })
+  await client.waitForTransactionReceipt({
+    hash: approveHash,
+    pollingInterval: 500,
+  })
 }

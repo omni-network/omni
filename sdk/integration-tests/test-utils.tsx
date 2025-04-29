@@ -19,7 +19,6 @@ import {
   inbox,
   mockChains,
   mockL1Chain,
-  mockL1Client,
   mockL1Id,
   mockL2Chain,
   mockL2Id,
@@ -38,8 +37,9 @@ import {
 import { createRef } from 'react'
 import {
   type Abi,
-  type Address,
+  type Account,
   type Client,
+  type WalletClient,
   pad,
   parseEther,
   zeroAddress,
@@ -110,9 +110,11 @@ function waitForOutboxOrderFilled(
   })
 }
 
-type ExecuteTestOrderUsingCoreParams = { order: AnyOrder } & (
+type ExecuteTestOrderUsingCoreParams = {
+  order: AnyOrder
+} & (
   | { rejectReason: string }
-  | { outboxClient: Client; rejectReason?: never }
+  | { rejectReason?: never; srcClient: WalletClient; destClient: Client }
 )
 
 export async function executeTestOrderUsingCore(
@@ -132,50 +134,51 @@ export async function executeTestOrderUsingCore(
   })
 
   const txHash = await openOrder({
-    client: mockL1Client,
+    client: params.srcClient,
     inboxAddress: inbox,
     order,
   })
   expect(txHash).toMatch(txHashRegexp)
 
-  const receipt = await waitForTransactionReceipt(mockL1Client, {
+  const receipt = await waitForTransactionReceipt(params.srcClient, {
     hash: txHash,
   })
   const resolvedOrder = parseOpenEvent(receipt.logs)
 
   await Promise.all([
     waitForInboxOrderFilled({
-      client: mockL1Client,
+      client: params.srcClient,
       inboxAddress: inbox,
       orderId: resolvedOrder.orderId,
       pollingInterval: 100,
+      timeout: 20_000,
     }),
     waitForOutboxOrderFilled({
-      client: params.outboxClient,
+      client: params.destClient,
       outboxAddress: outbox,
       resolvedOrder,
       pollingInterval: 100,
+      timeout: 20_000,
     }),
   ])
 }
 
-const mockConnector = mock({ accounts: [testAccount.address] as const })
-
-// biome-ignore lint/suspicious/noExplicitAny: test file
-export function testConnector(config: any) {
-  const connector = mockConnector(config)
-  connector.getClient = async ({ chainId } = {}) => {
-    if (chainId === mockL1Id) {
-      return mockL1Client
+export function createTestConnector(account: Account) {
+  // biome-ignore lint/suspicious/noExplicitAny: test file
+  return function testConnector(config: any) {
+    const connector = mock({ accounts: [account.address] })(config)
+    connector.getClient = async ({ chainId } = {}) => {
+      const chain = chainId ? mockChains[chainId] : mockL1Chain
+      if (chain == null) {
+        throw new Error(`Unsupported chain: ${chainId}`)
+      }
+      return createClient({ account, chain })
     }
-    const chain = chainId ? mockChains[chainId] : mockL1Chain
-    if (chain == null) {
-      throw new Error(`Unsupported chain: ${chainId}`)
-    }
-    return createClient({ chain })
+    return connector
   }
-  return connector
 }
+
+export const testConnector = createTestConnector(testAccount)
 
 export function createWagmiConfig() {
   return createConfig({
@@ -276,11 +279,17 @@ export function useOrderRef(
   return orderRef
 }
 
+type ExecuteTestOrderUsingReactParams = {
+  connector?: CreateConnectorFn
+  order: AnyOrder
+  rejectReason?: string
+}
+
 export async function executeTestOrderUsingReact(
-  order: AnyOrder,
-  rejectReason?: string,
+  params: ExecuteTestOrderUsingReactParams,
 ): Promise<void> {
-  const orderRef = useOrderRef(testConnector, order)
+  const { connector, order, rejectReason } = params
+  const orderRef = useOrderRef(connector ?? testConnector, order)
 
   await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 
@@ -307,7 +316,7 @@ export async function executeTestOrderUsingReact(
 
   const waitForOpts = {
     interval: 100,
-    timeout: 5000,
+    timeout: 20_000,
   }
 
   await waitFor(() => {
