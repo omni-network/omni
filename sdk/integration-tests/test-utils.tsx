@@ -1,4 +1,14 @@
 import {
+  type DidFillParams,
+  type GetOrderParameters,
+  didFillOutbox,
+  getOrder,
+  openOrder,
+  parseInboxStatus,
+  parseOpenEvent,
+  validateOrder,
+} from '@omni-network/core'
+import {
   OmniProvider,
   type Order,
   useOrder,
@@ -6,9 +16,9 @@ import {
 } from '@omni-network/react'
 import {
   createClient,
+  inbox,
   mockChains,
   mockL1Chain,
-  mockL1Client,
   mockL1Id,
   mockL2Chain,
   mockL2Id,
@@ -25,7 +35,16 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { createRef } from 'react'
-import { type Abi, pad, parseEther, zeroAddress } from 'viem'
+import {
+  type Abi,
+  type Account,
+  type Client,
+  type WalletClient,
+  pad,
+  parseEther,
+  zeroAddress,
+} from 'viem'
+import { waitForTransactionReceipt } from 'viem/actions'
 import { expect } from 'vitest'
 import {
   type Config,
@@ -36,23 +55,130 @@ import {
   useConnect,
 } from 'wagmi'
 
-const mockConnector = mock({ accounts: [testAccount.address] as const })
+export const devnetApiUrl = 'http://localhost:26661/api/v1'
 
-// biome-ignore lint/suspicious/noExplicitAny: test file
-export function testConnector(config: any) {
-  const connector = mockConnector(config)
-  connector.getClient = async ({ chainId } = {}) => {
-    if (chainId === mockL1Id) {
-      return mockL1Client
-    }
-    const chain = chainId ? mockChains[chainId] : mockL1Chain
-    if (chain == null) {
-      throw new Error(`Unsupported chain: ${chainId}`)
-    }
-    return createClient({ chain })
-  }
-  return connector
+const txHashRegexp = /^0x[0-9a-f]{64}$/
+
+type WaitForInboxOrderFilledParams = GetOrderParameters & {
+  pollingInterval?: number
+  timeout?: number
 }
+
+function waitForInboxOrderFilled(
+  params: WaitForInboxOrderFilledParams,
+): Promise<void> {
+  const { pollingInterval, timeout, ...getOrderParams } = params
+  return new Promise<void>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      clearInterval(pollId)
+      reject(new Error('Timeout waiting for order to be filled on inbox'))
+    }, timeout ?? 60_000)
+    const pollId = setInterval(async () => {
+      const order = await getOrder(getOrderParams)
+      const status = parseInboxStatus({ order })
+      if (status === 'filled') {
+        clearInterval(pollId)
+        clearTimeout(timeoutId)
+        resolve()
+      }
+    }, pollingInterval ?? getOrderParams.client.pollingInterval)
+  })
+}
+
+type WaitForOutboxOrderFilledParams = DidFillParams & {
+  pollingInterval?: number
+  timeout?: number
+}
+
+function waitForOutboxOrderFilled(
+  params: WaitForOutboxOrderFilledParams,
+): Promise<void> {
+  const { pollingInterval, timeout, ...didFillParams } = params
+  return new Promise<void>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      clearInterval(pollId)
+      reject(new Error('Timeout waiting for order to be filled on outbox'))
+    }, timeout ?? 60_000)
+    const pollId = setInterval(async () => {
+      const isFilled = await didFillOutbox(didFillParams)
+      if (isFilled) {
+        clearInterval(pollId)
+        clearTimeout(timeoutId)
+        resolve()
+      }
+    }, pollingInterval ?? didFillParams.client.pollingInterval)
+  })
+}
+
+type ExecuteTestOrderUsingCoreParams = {
+  order: AnyOrder
+} & (
+  | { rejectReason: string }
+  | { rejectReason?: never; srcClient: WalletClient; destClient: Client }
+)
+
+export async function executeTestOrderUsingCore(
+  params: ExecuteTestOrderUsingCoreParams,
+) {
+  const { order, rejectReason } = params
+  if (rejectReason != null) {
+    await expect(validateOrder(devnetApiUrl, order)).resolves.toMatchObject({
+      rejected: true,
+      rejectReason,
+    })
+    return
+  }
+
+  await expect(validateOrder(devnetApiUrl, order)).resolves.toMatchObject({
+    accepted: true,
+  })
+
+  const txHash = await openOrder({
+    client: params.srcClient,
+    inboxAddress: inbox,
+    order,
+  })
+  expect(txHash).toMatch(txHashRegexp)
+
+  const receipt = await waitForTransactionReceipt(params.srcClient, {
+    hash: txHash,
+  })
+  const resolvedOrder = parseOpenEvent(receipt.logs)
+
+  await Promise.all([
+    waitForInboxOrderFilled({
+      client: params.srcClient,
+      inboxAddress: inbox,
+      orderId: resolvedOrder.orderId,
+      pollingInterval: 100,
+      timeout: 20_000,
+    }),
+    waitForOutboxOrderFilled({
+      client: params.destClient,
+      outboxAddress: outbox,
+      resolvedOrder,
+      pollingInterval: 100,
+      timeout: 20_000,
+    }),
+  ])
+}
+
+export function createTestConnector(account: Account) {
+  // biome-ignore lint/suspicious/noExplicitAny: test file
+  return function testConnector(config: any) {
+    const connector = mock({ accounts: [account.address] })(config)
+    connector.getClient = async ({ chainId } = {}) => {
+      const chain = chainId ? mockChains[chainId] : mockL1Chain
+      if (chain == null) {
+        throw new Error(`Unsupported chain: ${chainId}`)
+      }
+      return createClient({ account, chain })
+    }
+    return connector
+  }
+}
+
+export const testConnector = createTestConnector(testAccount)
 
 export function createWagmiConfig() {
   return createConfig({
@@ -153,11 +279,17 @@ export function useOrderRef(
   return orderRef
 }
 
-export async function executeTestOrder(
-  order: AnyOrder,
-  rejectReason?: string,
+type ExecuteTestOrderUsingReactParams = {
+  connector?: CreateConnectorFn
+  order: AnyOrder
+  rejectReason?: string
+}
+
+export async function executeTestOrderUsingReact(
+  params: ExecuteTestOrderUsingReactParams,
 ): Promise<void> {
-  const orderRef = useOrderRef(testConnector, order)
+  const { connector, order, rejectReason } = params
+  const orderRef = useOrderRef(connector ?? testConnector, order)
 
   await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 
@@ -184,7 +316,7 @@ export async function executeTestOrder(
 
   const waitForOpts = {
     interval: 100,
-    timeout: 5000,
+    timeout: 20_000,
   }
 
   await waitFor(() => {
