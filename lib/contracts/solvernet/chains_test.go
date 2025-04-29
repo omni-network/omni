@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/stretchr/testify/require"
 )
@@ -17,4 +18,13 @@ func TestHLChains(t *testing.T) {
 			_ = solvernet.HLChains(network)
 		}
 	})
+}
+
+func TestFilterByContracts(t *testing.T) {
+	t.Parallel()
+	network := netconf.Network{ID: netconf.Mainnet}
+	endpoints := xchain.RPCEndpoints{"bsc": "https://foo.bar"}
+
+	network = solvernet.AddHLNetwork(t.Context(), network, solvernet.FilterByContracts(t.Context(), endpoints))
+	require.Empty(t, network.Chains)
 }
