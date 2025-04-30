@@ -8,6 +8,7 @@
   "scripts": {
     "build": "pnpm run -r build",
     "check": "biome check --write",
+    "postinstall": "pnpm run -r build",
     "test:unit": "pnpm run --filter '@omni-network/*' test",
     "test:integration": "cd integration-tests && pnpm test"
   },
