@@ -54,6 +54,8 @@ func deployAllCreate3(ctx context.Context, def Definition) error {
 }
 
 func DeployAllCreate3(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+	log.Debug(ctx, "Deploying create3 factory", "network", network.ID)
+
 	for _, chain := range network.EVMChains() {
 		backend, err := backends.Backend(chain.ID)
 		if err != nil {

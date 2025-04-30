@@ -326,7 +326,14 @@ func newDeploySolverNetCmd(def *app.Definition) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
-			network, backends, err := app.AddSolverNetworkAndBackends(ctx, *def, cmd.Name())
+			network, err := networkFromDef(ctx, *def)
+			if err != nil {
+				return errors.Wrap(err, "network from def")
+			}
+
+			endpoints := app.ExternalEndpoints(*def)
+
+			network, backends, err := app.AddSolverNetworkAndBackends(ctx, network, endpoints, def.Cfg, cmd.Name())
 			if err != nil {
 				return errors.Wrap(err, "get solver network and backends")
 			}

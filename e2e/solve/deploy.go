@@ -3,7 +3,6 @@ package solve
 import (
 	"context"
 
-	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/contracts/solvernet/executor"
 	"github.com/omni-network/omni/lib/contracts/solvernet/inbox"
 	"github.com/omni-network/omni/lib/contracts/solvernet/middleman"
@@ -19,7 +18,7 @@ import (
 
 // Deploy deploys solve inbox / outbox / middleman contracts, and devnet app (if devnet).
 func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
-	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByBackends(backends))
+	log.Debug(ctx, "Deploying SolverNet", "network", network.ID)
 
 	var eg1 errgroup.Group
 	eg1.Go(func() error { return deployBoxes(ctx, network, backends) })
