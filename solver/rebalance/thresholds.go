@@ -22,6 +22,7 @@ type FundThreshold struct {
 	target  float64 // fund target, below which, consider deficit
 	surplus float64 // above, consider surplus
 	minSwap float64 // min amount needed to swap
+	maxSwap float64 // max amount allowed in single swap
 }
 
 // Min returns the minimum balance, below which we should alert.
@@ -47,10 +48,19 @@ func (t FundThreshold) Surplus() *big.Int {
 // MinSwap returns the minimum amount needed to swap.
 func (t FundThreshold) MinSwap() *big.Int {
 	if t.minSwap == 0 {
-		return nil
+		return bi.Zero()
 	}
 
 	return t.balance(t.minSwap)
+}
+
+// MaxSwap returns the maximum amount allowed in single swap.
+func (t FundThreshold) MaxSwap() *big.Int {
+	if t.maxSwap == 0 {
+		return bi.Zero()
+	}
+
+	return t.balance(t.maxSwap)
 }
 
 // balance returns the float balance as a big.Int, normalized to the token's decimals.
@@ -79,6 +89,7 @@ func GetFundThreshold(token tokens.Token) FundThreshold {
 		min:     t.min,
 		target:  t.target,
 		surplus: t.surplus,
+		maxSwap: t.maxSwap,
 		minSwap: t.minSwap,
 	}
 }
@@ -94,9 +105,12 @@ var (
 			min:     50_000,
 			target:  100_000,
 			surplus: 120_000,
+			minSwap: 1000,
+			maxSwap: 5000,
 		},
 		mustToken(evmchain.IDBase, tokens.WSTETH): {
 			minSwap: 1,
+			maxSwap: 3,
 		},
 		mustToken(evmchain.IDBase, tokens.USDC): {
 			min:     20_000,
