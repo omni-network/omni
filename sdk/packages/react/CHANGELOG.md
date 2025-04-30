@@ -1,5 +1,16 @@
 # @omni-network/react
 
+## 0.1.0
+
+### Breaking changes
+
+- The `withExecAndTransfer` functions is no longer exported by the `@omni-network/react` package, and must instead be imported from `@omni-network/core`.
+- Similarly, the following types must be imported from the core pages: `Order`, `OrderStatus`, `Quote`, `Quotable`.
+
+### Other changes
+
+- This version uses the new `@omni-network/core` package internally.
+
 ## 0.0.0-alpha.5
 
 - 5a679b0: 🎉 Initial release 🎉

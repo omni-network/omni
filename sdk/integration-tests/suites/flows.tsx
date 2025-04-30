@@ -25,7 +25,6 @@ import { useBalance } from 'wagmi'
 import {
   type AnyOrder,
   createRenderHook,
-  createTestConnector,
   devnetApiUrl,
   executeTestOrderUsingCore,
   executeTestOrderUsingReact,

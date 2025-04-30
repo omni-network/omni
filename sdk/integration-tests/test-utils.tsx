@@ -48,7 +48,6 @@ import { waitForTransactionReceipt, watchBlocks } from 'viem/actions'
 import { expect } from 'vitest'
 import {
   type Config,
-  type CreateConnectorFn,
   WagmiProvider,
   createConfig,
   mock,
