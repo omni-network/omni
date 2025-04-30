@@ -59,7 +59,7 @@ contract OmegaGenesisStakeScript is Script {
 
         _prepMerkleTree();
         _deployContracts();
-        _approveStakeAndFund();
+        _fund();
 
         // Change index values according to deployer/caller address in merkle tree
         merkleDistributor.upgradeStake(validator, 0, rewardAmount, proofs[0]);
@@ -71,7 +71,7 @@ contract OmegaGenesisStakeScript is Script {
         vm.startBroadcast();
 
         _prepMerkleTree();
-        _approveStakeAndFund();
+        _fund();
 
         // Change index values according to deployer/caller address in merkle tree
         merkleDistributor.upgradeStake(validator, 0, rewardAmount, proofs[0]);
@@ -206,13 +206,10 @@ contract OmegaGenesisStakeScript is Script {
         
         // Verify initialization immediately
         address actualOwner = genesisStake.owner();
-        bool isActuallyOpen = genesisStake.isOpen();
         
         console2.log("Verification - Owner address:", actualOwner);
-        console2.log("Verification - Is open:", isActuallyOpen);
         
         require(actualOwner == msg.sender, "Initialization failed: owner not set correctly");
-        require(isActuallyOpen, "Initialization failed: not open");
         
         address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(address(omni), root));
         merkleDistributor = MerkleDistributorWithoutDeadline(
@@ -259,11 +256,7 @@ contract OmegaGenesisStakeScript is Script {
         );
     }
 
-    function _approveStakeAndFund() internal {
-        if (omni.allowance(msg.sender, address(genesisStake)) < depositAmount) {
-            omni.approve(address(genesisStake), type(uint256).max);
-        }
-        genesisStake.stake(depositAmount);
+    function _fund() internal {
         omni.transfer(address(merkleDistributor), rewardAmount);
     }
 }
