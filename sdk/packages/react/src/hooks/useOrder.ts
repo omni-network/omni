@@ -1,10 +1,10 @@
 import type {
   DidFillError,
-  OpenOrderReturn,
   OptionalAbis,
   Order,
   OrderStatus,
   ParseOpenEventError,
+  SendOrderTransactionReturn,
 } from '@omni-network/core'
 import {
   GetOrderError,
@@ -12,7 +12,7 @@ import {
   OpenError,
   TxReceiptError,
   ValidateOrderError,
-  openOrder,
+  sendOrderTransaction,
 } from '@omni-network/core'
 import {
   type UseMutateFunction,
@@ -47,7 +47,7 @@ type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
 type MutationError = LoadContractsError | NoClientError | WriteContractErrorType
 
 export type MutationResult = UseMutationResult<
-  OpenOrderReturn,
+  SendOrderTransactionReturn,
   MutationError,
   void
 >
@@ -98,7 +98,7 @@ export function useOrder<abis extends OptionalAbis>(
   const contractsResult = useOmniContracts()
   const inboxAddress = contractsResult.data?.inbox
 
-  const txMutation = useMutation<OpenOrderReturn, MutationError>({
+  const txMutation = useMutation<SendOrderTransactionReturn, MutationError>({
     mutationFn: async () => {
       if (client == null) {
         throw new NoClientError('No client provided')
@@ -108,7 +108,7 @@ export function useOrder<abis extends OptionalAbis>(
           'Inbox contract address needs to be loaded',
         )
       }
-      return await openOrder({ client, inboxAddress, order })
+      return await sendOrderTransaction({ client, inboxAddress, order })
     },
   })
 

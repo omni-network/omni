@@ -65,7 +65,7 @@ vi.mock('./useParseOpenEvent.js', async () => {
 })
 
 beforeEach(() => {
-  vi.spyOn(core, 'openOrder').mockResolvedValue('0xTxHash')
+  vi.spyOn(core, 'sendOrderTransaction').mockResolvedValue('0xTxHash')
   useParseOpenEvent.mockReturnValue({
     resolvedOrder,
     error: null,
@@ -224,8 +224,10 @@ test('behaviour: closed order is handled', async () => {
   })
 })
 
-test('behaviour: handles openOrder error', async () => {
-  vi.spyOn(core, 'openOrder').mockRejectedValue(new Error('Tx mutation error'))
+test('behaviour: handles sendOrderTransaction error', async () => {
+  vi.spyOn(core, 'sendOrderTransaction').mockRejectedValue(
+    new Error('Tx mutation error'),
+  )
 
   const { result } = renderOrderHook({
     ...orderRequest,
@@ -271,7 +273,10 @@ test('behaviour:  handles validation error', async () => {
     error: new Error('Validation failed'),
   })
 
-  const { result } = renderOrderHook({ ...orderRequest, validateEnabled: true })
+  const { result } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: true,
+  })
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
@@ -355,7 +360,10 @@ test('behaviour: handles wait success but order not found', async () => {
     }),
   )
 
-  const { result } = renderOrderHook({ ...orderRequest, validateEnabled: true })
+  const { result } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: true,
+  })
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)

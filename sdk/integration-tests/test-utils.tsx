@@ -6,7 +6,6 @@ import {
   getOrder,
   openOrder,
   parseInboxStatus,
-  parseOpenEvent,
   validateOrder,
 } from '@omni-network/core'
 import {
@@ -44,7 +43,7 @@ import {
   parseEther,
   zeroAddress,
 } from 'viem'
-import { waitForTransactionReceipt, watchBlocks } from 'viem/actions'
+import { watchBlocks } from 'viem/actions'
 import { expect } from 'vitest'
 import {
   type Config,
@@ -55,8 +54,6 @@ import {
 } from 'wagmi'
 
 export const devnetApiUrl = 'http://localhost:26661/api/v1'
-
-const txHashRegexp = /^0x[0-9a-f]{64}$/
 
 type WaitForInboxOrderFilledParams = GetOrderParameters & {
   pollingInterval?: number
@@ -134,22 +131,12 @@ export async function executeTestOrderUsingCore(
     return
   }
 
-  await expect(validateOrder(devnetApiUrl, order)).resolves.toMatchObject({
-    accepted: true,
-  })
-
-  const txHash = await openOrder({
+  const resolvedOrder = await openOrder({
+    apiBaseUrl: devnetApiUrl,
     client: params.srcClient,
     inboxAddress: inbox,
     order,
   })
-  expect(txHash).toMatch(txHashRegexp)
-
-  const receipt = await waitForTransactionReceipt(params.srcClient, {
-    hash: txHash,
-    pollingInterval: 100,
-  })
-  const resolvedOrder = parseOpenEvent(receipt.logs)
 
   await Promise.all([
     waitForInboxOrderFilled({

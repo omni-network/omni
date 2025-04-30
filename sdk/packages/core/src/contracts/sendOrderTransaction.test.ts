@@ -5,7 +5,7 @@ import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
 import { AccountRequiredError } from '../errors/base.js'
 import * as encode from '../utils/encodeOrderData.js'
-import { openOrder } from './openOrder.js'
+import { sendOrderTransaction } from './sendOrderTransaction.js'
 
 const { writeContract } = vi.hoisted(() => ({
   writeContract: vi.fn(),
@@ -17,7 +17,7 @@ test('default: opens order and returns the transaction hash', async () => {
   vi.spyOn(encode, 'encodeOrderData').mockReturnValueOnce('0xencodedOrder')
 
   await expect(
-    openOrder({
+    sendOrderTransaction({
       client: mockL1Client,
       inboxAddress: '0xaddress',
       order: testOrder,
@@ -42,7 +42,7 @@ test('default: opens order and returns the transaction hash', async () => {
 
 test('behaviour: throws an AccountRequiredError if the client does not have an associated account', async () => {
   await expect(
-    openOrder({
+    sendOrderTransaction({
       client: {} as Client,
       inboxAddress: '0xaddress',
       order: testOrder,
@@ -55,7 +55,7 @@ test('behaviour: sets the order value when the deposit does not set a token addr
   vi.spyOn(encode, 'encodeOrderData').mockReturnValueOnce('0xencodedOrder')
 
   await expect(
-    openOrder({
+    sendOrderTransaction({
       client: mockL1Client,
       inboxAddress: '0xaddress',
       order: { ...testOrder, deposit: { amount: 2n } },
@@ -83,7 +83,7 @@ test('behaviour: sets the order value when the deposit token address is zero', a
   vi.spyOn(encode, 'encodeOrderData').mockReturnValueOnce('0xencodedOrder')
 
   await expect(
-    openOrder({
+    sendOrderTransaction({
       client: mockL1Client,
       inboxAddress: '0xaddress',
       order: { ...testOrder, deposit: { token: zeroAddress, amount: 3n } },
@@ -111,7 +111,7 @@ test('behaviour: sets the order value to zero when the deposit token address is 
   vi.spyOn(encode, 'encodeOrderData').mockReturnValueOnce('0xencodedOrder')
 
   await expect(
-    openOrder({
+    sendOrderTransaction({
       client: mockL1Client,
       inboxAddress: '0xaddress',
       order: { ...testOrder, deposit: { token: '0x123', amount: 4n } },

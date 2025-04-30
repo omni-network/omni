@@ -10,17 +10,17 @@ import { encodeOrderData } from '../utils/encodeOrderData.js'
 
 const defaultFillDeadline = () => Math.floor(Date.now() / 1000 + 86400)
 
-export type OpenOrderParams<abis extends OptionalAbis> = {
+export type SendOrderTransactionParameters<abis extends OptionalAbis> = {
   client: Client
   inboxAddress: Address
   order: Order<abis>
 }
 
-export type OpenOrderReturn = WriteContractReturnType
+export type SendOrderTransactionReturn = WriteContractReturnType
 
-export async function openOrder<abis extends OptionalAbis>(
-  params: OpenOrderParams<abis>,
-): Promise<OpenOrderReturn> {
+export async function sendOrderTransaction<abis extends OptionalAbis>(
+  params: SendOrderTransactionParameters<abis>,
+): Promise<SendOrderTransactionReturn> {
   const { client, inboxAddress, order } = params
 
   if (client.account == null) {

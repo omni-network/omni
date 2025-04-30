@@ -1,4 +1,5 @@
 import { encodeFunctionData, zeroAddress } from 'viem'
+import { ValidateOrderError } from '../errors/base.js'
 import { fetchJSON } from '../internal/api.js'
 import type { OptionalAbis } from '../types/abi.js'
 import { type Order, isContractCall } from '../types/order.js'
@@ -96,4 +97,28 @@ const isValidateRes = (json: unknown): json is ValidationResponse => {
         res.rejectDescription != null) ||
       res.error != null)
   )
+}
+
+export type AcceptedResult = {
+  accepted: true
+  rejected?: false
+  error?: never
+  rejectReason?: never
+  rejectDescription?: never
+}
+
+export function assertAcceptedResult(
+  res: ValidationResponse,
+): asserts res is AcceptedResult {
+  if (!res.accepted) {
+    if (res.error != null) {
+      throw new ValidateOrderError(res.error.message, `Code ${res.error.code}`)
+    }
+    if (res.rejected) {
+      throw new ValidateOrderError(
+        res.rejectDescription ?? 'Server rejected order',
+        res.rejectReason,
+      )
+    }
+  }
 }
