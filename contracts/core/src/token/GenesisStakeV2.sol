@@ -30,9 +30,27 @@ contract GenesisStakeV2 is IGenesisStakeV2, OwnableUpgradeable, PausableUpgradea
     address public immutable rewardsDistributor;
 
     /**
+     * @notice The unbonding period (deprecated).
+     * @dev This variable is kept for storage layout compatibility.
+     */
+    uint256 private _deprecated_unbondingPeriod;
+
+    /**
      * @notice The staked balance of each user.
      */
     mapping(address => uint256) public balanceOf;
+
+    /**
+     * @notice The timestamp at which each user unstaked (deprecated).
+     * @dev This variable is kept for storage layout compatibility.
+     */
+    mapping(address => uint256) private _deprecated_unstakedAt;
+
+    /**
+     * @notice True if staking is open, false otherwise (deprecated).
+     * @dev This variable is kept for storage layout compatibility.
+     */
+    bool private _deprecated_isOpen;
 
     constructor(address token_, address rewardsDistributor_) {
         token = IERC20(token_);
