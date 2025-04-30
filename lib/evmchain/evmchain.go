@@ -124,7 +124,7 @@ var static = map[uint64]Metadata{
 		PrettyName:  "HyperEVM",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.HYPE,
-		// (zodomo): No forks or uncles as of yet so no reorgs
+		Reorgs:      true, // Hyperlane docs don't mention reorgs at all, neither do explorers
 	},
 	IDMantle: {
 		ChainID:     IDMantle,
@@ -132,7 +132,7 @@ var static = map[uint64]Metadata{
 		PrettyName:  "Mantle",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.MNT,
-		// TODO(zodomo): PostsTo: EigenDA? Do we use IDEthereum?
+		// PostsTo: EigenDA
 	},
 	IDBase: {
 		ChainID:     IDBase,
@@ -156,15 +156,14 @@ var static = map[uint64]Metadata{
 		PrettyName:  "Berachain",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.BERA,
-		// (zodomo): Cannot find any information about Berachain reorgs
+		Reorgs:      true, // Berachain docs don't mention reorgs at all, neither do explorers
 	},
 	IDPlume: {
 		ChainID:     IDPlume,
 		Name:        "plume",
 		PrettyName:  "Plume",
-		BlockPeriod: 1 * time.Second, // (zodomo): Does it matter that its more like 1.3-1.5s? Is this a lower bound?
+		BlockPeriod: 1 * time.Second,
 		NativeToken: tokens.PLUME,
-		// (zodomo): No forks or uncles as of yet so no reorgs
 	},
 
 	// Testnets.
@@ -172,7 +171,7 @@ var static = map[uint64]Metadata{
 		ChainID:     IDBSCTestnet,
 		Name:        "bsc_testnet",
 		PrettyName:  "BSC Testnet",
-		BlockPeriod: 1 * time.Second, // (zodomo): Does it matter that its more like 1.5-2s? Is this a lower bound?
+		BlockPeriod: 2 * time.Millisecond,
 		NativeToken: tokens.BNB,
 		Reorgs:      true,
 	},
@@ -189,7 +188,7 @@ var static = map[uint64]Metadata{
 		PrettyName:  "HyperEVM Testnet",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.HYPE,
-		// (zodomo): Cannot find any information about HyperEVM testnet reorgs
+		Reorgs:      true, // Hyperlane docs don't mention reorgs at all, neither do explorers
 	},
 	IDHolesky: {
 		ChainID:     IDHolesky,
@@ -219,9 +218,8 @@ var static = map[uint64]Metadata{
 		ChainID:     IDPlumeTestnet,
 		Name:        "plume_testnet",
 		PrettyName:  "Plume Testnet",
-		BlockPeriod: 1 * time.Second, // (zodomo): Does it matter that its more like 0.7-1s? Is this a lower bound?
+		BlockPeriod: 1 * time.Second,
 		NativeToken: tokens.PLUME,
-		// (zodomo): No forks or uncles as of yet so no reorgs
 	},
 	IDArbSepolia: {
 		ChainID:     IDArbSepolia,
