@@ -5,6 +5,7 @@ on:
 
 jobs:
   rebalance_test:
+    if: ${{ secrets.ETH_RPC  }} != ''  # Skip if no access to secrets
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
