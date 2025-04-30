@@ -18,12 +18,12 @@ import (
 // Start starts rebalancing the solver's balance on the given network.
 func Start(
 	ctx context.Context,
-	cfg Config,
 	network netconf.Network,
 	cctpClient cctp.Client,
 	backends ethbackend.Backends,
 	solver common.Address,
 	dbDir string,
+	opts ...Options,
 ) error {
 	if network.ID != netconf.Mainnet {
 		// Rebalancing is only supported on mainnet.
@@ -43,7 +43,12 @@ func Start(
 		return errors.Wrap(err, "mint forever")
 	}
 
-	go rebalanceForever(ctx, cfg, db, network, backends, solver)
+	o := defaultOps()
+	for _, opt := range opts {
+		opt(&o)
+	}
+
+	go rebalanceForever(ctx, o.interval, db, network, backends, solver)
 
 	return nil
 }

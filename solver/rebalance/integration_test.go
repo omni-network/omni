@@ -102,9 +102,9 @@ func TestIntegration(t *testing.T) {
 	tutil.RequireNoError(t, err)
 
 	// Start rebalancing
-	cfg := rebalance.Config{Interval: 5 * time.Second} // fast interval for testing
-	dbDir := ""                                        // use in-mem db
-	err = rebalance.Start(ctx, cfg, network, cctpClient, backends, solver, dbDir)
+	interval := 5 * time.Second // fast interval for testing
+	dbDir := ""                 // use in-mem db
+	err = rebalance.Start(ctx, network, cctpClient, backends, solver, dbDir, rebalance.WithInterval(interval))
 	tutil.RequireNoError(t, err)
 
 	// Wait for rebalance
