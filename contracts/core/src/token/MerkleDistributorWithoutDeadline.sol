@@ -14,10 +14,12 @@ import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IGenesisStakeV2 } from "../interfaces/IGenesisStakeV2.sol";
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { SolverNet } from "solve/src/lib/SolverNet.sol";
+import {IERC20, SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeable, PausableUpgradeable, EIP712 {
     using LibBitmap for LibBitmap.Bitmap;
     using SafeTransferLib for address;
+    using SafeERC20 for IERC20;
 
     error ZeroAddress();
     error InvalidSignature();
@@ -64,6 +66,19 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
         omniPortal = IOmniPortal(omniPortal_);
         genesisStaking = IGenesisStakeV2(genesisStaking_);
         solvernetInbox = IOriginSettler(solverNetInbox_);
+    }
+
+
+    /**
+     * @notice Override to prevent manual claims - use upgradeStake or unstake instead
+     * @dev This function always reverts to prevent manual claims
+     */
+    function claim(uint256, address, uint256, bytes32[] calldata) public pure override {
+        revert ManualClaimDisabled();
+    }
+
+    function withdraw() external onlyOwner {
+        IERC20(token).safeTransfer(msg.sender, IERC20(token).balanceOf(address(this)));
     }
 
     /**
@@ -267,13 +282,5 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
     function _domainNameAndVersion() internal pure override returns (string memory name, string memory version) {
         name = "MerkleDistributorWithoutDeadline";
         version = "1";
-    }
-
-    /**
-     * @notice Override to prevent manual claims - use upgradeStake or unstake instead
-     * @dev This function always reverts to prevent manual claims
-     */
-    function claim(uint256, address, uint256, bytes32[] calldata) public pure override {
-        revert ManualClaimDisabled();
     }
 } 
