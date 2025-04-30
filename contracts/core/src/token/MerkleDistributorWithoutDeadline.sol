@@ -80,8 +80,8 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
         revert ManualClaimDisabled();
     }
 
-    function withdraw() external onlyOwner {
-        IERC20(token).safeTransfer(msg.sender, IERC20(token).balanceOf(address(this)));
+    function withdraw(address to) external onlyOwner {
+        token.safeTransferAll(to);
     }
 
     /**
