@@ -34,40 +34,45 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
 
     address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
 
-    IOmniPortal public omniPortal;
-    IGenesisStakeV2 public genesisStaking;
-    IOriginSettler public solvernetInbox;
+    IOmniPortal public immutable omniPortal;
+    IGenesisStakeV2 public immutable genesisStaking;
+    IOriginSettler public immutable solvernetInbox;
 
     mapping(address account => uint256) public nonces;
 
-    constructor(address token_, bytes32 merkleRoot_) MerkleDistributor(token_, merkleRoot_) {
+    constructor(
+        address token_,
+        bytes32 merkleRoot_,
+        address omniPortal_,
+        address genesisStaking_,
+        address solverNetInbox_
+    ) MerkleDistributor(token_, merkleRoot_) {
         _disableInitializers();
+        
+        if (omniPortal_ == address(0) || genesisStaking_ == address(0) || solverNetInbox_ == address(0)) {
+            revert ZeroAddress();
+        }
+
+        omniPortal = IOmniPortal(omniPortal_);
+        genesisStaking = IGenesisStakeV2(genesisStaking_);
+        solvernetInbox = IOriginSettler(solverNetInbox_);
+
     }
 
     /**
      * @notice Initialize the contract
      * @param admin_            The admin of the contract
-     * @param omniPortal_      The OmniPortal contract
-     * @param genesisStaking_  The GenesisStakeV2 contract
-     * @param solverNetInbox_  The SolverNet inbox contract
      */
     function initialize(
-        address admin_,
-        address omniPortal_,
-        address genesisStaking_,
-        address solverNetInbox_
+        address admin_
     ) external initializer {
         __Ownable_init();
         __Pausable_init();
         _transferOwnership(admin_);
-
+        
         token.safeApprove(solverNetInbox_, type(uint256).max);
 
-        omniPortal = IOmniPortal(omniPortal_);
-        genesisStaking = IGenesisStakeV2(genesisStaking_);
-        solvernetInbox = IOriginSettler(solverNetInbox_);
     }
-
 
     /**
      * @notice Override to prevent manual claims - use upgradeStake or unstake instead
