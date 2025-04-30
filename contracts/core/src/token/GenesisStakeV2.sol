@@ -89,22 +89,6 @@ contract GenesisStakeV2 is IGenesisStakeV2, OwnableUpgradeable, PausableUpgradea
     }
 
     /**
-     * @notice Stake `amount` tokens for `recipient`, paid by the caller.
-     * @param recipient The recipient to stake tokens for.
-     * @param amount    The amount of tokens to stake.
-     */
-    function stakeFor(address recipient, uint256 amount) external whenNotPaused {
-        require(recipient != address(0), "GenesisStakeV2: no zero address");
-        require(amount > 0, "GenesisStakeV2: amount must be > 0");
-        
-        // Transfer tokens from caller to this contract
-        require(token.transferFrom(msg.sender, address(this), amount), "GenesisStakeV2: transfer failed");
-        
-        // Update recipient's balance
-        balanceOf[recipient] += amount;
-    }
-
-    /**
      * @notice Pause the contract.
      */
     function pause() external onlyOwner {

@@ -151,16 +151,10 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
             vm.prank(stakers[i]);
             omni.approve(address(genesisStake), amounts[i]);
             
-            // Directly update balance in GenesisStakeV2
-            // balanceOf mapping is at slot 0, but we need to account for inherited storage
-            // OwnableUpgradeable: _owner (slot 0)
-            // PausableUpgradeable: _paused (slot 1)
-            // balanceOf mapping starts at slot 2
-            vm.store(
-                address(genesisStake),
-                keccak256(abi.encode(stakers[i], uint256(2))), // balanceOf mapping slot
-                bytes32(amounts[i])
-            );
+            // staking removed from V2 contract
+            // // Stake tokens for stakers
+            // vm.prank(stakers[i]);
+            // genesisStake.stakeFor(stakers[i], amounts[i]);
         }
 
         omni.transfer(address(merkleDistributor), initialSupply / 2);
