@@ -44,6 +44,11 @@ func (t FundThreshold) Surplus() *big.Int {
 	return t.balance(t.surplus)
 }
 
+// NeverSurplus returns true if the surplus threshold is set to inf.
+func (t FundThreshold) NeverSurplus() bool {
+	return t.surplus == inf
+}
+
 // MinSwap returns the minimum amount needed to swap.
 func (t FundThreshold) MinSwap() *big.Int {
 	if t.minSwap == 0 {
