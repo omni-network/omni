@@ -22,6 +22,9 @@ import (
 var (
 	// minSend is the minimum amount of surplus USDC to send to other chains.
 	minSend = bi.Dec6(1000) // 1000 USDC
+
+	// maxSend is the maximum amount of USDC allowed in a single send.
+	maxSend = bi.Dec6(5000) // 5000 USDC
 )
 
 // rebalanceForever starts rebalancing loops for each chain in the network.
@@ -168,13 +171,18 @@ func sendSurplusOnce(
 		return errors.Wrap(err, "get surplus")
 	}
 
-	if bi.LT(surplus, minSend) {
-		// Only send if surplus is above minSend.
+	if bi.LT(surplus, minSend) { // Only send if surplus is above minSend.
 		log.Debug(ctx, "No surplus to send", "amount", usdc.FormatAmt(surplus))
 		return nil
 	}
 
-	log.Debug(ctx, "Sending surplus", "amount", usdc.FormatAmt(surplus))
+	toSend := surplus
+	if bi.GT(toSend, maxSend) { // Cap send to maxSend.
+		log.Debug(ctx, "Surplus > maxSend, capping send", "amount", usdc.FormatAmt(toSend), "max", usdc.FormatAmt(maxSend))
+		toSend = maxSend
+	}
+
+	log.Debug(ctx, "Sending surplus", "amount", usdc.FormatAmt(toSend))
 
 	// Just send surplus to Ethereum for now.
 	// TODO: calculate chain deficits, send to most in-need chain.
@@ -184,7 +192,7 @@ func sendSurplusOnce(
 		Recipient:   solver,
 		SrcChainID:  chainID,
 		DestChainID: evmchain.IDEthereum,
-		Amount:      surplus,
+		Amount:      toSend,
 	}); err != nil {
 		return errors.Wrap(err, "send usdc")
 	}
