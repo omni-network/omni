@@ -94,6 +94,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
      * @return _        Upgrade digest
      */
     function getUpgradeDigest(address account, address validator, uint256 expiry) public view returns (bytes32) {
+        if (expiry != 0 && block.timestamp > expiry) revert Expired();
         bytes32 migrationHash = keccak256(abi.encode(UPGRADE_TYPEHASH, account, validator, nonces[account], expiry));
         return _hashTypedData(migrationHash);
     }
