@@ -28,8 +28,8 @@ contract OmegaGenesisStakeScript is Script {
     GenesisStakeV2 internal genesisStake;
     MerkleDistributorWithoutDeadline internal merkleDistributor;
 
-    uint256 internal depositAmount = .2 ether;
-    uint256 internal rewardAmount = .1 ether;
+    uint256 internal depositAmount = 0.2 ether;
+    uint256 internal rewardAmount = 0.1 ether;
     bytes32[] internal leaves = new bytes32[](64);
     bytes32[][] internal proofs = new bytes32[][](64);
     bytes32 internal root;
@@ -53,7 +53,7 @@ contract OmegaGenesisStakeScript is Script {
     /**
      * @dev This assumes the four relevant addresses above have been set and that a new GenesisStakeV2 contract should be
      * deployed. It also assumes that the broadcaster has 200 OMNI ERC20 tokens to spend on the network.
-    */
+     */
     function deployAndTest() public {
         vm.startBroadcast();
 
@@ -182,7 +182,7 @@ contract OmegaGenesisStakeScript is Script {
             createX.computeCreate3Address(keccak256(abi.encodePacked(merkleDistributorSalt)));
 
         address genesisStakeImpl = address(new GenesisStakeV2(address(omni), merkleDistributorAddr));
-        
+
         // Deploy proxy without initialization
         address proxyAddress = createX.deployCreate3(
             genesisStakeSalt,
@@ -190,34 +190,30 @@ contract OmegaGenesisStakeScript is Script {
                 type(TransparentUpgradeableProxy).creationCode,
                 abi.encode(
                     genesisStakeImpl,
-                    msg.sender,  // admin
+                    msg.sender, // admin
                     new bytes(0) // empty initialization data
                 )
             )
         );
-        
+
         genesisStake = GenesisStakeV2(proxyAddress);
-        
+
         // Initialize separately after deployment
-        (bool success, bytes memory result) = proxyAddress.call(
-            abi.encodeCall(GenesisStakeV2.initialize, (msg.sender))
-        );
+        (bool success, bytes memory result) = proxyAddress.call(abi.encodeCall(GenesisStakeV2.initialize, (msg.sender)));
         require(success, "Initialization call failed");
-        
+
         // Verify initialization immediately
         address actualOwner = genesisStake.owner();
-        
+
         console2.log("Verification - Owner address:", actualOwner);
-        
+
         require(actualOwner == msg.sender, "Initialization failed: owner not set correctly");
-        
-        address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(
-            address(omni),
-            root,
-            address(portal),
-            address(genesisStake),
-            address(inbox)
-        ));
+
+        address merkleDistributorImpl = address(
+            new MerkleDistributorWithoutDeadline(
+                address(omni), root, address(portal), address(genesisStake), address(inbox)
+            )
+        );
         merkleDistributor = MerkleDistributorWithoutDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
@@ -226,10 +222,7 @@ contract OmegaGenesisStakeScript is Script {
                     abi.encode(
                         merkleDistributorImpl,
                         msg.sender,
-                        abi.encodeCall(
-                            MerkleDistributorWithoutDeadline.initialize,
-                            (msg.sender)
-                        )
+                        abi.encodeCall(MerkleDistributorWithoutDeadline.initialize, (msg.sender))
                     )
                 )
             )
@@ -254,10 +247,7 @@ contract OmegaGenesisStakeScript is Script {
             abi.encode(
                 merkleDistributorImpl,
                 msg.sender,
-                abi.encodeCall(
-                    MerkleDistributorWithoutDeadline.initialize,
-                    (msg.sender)
-                )
+                abi.encodeCall(MerkleDistributorWithoutDeadline.initialize, (msg.sender))
             )
         );
     }

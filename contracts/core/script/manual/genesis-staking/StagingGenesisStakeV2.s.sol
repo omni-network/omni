@@ -176,9 +176,7 @@ contract StagingGenesisStakeScript is Script {
                 genesisStakeSalt,
                 abi.encodePacked(
                     type(TransparentUpgradeableProxy).creationCode,
-                    abi.encode(
-                        genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStakeV2.initialize, (msg.sender))
-                    )
+                    abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStakeV2.initialize, (msg.sender)))
                 )
             )
         );
@@ -195,13 +193,11 @@ contract StagingGenesisStakeScript is Script {
         );
         console2.log("");
 
-        address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(
-            address(omni),
-            root,
-            address(portal),
-            address(genesisStake),
-            address(inbox)
-        ));
+        address merkleDistributorImpl = address(
+            new MerkleDistributorWithoutDeadline(
+                address(omni), root, address(portal), address(genesisStake), address(inbox)
+            )
+        );
         merkleDistributor = MerkleDistributorWithoutDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
@@ -210,10 +206,7 @@ contract StagingGenesisStakeScript is Script {
                     abi.encode(
                         merkleDistributorImpl,
                         msg.sender,
-                        abi.encodeCall(
-                            MerkleDistributorWithoutDeadline.initialize,
-                            (msg.sender)
-                        )
+                        abi.encodeCall(MerkleDistributorWithoutDeadline.initialize, (msg.sender))
                     )
                 )
             )
@@ -230,10 +223,7 @@ contract StagingGenesisStakeScript is Script {
             abi.encode(
                 merkleDistributorImpl,
                 msg.sender,
-                abi.encodeCall(
-                    MerkleDistributorWithoutDeadline.initialize,
-                    (msg.sender)
-                )
+                abi.encodeCall(MerkleDistributorWithoutDeadline.initialize, (msg.sender))
             )
         );
     }

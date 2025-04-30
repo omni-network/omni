@@ -14,7 +14,7 @@ import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IGenesisStakeV2 } from "../interfaces/IGenesisStakeV2.sol";
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { SolverNet } from "solve/src/lib/SolverNet.sol";
-import {IERC20, SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeable, PausableUpgradeable, EIP712 {
     using LibBitmap for LibBitmap.Bitmap;
@@ -26,6 +26,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
     error InsufficientAmount();
     error ManualClaimDisabled();
     error Expired();
+
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
@@ -48,7 +49,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
         address solverNetInbox_
     ) MerkleDistributor(token_, merkleRoot_) {
         _disableInitializers();
-        
+
         if (omniPortal_ == address(0) || genesisStaking_ == address(0) || solverNetInbox_ == address(0)) {
             revert ZeroAddress();
         }
@@ -56,19 +57,16 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
         omniPortal = IOmniPortal(omniPortal_);
         genesisStaking = IGenesisStakeV2(genesisStaking_);
         solvernetInbox = IOriginSettler(solverNetInbox_);
-
     }
 
     /**
      * @notice Initialize the contract
      * @param admin_            The admin of the contract
      */
-    function initialize(
-        address admin_
-    ) external initializer {
+    function initialize(address admin_) external initializer {
         __Ownable_init(admin_);
         __Pausable_init();
-        
+
         token.safeApprove(address(solvernetInbox), type(uint256).max);
     }
 
@@ -211,7 +209,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
      */
     function _unstake(address account, uint256 index, uint256 amount, bytes32[] calldata merkleProof) internal {
         uint256 totalAmount = genesisStaking.migrateStake(account);
-        
+
         // if proofs provided and rewards not already claimed, add them to total
         if (merkleProof.length > 0 && _claimRewards(account, index, amount, merkleProof)) {
             totalAmount += amount;
@@ -287,4 +285,4 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
         name = "MerkleDistributorWithoutDeadline";
         version = "1";
     }
-} 
+}

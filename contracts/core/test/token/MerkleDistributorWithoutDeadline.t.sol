@@ -104,21 +104,17 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
                 keccak256("genesisStake"),
                 abi.encodePacked(
                     type(TransparentUpgradeableProxy).creationCode,
-                    abi.encode(
-                        genesisStakeImpl, proxyAdmin, abi.encodeCall(GenesisStakeV2.initialize, (address(this)))
-                    )
+                    abi.encode(genesisStakeImpl, proxyAdmin, abi.encodeCall(GenesisStakeV2.initialize, (address(this))))
                 )
             )
         );
 
         // Deploy MerkleDistributorWithoutDeadline implementation
-        address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(
-            address(omni),
-            root,
-            address(omniPortal),
-            address(genesisStake),
-            address(inbox)
-        ));
+        address merkleDistributorImpl = address(
+            new MerkleDistributorWithoutDeadline(
+                address(omni), root, address(omniPortal), address(genesisStake), address(inbox)
+            )
+        );
         merkleDistributor = MerkleDistributorWithoutDeadline(
             create3.deploy(
                 keccak256("merkleDistributor"),
@@ -127,10 +123,7 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
                     abi.encode(
                         merkleDistributorImpl,
                         proxyAdmin,
-                        abi.encodeCall(
-                            MerkleDistributorWithoutDeadline.initialize,
-                            (admin)
-                        )
+                        abi.encodeCall(MerkleDistributorWithoutDeadline.initialize, (admin))
                     )
                 )
             )
@@ -138,7 +131,9 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
 
         // Verify precomputed addresses
         require(address(genesisStake) == genesisStakeAddr, "GenesisStakeV2 address mismatch");
-        require(address(merkleDistributor) == merkleDistributorAddr, "MerkleDistributorWithoutDeadline address mismatch");
+        require(
+            address(merkleDistributor) == merkleDistributorAddr, "MerkleDistributorWithoutDeadline address mismatch"
+        );
     }
 
     // Fund stakers and the distributor contract
@@ -146,11 +141,11 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
         for (uint256 i; i < addrCount; ++i) {
             // Transfer tokens to stakers
             omni.transfer(stakers[i], amounts[i]);
-            
+
             // Approve GenesisStakeV2 to spend tokens
             vm.prank(stakers[i]);
             omni.approve(address(genesisStake), amounts[i]);
-            
+
             // staking removed from V2 contract
             // // Stake tokens for stakers
             // vm.prank(stakers[i]);
@@ -339,4 +334,4 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
             assertEq(omni.balanceOf(stakers[i]), initialBalance);
         }
     }
-} 
+}
