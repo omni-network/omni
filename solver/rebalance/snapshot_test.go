@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	simulate = flag.Bool("simulate", false, "run simulation tests")
+	snapshot = flag.Bool("snapshot", false, "run snapshot test")
 )
 
 type tokenAmt struct {
@@ -32,8 +32,8 @@ type tokenAmt struct {
 func TestSnapshot(t *testing.T) {
 	t.Parallel()
 
-	if !*simulate {
-		t.Skip("skipping integration test")
+	if !*snapshot {
+		t.Skip("skipping snapshot test")
 	}
 
 	ctx := t.Context()
