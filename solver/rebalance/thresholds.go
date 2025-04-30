@@ -93,14 +93,14 @@ var (
 		mustToken(evmchain.IDEthereum, tokens.USDC): {
 			min:     50_000,
 			target:  100_000,
-			surplus: 110_000,
+			surplus: 120_000,
 		},
 		mustToken(evmchain.IDBase, tokens.WSTETH): {
 			minSwap: 1,
 		},
 		mustToken(evmchain.IDBase, tokens.USDC): {
 			min:     20_000,
-			target:  50_000,
+			target:  40_000,
 			surplus: 50_000,
 		},
 	}
