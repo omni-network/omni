@@ -34,6 +34,10 @@ func Start(
 
 	network = newRebalanceNetwork(network)
 
+	if err := monitorForever(ctx, network, backends.Clients(), solver); err != nil {
+		return errors.Wrap(err, "monitor forever")
+	}
+
 	db, err := newCCTPDB(dbDir)
 	if err != nil {
 		return errors.Wrap(err, "new cctp db")
