@@ -25,7 +25,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
     error InvalidSignature();
     error InsufficientAmount();
     error ManualClaimDisabled();
-
+    error Expired();
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
@@ -70,7 +70,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
         __Pausable_init();
         _transferOwnership(admin_);
         
-        token.safeApprove(solverNetInbox_, type(uint256).max);
+        token.safeApprove(address(solvernetInbox), type(uint256).max);
 
     }
 

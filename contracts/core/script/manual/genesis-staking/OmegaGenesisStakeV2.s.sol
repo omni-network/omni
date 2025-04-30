@@ -211,7 +211,13 @@ contract OmegaGenesisStakeScript is Script {
         
         require(actualOwner == msg.sender, "Initialization failed: owner not set correctly");
         
-        address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(address(omni), root));
+        address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(
+            address(omni),
+            root,
+            address(portal),
+            address(genesisStake),
+            address(inbox)
+        ));
         merkleDistributor = MerkleDistributorWithoutDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
@@ -222,7 +228,7 @@ contract OmegaGenesisStakeScript is Script {
                         msg.sender,
                         abi.encodeCall(
                             MerkleDistributorWithoutDeadline.initialize,
-                            (msg.sender, address(portal), address(genesisStake), address(inbox))
+                            (msg.sender)
                         )
                     )
                 )
@@ -250,7 +256,7 @@ contract OmegaGenesisStakeScript is Script {
                 msg.sender,
                 abi.encodeCall(
                     MerkleDistributorWithoutDeadline.initialize,
-                    (msg.sender, address(portal), address(genesisStake), address(inbox))
+                    (msg.sender)
                 )
             )
         );

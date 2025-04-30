@@ -183,26 +183,7 @@ contract StagingGenesisStakeScript is Script {
             )
         );
 
-        address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(address(omni), root));
-        merkleDistributor = MerkleDistributorWithoutDeadline(
-            createX.deployCreate3(
-                merkleDistributorSalt,
-                abi.encodePacked(
-                    type(TransparentUpgradeableProxy).creationCode,
-                    abi.encode(
-                        merkleDistributorImpl,
-                        msg.sender,
-                        abi.encodeCall(
-                            MerkleDistributorWithoutDeadline.initialize,
-                            (msg.sender, address(portal), address(genesisStake), address(inbox))
-                        )
-                    )
-                )
-            )
-        );
-
         require(address(genesisStake) == genesisStakeAddr, "GenesisStakeV2 addr mismatch");
-        require(address(merkleDistributor) == merkleDistributorAddr, "MerkleDistributor addr mismatch");
 
         console2.log("GenesisStakeV2 implementation:", address(genesisStakeImpl));
         console2.log("GenesisStakeV2 implementation constructor args:");
@@ -213,6 +194,33 @@ contract StagingGenesisStakeScript is Script {
             abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStakeV2.initialize, (msg.sender)))
         );
         console2.log("");
+
+        address merkleDistributorImpl = address(new MerkleDistributorWithoutDeadline(
+            address(omni),
+            root,
+            address(portal),
+            address(genesisStake),
+            address(inbox)
+        ));
+        merkleDistributor = MerkleDistributorWithoutDeadline(
+            createX.deployCreate3(
+                merkleDistributorSalt,
+                abi.encodePacked(
+                    type(TransparentUpgradeableProxy).creationCode,
+                    abi.encode(
+                        merkleDistributorImpl,
+                        msg.sender,
+                        abi.encodeCall(
+                            MerkleDistributorWithoutDeadline.initialize,
+                            (msg.sender)
+                        )
+                    )
+                )
+            )
+        );
+
+        require(address(merkleDistributor) == merkleDistributorAddr, "MerkleDistributor addr mismatch");
+
         console2.log("MerkleDistributor implementation:", address(merkleDistributorImpl));
         console2.log("MerkleDistributor implementation constructor args:");
         console2.logBytes(abi.encode(address(omni), root));
@@ -224,7 +232,7 @@ contract StagingGenesisStakeScript is Script {
                 msg.sender,
                 abi.encodeCall(
                     MerkleDistributorWithoutDeadline.initialize,
-                    (msg.sender, address(portal), address(genesisStake), address(inbox))
+                    (msg.sender)
                 )
             )
         );
