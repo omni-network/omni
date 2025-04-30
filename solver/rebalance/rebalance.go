@@ -27,7 +27,7 @@ var (
 // rebalanceForever starts rebalancing loops for each chain in the network.
 func rebalanceForever(
 	ctx context.Context,
-	cfg Config,
+	interval time.Duration,
 	db *cctpdb.DB,
 	network netconf.Network,
 	backends ethbackend.Backends,
@@ -36,16 +36,16 @@ func rebalanceForever(
 	for _, chain := range network.EVMChains() {
 		ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
 
-		go swapSurplusForever(ctx, cfg, backends, solver, chain.ID)
-		go sendSurplusForever(ctx, cfg, db, network, backends, solver, chain.ID)
-		go fillDeficitForever(ctx, cfg, db, network, backends, solver, chain.ID)
+		go swapSurplusForever(ctx, interval, backends, solver, chain.ID)
+		go sendSurplusForever(ctx, interval, db, network, backends, solver, chain.ID)
+		go fillDeficitForever(ctx, interval, db, network, backends, solver, chain.ID)
 	}
 }
 
 // swapSurplusForever swaps surplus tokens to USDC on `chainID` forever.
 func swapSurplusForever(
 	ctx context.Context,
-	cfg Config,
+	interval time.Duration,
 	backends ethbackend.Backends,
 	solver common.Address,
 	chainID uint64,
@@ -58,7 +58,7 @@ func swapSurplusForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			ticker.Reset(cfg.Interval)
+			ticker.Reset(interval)
 
 			do := func() error {
 				return swapSurplusOnce(ctx, backends, chainID, solver)
@@ -74,7 +74,7 @@ func swapSurplusForever(
 // sendSurplusForever sends surplus USDC on `chainID` to chains in deficit forever.
 func sendSurplusForever(
 	ctx context.Context,
-	cfg Config,
+	interval time.Duration,
 	db *cctpdb.DB,
 	network netconf.Network,
 	backends ethbackend.Backends,
@@ -89,7 +89,7 @@ func sendSurplusForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			ticker.Reset(cfg.Interval)
+			ticker.Reset(interval)
 
 			do := func() error {
 				return sendSurplusOnce(ctx, db, network.ID, backends, chainID, solver)
@@ -105,7 +105,7 @@ func sendSurplusForever(
 // fillDeficitForever fills token deficits from surplus USDC on `chainID` forever.
 func fillDeficitForever(
 	ctx context.Context,
-	cfg Config,
+	interval time.Duration,
 	db *cctpdb.DB,
 	network netconf.Network,
 	backends ethbackend.Backends,
@@ -120,7 +120,7 @@ func fillDeficitForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			ticker.Reset(cfg.Interval)
+			ticker.Reset(interval)
 
 			do := func() error {
 				return fillDeficitOnce(ctx, db, network.ID, backends, chainID, solver)
