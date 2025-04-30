@@ -19,7 +19,6 @@ contract GenesisStakeV2UpgradeTest is Test {
     address internal owner;
     address internal token;
     uint256 internal userBalance;
-    bool internal isOpen;
 
     address internal rewardsDistributor = makeAddr("rewardsDistributor");
     address internal user = makeAddr("user");
@@ -29,7 +28,6 @@ contract GenesisStakeV2UpgradeTest is Test {
         require(mode == VmSafe.CallerMode.None, "no broadcast");
 
         _setup();
-        _openStakeClose();
         _cacheState();
         _upgrade();
         _checkState();
@@ -45,31 +43,14 @@ contract GenesisStakeV2UpgradeTest is Test {
         token = address(genesisStake.token());
     }
 
-    // Open staking, user stake, and then close staking
-    function _openStakeClose() internal {
-        vm.startPrank(owner);
-        if (!genesisStake.isOpen()) genesisStake.open();
-        vm.stopPrank();
-
-        deal(token, user, 1000 ether);
-        vm.startPrank(user);
-        token.safeApprove(address(genesisStake), type(uint256).max);
-        genesisStake.stake(1000 ether);
-        vm.stopPrank();
-
-        vm.prank(owner);
-        genesisStake.close();
-    }
-
     // Cache values relevant for testing post-upgrade
     function _cacheState() internal {
         userBalance = genesisStake.balanceOf(user);
-        isOpen = genesisStake.isOpen();
     }
 
     // Deploy the implementation contract and upgrade the proxy without reinitialization
     function _upgrade() internal {
-        address impl = address(new GenesisStake(token, rewardsDistributor));
+        address impl = address(new GenesisStakeV2(token, rewardsDistributor));
 
         vm.prank(admin);
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(genesisStake)), impl, "");
@@ -80,10 +61,9 @@ contract GenesisStakeV2UpgradeTest is Test {
         assertEq(address(genesisStake.token()), token, "token mismatch");
         assertEq(genesisStake.rewardsDistributor(), rewardsDistributor, "rewardsDistributor mismatch");
         assertEq(genesisStake.balanceOf(user), userBalance, "balanceOf(user) mismatch");
-        assertEq(genesisStake.isOpen(), isOpen, "isOpen mismatch");
     }
 
-    // Test the newly introduced migrateStake function
+    // Test the migrateStake function
     function _testMigrateStake() internal {
         vm.startPrank(rewardsDistributor);
 

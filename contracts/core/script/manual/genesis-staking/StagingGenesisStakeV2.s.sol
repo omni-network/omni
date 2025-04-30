@@ -12,7 +12,7 @@ import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { ISolverNetInbox } from "solve/src/interfaces/ISolverNetInbox.sol";
 
-import { GenesisStake } from "src/token/GenesisStake.sol";
+import { GenesisStakeV2 } from "src/token/GenesisStakeV2.sol";
 import { MerkleDistributorWithoutDeadline } from "src/token/MerkleDistributorWithoutDeadline.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
@@ -26,7 +26,7 @@ contract StagingGenesisStakeScript is Script {
 
     address internal validator = 0xD6CD71dF91a6886f69761826A9C4D123178A8d9D;
 
-    GenesisStake internal genesisStake;
+    GenesisStakeV2 internal genesisStake;
     MerkleDistributorWithoutDeadline internal merkleDistributor;
 
     uint256 internal depositAmount = 100 ether;
@@ -52,7 +52,7 @@ contract StagingGenesisStakeScript is Script {
     }
 
     /**
-     * @dev This assumes the four relevant addresses above have been set and that a new GenesisStake contract should be
+     * @dev This assumes the four relevant addresses above have been set and that a new GenesisStakeV2 contract should be
      * deployed. It also assumes that the broadcaster has 200 OMNI ERC20 tokens to spend on the network.
      */
     function deployAndTest() public {
@@ -170,14 +170,14 @@ contract StagingGenesisStakeScript is Script {
         address merkleDistributorAddr =
             createX.computeCreate3Address(keccak256(abi.encodePacked(merkleDistributorSalt)));
 
-        address genesisStakeImpl = address(new GenesisStake(address(omni), merkleDistributorAddr));
-        genesisStake = GenesisStake(
+        address genesisStakeImpl = address(new GenesisStakeV2(address(omni), merkleDistributorAddr));
+        genesisStake = GenesisStakeV2(
             createX.deployCreate3(
                 genesisStakeSalt,
                 abi.encodePacked(
                     type(TransparentUpgradeableProxy).creationCode,
                     abi.encode(
-                        genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender))
+                        genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStakeV2.initialize, (msg.sender))
                     )
                 )
             )
@@ -201,16 +201,16 @@ contract StagingGenesisStakeScript is Script {
             )
         );
 
-        require(address(genesisStake) == genesisStakeAddr, "GenesisStake addr mismatch");
+        require(address(genesisStake) == genesisStakeAddr, "GenesisStakeV2 addr mismatch");
         require(address(merkleDistributor) == merkleDistributorAddr, "MerkleDistributor addr mismatch");
 
-        console2.log("GenesisStake implementation:", address(genesisStakeImpl));
-        console2.log("GenesisStake implementation constructor args:");
+        console2.log("GenesisStakeV2 implementation:", address(genesisStakeImpl));
+        console2.log("GenesisStakeV2 implementation constructor args:");
         console2.logBytes(abi.encode(address(omni), merkleDistributorAddr));
-        console2.log("GenesisStake proxy address:", address(genesisStake));
-        console2.log("GenesisStake proxy constructor args:");
+        console2.log("GenesisStakeV2 proxy address:", address(genesisStake));
+        console2.log("GenesisStakeV2 proxy constructor args:");
         console2.logBytes(
-            abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender)))
+            abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStakeV2.initialize, (msg.sender)))
         );
         console2.log("");
         console2.log("MerkleDistributor implementation:", address(merkleDistributorImpl));
