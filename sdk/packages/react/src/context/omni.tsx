@@ -1,21 +1,12 @@
-import type { Environment, OmniConfig } from '@omni-network/core'
+import {
+  type Environment,
+  type OmniConfig,
+  getApiUrl,
+} from '@omni-network/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useMemo } from 'react'
 import { getOmniContractsQueryOptions } from '../utils/getContracts.js'
 import { throwingProxy } from '../utils/throwingProxy.js'
-
-function apiUrl(env: Environment): string {
-  switch (env) {
-    case 'devnet':
-      return 'http://localhost:26661/api/v1'
-    case 'testnet':
-      return 'https://solver.omega.omni.network/api/v1'
-    case 'mainnet':
-      return 'https://solver.mainnet.omni.network/api/v1'
-    default:
-      throw new Error(`Invalid environment supplied: ${env}`)
-  }
-}
 
 type OmniProviderProps = {
   env: Environment
@@ -29,7 +20,7 @@ export function OmniProvider({
   children,
   __apiBaseUrl: apiOverride,
 }: React.PropsWithChildren<OmniProviderProps>) {
-  const apiBaseUrl = apiOverride ?? apiUrl(env)
+  const apiBaseUrl = apiOverride ?? getApiUrl(env)
   const config = useMemo(() => {
     return { apiBaseUrl, env }
   }, [env, apiBaseUrl])
