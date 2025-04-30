@@ -1,7 +1,9 @@
 import { encodeFunctionData, zeroAddress } from 'viem'
 import { fetchJSON } from '../internal/api.js'
 import type { OptionalAbis } from '../types/abi.js'
+import type { Environment } from '../types/config.js'
 import { type Order, isContractCall } from '../types/order.js'
+import { getApiUrl } from '../utils/getApiUrl.js'
 import { toJSON } from '../utils/toJSON.js'
 
 export type ValidationResponse = {
@@ -17,10 +19,11 @@ export type ValidationResponse = {
 
 // validateOrder calls /check - checking if an order is valid
 export async function validateOrder<abis extends OptionalAbis>(
-  apiBaseUrl: string,
   order: Order<abis>,
+  envOrApiBaseUrl?: Environment | string,
 ) {
-  const json = await fetchJSON(`${apiBaseUrl}/check`, {
+  const apiUrl = getApiUrl(envOrApiBaseUrl)
+  const json = await fetchJSON(`${apiUrl}/check`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: serialize(order),

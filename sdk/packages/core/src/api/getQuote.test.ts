@@ -28,19 +28,19 @@ const params: GetQuoteParams = {
 }
 
 test('default: fetches a quote', async () => {
-  await expect(getQuote('http://localhost', params)).resolves.toEqual(testQuote)
+  await expect(getQuote(params)).resolves.toEqual(testQuote)
 })
 
 test('parameters: expense', async () => {
   await expect(
-    getQuote('http://localhost', {
+    getQuote({
       ...params,
       expense: { token, isNative: false },
     }),
   ).resolves.toEqual(testQuote)
 
   await expect(
-    getQuote('http://localhost', {
+    getQuote({
       ...params,
       expense: { isNative: true },
     }),
@@ -49,14 +49,14 @@ test('parameters: expense', async () => {
 
 test('parameters: deposit', async () => {
   await expect(
-    getQuote('http://localhost', {
+    getQuote({
       ...params,
       deposit: { token, isNative: false },
     }),
   ).resolves.toEqual(testQuote)
 
   await expect(
-    getQuote('http://localhost', {
+    getQuote({
       ...params,
       deposit: { isNative: true },
     }),
@@ -65,7 +65,7 @@ test('parameters: deposit', async () => {
 
 test('parameters: mode', async () => {
   await expect(
-    getQuote('http://localhost', {
+    getQuote({
       ...params,
       mode: 'expense',
       deposit: { isNative: true, amount: 100n },
@@ -75,7 +75,7 @@ test('parameters: mode', async () => {
   ).resolves.toEqual(testQuote)
 
   await expect(
-    getQuote('http://localhost', {
+    getQuote({
       ...params,
       mode: 'deposit',
       deposit: { isNative: true, amount: 100n },
@@ -95,7 +95,7 @@ test.each([
   vi.spyOn(api, 'fetchJSON').mockResolvedValue(mockReturn)
 
   const expectRejection = expect(async () => {
-    await getQuote('http://localhost', params)
+    await getQuote(params)
   }).rejects
   await expectRejection.toBeInstanceOf(Error)
   await expectRejection.toHaveProperty(

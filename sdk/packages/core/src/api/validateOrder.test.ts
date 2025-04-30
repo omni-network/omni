@@ -10,23 +10,26 @@ test('default: native transfer order', async () => {
     accepted: true,
   })
 
-  const resultPromise = validateOrder('http://localhost', {
-    owner: testAccount.address,
-    srcChainId: 1,
-    destChainId: 2,
-    calls: [
-      {
-        target: testAccount.address,
-        value: 0n,
+  const resultPromise = validateOrder(
+    {
+      owner: testAccount.address,
+      srcChainId: 1,
+      destChainId: 2,
+      calls: [
+        {
+          target: testAccount.address,
+          value: 0n,
+        },
+      ],
+      deposit: {
+        amount: 0n,
       },
-    ],
-    deposit: {
-      amount: 0n,
+      expense: {
+        amount: 0n,
+      },
     },
-    expense: {
-      amount: 0n,
-    },
-  })
+    'http://localhost',
+  )
   await expect(resultPromise).resolves.toEqual({ accepted: true })
   expect(api.fetchJSON).toHaveBeenCalledWith(
     'http://localhost/check',
@@ -38,7 +41,7 @@ test('default: order', async () => {
   vi.spyOn(api, 'fetchJSON').mockResolvedValue({
     accepted: true,
   })
-  await expect(validateOrder('http://localhost', testOrder)).resolves.toEqual({
+  await expect(validateOrder(testOrder, 'http://localhost')).resolves.toEqual({
     accepted: true,
   })
   expect(api.fetchJSON).toHaveBeenCalledWith(
@@ -55,7 +58,7 @@ test('behaviour: resolves if response is supported error object', async () => {
     },
   }
   vi.spyOn(api, 'fetchJSON').mockResolvedValue(response)
-  await expect(validateOrder('http://localhost', testOrder)).resolves.toBe(
+  await expect(validateOrder(testOrder, 'http://localhost')).resolves.toBe(
     response,
   )
 })
@@ -67,9 +70,7 @@ test('behaviour: resolves if response is supported rejection object', async () =
     rejectDescription: 'a description',
   }
   vi.spyOn(api, 'fetchJSON').mockResolvedValue(response)
-  await expect(validateOrder('http://localhost', testOrder)).resolves.toBe(
-    response,
-  )
+  await expect(validateOrder(testOrder)).resolves.toBe(response)
 })
 
 test.each([
@@ -82,7 +83,7 @@ test.each([
   vi.spyOn(api, 'fetchJSON').mockResolvedValue(mockReturn)
 
   const expectRejection = expect(async () => {
-    await validateOrder('http://localhost', testOrder)
+    await validateOrder(testOrder)
   }).rejects
   await expectRejection.toBeInstanceOf(Error)
   await expectRejection.toHaveProperty(
@@ -98,7 +99,7 @@ test('behaviour: throws when the order encoding is invalid', async () => {
   }
   const expectRejection = expect(async () => {
     // @ts-expect-error: invalid order
-    await validateOrder('http://localhost', invalidOrder)
+    await validateOrder(invalidOrder)
   }).rejects
   await expectRejection.toBeInstanceOf(Error)
   await expectRejection.toMatchObject({

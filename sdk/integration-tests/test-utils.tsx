@@ -54,8 +54,6 @@ import {
   useConnect,
 } from 'wagmi'
 
-export const devnetApiUrl = 'http://localhost:26661/api/v1'
-
 const txHashRegexp = /^0x[0-9a-f]{64}$/
 
 type WaitForInboxOrderFilledParams = GetOrderParameters & {
@@ -127,14 +125,14 @@ export async function executeTestOrderUsingCore(
 ) {
   const { order, rejectReason } = params
   if (rejectReason != null) {
-    await expect(validateOrder(devnetApiUrl, order)).resolves.toMatchObject({
+    await expect(validateOrder(order, 'devnet')).resolves.toMatchObject({
       rejected: true,
       rejectReason,
     })
     return
   }
 
-  await expect(validateOrder(devnetApiUrl, order)).resolves.toMatchObject({
+  await expect(validateOrder(order, 'devnet')).resolves.toMatchObject({
     accepted: true,
   })
 
