@@ -22,6 +22,7 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
     error ZeroAddress();
     error InvalidSignature();
     error InsufficientAmount();
+    error ManualClaimDisabled();
 
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
@@ -266,5 +267,13 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
     function _domainNameAndVersion() internal pure override returns (string memory name, string memory version) {
         name = "MerkleDistributorWithoutDeadline";
         version = "1";
+    }
+
+    /**
+     * @notice Override to prevent manual claims - use upgradeStake or unstake instead
+     * @dev This function always reverts to prevent manual claims
+     */
+    function claim(uint256, address, uint256, bytes32[] calldata) public pure override {
+        revert ManualClaimDisabled();
     }
 } 
