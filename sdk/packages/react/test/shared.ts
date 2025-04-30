@@ -1,3 +1,4 @@
+import type { OmniContracts, OptionalAbis, Order } from '@omni-network/core'
 import { testAccount } from '@omni-network/test-utils'
 import {
   type Hex,
@@ -10,8 +11,6 @@ import {
 import { arbitrum, base, optimism } from 'viem/chains'
 import { http, createConfig, mock } from 'wagmi'
 import { mainnet } from 'wagmi/chains'
-import type { OptionalAbis } from '../src/types/abi.js'
-import type { Order } from '../src/types/order.js'
 
 ////////////////////////////////////////
 //// TEST DATA
@@ -47,7 +46,7 @@ type FillInstruction = {
 }
 
 export const oneEth = parseEther('1')
-export const contracts = {
+export const contracts: OmniContracts = {
   inbox: '0x123',
   outbox: '0x456',
   middleman: '0x789',
@@ -101,8 +100,8 @@ export const orderRequest: Order<OptionalAbis> = {
 }
 
 export const quote = {
-  deposit: { token: zeroAddress, amount: '100' },
-  expense: { token: zeroAddress, amount: '99' },
+  deposit: { token: zeroAddress, amount: 100n },
+  expense: { token: zeroAddress, amount: 99n },
 }
 
 export const order = {
@@ -126,4 +125,11 @@ export const order = {
     token: '0x123',
     amount: 0n,
   },
+} as const
+
+export const orderStatusData = {
+  status: 1,
+  updatedBy: '0x123',
+  timestamp: 1,
+  rejectReason: 0,
 } as const

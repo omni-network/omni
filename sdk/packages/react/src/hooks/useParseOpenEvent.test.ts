@@ -1,3 +1,4 @@
+import { ParseOpenEventError, inboxABI } from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
 import {
   type Hex,
@@ -13,11 +14,9 @@ import {
   renderHook,
   resolvedOrder,
 } from '../../test/index.js'
-import { inboxABI } from '../constants/abis.js'
-import { ParseOpenEventError } from '../errors/base.js'
 import { useParseOpenEvent } from './useParseOpenEvent.js'
 
-const encodedOpenEvent = encodeAbiParameters(
+const eventData = encodeAbiParameters(
   [
     {
       type: 'tuple',
@@ -74,7 +73,7 @@ const logs: Log[] = [
   {
     address: accounts[0],
     topics,
-    data: encodedOpenEvent,
+    data: eventData,
     blockHash: '0x1',
     blockNumber: 1n,
     logIndex: 1,
@@ -122,7 +121,7 @@ test('default: parses open event', async () => {
   )
 })
 
-test('behaviour: no parsing when status is pending', () => {
+test('parameters: no parsing when status is pending', () => {
   const { result } = renderParseOpenEventHook({
     status: 'pending',
     logs: [],
@@ -131,21 +130,13 @@ test('behaviour: no parsing when status is pending', () => {
   expect(result.current.resolvedOrder).toBeUndefined()
 })
 
-test('behaviour: no parsing when logs is undefined', () => {
+test('parameters: no parsing and error when logs is undefined', () => {
   const { result } = renderParseOpenEventHook({
     status: 'success',
     logs: [],
   })
 
   expect(result.current.resolvedOrder).toBeUndefined()
-})
-
-test('behaviour: error when status is success and logs is empty array', () => {
-  const { result } = renderParseOpenEventHook({
-    status: 'success',
-    logs: [],
-  })
-
   expect(result.current.error).toBeInstanceOf(ParseOpenEventError)
 })
 

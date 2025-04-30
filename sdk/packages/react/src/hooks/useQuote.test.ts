@@ -1,25 +1,22 @@
+import type { Quoteable } from '@omni-network/core'
+import * as core from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { renderHook } from '../../test/react.js'
-import { quote } from '../../test/shared.js'
-import * as api from '../internal/api.js'
-import type { Quoteable } from '../types/quote.js'
+import { quote, renderHook } from '../../test/index.js'
 import { useQuote } from './useQuote.js'
 
 const token = '0x123'
-const deposit = { token, isNative: false } satisfies Quoteable
-const nativeExpense = { isNative: true } satisfies Quoteable
 
 beforeEach(() => {
-  vi.spyOn(api, 'fetchJSON').mockResolvedValue(quote)
+  vi.spyOn(core, 'getQuote').mockResolvedValue(quote)
 })
 
 const params = {
   srcChainId: 1,
   destChainId: 2,
   mode: 'expense',
-  deposit: deposit,
-  expense: nativeExpense,
+  deposit: { token, isNative: false } satisfies Quoteable,
+  expense: { isNative: true } satisfies Quoteable,
   enabled: true,
 } as const
 
@@ -103,23 +100,17 @@ test('behaviour: quote does not fire when enabled is false', () => {
   expect(result.current.query.isFetched).toBe(false)
 })
 
-test.each([
-  'test',
-  {},
-  { deposit: { token, amount: '100' } },
-  { expense: { token, amount: '100' } },
-  { deposit: { token }, expense: { token } },
-  { deposit: { amount: '100' }, expense: { amount: '99' } },
-])(
-  'behaviour: quote is error if response is not a quote: %s',
-  async (mockReturn) => {
-    vi.spyOn(api, 'fetchJSON').mockResolvedValue(mockReturn)
+test('behaviour: quote is error if call throws', async () => {
+  const error = new Error('Unexpected quote response')
+  vi.spyOn(core, 'getQuote').mockRejectedValue(error)
 
-    const { result } = renderQuoteHook({ ...params, enabled: true })
+  const { result } = renderQuoteHook({ ...params, enabled: true })
 
-    await waitFor(() => {
-      expect(result.current.query.isLoading).toBe(false)
-      expect(result.current.isError).toBe(true)
-    })
-  },
-)
+  await waitFor(() => {
+    expect(result.current.query.isLoading).toBe(false)
+    expect(result.current.isError).toBe(true)
+    if (result.current.isError) {
+      expect(result.current.error).toBe(error)
+    }
+  })
+})

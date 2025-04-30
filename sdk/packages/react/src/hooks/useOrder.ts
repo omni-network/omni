@@ -1,27 +1,34 @@
-import type { Hex } from 'viem'
-import { zeroAddress } from 'viem'
+import type {
+  DidFillError,
+  OpenOrderReturn,
+  OptionalAbis,
+  Order,
+  OrderStatus,
+  ParseOpenEventError,
+} from '@omni-network/core'
+import {
+  GetOrderError,
+  LoadContractsError,
+  OpenError,
+  TxReceiptError,
+  ValidateOrderError,
+  openOrder,
+} from '@omni-network/core'
+import {
+  type UseMutateFunction,
+  type UseMutationResult,
+  useMutation,
+} from '@tanstack/react-query'
+import type { Hex, WriteContractErrorType } from 'viem'
 import {
   type Config,
   type UseWaitForTransactionReceiptReturnType,
   type UseWriteContractReturnType,
   useChainId,
+  useClient,
   useWaitForTransactionReceipt,
-  useWriteContract,
 } from 'wagmi'
-import { inboxABI } from '../constants/abis.js'
-import { typeHash } from '../constants/typehash.js'
-import {
-  type DidFillError,
-  GetOrderError,
-  LoadContractsError,
-  OpenError,
-  type ParseOpenEventError,
-  TxReceiptError,
-  ValidateOrderError,
-} from '../errors/base.js'
-import type { OptionalAbis } from '../types/abi.js'
-import type { Order, OrderStatus } from '../types/order.js'
-import { encodeOrder } from '../utils/encodeOrder.js'
+import { NoClientError } from '../errors/index.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 import {
   type UseOmniContractsResult,
@@ -37,6 +44,14 @@ type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
   validateEnabled: boolean
 }
 
+type MutationError = LoadContractsError | NoClientError | WriteContractErrorType
+
+export type MutationResult = UseMutationResult<
+  OpenOrderReturn,
+  MutationError,
+  void
+>
+
 type UseOrderError =
   | OpenError
   | TxReceiptError
@@ -44,11 +59,11 @@ type UseOrderError =
   | DidFillError
   | ValidateOrderError
   | ParseOpenEventError
-  | LoadContractsError
+  | MutationError
   | undefined
 
 type UseOrderReturnType = {
-  open: () => Promise<Hex>
+  open: UseMutateFunction<`0x${string}`, MutationError, void, unknown>
   orderId?: Hex
   validation?: UseValidateOrderResult
   txHash?: Hex
@@ -60,7 +75,7 @@ type UseOrderReturnType = {
   isOpen: boolean
   isError: boolean
   isReady: boolean
-  txMutation: UseWriteContractReturnType<Config, unknown>
+  txMutation: MutationResult
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
 }
 
@@ -74,14 +89,28 @@ type UseOrderStatus =
   | 'error'
   | 'filled'
 
-const defaultFillDeadline = () => Math.floor(Date.now() / 1000 + 86400)
-
 export function useOrder<abis extends OptionalAbis>(
   params: UseOrderParams<abis>,
 ): UseOrderReturnType {
   const { validateEnabled, ...order } = params
-  const connected = useChainId()
-  const txMutation = useWriteContract()
+  const srcChainId = order.srcChainId ?? useChainId()
+  const client = useClient({ chainId: srcChainId })
+  const contractsResult = useOmniContracts()
+  const inboxAddress = contractsResult.data?.inbox
+
+  const txMutation = useMutation<OpenOrderReturn, MutationError>({
+    mutationFn: async () => {
+      if (client == null) {
+        throw new NoClientError('No client provided')
+      }
+      if (inboxAddress == null) {
+        throw new LoadContractsError(
+          'Inbox contract address needs to be loaded',
+        )
+      }
+      return await openOrder({ client, inboxAddress, order })
+    },
+  })
 
   const wait = useWaitForTransactionReceipt({
     hash: txMutation.data,
@@ -94,13 +123,11 @@ export function useOrder<abis extends OptionalAbis>(
   })
 
   const orderStatus = useGetOrderStatus({
-    srcChainId: order.srcChainId ?? connected,
+    srcChainId,
     destChainId: order.destChainId,
     orderId: resolvedOrder?.orderId,
     resolvedOrder,
   })
-  const contractsResult = useOmniContracts()
-  const inboxAddress = contractsResult.data?.inbox
 
   const status = deriveStatus(
     contractsResult,
@@ -112,34 +139,6 @@ export function useOrder<abis extends OptionalAbis>(
 
   const validation = useValidateOrder({ order, enabled: validateEnabled })
 
-  const open = inboxAddress
-    ? async () => {
-        const encoded = encodeOrder(order)
-
-        const isNativeDeposit =
-          order.deposit.token == null || order.deposit.token === zeroAddress
-
-        return await txMutation.writeContractAsync({
-          abi: inboxABI,
-          address: inboxAddress,
-          functionName: 'open',
-          chainId: order.srcChainId,
-          value: isNativeDeposit ? order.deposit.amount : 0n,
-          args: [
-            {
-              fillDeadline: order.fillDeadline ?? defaultFillDeadline(),
-              orderDataType: typeHash,
-              orderData: encoded,
-            },
-          ],
-        })
-      }
-    : () => {
-        return Promise.reject(
-          new LoadContractsError('Inbox contract address needs to be loaded'),
-        )
-      }
-
   const error = deriveError({
     contracts: contractsResult,
     txMutation,
@@ -150,7 +149,7 @@ export function useOrder<abis extends OptionalAbis>(
   })
 
   return {
-    open,
+    open: txMutation.mutate,
     orderId: resolvedOrder?.orderId,
     validation,
     txHash: txMutation.data,
@@ -169,7 +168,7 @@ export function useOrder<abis extends OptionalAbis>(
 
 type DeriveErrorParams = {
   contracts: UseOmniContractsResult
-  txMutation: UseWriteContractReturnType<Config, unknown>
+  txMutation: MutationResult
   wait: UseWaitForTransactionReceiptReturnType
   validation: ReturnType<typeof useValidateOrder>
   orderStatus: ReturnType<typeof useGetOrderStatus>

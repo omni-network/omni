@@ -1,27 +1,35 @@
+import { type GetOrderReturn, getOrder } from '@omni-network/core'
+import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import type { Hex } from 'viem'
-import { useReadContract } from 'wagmi'
-import { inboxABI } from '../constants/abis.js'
+import { useClient } from 'wagmi'
+import { invariant } from '../utils/invariant.js'
 import { useOmniContracts } from './useOmniContracts.js'
+
+export type UseGetOrderParameters = {
+  chainId?: number
+  orderId?: Hex
+  enabled?: boolean
+}
+
+export type UseGetOrderReturn = UseQueryResult<GetOrderReturn>
 
 export function useGetOrder({
   chainId,
   orderId,
   enabled,
-}: {
-  chainId?: number
-  orderId?: Hex
-  enabled?: boolean
-}) {
+}: UseGetOrderParameters): UseGetOrderReturn {
+  const client = useClient({ chainId })
   const { data: contracts } = useOmniContracts()
-  return useReadContract({
-    address: contracts?.inbox,
-    abi: inboxABI,
-    functionName: 'getOrder',
-    chainId,
-    args: orderId ? [orderId] : undefined,
-    query: {
-      enabled: !!contracts && !!orderId && !!chainId && (enabled ?? true),
-      refetchInterval: 1000,
+  const canQuery =
+    !!client && !!contracts && !!orderId && !!chainId && (enabled ?? true)
+
+  return useQuery({
+    queryKey: ['getOrder', chainId, orderId],
+    queryFn: async () => {
+      invariant(canQuery)
+      return await getOrder({ client, inboxAddress: contracts.inbox, orderId })
     },
+    enabled: canQuery,
+    refetchInterval: 1000,
   })
 }

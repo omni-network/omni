@@ -1,7 +1,7 @@
 {
   "name": "@omni-network/react",
   "description": "React hooks for Omni Solvernet",
-  "version": "0.0.0-alpha.14",
+  "version": "0.1.0",
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@9.1.0",
@@ -60,5 +60,8 @@
   },
   "keywords": ["typescript", "web3", "ethereum", "omni"],
   "author": "Omni Network",
-  "homepage": "https://omni.network/"
+  "homepage": "https://omni.network/",
+  "dependencies": {
+    "@omni-network/core": "workspace:^"
+  }
 }

@@ -1,35 +1,27 @@
+import * as core from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
+  contracts,
   createMockWaitForTransactionReceiptResult,
-  createMockWriteContractResult,
-  mockWagmiHooks,
-} from '../../test/mocks.js'
-import { renderHook } from '../../test/react.js'
-import { contracts, orderRequest, resolvedOrder } from '../../test/shared.js'
-import {
-  DidFillError,
-  GetOrderError,
-  LoadContractsError,
-  OpenError,
-  ParseOpenEventError,
-  TxReceiptError,
-  ValidateOrderError,
-} from '../errors/base.js'
+  orderRequest,
+  renderHook,
+  resolvedOrder,
+} from '../../test/index.js'
 import { useOrder } from './useOrder.js'
-
-const { useWriteContract, useWaitForTransactionReceipt } = mockWagmiHooks()
 
 const {
   useValidateOrder,
   useGetOrderStatus,
   useOmniContracts,
   useParseOpenEvent,
+  useWaitForTransactionReceipt,
 } = vi.hoisted(() => {
   return {
     useValidateOrder: vi.fn(),
     useParseOpenEvent: vi.fn(),
     useGetOrderStatus: vi.fn(),
+    useWaitForTransactionReceipt: vi.fn(),
     useOmniContracts: vi.fn().mockImplementation(() => {
       return {
         data: {
@@ -37,6 +29,14 @@ const {
         },
       }
     }),
+  }
+})
+
+vi.mock('wagmi', async () => {
+  const actual = await vi.importActual('wagmi')
+  return {
+    ...actual,
+    useWaitForTransactionReceipt,
   }
 })
 
@@ -65,6 +65,7 @@ vi.mock('./useParseOpenEvent.js', async () => {
 })
 
 beforeEach(() => {
+  vi.spyOn(core, 'openOrder').mockResolvedValue('0xTxHash')
   useParseOpenEvent.mockReturnValue({
     resolvedOrder,
     error: null,
@@ -73,17 +74,8 @@ beforeEach(() => {
     status: 'not-found',
   })
   useValidateOrder.mockReturnValue({
-    status: 'accepted',
+    status: 'pending',
   })
-  useWriteContract.mockReturnValue(
-    createMockWriteContractResult({
-      isPending: true,
-      isSuccess: false,
-      data: undefined,
-      isIdle: false,
-      status: 'pending',
-    }),
-  )
   useWaitForTransactionReceipt.mockReturnValue(
     createMockWaitForTransactionReceiptResult({
       isPending: true,
@@ -113,9 +105,11 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
 
   await waitFor(() => {
     expect(result.current.isReady).toBe(true)
-    expect(result.current.isValidated).toBe(true)
+    expect(result.current.isValidated).toBe(false)
     expect(result.current.isError).toBe(false)
-    expect(result.current.isTxPending).toBe(true)
+    expect(result.current.isTxPending).toBe(false)
+    expect(result.current.status).toBe('ready')
+    expect(result.current.validation?.status).toBe('pending')
     expect(result.current.isTxSubmitted).toBe(false)
     expect(result.current.txMutation.data).toBeUndefined()
     expect(result.current.isOpen).toBe(false)
@@ -127,27 +121,50 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
     status: 'accepted',
   })
 
-  useGetOrderStatus.mockReturnValue({
-    status: 'open',
+  useWaitForTransactionReceipt.mockImplementation(() =>
+    createMockWaitForTransactionReceiptResult({
+      isPending: true,
+      isSuccess: false,
+      data: undefined,
+      status: 'pending',
+      fetchStatus: 'fetching',
+    }),
+  )
+
+  rerender({ validateEnabled: true })
+
+  await waitFor(() => {
+    expect(result.current.isValidated).toBe(true)
+    expect(result.current.validation?.status).toBe('accepted')
   })
 
-  useWriteContract.mockImplementation(() => createMockWriteContractResult())
+  result.current.open()
+
+  await waitFor(() => {
+    expect(result.current.txHash).toBe('0xTxHash')
+    expect(result.current.isTxPending).toBe(false)
+    expect(result.current.isTxSubmitted).toBe(true)
+    expect(result.current.txMutation.data).toBe('0xTxHash')
+    expect(result.current.txMutation.isSuccess).toBe(true)
+    expect(result.current.status).toBe('opening')
+    expect(result.current.waitForTx.data).toBeUndefined()
+    expect(result.current.waitForTx.isSuccess).toBe(false)
+  })
 
   useWaitForTransactionReceipt.mockImplementation(() =>
     createMockWaitForTransactionReceiptResult(),
   )
 
+  useGetOrderStatus.mockReturnValue({
+    status: 'open',
+  })
+
   rerender({ validateEnabled: true })
 
-  const res = await result.current.open()
-
   await waitFor(() => {
+    expect(result.current.waitForTx.data).toBe('0xTxHash')
+    expect(result.current.waitForTx.isSuccess).toBe(true)
     expect(result.current.isOpen).toBe(true)
-    expect(result.current.isTxPending).toBe(false)
-    expect(result.current.isTxSubmitted).toBe(true)
-    expect(result.current.txMutation.data).toBe('0xTxHash')
-    expect(result.current.txMutation.isSuccess).toBe(true)
-    expect(res).toBe('0xTxHash')
   })
 
   useGetOrderStatus.mockReturnValue({
@@ -165,13 +182,11 @@ test('behaviour: handles order rejection', async () => {
     validateEnabled: false,
   })
 
-  useWriteContract.mockImplementation(() => createMockWriteContractResult())
-
   useWaitForTransactionReceipt.mockImplementation(() =>
     createMockWaitForTransactionReceiptResult(),
   )
 
-  await result.current.open()
+  result.current.open()
 
   useGetOrderStatus.mockReturnValue({
     status: 'rejected',
@@ -191,13 +206,11 @@ test('behaviour: closed order is handled', async () => {
     validateEnabled: false,
   })
 
-  useWriteContract.mockImplementation(() => createMockWriteContractResult())
-
   useWaitForTransactionReceipt.mockImplementation(() =>
     createMockWaitForTransactionReceiptResult(),
   )
 
-  await result.current.open()
+  result.current.open()
 
   useGetOrderStatus.mockReturnValue({
     status: 'closed',
@@ -211,23 +224,19 @@ test('behaviour: closed order is handled', async () => {
   })
 })
 
-test('behaviour: handles tx mutation error', async () => {
-  useWriteContract.mockImplementation(() =>
-    createMockWriteContractResult({
-      isError: true,
-      error: new Error('Transaction failed'),
-      status: 'error',
-    }),
-  )
+test('behaviour: handles openOrder error', async () => {
+  vi.spyOn(core, 'openOrder').mockRejectedValue(new Error('Tx mutation error'))
 
   const { result } = renderOrderHook({
     ...orderRequest,
     validateEnabled: false,
   })
 
+  result.current.open()
+
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
-    expect(result.current.error).toBeInstanceOf(OpenError)
+    expect(result.current.error).toBeInstanceOf(core.OpenError)
   })
 })
 
@@ -266,17 +275,11 @@ test('behaviour:  handles validation error', async () => {
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
-    expect(result.current.error).toBeInstanceOf(ValidateOrderError)
+    expect(result.current.error).toBeInstanceOf(core.ValidateOrderError)
   })
 })
 
 test('behaviour: handles transaction receipt error', async () => {
-  useWriteContract.mockImplementation(() =>
-    createMockWriteContractResult({
-      error: null,
-    }),
-  )
-
   useWaitForTransactionReceipt.mockImplementation(() =>
     createMockWaitForTransactionReceiptResult({
       isError: true,
@@ -292,7 +295,7 @@ test('behaviour: handles transaction receipt error', async () => {
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
-    expect(result.current.error).toBeInstanceOf(TxReceiptError)
+    expect(result.current.error).toBeInstanceOf(core.TxReceiptError)
     expect(result.current.status).toBe('error')
   })
 })
@@ -300,19 +303,11 @@ test('behaviour: handles transaction receipt error', async () => {
 test('behaviour: handles parse open event error', async () => {
   useParseOpenEvent.mockReturnValue({
     status: 'error',
-    error: new ParseOpenEventError('Failed to parse open event'),
+    error: new core.ParseOpenEventError('Failed to parse open event'),
   })
 
   useWaitForTransactionReceipt.mockImplementation(() =>
     createMockWaitForTransactionReceiptResult({
-      error: null,
-    }),
-  )
-
-  useWriteContract.mockReset().mockImplementation(() =>
-    createMockWriteContractResult({
-      isSuccess: true,
-      status: 'success',
       error: null,
     }),
   )
@@ -324,22 +319,15 @@ test('behaviour: handles parse open event error', async () => {
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
-    expect(result.current.error).toBeInstanceOf(ParseOpenEventError)
+    expect(result.current.error).toBeInstanceOf(core.ParseOpenEventError)
   })
 })
 
 test('behaviour: handles order status error', async () => {
   useGetOrderStatus.mockReturnValue({
     status: 'error',
-    error: new DidFillError('Failed to get order status'),
+    error: new core.DidFillError('Failed to get order status'),
   })
-
-  useWriteContract.mockReset().mockImplementation(() =>
-    createMockWriteContractResult({
-      isSuccess: true,
-      status: 'success',
-    }),
-  )
 
   useWaitForTransactionReceipt.mockImplementation(() =>
     createMockWaitForTransactionReceiptResult({
@@ -355,18 +343,11 @@ test('behaviour: handles order status error', async () => {
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
-    expect(result.current.error).toBeInstanceOf(DidFillError)
+    expect(result.current.error).toBeInstanceOf(core.DidFillError)
   })
 })
 
 test('behaviour: handles wait success but order not found', async () => {
-  useWriteContract.mockReset().mockImplementation(() =>
-    createMockWriteContractResult({
-      isSuccess: true,
-      status: 'success',
-    }),
-  )
-
   useWaitForTransactionReceipt.mockImplementation(() =>
     createMockWaitForTransactionReceiptResult({
       isSuccess: true,
@@ -378,7 +359,7 @@ test('behaviour: handles wait success but order not found', async () => {
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
-    expect(result.current.error).toBeInstanceOf(GetOrderError)
+    expect(result.current.error).toBeInstanceOf(core.GetOrderError)
   })
 })
 
@@ -400,7 +381,7 @@ test('behaviour: handles contracts load error', async () => {
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
-    expect(result.current.error).toBeInstanceOf(LoadContractsError)
+    expect(result.current.error).toBeInstanceOf(core.LoadContractsError)
     expect(result.current.status).toBe('error')
   })
 })
@@ -421,9 +402,9 @@ test('behaviour: open rejects when inbox contract not loaded', async () => {
 
   rerender()
 
-  await expect(
-    result.current.open(),
-  ).rejects.toThrowErrorMatchingInlineSnapshot(
-    '[LoadContractsError: Inbox contract address needs to be loaded]',
-  )
+  result.current.open()
+
+  await waitFor(() => {
+    expect(result.current.txMutation.isError).toBe(true)
+  })
 })

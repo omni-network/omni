@@ -1,7 +1,6 @@
+import type { OptionalAbis, Order } from '@omni-network/core'
 import { expectTypeOf, test } from 'vitest'
 import { accounts } from '../../test/index.js'
-import type { OptionalAbis } from '../types/abi.js'
-import type { Order } from '../types/order.js'
 import { useValidateOrder } from './useValidateOrder.js'
 
 test('type: useInboxStatus', () => {

@@ -1,13 +1,9 @@
+import type { OptionalAbis, Order } from '@omni-network/core'
+import type { UseMutateFunction } from '@tanstack/react-query'
 import type { Hex } from 'viem'
 import { expectTypeOf, test } from 'vitest'
-import type {
-  Config,
-  UseWaitForTransactionReceiptReturnType,
-  UseWriteContractReturnType,
-} from 'wagmi'
-import type { OptionalAbis } from '../types/abi.js'
-import type { Order } from '../types/order.js'
-import { useOrder } from './useOrder.js'
+import type { Config, UseWaitForTransactionReceiptReturnType } from 'wagmi'
+import { type MutationResult, useOrder } from './useOrder.js'
 import type { UseValidateOrderResult } from './useValidateOrder.js'
 
 test('type: useOrder', () => {
@@ -22,7 +18,7 @@ test('type: useOrder', () => {
   const result = useOrder(order)
 
   expectTypeOf(result).toMatchTypeOf<{
-    open: () => Promise<Hex>
+    open: UseMutateFunction<Hex, Error, void, unknown>
     orderId?: Hex
     validation?: UseValidateOrderResult
     txHash?: Hex
@@ -34,12 +30,13 @@ test('type: useOrder', () => {
     isOpen: boolean
     isError: boolean
     isReady: boolean
-    txMutation: UseWriteContractReturnType<Config, unknown>
+    txMutation: MutationResult
     waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
   }>()
 
-  expectTypeOf(result.open).toBeFunction()
-  expectTypeOf(result.open).returns.toEqualTypeOf<Promise<Hex>>()
+  expectTypeOf(result.open).toMatchTypeOf<
+    UseMutateFunction<`0x${string}`, Error, void, unknown>
+  >()
 
   expectTypeOf(result.orderId).toEqualTypeOf<Hex | undefined>()
   expectTypeOf(result.txHash).toEqualTypeOf<Hex | undefined>()
@@ -53,9 +50,7 @@ test('type: useOrder', () => {
   expectTypeOf(result.isError).toBeBoolean()
   expectTypeOf(result.isReady).toBeBoolean()
 
-  expectTypeOf(result.txMutation).toEqualTypeOf<
-    UseWriteContractReturnType<Config, unknown>
-  >()
+  expectTypeOf(result.txMutation).toEqualTypeOf<MutationResult>()
   expectTypeOf(result.waitForTx).toEqualTypeOf<
     UseWaitForTransactionReceiptReturnType<Config, number>
   >()

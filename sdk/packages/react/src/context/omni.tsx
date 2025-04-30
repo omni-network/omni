@@ -1,8 +1,8 @@
+import type { Environment, OmniConfig } from '@omni-network/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useMemo } from 'react'
-import { throwingProxy } from '../internal/util.js'
-import type { Environment, OmniConfig } from '../types/config.js'
 import { getOmniContractsQueryOptions } from '../utils/getContracts.js'
+import { throwingProxy } from '../utils/throwingProxy.js'
 
 function apiUrl(env: Environment): string {
   switch (env) {
