@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -74,6 +75,15 @@ func IsHLChain(chainID uint64) bool {
 				return true
 			}
 		}
+	}
+
+	return false
+}
+
+// IsHLRole returns true if the role is a hyperlane-related role.
+func IsHLRole(role eoa.Role) bool {
+	if role != eoa.RoleRelayer && role != eoa.RoleMonitor && role != eoa.RoleTester && role != eoa.RoleXCaller {
+		return true
 	}
 
 	return false

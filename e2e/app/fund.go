@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
@@ -83,6 +84,11 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 		)
 
 		for _, account := range accounts {
+			if solvernet.IsHLChain(chain.ID) && !solvernet.IsHLRole(account.Role) {
+				log.Info(ctx, "Skipping non-solvernet role on HL chain", "chain", chain.Name, "role", account.Role, "address", account.Address)
+				continue
+			}
+
 			accCtx := log.WithCtx(ctx,
 				"chain", chain.Name,
 				"role", account.Role,
