@@ -55,7 +55,6 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
         _prepMerkleTree();
         _deployContracts();
         _fundEverything();
-        _stakeAll();
     }
 
     // Setup environment contracts
@@ -143,16 +142,6 @@ contract MerkleDistributorWithoutDeadline_Test is Test {
         }
 
         omni.transfer(address(merkleDistributor), initialSupply / 2);
-    }
-
-    // Prank all stakers and stake all of their tokens
-    function _stakeAll() public {
-        for (uint256 i; i < addrCount; ++i) {
-            vm.startPrank(stakers[i]);
-            omni.approve(address(genesisStake), type(uint256).max);
-            genesisStake.stake(amounts[i]);
-            vm.stopPrank();
-        }
     }
 
     // Generate an ERC7683 order to check merkle distributor's call to inbox against

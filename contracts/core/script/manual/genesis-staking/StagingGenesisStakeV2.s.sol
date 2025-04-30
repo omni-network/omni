@@ -60,7 +60,7 @@ contract StagingGenesisStakeScript is Script {
 
         _prepMerkleTree();
         _deployContracts();
-        _approveStakeAndFund();
+        _fund();
 
         // Change index values according to deployer/caller address in merkle tree
         merkleDistributor.upgradeStake(validator, 0, rewardAmount, proofs[0]);
@@ -230,11 +230,7 @@ contract StagingGenesisStakeScript is Script {
         );
     }
 
-    function _approveStakeAndFund() internal {
-        if (omni.allowance(msg.sender, address(genesisStake)) < depositAmount) {
-            omni.approve(address(genesisStake), type(uint256).max);
-        }
-        genesisStake.stake(depositAmount);
+    function _fund() internal {
         omni.transfer(address(merkleDistributor), rewardAmount);
     }
 
