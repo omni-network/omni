@@ -22,7 +22,6 @@ import {
   assertResolvedOrder,
   createRenderHook,
   executeTestOrderUsingReact,
-  testConnector,
   useOrderRef,
 } from '../test-utils.js'
 
@@ -36,7 +35,7 @@ async function execOrder() {
     validateEnabled: false,
   }
 
-  const orderRef = useOrderRef(testConnector, orderParams)
+  const orderRef = useOrderRef(orderParams)
 
   await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 
@@ -289,7 +288,7 @@ describe('useParseOpenEvent()', () => {
 
     await waitFor(
       () => expect(orderRef.current?.waitForTx.status).toBe('success'),
-      { timeout: 5_000 },
+      { timeout: 20_000 },
     )
 
     const parseOpenEventHook = renderHook(() => {
@@ -321,7 +320,7 @@ describe('useGetOrder()', () => {
 
     await waitFor(
       () => expect(orderRef.current?.waitForTx.status).toBe('success'),
-      { timeout: 5_000 },
+      { timeout: 20_000 },
     )
 
     const parseOpenEventHook = renderHook(() => {

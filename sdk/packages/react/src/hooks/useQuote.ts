@@ -1,21 +1,15 @@
+import type { FetchJSONError, GetQuoteParams, Quote } from '@omni-network/core'
+import { getQuote } from '@omni-network/core'
 import {
   type UseQueryOptions,
   type UseQueryResult,
   useQuery,
 } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { type Address, type Hex, fromHex, zeroAddress } from 'viem'
 import { useOmniContext } from '../context/omni.js'
-import { type FetchJSONError, fetchJSON } from '../internal/api.js'
-import type { Quote, Quoteable } from '../types/quote.js'
-import { toJSON } from './util.js'
+import { hashFn } from '../utils/query.js'
 
-type UseQuoteParams = {
-  srcChainId?: number
-  destChainId: number
-  mode: 'expense' | 'deposit'
-  deposit: Quoteable
-  expense: Quoteable
+type UseQuoteParams = GetQuoteParams & {
   enabled: boolean
   queryOpts?: Omit<
     UseQueryOptions<Quote, QuoteError>,
@@ -46,62 +40,24 @@ type UseQuoteResult = (UseQuoteSuccess | UseQuoteError | UseQuotePending) & {
   query: UseQueryResult<Quote, QuoteError>
 }
 
-// QuoteResponse is the response from the /quote endpoint, with hex encoded amounts
-type QuoteResponse = {
-  deposit: { token: Address; amount: Hex }
-  expense: { token: Address; amount: Hex }
-}
-
 type QuoteError = FetchJSONError
 
-// useQuote quotes an expense for deposit, or vice versa
+// quotes expense amount for a given deposit, or vice versa
 export function useQuote(params: UseQuoteParams): UseQuoteResult {
   const { apiBaseUrl } = useOmniContext()
-  const { srcChainId, destChainId, deposit, expense, mode, enabled } = params
-
-  const request = toJSON({
-    sourceChainId: srcChainId,
-    destChainId: destChainId,
-    deposit: toQuoteUnit(deposit, mode === 'deposit'),
-    expense: toQuoteUnit(expense, mode === 'expense'),
-  })
-
+  const { enabled, ...quoteParams } = params
   const query = useQuery<Quote, QuoteError>({
     ...params.queryOpts,
-    queryKey: ['quote', request],
-    queryFn: async () => doQuote(apiBaseUrl, request),
+    queryKey: ['quote', quoteParams],
+    queryFn: async () => getQuote(apiBaseUrl, quoteParams),
+    queryKeyHashFn: hashFn,
     enabled,
   })
 
   return useResult(query)
 }
 
-// doQuote calls the /quote endpoint, throwing on error
-async function doQuote(apiBaseUrl: string, request: string) {
-  const json = await fetchJSON(`${apiBaseUrl}/quote`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: request,
-  })
-
-  if (!isQuoteRes(json)) {
-    throw new Error(`Unexpected quote response: ${JSON.stringify(json)}`)
-  }
-
-  const { deposit, expense } = json
-  return {
-    deposit: { ...deposit, amount: fromHex(deposit.amount, 'bigint') },
-    expense: { ...expense, amount: fromHex(expense.amount, 'bigint') },
-  } as Quote
-}
-
-// toQuoteUnit translates a Quoteable to "QuoteUnit", the format expected by /quote
-const toQuoteUnit = (q: Quoteable, omitAmount: boolean) => ({
-  amount: omitAmount ? undefined : q.amount,
-  token: q.isNative ? zeroAddress : q.token,
-})
-
-// useResult memoizes a query into a UseQuoteResult
+// memoizes query result as UseQuoteResult
 const useResult = (q: UseQueryResult<Quote, QuoteError>): UseQuoteResult =>
   useMemo(() => {
     if (q.isError) {
@@ -131,18 +87,3 @@ const useResult = (q: UseQueryResult<Quote, QuoteError>): UseQuoteResult =>
       query: q,
     } as const
   }, [q])
-
-// isQuoteRes checks if a json is a QuoteResponse
-// TODO: use zod
-function isQuoteRes(json: unknown): json is QuoteResponse {
-  const quote = json as QuoteResponse
-  return (
-    json != null &&
-    quote.deposit != null &&
-    quote.expense != null &&
-    typeof quote.deposit.token === 'string' &&
-    typeof quote.deposit.amount === 'string' &&
-    typeof quote.expense.token === 'string' &&
-    typeof quote.expense.amount === 'string'
-  )
-}

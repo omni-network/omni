@@ -1,14 +1,16 @@
 import { beforeEach, expect, test, vi } from 'vitest'
-import { resolvedOrder } from '../../test/index.js'
-import { createMockReadContractResult } from '../../test/mocks.js'
-import { renderHook } from '../../test/react.js'
+import {
+  createMockQueryResult,
+  renderHook,
+  resolvedOrder,
+} from '../../test/index.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 
-const { useGetOrder, useInboxStatus, useDidFillOutbox } = vi.hoisted(() => {
+const { useGetOrder, useInboxStatus, useDidFill } = vi.hoisted(() => {
   return {
     useGetOrder: vi.fn(),
     useInboxStatus: vi.fn(),
-    useDidFillOutbox: vi.fn(),
+    useDidFill: vi.fn(),
   }
 })
 
@@ -24,16 +26,16 @@ vi.mock('./useInboxStatus.js', async () => {
   }
 })
 
-vi.mock('./useDidFillOutbox.js', async () => {
+vi.mock('./useDidFill.js', async () => {
   return {
-    useDidFillOutbox: useDidFillOutbox,
+    useDidFill: useDidFill,
   }
 })
 
 beforeEach(() => {
-  useGetOrder.mockReturnValue(createMockReadContractResult())
+  useGetOrder.mockReturnValue(createMockQueryResult())
   useInboxStatus.mockRestore()
-  useDidFillOutbox.mockImplementation(() => ({
+  useDidFill.mockImplementation(() => ({
     data: false,
     error: null,
   }))
@@ -61,14 +63,14 @@ test('default: if inbox status is open, returned status is open', async () => {
 
   // once on mount only
   expect(useInboxStatus).toHaveBeenCalledOnce()
-  expect(useDidFillOutbox).toHaveBeenCalledOnce()
+  expect(useDidFill).toHaveBeenCalledOnce()
   expect(result.current.status).toBe('open')
   expect(result.current.error).toBeUndefined()
 })
 
-test('behaviour: error defined if didFillOutbox error', async () => {
-  useDidFillOutbox.mockReturnValue(
-    createMockReadContractResult({
+test('behaviour: error defined if didFill error', async () => {
+  useDidFill.mockReturnValue(
+    createMockQueryResult({
       error: new Error('test error'),
     }),
   )
@@ -81,7 +83,7 @@ test('behaviour: error defined if didFillOutbox error', async () => {
 
 test('behaviour: error defined if getOrder error', async () => {
   useGetOrder.mockReturnValue(
-    createMockReadContractResult({
+    createMockQueryResult({
       error: new Error('test error'),
     }),
   )
@@ -92,8 +94,8 @@ test('behaviour: error defined if getOrder error', async () => {
   expect(result.current.error).toBeDefined()
 })
 
-test('behaviour: status filled if didFillOutbox is true', async () => {
-  useDidFillOutbox.mockReturnValue({ data: true })
+test('behaviour: status filled if didFill is true', async () => {
+  useDidFill.mockReturnValue({ data: true })
 
   const { result } = renderGetOrderStatusHook()
 
@@ -101,38 +103,16 @@ test('behaviour: status filled if didFillOutbox is true', async () => {
   expect(result.current.error).toBeUndefined()
 })
 
-test('behaviour: status filled if inboxStatus is filled', async () => {
-  useInboxStatus.mockReturnValue('filled')
+test.each(['filled', 'rejected', 'closed', 'unknown'])(
+  'behaviour: status %s if inboxStatus is %s',
+  async (status) => {
+    useInboxStatus.mockReturnValue(status)
 
-  const { result } = renderGetOrderStatusHook()
+    const { result } = renderGetOrderStatusHook()
 
-  expect(result.current.status).toBe('filled')
-  expect(result.current.error).toBeUndefined()
-})
-
-test('behaviour: status rejected if inboxStatus is rejected', async () => {
-  useInboxStatus.mockReturnValue('rejected')
-
-  const { result } = renderGetOrderStatusHook()
-
-  expect(result.current.status).toBe('rejected')
-  expect(result.current.error).toBeUndefined()
-})
-
-test('behaviour: status closed if inboxStatus is closed', async () => {
-  useInboxStatus.mockReturnValue('closed')
-
-  const { result } = renderGetOrderStatusHook()
-
-  expect(result.current.status).toBe('closed')
-  expect(result.current.error).toBeUndefined()
-})
-
-test('behaviour: status not found if inboxStatus is unknown', async () => {
-  useInboxStatus.mockReturnValue('unknown')
-
-  const { result } = renderGetOrderStatusHook()
-
-  expect(result.current.status).toBe('not-found')
-  expect(result.current.error).toBeUndefined()
-})
+    expect(result.current.status).toBe(
+      status === 'unknown' ? 'not-found' : status,
+    )
+    expect(result.current.error).toBeUndefined()
+  },
+)

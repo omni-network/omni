@@ -1,75 +1,83 @@
 import { waitFor } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { orderId, renderHook, resolvedOrder } from '../../test/index.js'
-import {
-  createMockReadContractResult,
-  mockWagmiHooks,
-} from '../../test/mocks.js'
-import { useGetOrder } from './useGetOrder.js'
+import { type UseGetOrderParameters, useGetOrder } from './useGetOrder.js'
 
-const { useReadContract } = mockWagmiHooks()
+const { getOrder } = vi.hoisted(() => {
+  return {
+    getOrder: vi.fn().mockImplementation(() => {
+      return Promise.reject(new Error('No mock'))
+    }),
+  }
+})
 
-const renderGetOrderHook = (params: Parameters<typeof useGetOrder>[0]) => {
-  return renderHook(() => useGetOrder(params), { mockContractsCall: true })
-}
+vi.mock('@omni-network/core', async () => {
+  const actual = await vi.importActual('@omni-network/core')
+  return { ...actual, getOrder }
+})
 
-test('default: returns order when contract read returns an order', async () => {
-  const { result, rerender } = renderGetOrderHook({ chainId: 1 })
+test('default: returns order when core api returns an order', async () => {
+  const { result, rerender } = renderHook(
+    (props: UseGetOrderParameters) => useGetOrder({ chainId: 1, ...props }),
+    { mockContractsCall: true },
+  )
 
   expect(result.current.data).toBeUndefined()
 
-  useReadContract.mockReturnValue(
-    createMockReadContractResult<ReturnType<typeof useGetOrder>>({
-      data: [
-        resolvedOrder,
-        {
-          status: 1,
-          updatedBy: '0x123',
-          timestamp: 1,
-          rejectReason: 0,
-        } as const,
-        0n,
-      ],
-      isSuccess: true,
-      status: 'success',
-    }),
+  getOrder.mockReturnValue(
+    Promise.resolve([
+      resolvedOrder,
+      {
+        status: 1,
+        updatedBy: '0x123',
+        timestamp: 1,
+        rejectReason: 0,
+      } as const,
+      0n,
+    ]),
   )
-
-  rerender({
-    chainId: 1,
-    orderId,
-  })
-
+  rerender({ chainId: 1, orderId })
   await waitFor(() => expect(result.current.data?.[0].orderId).toBe(orderId))
   await waitFor(() => expect(result.current.data?.[1].status).toBe(1))
 })
 
-test('behaviour: no contract read when orderId is undefined', () => {
-  const { result } = renderGetOrderHook({ chainId: 1 })
+test('behaviour: no core api call when orderId is undefined', () => {
+  const { result } = renderHook(
+    () =>
+      useGetOrder({
+        chainId: 1,
+      }),
+    { mockContractsCall: true },
+  )
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
-  expect(result.current.isFetched).toBe(false)
-  // once on mount
-  expect(useReadContract).toHaveBeenCalledOnce()
+  expect(result.current.isFetched).toBeFalsy()
+  expect(getOrder).not.toHaveBeenCalled()
 })
 
-test('behaviour: no contract read when chainId is undefined', () => {
-  const { result } = renderGetOrderHook({ orderId })
+test('behaviour: no core api call when chainId is undefined', () => {
+  const { result } = renderHook(
+    () =>
+      useGetOrder({
+        orderId,
+      }),
+    { mockContractsCall: true },
+  )
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
-  expect(result.current.isFetched).toBe(false)
-  // once on mount
-  expect(useReadContract).toHaveBeenCalledOnce()
+  expect(result.current.isFetched).toBeFalsy()
+  expect(getOrder).not.toHaveBeenCalled()
 })
 
-test('behaviour: no contract read when all inputs undefined', () => {
-  const { result } = renderGetOrderHook({})
+test('behaviour: no core api call when all inputs undefined', () => {
+  const { result } = renderHook(() => useGetOrder({}), {
+    mockContractsCall: true,
+  })
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
-  expect(result.current.isFetched).toBe(false)
-  // once on mount
-  expect(useReadContract).toHaveBeenCalledOnce()
+  expect(result.current.isFetched).toBeFalsy()
+  expect(getOrder).not.toHaveBeenCalled()
 })

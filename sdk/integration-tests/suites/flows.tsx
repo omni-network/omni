@@ -25,7 +25,6 @@ import { useBalance } from 'wagmi'
 import {
   type AnyOrder,
   createRenderHook,
-  createTestConnector,
   devnetApiUrl,
   executeTestOrderUsingCore,
   executeTestOrderUsingReact,
@@ -65,10 +64,7 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact({
-        order,
-        connector: createTestConnector(account),
-      })
+      await executeTestOrderUsingReact({ account, order })
     })
   })
 
@@ -95,10 +91,7 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
     })
 
     test('using React APIs', async () => {
-      await executeTestOrderUsingReact({
-        order,
-        connector: createTestConnector(account),
-      })
+      await executeTestOrderUsingReact({ account, order })
     })
   })
 
@@ -241,7 +234,7 @@ describe.concurrent('ETH transfer orders', () => {
           expect(validateHook.result.current.status === 'accepted').toBe(true)
         })
 
-        const orderRef = useOrderRef(createTestConnector(account), orderParams)
+        const orderRef = useOrderRef(orderParams, account)
         await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 
         act(() => {
@@ -310,10 +303,7 @@ describe.concurrent('ETH transfer orders', () => {
         calls: [{ target: account.address, value: amount }],
         deposit: { token: zeroAddress, amount: 2n * amount },
       }
-      await executeTestOrderUsingReact({
-        order,
-        connector: createTestConnector(account),
-      })
+      await executeTestOrderUsingReact({ account, order })
     })
   })
 
@@ -462,7 +452,7 @@ describe.concurrent('ETH transfer orders', () => {
           expect(validateHook.result.current.status === 'accepted').toBe(true)
         })
 
-        const orderRef = useOrderRef(createTestConnector(account), order)
+        const orderRef = useOrderRef(order, account)
 
         await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 

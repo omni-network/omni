@@ -1,8 +1,7 @@
+import * as core from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
-import { accounts, renderHook } from '../../test/index.js'
-import { order } from '../../test/shared.js'
-import * as api from '../internal/api.js'
+import { order, renderHook } from '../../test/index.js'
 import { useValidateOrder } from './useValidateOrder.js'
 
 // TODO calls as empty array should not be allowed // throw error
@@ -18,48 +17,7 @@ const renderValidateOrderHook = (
 }
 
 test('default: native transfer order', async () => {
-  vi.spyOn(api, 'fetchJSON').mockResolvedValue({
-    accepted: true,
-  })
-
-  const { result, rerender } = renderHook(
-    ({ enabled }: { enabled: boolean }) =>
-      useValidateOrder({
-        order: {
-          owner: accounts[0],
-          srcChainId: 1,
-          destChainId: 2,
-          calls: [
-            {
-              target: accounts[0],
-              value: 0n,
-            },
-          ],
-          deposit: {
-            amount: 0n,
-          },
-          expense: {
-            amount: 0n,
-          },
-        },
-        enabled,
-      }),
-    {
-      initialProps: { enabled: false },
-    },
-  )
-
-  expect(result.current.status).toBe('pending')
-
-  rerender({
-    enabled: true,
-  })
-
-  await waitFor(() => expect(result.current.status).toBe('accepted'))
-})
-
-test('default: order', async () => {
-  vi.spyOn(api, 'fetchJSON').mockResolvedValue({
+  vi.spyOn(core, 'validateOrder').mockResolvedValue({
     accepted: true,
   })
 
@@ -92,7 +50,7 @@ test('behaviour: pending if query not fired', async () => {
 })
 
 test('behaviour: error if response is error', async () => {
-  vi.spyOn(api, 'fetchJSON').mockResolvedValue({
+  vi.spyOn(core, 'validateOrder').mockResolvedValue({
     error: {
       code: 1,
       message: 'an error',
@@ -115,7 +73,7 @@ test('behaviour: error if response is error', async () => {
 })
 
 test('behaviour: rejected if response is rejected', async () => {
-  vi.spyOn(api, 'fetchJSON').mockResolvedValue({
+  vi.spyOn(core, 'validateOrder').mockResolvedValue({
     rejected: true,
     rejectReason: 'a reason',
     rejectDescription: 'a description',
@@ -136,21 +94,24 @@ test('behaviour: rejected if response is rejected', async () => {
   )
 })
 
-test.each([
-  'test',
-  {},
-  { rejected: true },
-  { rejected: true, rejectReason: 'a reason' },
-  { rejecetd: true, rejectDescription: 'a description' },
-])('behaviour: error if response is not valid: %s', async (mockReturn) => {
+test('behaviour: error if call throws', async () => {
+  const error = new Error('Unexpected validation response')
+  vi.spyOn(core, 'validateOrder').mockRejectedValue(error)
+
   const { result } = renderValidateOrderHook({ order, enabled: true })
 
-  vi.spyOn(api, 'fetchJSON').mockResolvedValue(mockReturn)
-
-  await waitFor(() => result.current.status === 'error')
+  await waitFor(() => {
+    expect(result.current.status).toBe('error')
+    if (result.current.status === 'error') {
+      expect(result.current.error).toBe(error)
+    }
+  })
 })
 
 test('behaviour: returns an error instead of throwing when the order encoding throws', async () => {
+  const error = new Error('Address "0xinvalid" is invalid')
+  vi.spyOn(core, 'validateOrder').mockRejectedValue(error)
+
   const invalidOrder = {
     ...order,
     calls: [{ ...order.calls[0], args: ['0xinvalid', 0n] }],

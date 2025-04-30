@@ -1,7 +1,10 @@
+import type {
+  DidFillError,
+  GetOrderError,
+  OrderStatus,
+} from '@omni-network/core'
 import type { Hex } from 'viem'
 import { expectTypeOf, test } from 'vitest'
-import type { DidFillError, GetOrderError } from '../errors/base.js'
-import type { OrderStatus } from '../types/order.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 import type { useParseOpenEvent } from './useParseOpenEvent.js'
 

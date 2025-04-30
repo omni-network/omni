@@ -1,47 +1,32 @@
+import {
+  type ParseOpenEventError,
+  type ResolvedOrder,
+  parseOpenEvent,
+} from '@omni-network/core'
 import { useMemo } from 'react'
-import { type Log, decodeEventLog, parseEventLogs } from 'viem'
+import type { Log } from 'viem'
 import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
-import { inboxABI } from '../constants/abis.js'
-import { ParseOpenEventError } from '../errors/base.js'
 
 type UseParseOpenEventParams = {
   status: UseWaitForTransactionReceiptReturnType['status']
   logs?: Log[]
 }
 
-export function useParseOpenEvent(params: UseParseOpenEventParams) {
+type UseParseOpenEventReturn = {
+  resolvedOrder: ResolvedOrder | undefined
+  error: ParseOpenEventError | undefined
+}
+
+export function useParseOpenEvent(
+  params: UseParseOpenEventParams,
+): UseParseOpenEventReturn {
   const { status, logs } = params
   const eventData = useMemo(() => {
     if (!logs || status !== 'success') return
     try {
-      const parsed = parseEventLogs({
-        abi: inboxABI,
-        logs,
-        eventName: 'Open',
-      })
-
-      if (parsed.length !== 1) {
-        throw new ParseOpenEventError(
-          `Expected exactly one 'Open' event but found ${parsed.length}.`,
-        )
-      }
-
-      const openLog = parsed[0]
-
-      const openEvent = decodeEventLog({
-        abi: inboxABI,
-        eventName: 'Open',
-        data: openLog.data,
-        topics: openLog.topics,
-      })
-
-      return {
-        resolvedOrder: openEvent.args.resolvedOrder,
-      }
+      return { resolvedOrder: parseOpenEvent(logs) }
     } catch (error) {
-      return {
-        error: new ParseOpenEventError(`Failed to parse open event: ${error}`),
-      }
+      return { error: error as ParseOpenEventError }
     }
   }, [status, logs])
 

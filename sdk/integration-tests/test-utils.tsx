@@ -1,6 +1,7 @@
 import {
   type DidFillParams,
   type GetOrderParameters,
+  type Order,
   didFill,
   getOrder,
   openOrder,
@@ -10,14 +11,12 @@ import {
 } from '@omni-network/core'
 import {
   OmniProvider,
-  type Order,
   useOrder,
   type useParseOpenEvent,
 } from '@omni-network/react'
 import {
   createClient,
   inbox,
-  mockChains,
   mockL1Chain,
   mockL1Id,
   mockL2Chain,
@@ -38,6 +37,7 @@ import { createRef } from 'react'
 import {
   type Abi,
   type Account,
+  type Chain,
   type Client,
   type WalletClient,
   pad,
@@ -48,7 +48,6 @@ import { waitForTransactionReceipt, watchBlocks } from 'viem/actions'
 import { expect } from 'vitest'
 import {
   type Config,
-  type CreateConnectorFn,
   WagmiProvider,
   createConfig,
   mock,
@@ -171,26 +170,13 @@ export async function executeTestOrderUsingCore(
 }
 
 export function createTestConnector(account: Account) {
-  // biome-ignore lint/suspicious/noExplicitAny: test file
-  return function testConnector(config: any) {
-    const connector = mock({ accounts: [account.address] })(config)
-    connector.getClient = async ({ chainId } = {}) => {
-      const chain = chainId ? mockChains[chainId] : mockL1Chain
-      if (chain == null) {
-        throw new Error(`Unsupported chain: ${chainId}`)
-      }
-      return createClient({ account, chain })
-    }
-    return connector
-  }
+  return mock({ accounts: [account.address] })
 }
 
-export const testConnector = createTestConnector(testAccount)
-
-export function createWagmiConfig() {
+export function createWagmiConfig(account?: Account) {
   return createConfig({
     chains: [mockL1Chain, mockL2Chain, omniDevnetChain],
-    client: createClient,
+    client: ({ chain }: { chain: Chain }) => createClient({ account, chain }),
   })
 }
 
@@ -249,8 +235,8 @@ function isContractOrder(
 export type UseOrderReturn = ReturnType<typeof useOrder>
 
 export function useOrderRef(
-  connector: CreateConnectorFn,
   order: AnyOrder | ContractOrder,
+  account: Account = testAccount,
 ): React.RefObject<UseOrderReturn | null> {
   const connectRef = createRef<ReturnType<typeof useConnect>>()
   const orderRef = createRef<UseOrderReturn>()
@@ -278,16 +264,23 @@ export function useOrderRef(
     return connectReturn.data ? <TestOrder /> : null
   }
 
-  render(<TestConnectAndOrder />, { wrapper: ContextProvider })
+  const wagmiConfig = account ? createWagmiConfig(account) : undefined
+  render(<TestConnectAndOrder />, {
+    wrapper: ({ children }) => {
+      return (
+        <ContextProvider wagmiConfig={wagmiConfig}>{children}</ContextProvider>
+      )
+    },
+  })
   act(() => {
-    connectRef.current?.connect({ connector })
+    connectRef.current?.connect({ connector: createTestConnector(account) })
   })
 
   return orderRef
 }
 
 type ExecuteTestOrderUsingReactParams = {
-  connector?: CreateConnectorFn
+  account?: Account
   order: AnyOrder
   rejectReason?: string
 }
@@ -295,8 +288,8 @@ type ExecuteTestOrderUsingReactParams = {
 export async function executeTestOrderUsingReact(
   params: ExecuteTestOrderUsingReactParams,
 ): Promise<void> {
-  const { connector, order, rejectReason } = params
-  const orderRef = useOrderRef(connector ?? testConnector, order)
+  const { account, order, rejectReason } = params
+  const orderRef = useOrderRef(order, account)
 
   await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 

@@ -82,52 +82,6 @@ importers:
 
   packages/react:
     dependencies:
-      '@tanstack/react-query':
-        specifier: ^5.64.2
-        version: 5.72.1(react@19.1.0)
-      react:
-        specifier: '>=18'
-        version: 19.1.0
-      viem:
-        specifier: '>=2.22.10'
-        version: 2.26.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
-      wagmi:
-        specifier: '>=2.0.0'
-        version: 2.14.16(@tanstack/query-core@5.72.1)(@tanstack/react-query@5.72.1(react@19.1.0))(@types/react@19.1.0)(bufferutil@4.0.9)(react@19.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.26.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10))
-    devDependencies:
-      '@omni-network/test-utils':
-        specifier: workspace:^
-        version: link:../test-utils
-      '@testing-library/dom':
-        specifier: ^10.4.0
-        version: 10.4.0
-      '@testing-library/react':
-        specifier: ^16.2.0
-        version: 16.3.0(@testing-library/dom@10.4.0)(@types/react-dom@19.1.1(@types/react@19.1.0))(@types/react@19.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@types/react':
-        specifier: ^19.0.8
-        version: 19.1.0
-      '@types/react-dom':
-        specifier: ^19.0.4
-        version: 19.1.1(@types/react@19.1.0)
-      '@vitest/coverage-v8':
-        specifier: ^3.0.7
-        version: 3.1.1(vitest@3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(happy-dom@17.4.4))
-      happy-dom:
-        specifier: ^17.4.4
-        version: 17.4.4
-      typescript:
-        specifier: ^5.7.2
-        version: 5.8.3
-      vite:
-        specifier: ^6.2.6
-        version: 6.2.6(@types/node@22.14.0)
-      vitest:
-        specifier: ^3.0.7
-        version: 3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(happy-dom@17.4.4)
-
-  packages/react-next:
-    dependencies:
       '@omni-network/core':
         specifier: workspace:^
         version: link:../core
