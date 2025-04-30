@@ -2,8 +2,8 @@
 pragma solidity 0.8.24;
 
 import { MerkleDistributor } from "./MerkleDistributor.sol";
-import { OwnableUpgradeable } from "@openzeppelin-v4/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { PausableUpgradeable } from "@openzeppelin-v4/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { EIP712 } from "solady/src/utils/EIP712.sol";
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
@@ -66,12 +66,10 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
     function initialize(
         address admin_
     ) external initializer {
-        __Ownable_init();
+        __Ownable_init(admin_);
         __Pausable_init();
-        _transferOwnership(admin_);
         
         token.safeApprove(address(solvernetInbox), type(uint256).max);
-
     }
 
     /**
