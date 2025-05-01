@@ -28,27 +28,10 @@ contract OmegaGenesisStakeScript is Script {
     GenesisStakeV2 internal genesisStake;
     MerkleDistributorWithoutDeadline internal merkleDistributor;
 
-    uint256 internal depositAmount = 0.2 ether;
-    uint256 internal rewardAmount = 0.1 ether;
+    uint256 internal rewardAmount = 100 ether;
     bytes32[] internal leaves = new bytes32[](64);
     bytes32[][] internal proofs = new bytes32[][](64);
     bytes32 internal root;
-
-    function run() public {
-        vm.startBroadcast();
-
-        // debug logging
-        console2.log("Deployer address:", msg.sender);
-        console2.log("OMNI balance:", omni.balanceOf(msg.sender));
-        console2.log("OMNI token address:", address(omni));
-
-        _prepMerkleTree();
-        _deployContracts();
-
-        omni.transfer(address(merkleDistributor), 2 ether);
-
-        vm.stopBroadcast();
-    }
 
     /**
      * @dev This assumes the four relevant addresses above have been set and that a new GenesisStakeV2 contract should be
@@ -62,6 +45,7 @@ contract OmegaGenesisStakeScript is Script {
         _fund();
 
         // Change index values according to deployer/caller address in merkle tree
+        //merkleDistributor.unstake(0, rewardAmount, proofs[0]);
         merkleDistributor.upgradeStake(validator, 0, rewardAmount, proofs[0]);
 
         vm.stopBroadcast();
@@ -199,15 +183,7 @@ contract OmegaGenesisStakeScript is Script {
         genesisStake = GenesisStakeV2(proxyAddress);
 
         // Initialize separately after deployment
-        (bool success,) = proxyAddress.call(abi.encodeCall(GenesisStakeV2.initialize, (msg.sender)));
-        require(success, "Initialization call failed");
-
-        // Verify initialization immediately
-        address actualOwner = genesisStake.owner();
-
-        console2.log("Verification - Owner address:", actualOwner);
-
-        require(actualOwner == msg.sender, "Initialization failed: owner not set correctly");
+        genesisStake.initialize(msg.sender);
 
         address merkleDistributorImpl = address(
             new MerkleDistributorWithoutDeadline(

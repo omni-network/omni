@@ -14,8 +14,8 @@ import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { SolverNetInbox, ISolverNetInbox } from "solve/src/SolverNetInbox.sol";
 
-import { GenesisStake } from "src/token/GenesisStake.sol";
-import { MerkleDistributorWithDeadline } from "src/token/MerkleDistributorWithDeadline.sol";
+import { GenesisStakeV2 } from "src/token/GenesisStakeV2.sol";
+import { MerkleDistributorWithoutDeadline } from "src/token/MerkleDistributorWithoutDeadline.sol";
 
 import {
     TransparentUpgradeableProxy,
@@ -28,6 +28,7 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
 
     address internal deployer = 0xA779fC675Db318dab004Ab8D538CB320D0013F42;
     address internal admin = 0xd09DD1126385877352d24B669Fd68f462200756E;
+    address internal adminOfProxy = 0x42A72499eDDB0374ebFba44Fc880F82CCe736614;
 
     ICreateX internal createX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
     IERC20 internal omni = IERC20(0x36E66fbBce51e4cD5bd3C62B637Eb411b18949D4);
@@ -36,20 +37,21 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
 
     address internal validator = 0x8be1aBb26435fc1AF39Fc88DF9499f626094f9AF;
 
-    bytes32 internal genesisStakeImplSalt = 0xa779fc675db318dab004ab8d538cb320d0013f4200fc20573d7a708801d08213;
-    bytes32 internal merkleDistributorSalt = 0xa779fc675db318dab004ab8d538cb320d0013f42008dbcdb4f2b296d009be3b2;
+    bytes32 internal genesisStakeImplSalt = 0xa779fc675db318dab004ab8d538cb320d0013f4200b8a3e6b8edde1903ec4dde;
+    bytes32 internal merkleDistributorImplSalt = 0xa779fc675db318dab004ab8d538cb320d0013f4200897b8566748c57033e1d07;
+    bytes32 internal merkleDistributorSalt = 0xa779fc675db318dab004ab8d538cb320d0013f4200fa0b61ab1783e803655002;
 
-    address internal expectedGenesisStakeImplAddr = 0x00000000000022bff6Fa8AC173fA1A87b1E4a04A;
-    address internal expectedMerkleDistributorAddr = 0x0000000000009bBE7DE32eaF5a88E355907B680E;
+    address internal expectedGenesisStakeImplAddr = 0x000000000000A1052e28F4bDc995Db4b8bfA6608;
+    address internal expectedMerkleDistributorImplAddr = 0x000000000000726A22A1B8620E5851e24BfE3290;
+    address internal expectedMerkleDistributorAddr = 0x00000000000058607f45dD7535ebD9f44ef3766D;
 
-    GenesisStake internal genesisStake = GenesisStake(0xD2639676dA3dEA5491d27DA19340556b3a7d58B8);
-    MerkleDistributorWithDeadline internal merkleDistributor =
-        MerkleDistributorWithDeadline(0x0000000000009bBE7DE32eaF5a88E355907B680E);
+    GenesisStakeV2 internal genesisStake = GenesisStakeV2(0xD2639676dA3dEA5491d27DA19340556b3a7d58B8);
+    MerkleDistributorWithoutDeadline internal merkleDistributor;
 
-    uint256 internal endTime = 1_746_057_599; // 2025-04-29 23:59:59 UTC
-    uint256 internal index = 7987;
-    uint256 internal depositAmount = 100 ether;
-    uint256 internal rewardAmount = 843_524_630_884_109_952;
+    address internal user = 0x2bA3dD20Db1fd35D648be1BE582eC563895D78fA;
+    uint256 internal index = 1638;
+    //uint256 internal depositAmount = 100 ether;
+    uint256 internal rewardAmount = 115_068_493_150_684_004_352;
     bytes32[] internal leaves = new bytes32[](1);
     bytes32[][] internal proofs = new bytes32[][](1);
     bytes32 internal root;
@@ -72,7 +74,8 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
         else console2.log("MerkleDistributor already deployed");
 
         _fundRewards();
-        _upgrade();
+        //_upgrade();
+        _unstake();
 
         require(merkleDistributor.owner() == admin, "MerkleDistributor owner mismatch");
     }
@@ -125,7 +128,9 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
         if (mode == VmSafe.CallerMode.None) vm.prank(deployer);
         address genesisStakeImpl = createX.deployCreate3(
             genesisStakeImplSalt,
-            abi.encodePacked(type(GenesisStake).creationCode, abi.encode(address(omni), expectedMerkleDistributorAddr))
+            abi.encodePacked(
+                type(GenesisStakeV2).creationCode, abi.encode(address(omni), expectedMerkleDistributorAddr)
+            )
         );
 
         console2.log("GenesisStake implementation constructor args:");
@@ -153,23 +158,23 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     function _prepMerkleTree() internal {
         m = new CompleteMerkle();
 
-        leaves[0] = keccak256(abi.encodePacked(index, deployer, rewardAmount));
-        proofs[0].push(hex"72456ff6c5ae451e3dfe2e76a9c1ae4f316514ef6c5216cd7fc67d84ecbb6474");
-        proofs[0].push(hex"9f68cbac4e4c8977504176df4e02ee45338eaf7be24fce9e0c551da8537e68a5");
-        proofs[0].push(hex"6b47664d11f9d0de4e89cd2f3ffd553048477292ba4e045f78e1d3b0d363866f");
-        proofs[0].push(hex"1682c88343c865daf4dccf035cd064bc5ff350e0ef439d8a21afde30e5e8f117");
-        proofs[0].push(hex"6ed83d2dad1ac9577f67d641d1ca1cd5023b8703e5c839afe77ea7bf95844d3e");
-        proofs[0].push(hex"9af730042a389ed429eeaf204a31b494d76d855911ccc39f8345a7ee9c5f4e4d");
-        proofs[0].push(hex"112d14bdc992bb8b71a7179d91021ef7ebc733925ed5323a05d142af8008f28b");
-        proofs[0].push(hex"c9f2448b67173ca1a5b0564c58bf6249ae64a0d3aadd39d99d34e33f2e2e18cd");
-        proofs[0].push(hex"b2aa63149d0fca20a0586c7e291ee86fcd6a9ab7ce722d4b5d78f20325a26f60");
-        proofs[0].push(hex"aa862cee2ca1c076902205197547d8035cfc82fee22f7722630d0557c3c4f548");
-        proofs[0].push(hex"20818a4fe98b62e2c916c9caf037c10ac22e7971394b06f2dc9b64f53f8ea3ad");
-        proofs[0].push(hex"021461cfd282c77c6915461a1b8a51cdf020b129cbf561ea89f244a501f6b8b1");
-        proofs[0].push(hex"bdcdcfb79c1b7113a7fe38bb82e734e92fc20362c88fc2a0543f89ba49e01edc");
-        proofs[0].push(hex"a6e860fc7ca37e6fbb248f16250f1a3c57e70e4354921fa526372b142429b149");
+        leaves[0] = keccak256(abi.encodePacked(index, user, rewardAmount));
+        proofs[0].push(hex"8718726df34b55313774b7949f1053b74d4ef64af47a3cad5cf04e852ebf50e5");
+        proofs[0].push(hex"547fd56a523966816df814126f7bb9fae3d81b093370316387ba2ec7863cf0ad");
+        proofs[0].push(hex"ec348c4497e3554cd97e943c6350db42d8bc89d7557ec0659a0cbf6568d281b1");
+        proofs[0].push(hex"d5eeeab527c5d81b6fc0e4a9a6cc9ef769ff76a821eb5dcef85e5457ed52aea3");
+        proofs[0].push(hex"d06104550a87126a380f9ef5f9b8da72b7473f72edd28b87138153ebfeb3296b");
+        proofs[0].push(hex"878ed5c4764e39a8aaf1a134b8cc3c1311ba9fb1ff53fc87eb99f9b26f1cd720");
+        proofs[0].push(hex"5f37e6bd3b1cf6221d91c906e3a3183c48d65a38b79ccc456ab223e98ebb0904");
+        proofs[0].push(hex"d997217263bb7fdbf05a2a147f1e59986b62675a973696e4b5bd8e012640288c");
+        proofs[0].push(hex"6b2f4b175e1598bca1348e47435a0e649374a157caac0187e9914c9067bb90c0");
+        proofs[0].push(hex"39150938f4c90eff3ca2487771824053ed7bb28504879cbb50c6dcdcd84542d0");
+        proofs[0].push(hex"05101c489c8a6d83f19a031a568d4cc139f8d1e22a4d9aee5d1dff2906e4025d");
+        proofs[0].push(hex"77bf903da427e7d7c35cf75efcdf1918cff520b063bc34bbbbe089a9c5390766");
+        proofs[0].push(hex"2b497b8e97ccceea2aadcaf8cff19fea1af63a93198c0289c199596f9a11a54b");
+        proofs[0].push(hex"8cbb3263d4d5343920e924facf7b3e96edac51fbab1d38705beef1f6c1d4f7f9");
 
-        root = hex"5b95c1e6c7fe3ebe64c4b095810a61feb5b219e91261ad181c3149ff26364c3e";
+        root = hex"a58fa42aae5003f337b37d078164b635e4b324baca33c129e27ea3d7bec51003";
 
         require(m.verifyProof(root, proofs[0], leaves[0]), "Proof is invalid");
     }
@@ -178,24 +183,40 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
         if (address(expectedMerkleDistributorAddr).code.length != 0) return false;
 
         (VmSafe.CallerMode mode,,) = vm.readCallers();
-        if (mode == VmSafe.CallerMode.None) vm.prank(deployer);
-        merkleDistributor = MerkleDistributorWithDeadline(
+        if (mode == VmSafe.CallerMode.None) vm.startPrank(deployer);
+
+        address merkleDistributorImpl = createX.deployCreate3(
+            merkleDistributorImplSalt,
+            abi.encodePacked(
+                type(MerkleDistributorWithoutDeadline).creationCode,
+                abi.encode(address(omni), root, address(portal), address(genesisStake), address(inbox))
+            )
+        );
+
+        merkleDistributor = MerkleDistributorWithoutDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
                 abi.encodePacked(
-                    type(MerkleDistributorWithDeadline).creationCode,
+                    type(TransparentUpgradeableProxy).creationCode,
                     abi.encode(
-                        admin, address(omni), root, endTime, address(portal), address(genesisStake), address(inbox)
+                        merkleDistributorImpl,
+                        adminOfProxy,
+                        abi.encodeCall(MerkleDistributorWithoutDeadline.initialize, (admin))
                     )
                 )
             )
         );
+        vm.stopPrank();
 
         console2.log("MerkleDistributor constructor args:");
         console2.logBytes(
-            abi.encode(admin, address(omni), root, endTime, address(portal), address(genesisStake), address(inbox))
+            abi.encode(admin, address(omni), root, address(portal), address(genesisStake), address(inbox))
         );
 
+        require(
+            address(merkleDistributorImpl) == expectedMerkleDistributorImplAddr,
+            "MerkleDistributor implementation addr mismatch"
+        );
         require(address(merkleDistributor) == expectedMerkleDistributorAddr, "MerkleDistributor addr mismatch");
         return true;
     }
@@ -209,7 +230,12 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     }
 
     function _upgrade() internal {
-        vm.prank(deployer);
+        vm.prank(user);
         merkleDistributor.upgradeStake(validator, index, rewardAmount, proofs[0]);
+    }
+
+    function _unstake() internal {
+        vm.prank(user);
+        merkleDistributor.unstake(index, rewardAmount, proofs[0]);
     }
 }
