@@ -13,8 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // AddSolverEndpoints returns the RPC endpoints for the given solvernet network, including HL chains.
@@ -88,32 +86,23 @@ func hlNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, err
 	}
 
 	newChain := func(chain types.EVMChain) netconf.Chain {
-		var portalAddress common.Address
-		if !solvernet.IsHLChain(chain.ChainID) {
-			portalAddress = addrs.Portal
-		}
-
-		var hasEmitPortal bool
-		var hasSubmitPortal bool
-		var shards []xchain.ShardID
-		var attestInterval uint64
-		if portalAddress != (common.Address{}) {
-			hasEmitPortal = true
-			hasSubmitPortal = true
-			shards = chain.Shards
-			attestInterval = chain.AttestInterval(def.Testnet.Network)
+		if solvernet.IsHLChain(chain.ChainID) {
+			return netconf.Chain{
+				ID:          chain.ChainID,
+				Name:        chain.Name,
+				BlockPeriod: chain.BlockPeriod,
+			}
 		}
 
 		return netconf.Chain{
 			ID:              chain.ChainID,
 			Name:            chain.Name,
 			BlockPeriod:     chain.BlockPeriod,
-			Shards:          shards,
-			AttestInterval:  attestInterval,
-			PortalAddress:   portalAddress,
-			DeployHeight:    0, // Portal height isn't needed here as we aren't deploying OmniPortal contracts to Hyperlane networks
-			HasEmitPortal:   hasEmitPortal,
-			HasSubmitPortal: hasSubmitPortal,
+			Shards:          chain.Shards,
+			AttestInterval:  chain.AttestInterval(def.Testnet.Network),
+			PortalAddress:   addrs.Portal,
+			HasEmitPortal:   true,
+			HasSubmitPortal: true,
 		}
 	}
 
