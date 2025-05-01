@@ -1,6 +1,5 @@
 packages:
   - integration-tests
-  - examples/*
   - packages/*
 
 catalog:
