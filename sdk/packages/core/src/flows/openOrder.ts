@@ -1,14 +1,11 @@
 import { assertAcceptedResult, validateOrder } from '../api/validateOrder.js'
 import type { ResolvedOrder } from '../contracts/parseOpenEvent.js'
-import {
-  type SendOrderTransactionParameters,
-  sendOrderTransaction,
-} from '../contracts/sendOrderTransaction.js'
+import { type SendOrderParameters, sendOrder } from '../contracts/sendOrder.js'
 import { waitForOrderOpen } from '../contracts/waitForOrderOpen.js'
 import type { OptionalAbis } from '../types/abi.js'
 
 export type OpenOrderParameters<abis extends OptionalAbis> =
-  SendOrderTransactionParameters<abis> & {
+  SendOrderParameters<abis> & {
     apiBaseUrl: string
     pollingInterval?: number
   }
@@ -19,7 +16,7 @@ export async function openOrder<abis extends OptionalAbis>(
   const { apiBaseUrl, pollingInterval, ...sendOrderParams } = params
   const validationResult = await validateOrder(apiBaseUrl, params.order)
   assertAcceptedResult(validationResult)
-  const txHash = await sendOrderTransaction(sendOrderParams)
+  const txHash = await sendOrder(sendOrderParams)
   return await waitForOrderOpen({
     client: params.client,
     txHash,

@@ -65,7 +65,7 @@ vi.mock('./useParseOpenEvent.js', async () => {
 })
 
 beforeEach(() => {
-  vi.spyOn(core, 'sendOrderTransaction').mockResolvedValue('0xTxHash')
+  vi.spyOn(core, 'sendOrder').mockResolvedValue('0xTxHash')
   useParseOpenEvent.mockReturnValue({
     resolvedOrder,
     error: null,
@@ -224,10 +224,8 @@ test('behaviour: closed order is handled', async () => {
   })
 })
 
-test('behaviour: handles sendOrderTransaction error', async () => {
-  vi.spyOn(core, 'sendOrderTransaction').mockRejectedValue(
-    new Error('Tx mutation error'),
-  )
+test('behaviour: handles sendOrder error', async () => {
+  vi.spyOn(core, 'sendOrder').mockRejectedValue(new Error('Tx mutation error'))
 
   const { result } = renderOrderHook({
     ...orderRequest,
