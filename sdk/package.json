@@ -6,9 +6,9 @@
   "type": "module",
   "packageManager": "pnpm@9.1.0",
   "scripts": {
-    "build": "pnpm run -r build",
+    "build": "pnpm run --r --filter \"./packages/**\" build",
     "check": "biome check --write",
-    "postinstall": "pnpm run -r build",
+    "postinstall": "pnpm run build",
     "test:unit": "pnpm run --filter '@omni-network/*' test",
     "test:integration": "cd integration-tests && pnpm test"
   },
