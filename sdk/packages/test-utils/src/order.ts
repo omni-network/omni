@@ -1,5 +1,5 @@
 import { erc20Abi } from 'viem'
-import { testAccount } from './account.js'
+import { testAccount } from './accounts.js'
 
 export const testOrder = {
   owner: testAccount.address,

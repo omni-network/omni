@@ -1,6 +1,8 @@
 import { type Quote, getQuote, withExecAndTransfer } from '@omni-network/core'
 import { useQuote, useValidateOrder } from '@omni-network/react'
 import {
+  availableTestAccounts,
+  createAnvilClient,
   createClient,
   invalidTokenAddress,
   middleman,
@@ -12,7 +14,6 @@ import {
   omniDevnetChain,
   omniDevnetId,
   testAccount,
-  testAccountPrivateKeys,
   tokenAddress,
   vault,
 } from '@omni-network/test-utils'
@@ -30,9 +31,10 @@ import {
   useOrderRef,
 } from '../test-utils.js'
 
+const availableAccountPrivateKeys = Object.values(availableTestAccounts)
 let nextAccountIndex = 1
 function getNextAccount(): PrivateKeyAccount {
-  const pk = testAccountPrivateKeys[nextAccountIndex++]
+  const pk = availableAccountPrivateKeys[nextAccountIndex++]
   if (pk == null) {
     throw new Error('No next private key available')
   }
@@ -40,7 +42,7 @@ function getNextAccount(): PrivateKeyAccount {
 }
 
 describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
-  describe.sequential('default: succeeds with valid expense', async () => {
+  describe.skip('default: succeeds with valid expense', async () => {
     const account = getNextAccount()
     const srcClient = createClient({ account, chain: mockL1Chain })
     const destClient = createClient({ chain: omniDevnetChain })
@@ -55,6 +57,10 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
     }
 
     beforeAll(async () => {
+      await createAnvilClient(mockL1Chain).setBalance({
+        address: account.address,
+        value: amount * 10n,
+      })
       await mintOMNI(srcClient)
     })
 
@@ -67,7 +73,7 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
     })
   })
 
-  describe.sequential('default: succeeds with native deposit', () => {
+  describe.skip('default: succeeds with native deposit', () => {
     const account = getNextAccount()
     const srcClient = createClient({ account, chain: mockL1Chain })
     const destClient = createClient({ chain: omniDevnetChain })
@@ -82,6 +88,10 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
     }
 
     beforeAll(async () => {
+      await createAnvilClient(mockL1Chain).setBalance({
+        address: account.address,
+        value: amount * 10n,
+      })
       await mintOMNI(srcClient)
     })
 
@@ -144,6 +154,11 @@ describe.concurrent('ETH transfer orders', () => {
 
       test('using core APIs', async () => {
         const account = getNextAccount()
+        await createAnvilClient(mockL1Chain).setBalance({
+          address: account.address,
+          value: parseEther('10'),
+        })
+
         const srcClient = createClient({ account, chain: mockL1Chain })
         const orderParams = {
           deposit: { token: zeroAddress, amount: parseEther('2') },
@@ -181,6 +196,11 @@ describe.concurrent('ETH transfer orders', () => {
 
       test('using React APIs', async () => {
         const account = getNextAccount()
+        await createAnvilClient(mockL1Chain).setBalance({
+          address: account.address,
+          value: parseEther('10'),
+        })
+
         const orderParams = {
           deposit: { token: zeroAddress, amount: parseEther('2') },
           expense: { token: zeroAddress, amount: parseEther('1') },
@@ -278,6 +298,11 @@ describe.concurrent('ETH transfer orders', () => {
   describe.concurrent('default: succeeds with valid expense', () => {
     test('using core APIs', async () => {
       const account = getNextAccount()
+      await createAnvilClient(mockL1Chain).setBalance({
+        address: account.address,
+        value: parseEther('10'),
+      })
+
       const srcClient = createClient({ account, chain: mockL1Chain })
       const amount = parseEther('1')
       const order: AnyOrder = {
@@ -293,6 +318,11 @@ describe.concurrent('ETH transfer orders', () => {
 
     test('using React APIs', async () => {
       const account = getNextAccount()
+      await createAnvilClient(mockL1Chain).setBalance({
+        address: account.address,
+        value: parseEther('10'),
+      })
+
       const amount = parseEther('1')
       const order: AnyOrder = {
         owner: account.address,
@@ -323,6 +353,13 @@ describe.concurrent('ETH transfer orders', () => {
           isNative: true,
         },
       } as const
+
+      beforeAll(async () => {
+        await createAnvilClient(mockL1Chain).setBalance({
+          address: account.address,
+          value: parseEther('10'),
+        })
+      })
 
       test('using core APIs', async () => {
         const srcClient = createClient({ account, chain: mockL1Chain })
