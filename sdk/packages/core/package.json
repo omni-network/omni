@@ -28,7 +28,7 @@
     "node": ">=22.x"
   },
   "dependencies": {
-    "viem": "^2.23.13"
+    "viem": "catalog:"
   },
   "devDependencies": {
     "@omni-network/test-utils": "workspace:^",

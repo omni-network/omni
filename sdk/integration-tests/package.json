@@ -7,16 +7,18 @@
   "dependencies": {
     "@omni-network/core": "workspace:*",
     "@omni-network/react": "workspace:*",
-    "@tanstack/react-query": "^5.69.0",
-    "react": "^19.0.0",
-    "viem": "^2.23.13",
-    "wagmi": "^2.14.15"
+    "@tanstack/react-query": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "viem": "catalog:",
+    "wagmi": "catalog:"
   },
   "devDependencies": {
     "@omni-network/test-utils": "workspace:*",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/react": "^16.2.0",
-    "@types/react": "^19.0.8",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@vitest/coverage-v8": "^3.0.7",
     "happy-dom": "^17.4.4",
     "typescript": "^5.7.2",
