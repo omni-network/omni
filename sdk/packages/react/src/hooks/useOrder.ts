@@ -19,7 +19,7 @@ import {
   type UseMutationResult,
   useMutation,
 } from '@tanstack/react-query'
-import type { Hex, WriteContractErrorType } from 'viem'
+import type { Hex, WalletClient, WriteContractErrorType } from 'viem'
 import {
   type Config,
   type UseWaitForTransactionReceiptReturnType,
@@ -94,7 +94,7 @@ export function useOrder<abis extends OptionalAbis>(
 ): UseOrderReturnType {
   const { validateEnabled, ...order } = params
   const srcChainId = order.srcChainId ?? useChainId()
-  const client = useClient({ chainId: srcChainId })
+  const client = useClient({ chainId: srcChainId }) as WalletClient
   const contractsResult = useOmniContracts()
   const inboxAddress = contractsResult.data?.inbox
 

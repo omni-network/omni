@@ -1,5 +1,5 @@
 import { mockL1Client, testOrder } from '@omni-network/test-utils'
-import { type Client, zeroAddress } from 'viem'
+import { type WalletClient, zeroAddress } from 'viem'
 import { expect, test, vi } from 'vitest'
 import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
@@ -43,7 +43,7 @@ test('default: opens order and returns the transaction hash', async () => {
 test('behaviour: throws an AccountRequiredError if the client does not have an associated account', async () => {
   await expect(
     openOrder({
-      client: {} as Client,
+      client: {} as WalletClient,
       inboxAddress: '0xaddress',
       order: testOrder,
     }),

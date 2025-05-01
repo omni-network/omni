@@ -1,4 +1,4 @@
-import type { Address, Client } from 'viem'
+import type { Address, WalletClient } from 'viem'
 import { zeroAddress } from 'viem'
 import { type WriteContractReturnType, writeContract } from 'viem/actions'
 import { inboxABI } from '../constants/abis.js'
@@ -11,7 +11,7 @@ import { encodeOrderData } from '../utils/encodeOrderData.js'
 const defaultFillDeadline = () => Math.floor(Date.now() / 1000 + 86400)
 
 export type OpenOrderParams<abis extends OptionalAbis> = {
-  client: Client
+  client: WalletClient
   inboxAddress: Address
   order: Order<abis>
 }
