@@ -3,10 +3,9 @@ import {
   type GetOrderParameters,
   type Order,
   didFill,
-  getOrder,
   openOrder,
-  parseInboxStatus,
   validateOrder,
+  waitForOrderClose,
 } from '@omni-network/core'
 import {
   OmniProvider,
@@ -43,7 +42,7 @@ import {
   parseEther,
   zeroAddress,
 } from 'viem'
-import { watchBlocks } from 'viem/actions'
+import { watchBlockNumber } from 'viem/actions'
 import { expect } from 'vitest'
 import {
   type Config,
@@ -61,24 +60,12 @@ type WaitForInboxOrderFilledParams = GetOrderParameters & {
 function waitForInboxOrderFilled(
   params: WaitForInboxOrderFilledParams,
 ): Promise<void> {
-  const { pollingInterval, timeout, ...getOrderParams } = params
-  return new Promise<void>((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      stopWatching()
-      reject(new Error('Timeout waiting for order to be filled on inbox'))
-    }, timeout ?? 60_000)
-    const stopWatching = watchBlocks(params.client, {
-      onBlock: async () => {
-        const order = await getOrder(getOrderParams)
-        const status = parseInboxStatus({ order })
-        if (status === 'filled') {
-          stopWatching
-          clearTimeout(timeoutId)
-          resolve()
-        }
-      },
-      pollingInterval,
-    })
+  const { timeout, ...waitParams } = params
+  return waitForOrderClose({
+    ...waitParams,
+    signal: AbortSignal.timeout(timeout ?? 20_000),
+  }).then((status) => {
+    expect(status).toEqual('filled')
   })
 }
 
@@ -95,9 +82,9 @@ function waitForOutboxOrderFilled(
     const timeoutId = setTimeout(() => {
       stopWatching()
       reject(new Error('Timeout waiting for order to be filled on outbox'))
-    }, timeout ?? 60_000)
-    const stopWatching = watchBlocks(params.client, {
-      onBlock: async () => {
+    }, timeout ?? 20_000)
+    const stopWatching = watchBlockNumber(params.client, {
+      onBlockNumber: async () => {
         const isFilled = await didFill(didFillParams)
         if (isFilled) {
           stopWatching()
@@ -142,14 +129,12 @@ export async function executeTestOrderUsingCore(
       inboxAddress: inbox,
       orderId: resolvedOrder.orderId,
       pollingInterval: 100,
-      timeout: 20_000,
     }),
     waitForOutboxOrderFilled({
       client: params.destClient,
       outboxAddress: outbox,
       resolvedOrder,
       pollingInterval: 100,
-      timeout: 20_000,
     }),
   ])
 }
