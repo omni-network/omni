@@ -16,6 +16,8 @@ const {
   useOmniContracts,
   useParseOpenEvent,
   useWaitForTransactionReceipt,
+  sendOrder,
+  getConnectorClient,
 } = vi.hoisted(() => {
   return {
     useValidateOrder: vi.fn(),
@@ -29,6 +31,16 @@ const {
         },
       }
     }),
+    getConnectorClient: vi.fn().mockImplementation(() => {
+      return {
+        account: '0xAccount',
+        chain: '0xChain',
+        connector: '0xConnector',
+      }
+    }),
+    sendOrder: vi.fn().mockImplementation(() => {
+      return Promise.resolve('0xTxHash')
+    }),
   }
 })
 
@@ -37,6 +49,14 @@ vi.mock('wagmi', async () => {
   return {
     ...actual,
     useWaitForTransactionReceipt,
+  }
+})
+
+vi.mock('wagmi/actions', async () => {
+  const actual = await vi.importActual('wagmi/actions')
+  return {
+    ...actual,
+    getConnectorClient,
   }
 })
 
@@ -97,6 +117,11 @@ const renderOrderHook = (
 }
 
 test(`default: validates, opens, and transitions order through it's lifecycle`, async () => {
+  vi.mock('@omni-network/core', async () => {
+    const actual = await vi.importActual('@omni-network/core')
+    return { ...actual, sendOrder }
+  })
+
   const { result, rerender } = renderHook(
     ({ validateEnabled }: { validateEnabled: boolean }) =>
       useOrder({ ...orderRequest, validateEnabled }),
