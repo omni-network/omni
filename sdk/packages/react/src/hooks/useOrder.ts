@@ -25,10 +25,11 @@ import {
   type UseWaitForTransactionReceiptReturnType,
   type UseWriteContractReturnType,
   useChainId,
-  useClient,
+  useConfig,
   useWaitForTransactionReceipt,
 } from 'wagmi'
-import { NoClientError } from '../errors/index.js'
+import { getConnectorClient } from 'wagmi/actions'
+import type { NoClientError } from '../errors/index.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 import {
   type UseOmniContractsResult,
@@ -94,15 +95,15 @@ export function useOrder<abis extends OptionalAbis>(
 ): UseOrderReturnType {
   const { validateEnabled, ...order } = params
   const srcChainId = order.srcChainId ?? useChainId()
-  const client = useClient({ chainId: srcChainId })
+  const config = useConfig()
   const contractsResult = useOmniContracts()
   const inboxAddress = contractsResult.data?.inbox
 
   const txMutation = useMutation<SendOrderReturn, MutationError>({
     mutationFn: async () => {
-      if (client == null) {
-        throw new NoClientError('No client provided')
-      }
+      const client = await getConnectorClient(config, {
+        chainId: srcChainId,
+      })
       if (inboxAddress == null) {
         throw new LoadContractsError(
           'Inbox contract address needs to be loaded',
