@@ -93,16 +93,27 @@ func hlNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, err
 			portalAddress = addrs.Portal
 		}
 
+		var hasEmitPortal bool
+		var hasSubmitPortal bool
+		var shards []xchain.ShardID
+		var attestInterval uint64
+		if portalAddress != (common.Address{}) {
+			hasEmitPortal = true
+			hasSubmitPortal = true
+			shards = chain.Shards
+			attestInterval = chain.AttestInterval(def.Testnet.Network)
+		}
+
 		return netconf.Chain{
 			ID:              chain.ChainID,
 			Name:            chain.Name,
 			BlockPeriod:     chain.BlockPeriod,
-			Shards:          chain.Shards,
-			AttestInterval:  chain.AttestInterval(def.Testnet.Network),
+			Shards:          shards,
+			AttestInterval:  attestInterval,
 			PortalAddress:   portalAddress,
 			DeployHeight:    0, // Portal height isn't needed here as we aren't deploying OmniPortal contracts to Hyperlane networks
-			HasEmitPortal:   true,
-			HasSubmitPortal: true,
+			HasEmitPortal:   hasEmitPortal,
+			HasSubmitPortal: hasSubmitPortal,
 		}
 	}
 
