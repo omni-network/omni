@@ -3,7 +3,6 @@ pragma solidity 0.8.24;
 
 import { MerkleDistributor } from "./MerkleDistributor.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { EIP712 } from "solady/src/utils/EIP712.sol";
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
@@ -16,7 +15,7 @@ import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { SolverNet } from "solve/src/lib/SolverNet.sol";
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeable, PausableUpgradeable, EIP712 {
+contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeable, EIP712 {
     using LibBitmap for LibBitmap.Bitmap;
     using SafeTransferLib for address;
     using SafeERC20 for IERC20;
@@ -65,7 +64,6 @@ contract MerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeab
      */
     function initialize(address admin_) external initializer {
         __Ownable_init(admin_);
-        __Pausable_init();
 
         token.safeApprove(address(solvernetInbox), type(uint256).max);
     }
