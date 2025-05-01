@@ -40,59 +40,67 @@ function getNextAccount(): PrivateKeyAccount {
 }
 
 describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
-  describe.sequential('default: succeeds with valid expense', async () => {
-    const account = getNextAccount()
-    const srcClient = createClient({ account, chain: mockL1Chain })
-    const destClient = createClient({ chain: omniDevnetChain })
-    const amount = parseEther('10')
-    const order: AnyOrder = {
-      owner: account.address,
-      srcChainId: mockL1Id,
-      destChainId: omniDevnetId,
-      expense: { token: zeroAddress, amount },
-      calls: [{ target: account.address, value: amount }],
-      deposit: { token: tokenAddress, amount },
-    }
+  const accounts = [getNextAccount(), getNextAccount()]
 
-    beforeAll(async () => {
-      await mintOMNI(srcClient)
-    })
+  describe.sequential(
+    `default: succeeds with valid expense with account ${accounts[0].address}`,
+    async () => {
+      const account = accounts[0]
+      const srcClient = createClient({ account, chain: mockL1Chain })
+      const destClient = createClient({ chain: omniDevnetChain })
+      const amount = parseEther('10')
+      const order: AnyOrder = {
+        owner: account.address,
+        srcChainId: mockL1Id,
+        destChainId: omniDevnetId,
+        expense: { token: zeroAddress, amount },
+        calls: [{ target: account.address, value: amount }],
+        deposit: { token: tokenAddress, amount },
+      }
 
-    test('using core APIs', async () => {
-      await executeTestOrderUsingCore({ order, srcClient, destClient })
-    })
+      beforeAll(async () => {
+        await mintOMNI(srcClient)
+      })
 
-    test('using React APIs', async () => {
-      await executeTestOrderUsingReact({ account, order })
-    })
-  })
+      test('using core APIs', async () => {
+        await executeTestOrderUsingCore({ order, srcClient, destClient })
+      })
 
-  describe.sequential('default: succeeds with native deposit', () => {
-    const account = getNextAccount()
-    const srcClient = createClient({ account, chain: mockL1Chain })
-    const destClient = createClient({ chain: omniDevnetChain })
-    const amount = parseEther('10')
-    const order: AnyOrder = {
-      owner: account.address,
-      srcChainId: mockL1Id,
-      destChainId: omniDevnetId,
-      expense: { token: zeroAddress, amount },
-      calls: [{ target: account.address, value: amount }],
-      deposit: { token: zeroAddress, amount },
-    }
+      test('using React APIs', async () => {
+        await executeTestOrderUsingReact({ account, order })
+      })
+    },
+  )
 
-    beforeAll(async () => {
-      await mintOMNI(srcClient)
-    })
+  describe.sequential(
+    `default: succeeds with native deposit with account ${accounts[1].address}`,
+    () => {
+      const account = accounts[1]
+      const srcClient = createClient({ account, chain: mockL1Chain })
+      const destClient = createClient({ chain: omniDevnetChain })
+      const amount = parseEther('10')
+      const order: AnyOrder = {
+        owner: account.address,
+        srcChainId: mockL1Id,
+        destChainId: omniDevnetId,
+        expense: { token: zeroAddress, amount },
+        calls: [{ target: account.address, value: amount }],
+        deposit: { token: zeroAddress, amount },
+      }
 
-    test('using core APIs', async () => {
-      await executeTestOrderUsingCore({ order, srcClient, destClient })
-    })
+      beforeAll(async () => {
+        await mintOMNI(srcClient)
+      })
 
-    test('using React APIs', async () => {
-      await executeTestOrderUsingReact({ account, order })
-    })
-  })
+      test('using core APIs', async () => {
+        await executeTestOrderUsingCore({ order, srcClient, destClient })
+      })
+
+      test('using React APIs', async () => {
+        await executeTestOrderUsingReact({ account, order })
+      })
+    },
+  )
 
   describe.concurrent('behaviour: fails with unsupported ERC20 deposit', () => {
     const amount = parseEther('10')
@@ -127,6 +135,7 @@ describe.concurrent('ETH transfer orders', () => {
   describe.concurrent(
     'default: successfully processes order from quote to filled',
     () => {
+      const accounts = [getNextAccount(), getNextAccount()]
       const quoteParams = {
         enabled: true,
         mode: 'expense',
@@ -142,8 +151,8 @@ describe.concurrent('ETH transfer orders', () => {
         },
       } as const
 
-      test('using core APIs', async () => {
-        const account = getNextAccount()
+      test(`using core APIs with account ${accounts[0].address}`, async () => {
+        const account = accounts[0]
         const srcClient = createClient({ account, chain: mockL1Chain })
         const orderParams = {
           deposit: { token: zeroAddress, amount: parseEther('2') },
@@ -179,8 +188,8 @@ describe.concurrent('ETH transfer orders', () => {
         )
       })
 
-      test('using React APIs', async () => {
-        const account = getNextAccount()
+      test(`using React APIs with account ${accounts[1].address}`, async () => {
+        const account = accounts[1]
         const orderParams = {
           deposit: { token: zeroAddress, amount: parseEther('2') },
           expense: { token: zeroAddress, amount: parseEther('1') },
@@ -276,8 +285,10 @@ describe.concurrent('ETH transfer orders', () => {
   )
 
   describe.concurrent('default: succeeds with valid expense', () => {
-    test('using core APIs', async () => {
-      const account = getNextAccount()
+    const accounts = [getNextAccount(), getNextAccount()]
+
+    test(`using core APIs with account ${accounts[0].address}`, async () => {
+      const account = accounts[0]
       const srcClient = createClient({ account, chain: mockL1Chain })
       const amount = parseEther('1')
       const order: AnyOrder = {
@@ -291,8 +302,8 @@ describe.concurrent('ETH transfer orders', () => {
       await executeTestOrderUsingCore({ order, srcClient, destClient })
     })
 
-    test('using React APIs', async () => {
-      const account = getNextAccount()
+    test(`using React APIs with account ${accounts[1].address}`, async () => {
+      const account = accounts[1]
       const amount = parseEther('1')
       const order: AnyOrder = {
         owner: account.address,
@@ -324,7 +335,7 @@ describe.concurrent('ETH transfer orders', () => {
         },
       } as const
 
-      test('using core APIs', async () => {
+      test(`using core APIs with account ${account.address}`, async () => {
         const srcClient = createClient({ account, chain: mockL1Chain })
         const preDestBalance = await getBalance(destClient, {
           address: account.address,
@@ -383,7 +394,7 @@ describe.concurrent('ETH transfer orders', () => {
         )
       })
 
-      test('using React APIs', async () => {
+      test(`using React APIs with account ${account.address}`, async () => {
         const renderHook = createRenderHook()
 
         const preDestBalance = renderHook(() => {
