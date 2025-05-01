@@ -1,5 +1,5 @@
 import { type Hex, parseEther, toBytes, toHex } from 'viem'
-import { testAccount } from './account.js'
+import { testAccount } from './accounts.js'
 
 const oneEth = parseEther('1')
 

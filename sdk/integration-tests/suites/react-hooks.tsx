@@ -6,16 +6,19 @@ import {
   useValidateOrder,
 } from '@omni-network/react'
 import {
+  createAnvilClient,
   invalidChainId,
   invalidTokenAddress,
+  mockL1Chain,
   mockL1Id,
+  mockL2Chain,
   mockL2Id,
   testAccount,
   tokenAddress,
 } from '@omni-network/test-utils'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { pad, parseEther, zeroAddress } from 'viem'
-import { describe, expect, test } from 'vitest'
+import { beforeAll, describe, expect, test } from 'vitest'
 import {
   type AnyOrder,
   ContextProvider,
@@ -24,6 +27,20 @@ import {
   executeTestOrderUsingReact,
   useOrderRef,
 } from '../test-utils.js'
+
+beforeAll(async () => {
+  const value = parseEther('1000')
+  await Promise.all([
+    createAnvilClient(mockL1Chain).setBalance({
+      address: testAccount.address,
+      value,
+    }),
+    createAnvilClient(mockL2Chain).setBalance({
+      address: testAccount.address,
+      value,
+    }),
+  ])
+})
 
 async function execOrder() {
   const orderParams = {
