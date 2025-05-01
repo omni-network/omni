@@ -158,6 +158,10 @@ func anvilPrefundAlloc() types.GenesisAlloc {
 		resp[addr] = types.Account{Balance: eth1m}
 	}
 
+	for addr := range anvil.ExternalAccounts { // external pre-funded accounts
+		resp[addr] = types.Account{Balance: eth1m}
+	}
+
 	return resp
 }
 
