@@ -3,6 +3,11 @@ pragma solidity ^0.8.24;
 
 interface ISolverNetExecutor {
     /**
+     * @notice Error thrown when the sender is not the executor.
+     */
+    error NotSelf();
+
+    /**
      * @notice Error thrown when the sender is not the outbox.
      */
     error NotOutbox();
@@ -11,6 +16,11 @@ interface ISolverNetExecutor {
      * @notice Error thrown when the call fails.
      */
     error CallFailed();
+
+    /**
+     * @notice Error thrown when the token is invalid.
+     */
+    error InvalidToken();
 
     /**
      * @notice Address of the outbox.
@@ -31,11 +41,38 @@ interface ISolverNetExecutor {
 
     /**
      * @notice Executes a call.
+     * @dev Any tokens sent back to this contract after a call will remain in the contract for the next call
+     *         Receiving tokens need to be followed up by an `approve` call to use them in following calls (unless calling `transfer`)
      * @param target Address of the contract to call.
      * @param value  Value to send with the call.
      * @param data   Data to send with the call.
      */
     function execute(address target, uint256 value, bytes calldata data) external payable;
+
+    /**
+     * @notice Execute a call and transfer any received ERC20 tokens back to the recipient
+     * @dev Intended to be used when interacting with contracts that don't allow us to specify a recipient
+     *         This should be triggered by `execute` by executing an external call against this Executor contract
+     * @param token  Token to transfer
+     * @param to     Recipient address
+     * @param target Call target address
+     * @param data   Calldata for the call
+     */
+    function executeAndTransfer(address token, address to, address target, bytes calldata data) external payable;
+
+    /**
+     * @notice Execute a call and transfer a received ERC721 token back to the recipient
+     * @dev Intended to be used when interacting with contracts that don't allow us to specify a recipient
+     *         This should be triggered by `execute` by executing an external call against this Executor contract
+     * @param token     Token to transfer
+     * @param tokenId   Token ID to transfer
+     * @param to        Recipient address
+     * @param target    Call target address
+     * @param data      Calldata for the call
+     */
+    function executeAndTransfer721(address token, uint256 tokenId, address to, address target, bytes calldata data)
+        external
+        payable;
 
     /**
      * @notice Transfers a token to a recipient.
