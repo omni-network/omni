@@ -2,12 +2,14 @@
 package solana_test
 
 import (
+	"encoding/json"
 	"flag"
 	"testing"
 	"time"
 
 	"github.com/omni-network/omni/lib/tutil"
 	solcompose "github.com/omni-network/omni/solver/solana"
+	"github.com/omni-network/omni/solver/solana/events"
 
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/programs/memo"
@@ -17,7 +19,7 @@ import (
 
 var integration = flag.Bool("integration", false, "Include integration tests")
 
-// dir is subdirectory to store the docker compose file and solana generated artifacts (excluded from repo).
+// dir is subdirectory to store the docker compose file and solana generated artifacts (ignored from repo).
 const dir = "compose"
 
 var v0 uint64
@@ -139,21 +141,61 @@ func TestIntegration(t *testing.T) {
 	})
 }
 
-func TestDeployEventsProgram(t *testing.T) {
+func TestEventsProgram(t *testing.T) {
 	if !*integration {
 		t.Skip("skipping integration test")
 	}
 
 	ctx := t.Context()
-	cl, _, _, err := solcompose.Start(ctx, dir)
+	cl, privKey0, stop, err := solcompose.Start(ctx, dir)
 	require.NoError(t, err)
+	defer stop()
 
 	prog := solcompose.ProgramEvents
 
 	// Deploy events program
-	tx, err := solcompose.Deploy(ctx, cl, dir, prog)
+	tx0, err := solcompose.Deploy(ctx, cl, dir, prog)
 	tutil.RequireNoError(t, err)
-	t.Logf("Deployed events program: slot=%d, account=%s", tx.Slot, prog.MustPublicKey())
+	t.Logf("Deployed events program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
+
+	// Sent Initialize instruction
+	txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, events.NewInitializeInstruction().Build())
+	require.NoError(t, err)
+
+	txResp1, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig1)
+	require.NoError(t, err)
+	t.Logf("Initialize Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp1.Slot, txResp1.BlockTime, txSig1, txResp1.Meta.LogMessages)
+
+	ensureEvent(t, prog, txResp1, events.EventMyEvent, events.MyEventEventData{Data: 5, Label: "hello"})
+
+	// Send TestEvent instruction
+	txSig2, err := solcompose.SendSimple(ctx, cl, privKey0, events.NewTestEventInstruction().Build())
+	require.NoError(t, err)
+
+	txResp2, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig2)
+	require.NoError(t, err)
+	t.Logf("TestEvent Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp2.Slot, txResp2.BlockTime, txSig2, txResp2.Meta.LogMessages)
+
+	ensureEvent(t, prog, txResp2, events.EventMyOtherEvent, events.MyOtherEventEventData{Data: 6, Label: "bye"})
+}
+
+func ensureEvent(t *testing.T, prog solcompose.Program, txRes *rpc.GetTransactionResult, expectName string, expectData any) {
+	t.Helper()
+
+	evnts, err := events.DecodeEvents(txRes, prog.MustPublicKey(), nil)
+	require.NoError(t, err)
+	require.Len(t, evnts, 1)
+
+	for _, evnt := range evnts {
+		require.Equal(t, expectName, evnt.Name)
+
+		expectJSON, err := json.MarshalIndent(expectData, "", "  ")
+		require.NoError(t, err)
+		actualJSON, err := json.MarshalIndent(evnt.Data, "", "  ")
+		require.NoError(t, err)
+
+		require.JSONEq(t, string(expectJSON), string(actualJSON))
+	}
 }
 
 func ptr[A any](a A) *A {
