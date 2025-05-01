@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -20,26 +21,30 @@ import (
 var hlChains = map[netconf.ID][]uint64{
 	// Mainnet
 	netconf.Mainnet: {
-		evmchain.IDBSC,
-		evmchain.IDPolygon,
-		evmchain.IDHyperEVM,
-		evmchain.IDMantle,
-		evmchain.IDBerachain,
-		evmchain.IDPlume,
+		// evmchain.IDBSC,
+		// evmchain.IDPolygon,
+		// evmchain.IDHyperEVM,
+		// evmchain.IDMantle,
+		// evmchain.IDBerachain,
+		// evmchain.IDPlume,
 	},
 
 	// Testnet
 	netconf.Omega: {
-		evmchain.IDBSCTestnet,
-		evmchain.IDHyperEVMTestnet,
-		evmchain.IDPolygonAmoy,
-		evmchain.IDBerachainbArtio,
-		evmchain.IDPlumeTestnet,
-		evmchain.IDSepolia,
+		// evmchain.IDBSCTestnet,
+		// evmchain.IDHyperEVMTestnet,
+		// evmchain.IDPolygonAmoy,
+		// evmchain.IDPlumeTestnet,
+		// evmchain.IDSepolia,
 	},
 
 	// Staging
 	netconf.Staging: {
+		evmchain.IDSepolia,
+	},
+
+	// Devnet
+	netconf.Devnet: {
 		evmchain.IDSepolia,
 	},
 }
@@ -73,6 +78,23 @@ func IsHLChain(chainID uint64) bool {
 	}
 
 	return false
+}
+
+// IsHLRole returns true if the role is a hyperlane-related role.
+func IsHLRole(role eoa.Role) bool {
+	if role != eoa.RoleRelayer && role != eoa.RoleMonitor && role != eoa.RoleTester && role != eoa.RoleXCaller {
+		return true
+	}
+
+	return false
+}
+
+// FilterByEndpoints returns an HL chain selector that excludes chains without endpoints.
+func FilterByEndpoints(endpoints xchain.RPCEndpoints) func(netconf.ID, netconf.Chain) bool {
+	return func(_ netconf.ID, chain netconf.Chain) bool {
+		_, err := endpoints.ByNameOrID(chain.Name, chain.ID)
+		return err == nil
+	}
 }
 
 // FilterByBackends returns an HL chain selector that excludes chains not in backends.
@@ -137,7 +159,7 @@ func AddHLNetwork(ctx context.Context, network netconf.Network, selectors ...fun
 		included = append(included, chain.Name)
 	}
 
-	log.Debug(ctx, "Adding hyperlane chains", "included", included, "excluded", excluded)
+	log.Debug(ctx, "Adding hyperlane chains to network", "network", network.ID, "included", included, "excluded", excluded)
 
 	return network.AddChains(chains...)
 }

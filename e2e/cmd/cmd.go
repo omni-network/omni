@@ -328,10 +328,22 @@ func newDeploySolverNetCmd(def *app.Definition) *cobra.Command {
 
 			network, err := networkFromDef(ctx, *def)
 			if err != nil {
-				return errors.Wrap(err, "network")
+				return errors.Wrap(err, "network from def")
 			}
 
-			return solve.Deploy(cmd.Context(), network, def.Backends())
+			endpoints := app.ExternalEndpoints(*def)
+
+			network, backends, err := app.AddSolverNetworkAndBackends(ctx, network, endpoints, def.Cfg, cmd.Name())
+			if err != nil {
+				return errors.Wrap(err, "get solver network and backends")
+			}
+
+			err = app.DeployAllCreate3(ctx, network, backends)
+			if err != nil {
+				return errors.Wrap(err, "deploy create3")
+			}
+
+			return solve.Deploy(cmd.Context(), network, backends)
 		},
 	}
 

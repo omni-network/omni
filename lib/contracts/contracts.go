@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -46,7 +47,9 @@ func ToMonitor(ctx context.Context, network netconf.ID) ([]Contract, error) {
 		Name:               "gas-pump",
 		Address:            addrs.GasPump,
 		WithdrawThresholds: &WithdrawThresholds{maxEther: 10},
-		IsDeployedOn:       isNotOmni,
+		IsDeployedOn: func(chainID uint64, network netconf.ID) bool {
+			return isNotOmni(chainID, network) && isOmniConnected(chainID, network)
+		},
 	}
 
 	// Staking contract collects validator deposits. It is only deployed on OmniEVM.
@@ -92,6 +95,21 @@ func isOmni(chainID uint64, network netconf.ID) bool {
 
 func isNotOmni(chainID uint64, network netconf.ID) bool {
 	return chainID != network.Static().OmniExecutionChainID && chainID != network.Static().OmniConsensusChainIDUint64()
+}
+
+func isOmniConnected(chainID uint64, network netconf.ID) bool {
+	switch network {
+	case netconf.Mainnet:
+		return chainID == evmchain.IDEthereum || chainID == evmchain.IDOptimism || chainID == evmchain.IDBase || chainID == evmchain.IDArbitrumOne
+	case netconf.Omega:
+		return chainID == evmchain.IDHolesky || chainID == evmchain.IDBaseSepolia || chainID == evmchain.IDArbSepolia || chainID == evmchain.IDOpSepolia
+	case netconf.Staging:
+		return chainID == evmchain.IDHolesky || chainID == evmchain.IDBaseSepolia || chainID == evmchain.IDArbSepolia || chainID == evmchain.IDOpSepolia
+	case netconf.Devnet:
+		return chainID == evmchain.IDMockL1 || chainID == evmchain.IDMockL2 || chainID == evmchain.IDMockOp || chainID == evmchain.IDMockArb
+	default:
+		return false
+	}
 }
 
 func isEthereum(chainID uint64, network netconf.ID) bool {
