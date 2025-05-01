@@ -1,6 +1,8 @@
 package solana
 
 import (
+	"github.com/omni-network/omni/solver/solana/events"
+
 	"github.com/gagliardetto/solana-go"
 
 	_ "embed"
@@ -50,4 +52,15 @@ func (p Program) MustPrivateKey() solana.PrivateKey {
 
 func (p Program) MustPublicKey() solana.PublicKey {
 	return p.MustPrivateKey().PublicKey()
+}
+
+func (p Program) Init() {
+	events.SetProgramID(p.MustPublicKey())
+}
+
+//nolint:gochecknoinits // init isn't cool, but the generated code requires it.
+func init() {
+	for _, program := range Programs {
+		program.Init()
+	}
 }
