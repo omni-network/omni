@@ -100,7 +100,7 @@ func hlNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, err
 			Shards:          chain.Shards,
 			AttestInterval:  chain.AttestInterval(def.Testnet.Network),
 			PortalAddress:   portalAddress,
-			DeployHeight:    0, // TODO(zodomo): Can we retrieve the deploy height from the portal registry?
+			DeployHeight:    0, // Portal height isn't needed here as we aren't deploying OmniPortal contracts to Hyperlane networks
 			HasEmitPortal:   true,
 			HasSubmitPortal: true,
 		}
