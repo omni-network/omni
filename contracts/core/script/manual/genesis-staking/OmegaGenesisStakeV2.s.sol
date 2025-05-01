@@ -199,7 +199,7 @@ contract OmegaGenesisStakeScript is Script {
         genesisStake = GenesisStakeV2(proxyAddress);
 
         // Initialize separately after deployment
-        (bool success, bytes memory result) = proxyAddress.call(abi.encodeCall(GenesisStakeV2.initialize, (msg.sender)));
+        (bool success,) = proxyAddress.call(abi.encodeCall(GenesisStakeV2.initialize, (msg.sender)));
         require(success, "Initialization call failed");
 
         // Verify initialization immediately
