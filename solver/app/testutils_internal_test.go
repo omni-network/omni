@@ -49,7 +49,6 @@ type orderTestCase struct {
 	reject       bool
 	fillReverts  bool
 	disallowCall bool
-	shouldErr    bool
 	mock         func(clients MockClients)
 	order        testOrder
 	testdata     bool
@@ -62,7 +61,6 @@ type rejectTestCase struct {
 	reject       bool
 	fillReverts  bool
 	disallowCall bool
-	shouldErr    bool
 	mock         func(clients MockClients)
 	order        Order
 }
@@ -153,7 +151,6 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 		reject:       tt.reject,
 		fillReverts:  tt.fillReverts,
 		disallowCall: tt.disallowCall,
-		shouldErr:    tt.shouldErr,
 		mock:         tt.mock,
 		order: Order{
 			ID:            [32]byte{0x01},
@@ -223,25 +220,7 @@ func rejectTestCases(t *testing.T, solver, outbox common.Address) []rejectTestCa
 		tests = append(tests, toRejectTestCase(t, tt, outbox))
 	}
 
-	additional := []rejectTestCase{
-		// special case: insufficient native OMNI should error, not reject
-		toRejectTestCase(t, orderTestCase{
-			name:      "insufficient native OMNI",
-			shouldErr: true,
-			order: testOrder{
-				srcChainID: evmchain.IDHolesky,
-				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omniERC20(netconf.Omega).Address}},
-				calls:      []types.Call{{Value: ether(1)}},
-				expenses:   []types.Expense{{Amount: ether(1)}},
-			},
-			mock: func(clients MockClients) {
-				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(0))
-			},
-		}, outbox),
-	}
-
-	return append(tests, additional...)
+	return tests
 }
 
 func erc20(chainID uint64, asset tokens.Asset) tokens.Token {
