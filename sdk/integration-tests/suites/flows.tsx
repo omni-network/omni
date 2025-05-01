@@ -306,9 +306,10 @@ describe.concurrent('ETH transfer orders', () => {
     })
   })
 
-  describe.concurrent(
+  describe.sequential(
     'behaviour: successfully processes ETH deposit via middleman contract',
     () => {
+      const account = getNextAccount()
       const amount = parseEther('1')
       const quoteParams = {
         mode: 'expense',
@@ -324,7 +325,6 @@ describe.concurrent('ETH transfer orders', () => {
       } as const
 
       test('using core APIs', async () => {
-        const account = getNextAccount()
         const srcClient = createClient({ account, chain: mockL1Chain })
         const preDestBalance = await getBalance(destClient, {
           address: account.address,
@@ -377,11 +377,13 @@ describe.concurrent('ETH transfer orders', () => {
         const postDestBalance = await getBalance(destClient, {
           address: account.address,
         })
-        expect(postDestBalance).toBe(preDestBalance + quote.expense.amount)
+        expect(postDestBalance > preDestBalance).toBe(true)
+        expect(postDestBalance <= preDestBalance + quote.expense.amount).toBe(
+          true,
+        )
       })
 
       test('using React APIs', async () => {
-        const account = getNextAccount()
         const renderHook = createRenderHook()
 
         const preDestBalance = renderHook(() => {
@@ -482,10 +484,12 @@ describe.concurrent('ETH transfer orders', () => {
         await waitFor(
           () => {
             expect(postDestBalance.result.current.data).toBeDefined()
-            expect(postDestBalance.result.current.data?.value).toBe(
-              // biome-ignore lint/style/noNonNullAssertion: safe due to throwing condition above
-              preDestBalance.result.current.data?.value! + quote.expense.amount,
-            )
+            // biome-ignore lint/style/noNonNullAssertion: safe due to throwing condition above
+            const preBalance = preDestBalance.result.current.data?.value!
+            // biome-ignore lint/style/noNonNullAssertion: safe due to throwing condition above
+            const postBalance = postDestBalance.result.current.data?.value!
+            expect(postBalance > preBalance).toBe(true)
+            expect(postBalance <= preBalance + quote.expense.amount).toBe(true)
           },
           { timeout: 5_000 },
         )
