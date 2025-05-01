@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -12,6 +13,8 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // AddSolverEndpoints returns the RPC endpoints for the given solvernet network, including HL chains.
@@ -72,4 +75,56 @@ func AddSolverNetworkAndBackends(ctx context.Context, network netconf.Network, e
 	}
 
 	return network, backends, nil
+}
+
+// networkFromDef returns the network configuration from the definition.
+// Note that this does not panic as it does in definition.go by manually setting portal addresses without deploy height.
+func hlNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, error) {
+	var chains []netconf.Chain
+
+	addrs, err := contracts.GetAddresses(ctx, def.Testnet.Network)
+	if err != nil {
+		return netconf.Network{}, errors.Wrap(err, "get addresses")
+	}
+
+	newChain := func(chain types.EVMChain) netconf.Chain {
+		var portalAddress common.Address
+		if !solvernet.IsHLChain(chain.ChainID) {
+			portalAddress = addrs.Portal
+		}
+
+		return netconf.Chain{
+			ID:              chain.ChainID,
+			Name:            chain.Name,
+			BlockPeriod:     chain.BlockPeriod,
+			Shards:          chain.Shards,
+			AttestInterval:  chain.AttestInterval(def.Testnet.Network),
+			PortalAddress:   portalAddress,
+			DeployHeight:    0, // TODO(zodomo): Can we retrieve the deploy height from the portal registry?
+			HasEmitPortal:   true,
+			HasSubmitPortal: true,
+		}
+	}
+
+	// Add all public chains
+	for _, public := range def.Testnet.PublicChains {
+		chains = append(chains, newChain(public.Chain()))
+	}
+
+	// Connect to a proper omni_evm that isn't unavailable
+	omniEVM := def.Testnet.BroadcastOmniEVM()
+	chains = append(chains, newChain(omniEVM.Chain))
+
+	// Add omni consensus chain
+	chains = append(chains, def.Testnet.Network.Static().OmniConsensusChain())
+
+	// Add all anvil chains
+	for _, anvil := range def.Testnet.AnvilChains {
+		chains = append(chains, newChain(anvil.Chain))
+	}
+
+	return netconf.Network{
+		ID:     def.Testnet.Network,
+		Chains: chains,
+	}, nil
 }

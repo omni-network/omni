@@ -25,7 +25,10 @@ const saneMaxOmni = 60420 // Maximum amount of OMNI to fund (in ether OMNI).
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
 func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool) error {
-	network := networkFromDef(def)
+	network, err := hlNetworkFromDef(ctx, def)
+	if err != nil {
+		return errors.Wrap(err, "get hl network")
+	}
 
 	endpoints := ExternalEndpoints(def)
 
