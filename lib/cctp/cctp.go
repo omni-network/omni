@@ -41,7 +41,7 @@ func MintAuditForever(
 		return errors.Wrap(err, "mint forever")
 	}
 
-	go monitorForever(ctx, db)
+	go monitorForever(ctx, chains, db)
 
 	return nil
 }
