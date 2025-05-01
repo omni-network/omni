@@ -1,0 +1,72 @@
+---
+sidebar_position: 1
+title: Getting Started using the core package
+description: Guide to getting started with the Omni SDK using the core package.
+---
+
+import { Callout } from 'vocs/components'
+
+# Getting Started using the core package
+
+<Callout type="warning" title="Alpha SDK">
+Currently in alpha - breaking changes may happen.
+</Callout>
+
+## Overview
+
+The Omni SDK contains APIs for interfacing with Omni SolverNet, your gateway to enabling any transaction, on any chain, from any supported JavaScript runtime.
+
+## Prerequisites
+
+You'll need to have `viem` setup in your project already. If you don't, you can follow the instructions here: [Viem Getting Started Guide](https://viem.sh/docs/getting-started).
+
+## Installation
+
+Once your project meets the prerequisites, install the SDK package:
+
+:::code-group
+```bash [pnpm]
+pnpm i @omni-network/core
+```
+
+```bash [npm]
+npm i @omni-network/core
+```
+
+```bash [yarn]
+yarn add @omni-network/core
+```
+:::
+
+
+## Setup
+
+### Environment
+
+The SDK supports the following environments for interacting with the SolverNet APIs:
+
+- `mainnet` for production (default when not specified)
+- `testnet` for development and testing
+
+Some of the SDK functions support providing the environment as a parameter. If not provided, the SDK will use `mainnet`.
+
+### Contracts
+
+Functions interacting with blockchains need to be provided the contract addresses, which can be loaded using the `getContracts()` function:
+
+```ts
+import { getContracts, getOrder } from '@omni-network/core'
+
+const mainnetAddresses = getContracts() // mainnet environment by default
+const testnetAddresses = getContracts('testnet')
+
+const order = await getOrder({
+  client: viemClient,
+  inboxAddress: mainnetAddresses.inbox,
+  orderId: '0x123...',
+})
+```
+
+### Viem clients
+
+TODO: public vs wallet client, maybe different for src and dest chain

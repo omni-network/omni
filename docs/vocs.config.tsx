@@ -49,14 +49,28 @@ export default defineConfig({
     {
       text: 'SolverNet SDK',
       items: [
-        { text: 'Getting Started', link: '/sdk/getting-started' },
+        {
+          text: 'Getting Started',
+          items: [
+            { text: 'With React', link: '/sdk/getting-started/react' },
+            { text: 'Without framework', link: '/sdk/getting-started/core' },
+          ],
+        },
         { text: 'Supported Assets', link: '/sdk/supported-assets' },
         {
-          text: 'Hooks',
+          text: 'React hooks',
           items: [
             { text: 'useQuote', link: '/sdk/hooks/useQuote' },
             { text: 'useOrder', link: '/sdk/hooks/useOrder' },
-            { text: 'withExecAndTransfer', link: '/sdk/utils/withExecAndTransfer' },
+          ],
+        },
+        {
+          text: 'Core APIs',
+          items: [
+            {
+              text: 'withExecAndTransfer',
+              link: '/sdk/utils/withExecAndTransfer',
+            },
           ],
         },
         { text: 'Swaps', link: '/sdk/swaps' },

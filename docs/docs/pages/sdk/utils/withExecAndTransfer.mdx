@@ -78,7 +78,7 @@ contract SolverNetMiddleman {
 3.  **Use the wrapped call:** Pass the result of `withExecAndTransfer` (which is a `Call` object itself) into the `calls` array for `useOrder`.
 
 ```typescript
-import { withExecAndTransfer } from '@omni-network/react';
+import { withExecAndTransfer } from '@omni-network/core';
 
 
 // ABI for Vault.deposit{ value: amount }()
