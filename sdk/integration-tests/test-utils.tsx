@@ -3,11 +3,9 @@ import {
   type GetOrderParameters,
   type Order,
   didFill,
-  getOrder,
   openOrder,
-  parseInboxStatus,
-  parseOpenEvent,
   validateOrder,
+  waitForOrderClose,
 } from '@omni-network/core'
 import {
   OmniProvider,
@@ -44,7 +42,7 @@ import {
   parseEther,
   zeroAddress,
 } from 'viem'
-import { waitForTransactionReceipt, watchBlocks } from 'viem/actions'
+import { watchBlockNumber } from 'viem/actions'
 import { expect } from 'vitest'
 import {
   type Config,
@@ -54,8 +52,6 @@ import {
   useConnect,
 } from 'wagmi'
 
-const txHashRegexp = /^0x[0-9a-f]{64}$/
-
 type WaitForInboxOrderFilledParams = GetOrderParameters & {
   pollingInterval?: number
   timeout?: number
@@ -64,24 +60,12 @@ type WaitForInboxOrderFilledParams = GetOrderParameters & {
 function waitForInboxOrderFilled(
   params: WaitForInboxOrderFilledParams,
 ): Promise<void> {
-  const { pollingInterval, timeout, ...getOrderParams } = params
-  return new Promise<void>((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      stopWatching()
-      reject(new Error('Timeout waiting for order to be filled on inbox'))
-    }, timeout ?? 60_000)
-    const stopWatching = watchBlocks(params.client, {
-      onBlock: async () => {
-        const order = await getOrder(getOrderParams)
-        const status = parseInboxStatus({ order })
-        if (status === 'filled') {
-          stopWatching
-          clearTimeout(timeoutId)
-          resolve()
-        }
-      },
-      pollingInterval,
-    })
+  const { timeout, ...waitParams } = params
+  return waitForOrderClose({
+    ...waitParams,
+    signal: AbortSignal.timeout(timeout ?? 20_000),
+  }).then((status) => {
+    expect(status).toEqual('filled')
   })
 }
 
@@ -98,9 +82,9 @@ function waitForOutboxOrderFilled(
     const timeoutId = setTimeout(() => {
       stopWatching()
       reject(new Error('Timeout waiting for order to be filled on outbox'))
-    }, timeout ?? 60_000)
-    const stopWatching = watchBlocks(params.client, {
-      onBlock: async () => {
+    }, timeout ?? 20_000)
+    const stopWatching = watchBlockNumber(params.client, {
+      onBlockNumber: async () => {
         const isFilled = await didFill(didFillParams)
         if (isFilled) {
           stopWatching()
@@ -132,22 +116,12 @@ export async function executeTestOrderUsingCore(
     return
   }
 
-  await expect(validateOrder(order, 'devnet')).resolves.toMatchObject({
-    accepted: true,
-  })
-
-  const txHash = await openOrder({
+  const resolvedOrder = await openOrder({
+    environment: 'devnet',
     client: params.srcClient,
     inboxAddress: inbox,
     order,
   })
-  expect(txHash).toMatch(txHashRegexp)
-
-  const receipt = await waitForTransactionReceipt(params.srcClient, {
-    hash: txHash,
-    pollingInterval: 100,
-  })
-  const resolvedOrder = parseOpenEvent(receipt.logs)
 
   await Promise.all([
     waitForInboxOrderFilled({
@@ -155,14 +129,12 @@ export async function executeTestOrderUsingCore(
       inboxAddress: inbox,
       orderId: resolvedOrder.orderId,
       pollingInterval: 100,
-      timeout: 20_000,
     }),
     waitForOutboxOrderFilled({
       client: params.destClient,
       outboxAddress: outbox,
       resolvedOrder,
       pollingInterval: 100,
-      timeout: 20_000,
     }),
   ])
 }
