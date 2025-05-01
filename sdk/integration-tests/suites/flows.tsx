@@ -25,7 +25,6 @@ import { useBalance } from 'wagmi'
 import {
   type AnyOrder,
   createRenderHook,
-  devnetApiUrl,
   executeTestOrderUsingCore,
   executeTestOrderUsingReact,
   useOrderRef,
@@ -159,7 +158,7 @@ describe.concurrent('ETH transfer orders', () => {
           address: account.address,
         })
 
-        const quote = await getQuote(devnetApiUrl, quoteParams)
+        const quote = await getQuote(quoteParams, 'devnet')
         expect(quote).toEqual({
           deposit: { token: zeroAddress, amount: parseEther('2') },
           expense: { token: zeroAddress, amount: expect.any(BigInt) },
@@ -331,7 +330,7 @@ describe.concurrent('ETH transfer orders', () => {
           address: account.address,
         })
 
-        const quote = await getQuote(devnetApiUrl, quoteParams)
+        const quote = await getQuote(quoteParams, 'devnet')
         expect(quote).toEqual({
           deposit: { token: zeroAddress, amount: parseEther('1') },
           expense: { token: zeroAddress, amount: expect.any(BigInt) },

@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"log/slog"
+	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
@@ -85,16 +86,22 @@ func TestIntegration(t *testing.T) {
 	baseWSTETH := mustToken(t, evmchain.IDBase, tokens.WSTETH)
 	baseUSDC := mustToken(t, evmchain.IDBase, tokens.USDC)
 
-	// Fund L1 USDC above suprluse threshold, so we have some to swap after briding from base
+	// Fund L1 USDC at suprlus threshold, so we have some to swap after briding from base
 	err = anvil.FundUSDC(ctx, clients[evmchain.IDEthereum], l1USDC.Address, rebalance.GetFundThreshold(l1USDC).Surplus(), solver)
 	tutil.RequireNoError(t, err)
 
 	// Fund 10 base wstETH above surplus
-	surplusBaseWSETH := bi.Ether(10)
 	err = anvil.FundERC20(ctx, clients[evmchain.IDBase], baseWSTETH.Address,
-		bi.Add(rebalance.GetFundThreshold(baseWSTETH).Surplus(), surplusBaseWSETH), // fund above surplus
+		bi.Add(rebalance.GetFundThreshold(baseWSTETH).Surplus(), bi.Ether(10)),
 		solver,
-		anvil.WithSlotIdx(1)) // wstETH balance map at slot 1
+		anvil.WithSlotIdx(1))
+	tutil.RequireNoError(t, err)
+
+	// Fund L1 wstETH at 8 below target
+	// We use a deficit < base surplus, because not all surplus will be moved (due to min / max swap limits)
+	err = anvil.FundERC20(ctx, clients[evmchain.IDEthereum], l1WSTETH.Address,
+		bi.Sub(rebalance.GetFundThreshold(l1WSTETH).Target(), bi.Ether(8)),
+		solver)
 	tutil.RequireNoError(t, err)
 
 	// Fund base USDC at surplus threshold, so we can send some after swapping wstETH
@@ -102,36 +109,45 @@ func TestIntegration(t *testing.T) {
 	tutil.RequireNoError(t, err)
 
 	// Start rebalancing
-	cfg := rebalance.Config{Interval: 5 * time.Second} // fast interval for testing
-	dbDir := ""                                        // use in-mem db
-	err = rebalance.Start(ctx, cfg, network, cctpClient, backends, solver, dbDir)
+	interval := 5 * time.Second // fast interval for testing
+	dbDir := ""                 // use in-mem db
+	err = rebalance.Start(ctx, network, cctpClient, backends, solver, dbDir, rebalance.WithInterval(interval))
 	tutil.RequireNoError(t, err)
+
+	must := func(amt *big.Int, err error) *big.Int {
+		tutil.RequireNoError(t, err)
+		return amt
+	}
+
+	balance := func(chainID uint64, token tokens.Token) string {
+		return token.FormatAmt(must(tokenutil.BalanceOf(ctx, clients[chainID], token, solver)))
+	}
 
 	// Wait for rebalance
 	tutil.RequireEventually(t, ctx, func() bool {
-		baseWSTETHBal, err := tokenutil.BalanceOf(ctx, clients[evmchain.IDBase], baseWSTETH, solver)
-		tutil.RequireNoError(t, err)
-
-		l1USDCBal, err := tokenutil.BalanceOf(ctx, clients[evmchain.IDEthereum], l1USDC, solver)
-		tutil.RequireNoError(t, err)
-
-		l1WSTETHBal, err := tokenutil.BalanceOf(ctx, clients[evmchain.IDEthereum], l1WSTETH, solver)
-		tutil.RequireNoError(t, err)
-
-		// All base WSTETH should be moved
-		if !bi.IsZero(baseWSTETHBal) {
+		// Surplus base WSTETH should < min swap
+		if bi.LT(
+			must(rebalance.GetSurplus(ctx, clients[evmchain.IDBase], baseWSTETH, solver)),
+			rebalance.GetFundThreshold(baseWSTETH).MinSwap(),
+		) {
 			return false
 		}
 
-		// All base WSTETH should be on L1 (almost) - some lost to swap fees and uni pool price differences
-		if !bi.GT(l1WSTETHBal, bi.Sub(surplusBaseWSETH, bi.Ether(0.1))) {
+		// L1 wsteth should not be in deficit
+		deficit := must(rebalance.GetDeficit(ctx, clients[evmchain.IDEthereum], l1WSTETH, solver))
+		if !bi.IsZero(deficit) {
+			log.Info(ctx, "L1 wstETH deficit",
+				"deficit", l1WSTETH.FormatAmt(deficit),
+				"balance", balance(evmchain.IDEthereum, l1WSTETH))
+
 			return false
 		}
 
+		// Log results
 		log.Info(ctx, "Rebalance complete",
-			"base_wsteth", baseWSTETH.FormatAmt(baseWSTETHBal),
-			"l1_usdc", l1USDC.FormatAmt(l1USDCBal),
-			"l1_usdc", l1WSTETH.FormatAmt(l1WSTETHBal))
+			"base_wsteth", balance(evmchain.IDBase, baseWSTETH),
+			"l1_usdc", balance(evmchain.IDEthereum, l1USDC),
+			"l1_usdc", balance(evmchain.IDEthereum, l1WSTETH))
 
 		return true
 	}, 2*time.Minute, 5*time.Second)

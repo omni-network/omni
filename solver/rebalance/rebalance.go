@@ -22,12 +22,15 @@ import (
 var (
 	// minSend is the minimum amount of surplus USDC to send to other chains.
 	minSend = bi.Dec6(1000) // 1000 USDC
+
+	// maxSend is the maximum amount of USDC allowed in a single send.
+	maxSend = bi.Dec6(5000) // 5000 USDC
 )
 
 // rebalanceForever starts rebalancing loops for each chain in the network.
 func rebalanceForever(
 	ctx context.Context,
-	cfg Config,
+	interval time.Duration,
 	db *cctpdb.DB,
 	network netconf.Network,
 	backends ethbackend.Backends,
@@ -36,20 +39,22 @@ func rebalanceForever(
 	for _, chain := range network.EVMChains() {
 		ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
 
-		go swapSurplusForever(ctx, cfg, backends, solver, chain.ID)
-		go sendSurplusForever(ctx, cfg, db, network, backends, solver, chain.ID)
-		go fillDeficitForever(ctx, cfg, db, network, backends, solver, chain.ID)
+		go swapSurplusForever(ctx, interval, backends, solver, chain.ID)
+		go sendSurplusForever(ctx, interval, db, network, backends, solver, chain.ID)
+		go fillDeficitForever(ctx, interval, db, network, backends, solver, chain.ID)
 	}
 }
 
 // swapSurplusForever swaps surplus tokens to USDC on `chainID` forever.
 func swapSurplusForever(
 	ctx context.Context,
-	cfg Config,
+	interval time.Duration,
 	backends ethbackend.Backends,
 	solver common.Address,
 	chainID uint64,
 ) {
+	ctx = log.WithCtx(ctx, "loop", "swapSurplus")
+
 	ticker := time.NewTimer(0)
 	defer ticker.Stop()
 
@@ -58,7 +63,7 @@ func swapSurplusForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			ticker.Reset(cfg.Interval)
+			ticker.Reset(interval)
 
 			do := func() error {
 				return swapSurplusOnce(ctx, backends, chainID, solver)
@@ -74,13 +79,15 @@ func swapSurplusForever(
 // sendSurplusForever sends surplus USDC on `chainID` to chains in deficit forever.
 func sendSurplusForever(
 	ctx context.Context,
-	cfg Config,
+	interval time.Duration,
 	db *cctpdb.DB,
 	network netconf.Network,
 	backends ethbackend.Backends,
 	solver common.Address,
 	chainID uint64,
 ) {
+	ctx = log.WithCtx(ctx, "loop", "sendSurplus")
+
 	ticker := time.NewTimer(0)
 	defer ticker.Stop()
 
@@ -89,7 +96,7 @@ func sendSurplusForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			ticker.Reset(cfg.Interval)
+			ticker.Reset(interval)
 
 			do := func() error {
 				return sendSurplusOnce(ctx, db, network.ID, backends, chainID, solver)
@@ -105,13 +112,15 @@ func sendSurplusForever(
 // fillDeficitForever fills token deficits from surplus USDC on `chainID` forever.
 func fillDeficitForever(
 	ctx context.Context,
-	cfg Config,
+	interval time.Duration,
 	db *cctpdb.DB,
 	network netconf.Network,
 	backends ethbackend.Backends,
 	solver common.Address,
 	chainID uint64,
 ) {
+	ctx = log.WithCtx(ctx, "loop", "fillDeficit")
+
 	ticker := time.NewTimer(0)
 	defer ticker.Stop()
 
@@ -120,7 +129,7 @@ func fillDeficitForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			ticker.Reset(cfg.Interval)
+			ticker.Reset(interval)
 
 			do := func() error {
 				return fillDeficitOnce(ctx, db, network.ID, backends, chainID, solver)
@@ -162,13 +171,18 @@ func sendSurplusOnce(
 		return errors.Wrap(err, "get surplus")
 	}
 
-	if bi.LT(surplus, minSend) {
-		// Only send if surplus is above minSend.
+	if bi.LT(surplus, minSend) { // Only send if surplus is above minSend.
 		log.Debug(ctx, "No surplus to send", "amount", usdc.FormatAmt(surplus))
 		return nil
 	}
 
-	log.Debug(ctx, "Sending surplus", "amount", usdc.FormatAmt(surplus))
+	toSend := surplus
+	if bi.GT(toSend, maxSend) { // Cap send to maxSend.
+		log.Debug(ctx, "Surplus > maxSend, capping send", "amount", usdc.FormatAmt(toSend), "max", usdc.FormatAmt(maxSend))
+		toSend = maxSend
+	}
+
+	log.Debug(ctx, "Sending surplus", "amount", usdc.FormatAmt(toSend))
 
 	// Just send surplus to Ethereum for now.
 	// TODO: calculate chain deficits, send to most in-need chain.
@@ -178,7 +192,7 @@ func sendSurplusOnce(
 		Recipient:   solver,
 		SrcChainID:  chainID,
 		DestChainID: evmchain.IDEthereum,
-		Amount:      surplus,
+		Amount:      toSend,
 	}); err != nil {
 		return errors.Wrap(err, "send usdc")
 	}
@@ -213,16 +227,30 @@ func swapSurplusOnce(
 		return errors.Wrap(err, "get surplus")
 	}
 
-	if bi.LTE(surplus, GetFundThreshold(wsteth).MinSwap()) {
-		// Surplus <= minSwap, do nothing.
-		log.Debug(ctx, "No surplus to swap", "amount", wsteth.FormatAmt(surplus))
+	token := wsteth // only wstETH, for now
+	maxSwap := GetFundThreshold(token).MaxSwap()
+	minSwap := GetFundThreshold(token).MinSwap()
+
+	if bi.IsZero(maxSwap) { // Require max swap.
+		log.Warn(ctx, "No max swap set, skipping", errors.New("missing max swap"), "token", token)
 		return nil
 	}
 
-	log.Debug(ctx, "Swapping surplus", "amount", wsteth.FormatAmt(surplus))
+	if bi.LTE(surplus, minSwap) { // Surplus <= minSwap, do nothing.
+		log.Debug(ctx, "Surplus < minSwap, skipping", "amount", token.FormatAmt(surplus), "min", token.FormatAmt(minSwap))
+		return nil
+	}
 
-	// Swap surplus WSTETH to USDC.
-	_, err = uniswap.SwapToUSDC(ctx, backend, solver, wsteth, surplus)
+	toSwap := surplus
+	if ok && bi.GT(toSwap, maxSwap) { // Cap swap to maxSwap.
+		log.Debug(ctx, "Surplus > maxSwap, capping swap", "amount", token.FormatAmt(toSwap), "max", token.FormatAmt(maxSwap))
+		toSwap = maxSwap
+	}
+
+	log.Debug(ctx, "Swapping surplus", "amount", token.FormatAmt(toSwap))
+
+	// Swap surplus to USDC.
+	_, err = uniswap.SwapToUSDC(ctx, backend, solver, token, toSwap)
 	if err != nil {
 		return errors.Wrap(err, "swap to usdc")
 	}
@@ -268,8 +296,7 @@ func fillDeficitOnce(
 		return errors.Wrap(err, "get surplus")
 	}
 
-	if bi.IsZero(surplusUSDC) {
-		// No surplus, nothing to fill deficit.
+	if bi.IsZero(surplusUSDC) { // No surplus, nothing to fill deficit.
 		log.Debug(ctx, "No surplus", "amount", usdc.FormatAmt(surplusUSDC))
 		return nil
 	}
@@ -279,18 +306,36 @@ func fillDeficitOnce(
 		return errors.Wrap(err, "get deficit")
 	}
 
-	if bi.IsZero(deficit) {
-		// No deficit, nothing to fill.
+	if bi.IsZero(deficit) { // No deficit, nothing to fill.
 		log.Debug(ctx, "No deficit", "amount", wsteth.FormatAmt(deficit))
 		return nil
 	}
 
-	log.Debug(ctx, "Filling deficit", "deficit", wsteth.FormatAmt(deficit), "usdc", usdc.FormatAmt(surplusUSDC))
-
-	// Swap all surplus USDC to wstETH.
+	// Swap all surplus USDC < maxSwap to wstETH.
 	// TODO: only swap enough to fill deficit.
 
-	if _, err = uniswap.SwapFromUSDC(ctx, backend, solver, wsteth, surplusUSDC); err != nil {
+	toSwap := surplusUSDC
+	minSwap := GetFundThreshold(usdc).MinSwap()
+	maxSwap := GetFundThreshold(usdc).MaxSwap()
+
+	if bi.IsZero(maxSwap) { // Require max swap.
+		log.Warn(ctx, "No max swap set, skipping", errors.New("missing max swap"), "token", usdc)
+		return nil
+	}
+
+	if bi.LT(toSwap, minSwap) { // Surplus < minSwap, do nothing.
+		log.Debug(ctx, "Surplus < minSwap, skipping", "amount", usdc.FormatAmt(toSwap), "min", usdc.FormatAmt(minSwap))
+		return nil
+	}
+
+	if ok && bi.GT(toSwap, maxSwap) { // Cap swap to maxSwap.
+		log.Debug(ctx, "Surplus > maxSwap, capping", "amount", usdc.FormatAmt(toSwap), "max", usdc.FormatAmt(maxSwap))
+		toSwap = maxSwap
+	}
+
+	log.Debug(ctx, "Filling deficit", "deficit", wsteth.FormatAmt(deficit), "usdc", usdc.FormatAmt(toSwap))
+
+	if _, err = uniswap.SwapFromUSDC(ctx, backend, solver, wsteth, toSwap); err != nil {
 		return errors.Wrap(err, "swap from usdc")
 	}
 

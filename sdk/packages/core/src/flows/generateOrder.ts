@@ -5,10 +5,11 @@ import { type SendOrderParameters, sendOrder } from '../contracts/sendOrder.js'
 import { waitForOrderOpen } from '../contracts/waitForOrderOpen.js'
 import { waitForOrderStatus } from '../contracts/waitForOrderStatus.js'
 import type { OptionalAbis } from '../types/abi.js'
+import type { Environment } from '../types/config.js'
 
 export type GenerateOrderParameters<abis extends OptionalAbis> =
   SendOrderParameters<abis> & {
-    apiBaseUrl: string
+    environment?: Environment | string
     pollingInterval?: number
   }
 
@@ -23,9 +24,9 @@ export type OrderState =
 export async function* generateOrder<abis extends OptionalAbis>(
   params: GenerateOrderParameters<abis>,
 ): AsyncGenerator<OrderState> {
-  const { apiBaseUrl, pollingInterval, ...sendOrderParams } = params
+  const { environment, pollingInterval, ...sendOrderParams } = params
 
-  const validationResult = await validateOrder(apiBaseUrl, params.order)
+  const validationResult = await validateOrder(params.order, environment)
   assertAcceptedResult(validationResult)
   yield { status: 'valid' }
 

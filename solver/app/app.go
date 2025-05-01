@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
+	"github.com/omni-network/omni/lib/cctp"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
@@ -23,6 +24,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/solver/job"
+	"github.com/omni-network/omni/solver/rebalance"
 	"github.com/omni-network/omni/solver/targets"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -124,6 +126,11 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
+	if err := rebalance.Start(ctx, network, newCCTPClient(network.ID), backends, solverAddr, cfg.DBDir); err != nil {
+		log.Warn(ctx, "Failed to start rebalancing [BUG]", err)
+	}
+
+	// TODO: move to solver/rebalance
 	err = startRebalancingOMNI(ctx, network, backends, newSimpleGasPnLFunc(pricer, network.ChainName))
 	if err != nil {
 		return errors.Wrap(err, "start rebalancing omni")
@@ -408,4 +415,14 @@ func streamEventsForever(
 		log.Warn(ctx, "Failure processing inbox events (will retry)", err)
 		backoff()
 	}
+}
+
+// newCCTPClient creates a new CCTP client based on the network ID.
+func newCCTPClient(networkID netconf.ID) cctp.Client {
+	api := cctp.TestnetAPI
+	if networkID == netconf.Mainnet {
+		api = cctp.MainnetAPI
+	}
+
+	return cctp.NewClient(api)
 }

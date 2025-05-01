@@ -53,8 +53,6 @@ import {
   useConnect,
 } from 'wagmi'
 
-export const devnetApiUrl = 'http://localhost:26661/api/v1'
-
 type WaitForInboxOrderFilledParams = GetOrderParameters & {
   pollingInterval?: number
   timeout?: number
@@ -124,7 +122,7 @@ export async function executeTestOrderUsingCore(
 ) {
   const { order, rejectReason } = params
   if (rejectReason != null) {
-    await expect(validateOrder(devnetApiUrl, order)).resolves.toMatchObject({
+    await expect(validateOrder(order, 'devnet')).resolves.toMatchObject({
       rejected: true,
       rejectReason,
     })
@@ -132,7 +130,7 @@ export async function executeTestOrderUsingCore(
   }
 
   const resolvedOrder = await openOrder({
-    apiBaseUrl: devnetApiUrl,
+    environment: 'devnet',
     client: params.srcClient,
     inboxAddress: inbox,
     order,

@@ -1,6 +1,8 @@
 import { type Address, type Hex, fromHex, zeroAddress } from 'viem'
 import { fetchJSON } from '../internal/api.js'
+import type { Environment } from '../types/config.js'
 import type { Quote, Quoteable } from '../types/quote.js'
+import { getApiUrl } from '../utils/getApiUrl.js'
 import { toJSON } from '../utils/toJSON.js'
 
 export type GetQuoteParams = {
@@ -19,8 +21,8 @@ type QuoteResponse = {
 
 // getQuote calls the /quote endpoint
 export async function getQuote(
-  apiBaseUrl: string,
   quote: GetQuoteParams,
+  envOrApiBaseUrl?: Environment | string,
 ): Promise<Quote> {
   const {
     srcChainId,
@@ -29,7 +31,8 @@ export async function getQuote(
     expense: expenseInput,
     mode,
   } = quote
-  const json = await fetchJSON(`${apiBaseUrl}/quote`, {
+  const apiUrl = getApiUrl(envOrApiBaseUrl)
+  const json = await fetchJSON(`${apiUrl}/quote`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: toJSON({

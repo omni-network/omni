@@ -1,5 +1,7 @@
 import { fetchJSON } from '../internal/api.js'
+import type { Environment } from '../types/config.js'
 import type { OmniContracts } from '../types/contracts.js'
+import { getApiUrl } from '../utils/getApiUrl.js'
 
 function isContracts(json: unknown): json is OmniContracts {
   const contracts = json as OmniContracts
@@ -11,8 +13,11 @@ function isContracts(json: unknown): json is OmniContracts {
   )
 }
 
-export async function getContracts(apiBaseUrl: string): Promise<OmniContracts> {
-  const json = await fetchJSON(`${apiBaseUrl}/contracts`)
+export async function getContracts(
+  envOrApiBaseUrl?: Environment | string,
+): Promise<OmniContracts> {
+  const apiUrl = getApiUrl(envOrApiBaseUrl)
+  const json = await fetchJSON(`${apiUrl}/contracts`)
 
   if (!isContracts(json)) throw new Error('Unexpected /contracts response')
 
