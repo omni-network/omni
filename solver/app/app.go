@@ -328,7 +328,7 @@ func startProcessingEvents(
 			DidFill:           newDidFiller(outboxContracts),
 			Reject:            newRejector(inboxContracts, backends, solverAddr, updatePnL),
 			Fill:              newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
-			Claim:             newClaimer(network.ID, inboxContracts, backends, solverAddr, updatePnL),
+			Claim:             newClaimer(inboxContracts, backends, solverAddr, updatePnL),
 			SetCursor:         cursorSetter,
 			ChainName:         network.ChainName,
 			ProcessorName:     network.ChainVersionName(chainVer),
