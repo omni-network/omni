@@ -9,7 +9,7 @@ The `validateOrder` function validates order parameters with the SolverNet serve
 ```tsx
 import { validateOrder } from '@omni-network/core'
 
-const result = await validateOrder({
+const validation = await validateOrder({
   // ... params
 });
 ```
