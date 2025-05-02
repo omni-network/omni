@@ -90,6 +90,7 @@ func New() *cobra.Command {
 		newDeployFeeOracleV2Cmd(&def),
 		newDeployXBridgeCmd(&def),
 		newDeploySolverNetCmd(&def),
+		newSetSolverNetRoutesCmd(&def),
 		fundAccounts(&def),
 	)
 
@@ -344,6 +345,32 @@ func newDeploySolverNetCmd(def *app.Definition) *cobra.Command {
 			}
 
 			return solve.Deploy(cmd.Context(), network, backends)
+		},
+	}
+
+	return cmd
+}
+
+func newSetSolverNetRoutesCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "set-solvernet-routes",
+		Short: "Set the SolverNet routes for the given chain IDs.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
+
+			network, err := networkFromDef(ctx, *def)
+			if err != nil {
+				return errors.Wrap(err, "network from def")
+			}
+
+			endpoints := app.ExternalEndpoints(*def)
+
+			network, backends, err := app.AddSolverNetworkAndBackends(ctx, network, endpoints, def.Cfg, cmd.Name())
+			if err != nil {
+				return errors.Wrap(err, "get solver network and backends")
+			}
+
+			return app.SetSolverNetRoutes(cmd.Context(), network, backends)
 		},
 	}
 
