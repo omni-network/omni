@@ -1,39 +1,39 @@
 {
-  "name": "@omni-network/core",
-  "description": "Core logic for interacting with Omni Solvernet",
-  "version": "0.1.0",
-  "type": "module",
-  "packageManager": "pnpm@9.6.0",
-  "sideEffects": false,
-  "main": "./dist/esm/index.js",
-  "module": "./dist/esm/index.js",
-  "types": "./dist/types/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/types/index.d.ts",
-      "default": "./dist/esm/index.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "scripts": {
-    "build": "pnpm clean && pnpm build:ts",
-    "build:ts": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm build",
-    "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "test": "vitest run",
-    "coverage": "vitest run --coverage"
-  },
-  "files": ["dist/**", "src/**", "!dist/**/*.tsbuildinfo"],
-  "engines": {
-    "node": ">=22.x"
-  },
-  "dependencies": {
-    "viem": "catalog:"
-  },
-  "devDependencies": {
-    "@omni-network/test-utils": "workspace:^",
-    "typescript": "^5.7.2",
-    "vite": "^6.2.6",
-    "vitest": "^3.0.7"
-  }
+	"name": "@omni-network/core",
+	"description": "Core logic for interacting with Omni Solvernet",
+	"version": "0.1.0",
+	"type": "module",
+	"packageManager": "pnpm@9.12.1",
+	"sideEffects": false,
+	"main": "./dist/esm/index.js",
+	"module": "./dist/esm/index.js",
+	"types": "./dist/types/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/types/index.d.ts",
+			"default": "./dist/esm/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"scripts": {
+		"build": "pnpm clean && pnpm build:ts",
+		"build:ts": "tsc -p tsconfig.build.json",
+		"prepublishOnly": "pnpm build",
+		"clean": "rm -rf dist tsconfig.tsbuildinfo",
+		"test": "vitest run",
+		"coverage": "vitest run --coverage"
+	},
+	"files": ["dist/**", "src/**", "!dist/**/*.tsbuildinfo"],
+	"engines": {
+		"node": ">=22.x"
+	},
+	"dependencies": {
+		"viem": "catalog:"
+	},
+	"devDependencies": {
+		"@omni-network/test-utils": "workspace:^",
+		"typescript": "^5.7.2",
+		"vite": "^6.2.6",
+		"vitest": "^3.0.7"
+	}
 }
