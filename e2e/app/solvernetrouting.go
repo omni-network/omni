@@ -31,7 +31,7 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 			if c.ID != chain.ID {
 				var inbox common.Address
 				var outbox common.Address
-				if !solvernet.IsDisabled(c.ID) {
+				if !solvernet.IsDisabled(chain.ID) && !solvernet.IsDisabled(c.ID) {
 					inbox = addrs.SolverNetInbox
 					outbox = addrs.SolverNetOutbox
 				}
