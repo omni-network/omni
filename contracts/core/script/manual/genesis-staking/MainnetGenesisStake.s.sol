@@ -208,9 +208,15 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
         );
         vm.stopPrank();
 
-        console2.log("MerkleDistributor constructor args:");
+        console2.log("MerkleDistributor implementation constructor args:");
+        console2.logBytes(abi.encode(address(omni), root, address(portal), address(genesisStake), address(inbox)));
+        console2.log("MerkleDistributor proxy constructor args:");
         console2.logBytes(
-            abi.encode(admin, address(omni), root, address(portal), address(genesisStake), address(inbox))
+            abi.encode(
+                merkleDistributorImpl,
+                adminOfProxy,
+                abi.encodeCall(MerkleDistributorWithoutDeadline.initialize, (admin))
+            )
         );
 
         require(
