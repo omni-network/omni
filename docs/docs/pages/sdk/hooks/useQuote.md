@@ -129,7 +129,7 @@ const quote = useQuote({
 })
 
 if (quote.isSuccess) {
-  console.log(`Depositing ${quote.data.deposit.amount} yields ${quote.data.expense.amount} on destination`);
+  console.log(`Depositing ${quote.deposit.amount} yields ${quote.expense.amount} on destination`);
 }
 ```
 
