@@ -13,5 +13,6 @@ it('exports the expected APIs', () => {
     'useParseOpenEvent',
     'OmniProvider',
     'useOmniContext',
+    'useWatchDidFill',
   ])
 })
