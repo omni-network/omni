@@ -31,19 +31,18 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 			if c.ID != chain.ID {
 				var inbox common.Address
 				var outbox common.Address
+				provider := solvernet.None
 				if !solvernet.IsDisabled(chain.ID) && !solvernet.IsDisabled(c.ID) {
 					inbox = addrs.SolverNetInbox
 					outbox = addrs.SolverNetOutbox
+					provider, err = solvernet.Provider(c.ID)
+					if err != nil {
+						return errors.Wrap(err, "get provider", "chain", c.Name)
+					}
 				}
 
 				remoteChainIDs = append(remoteChainIDs, c.ID)
 				remoteOutboxes = append(remoteOutboxes, outbox)
-
-				provider, err := solvernet.Provider(c.ID)
-				if err != nil {
-					return errors.Wrap(err, "get provider", "chain", c.Name)
-				}
-
 				remoteInboxConfigs = append(remoteInboxConfigs, bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    inbox,
 					Provider: provider,
