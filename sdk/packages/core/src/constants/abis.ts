@@ -250,6 +250,31 @@ export const outboxABI = [
     outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
     stateMutability: 'view',
   },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        name: 'orderId',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'fillHash',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'filledBy',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+    ],
+    name: 'Filled',
+    type: 'event',
+  },
 ] as const
 
 export const middlemanABI = [
