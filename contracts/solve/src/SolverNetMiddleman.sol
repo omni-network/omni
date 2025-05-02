@@ -5,6 +5,7 @@ import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { IERC721 } from "@openzeppelin/contracts/interfaces/IERC721.sol";
 
+/// @dev This contract is being deprecated in favor of moving this logic into the SolverNetExecutor contract.
 contract SolverNetMiddleman is ReentrancyGuard {
     using SafeTransferLib for address;
 
