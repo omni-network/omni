@@ -2,8 +2,11 @@
 package solana_test
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
+	"math/rand/v2"
+	"sync"
 	"testing"
 	"time"
 
@@ -153,10 +156,30 @@ func TestEventsProgram(t *testing.T) {
 
 	prog := solcompose.ProgramEvents
 
+	// Start streaming program tx sigs async
+	async := make(chan solana.Signature, 1000)
+	go func() {
+		streamReq := solcompose.StreamReq{
+			FromSlot:   ptr(uint64(0)),
+			Account:    prog.MustPublicKey(),
+			Commitment: rpc.CommitmentConfirmed,
+		}
+		err := solcompose.Stream(ctx, cl, streamReq, func(ctx context.Context, sig *rpc.TransactionSignature) error {
+			t.Logf("Streamed Tx: slot=%d, sig=%v", sig.Slot, sig.Signature)
+			async <- sig.Signature
+
+			return nil
+		})
+		if err != nil {
+			t.Errorf("stream error: %v", err)
+		}
+	}()
+
 	// Deploy events program
 	tx0, err := solcompose.Deploy(ctx, cl, dir, prog)
 	tutil.RequireNoError(t, err)
 	t.Logf("Deployed events program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
+	require.Equal(t, mustFirstTxSig(tx0), <-async)
 
 	// Sent Initialize instruction
 	txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, events.NewInitializeInstruction().Build())
@@ -167,6 +190,7 @@ func TestEventsProgram(t *testing.T) {
 	t.Logf("Initialize Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp1.Slot, txResp1.BlockTime, txSig1, txResp1.Meta.LogMessages)
 
 	ensureEvent(t, prog, txResp1, events.EventMyEvent, events.MyEventEventData{Data: 5, Label: "hello"})
+	require.Equal(t, mustFirstTxSig(txResp1), <-async)
 
 	// Send TestEvent instruction
 	txSig2, err := solcompose.SendSimple(ctx, cl, privKey0, events.NewTestEventInstruction().Build())
@@ -177,6 +201,39 @@ func TestEventsProgram(t *testing.T) {
 	t.Logf("TestEvent Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp2.Slot, txResp2.BlockTime, txSig2, txResp2.Meta.LogMessages)
 
 	ensureEvent(t, prog, txResp2, events.EventMyOtherEvent, events.MyOtherEventEventData{Data: 6, Label: "bye"})
+	require.Equal(t, mustFirstTxSig(txResp2), <-async)
+
+	// Send N async txs
+	const N = 16
+	var sigs sync.Map
+	for i := range N {
+		go func() {
+			time.Sleep(time.Millisecond * time.Duration(rand.IntN(2000))) // Delay up to 2s
+			txSig, err := solcompose.SendSimple(ctx, cl, privKey0,
+				events.NewTestEventInstruction().Build(),
+				memo.NewMemoInstruction([]byte{byte(i)}, privKey0.PublicKey()).Build(), // Add uniqueness to tx
+			)
+			if err != nil {
+				t.Error("error sending tx:", err)
+			}
+			t.Logf("Async sent tx: %s", txSig)
+			sigs.Store(txSig, true)
+		}()
+	}
+
+	for range N {
+		txSig := <-async
+		require.NotNil(t, txSig)
+		require.Eventuallyf(t, func() bool {
+			_, ok := sigs.LoadAndDelete(txSig)
+			return ok
+		}, time.Second*10, time.Second, "tx sig not found in map: %s", txSig)
+	}
+
+	sigs.Range(func(k, _ any) bool {
+		require.Fail(t, "tx sig map not empty")
+		return true
+	})
 }
 
 func ensureEvent(t *testing.T, prog solcompose.Program, txRes *rpc.GetTransactionResult, expectName string, expectData any) {
@@ -200,4 +257,13 @@ func ensureEvent(t *testing.T, prog solcompose.Program, txRes *rpc.GetTransactio
 
 func ptr[A any](a A) *A {
 	return &a
+}
+
+func mustFirstTxSig(txResp *rpc.GetTransactionResult) solana.Signature {
+	tx, err := txResp.Transaction.GetTransaction()
+	if err != nil {
+		panic(err)
+	}
+
+	return tx.Signatures[0]
 }
