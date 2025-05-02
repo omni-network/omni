@@ -11,8 +11,8 @@ it('exports the expected APIs', () => {
     'useGetOrder',
     'useGetOrderStatus',
     'useParseOpenEvent',
+    'useWatchDidFill',
     'OmniProvider',
     'useOmniContext',
-    'useWatchDidFill',
   ])
 })
