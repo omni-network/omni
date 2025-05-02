@@ -8,10 +8,6 @@ import { Callout } from 'vocs/components'
 
 # Getting Started using the core package
 
-<Callout type="warning" title="Alpha SDK">
-Currently in alpha - breaking changes may happen.
-</Callout>
-
 ## Overview
 
 The Omni SDK contains APIs for interfacing with Omni SolverNet, your gateway to enabling any transaction, on any chain, from any supported JavaScript runtime.
@@ -61,7 +57,7 @@ const mainnetAddresses = getContracts() // mainnet environment by default
 const testnetAddresses = getContracts('testnet')
 
 const order = await getOrder({
-  client: viemClient,
+  client: publicClient,
   inboxAddress: mainnetAddresses.inbox,
   orderId: '0x123...',
 })
@@ -69,4 +65,36 @@ const order = await getOrder({
 
 ### Viem clients
 
-TODO: public vs wallet client, maybe different for src and dest chain
+The SDK uses [`viem` clients](https://viem.sh/) for blockchain interactions.
+
+Most functions only perform read operations using a [Public Client](https://viem.sh/docs/clients/public), however the order creation functions (`sendOrder`, `openOrder` and `generateOrder`) need to be provided a [Wallet Client](https://viem.sh/docs/clients/wallet) able to sign transactions.
+
+```ts
+import { getOrder, openOrder } from '@omni-network/core'
+import { createPublicClient, createWalletClient, custom, http } from 'viem'
+import { mainnet } from 'viem/chains'
+
+// Example Public Client from viem's documentation
+const publicClient = createPublicClient({
+  chain: mainnet,
+  transport: http()
+})
+// Retrieving a known order only needs a Public Client
+const order = await getOrder({
+  client: publicClient,
+  inboxAddress: mainnetAddresses.inbox,
+  orderId: '0x123...',
+})
+
+// Example Wallet Client from viem's documentation
+const walletClient = createWalletClient({
+  chain: mainnet,
+  transport: custom(window.ethereum!)
+})
+// Opening an order requires a Wallet Client
+const order = await openOrder({
+  client: walletClient,
+  inboxAddress: mainnetAddresses.inbox,
+  order: orderParameters,
+})
+```
