@@ -3,7 +3,7 @@
   "description": "Core logic for interacting with Omni Solvernet",
   "version": "0.1.0",
   "type": "module",
-  "packageManager": "pnpm@9.1.0",
+  "packageManager": "pnpm@9.6.0",
   "sideEffects": false,
   "main": "./dist/esm/index.js",
   "module": "./dist/esm/index.js",
