@@ -4,7 +4,7 @@
   "description": "Omni SDK workspace",
   "version": "0.0.0",
   "type": "module",
-  "packageManager": "pnpm@9.1.0",
+  "packageManager": "pnpm@9.12.1",
   "scripts": {
     "build": "pnpm run --r --filter \"./packages/**\" build",
     "check": "biome check --write",
