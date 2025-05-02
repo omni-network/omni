@@ -277,7 +277,7 @@ func startProcessingEvents(
 	targetName := func(pendingData PendingData) string {
 		fill, err := pendingData.ParsedFillOriginData()
 		if err != nil {
-			return "unknown"
+			return "invalid"
 		}
 
 		// use last call target for target name
@@ -297,7 +297,7 @@ func startProcessingEvents(
 			return target.Name
 		}
 
-		return call.Target.Hex()[:7] // Short hex.
+		return "unknown"
 	}
 
 	debugFunc := func(ctx context.Context, order Order, elog types.Log) {
