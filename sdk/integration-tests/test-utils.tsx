@@ -15,6 +15,7 @@ import {
 import {
   createClient,
   inbox,
+  mockChains,
   mockL1Chain,
   mockL1Id,
   mockL2Chain,
@@ -46,6 +47,7 @@ import { watchBlockNumber } from 'viem/actions'
 import { expect } from 'vitest'
 import {
   type Config,
+  type CreateConnectorFn,
   WagmiProvider,
   createConfig,
   mock,
@@ -139,8 +141,18 @@ export async function executeTestOrderUsingCore(
   ])
 }
 
-export function createTestConnector(account: Account) {
-  return mock({ accounts: [account.address] })
+export function createTestConnector(account: Account): CreateConnectorFn {
+  return function createConnector(config) {
+    const connector = mock({ accounts: [account.address] })(config)
+    connector.getClient = async ({ chainId } = {}) => {
+      const chain = chainId ? mockChains[chainId] : undefined
+      if (!chain) {
+        throw new Error(`Chain ${chainId} not found`)
+      }
+      return createClient({ account, chain })
+    }
+    return connector
+  }
 }
 
 export function createWagmiConfig(account?: Account) {
@@ -234,14 +246,7 @@ export function useOrderRef(
     return connectReturn.data ? <TestOrder /> : null
   }
 
-  const wagmiConfig = account ? createWagmiConfig(account) : undefined
-  render(<TestConnectAndOrder />, {
-    wrapper: ({ children }) => {
-      return (
-        <ContextProvider wagmiConfig={wagmiConfig}>{children}</ContextProvider>
-      )
-    },
-  })
+  render(<TestConnectAndOrder />, { wrapper: ContextProvider })
   act(() => {
     connectRef.current?.connect({ connector: createTestConnector(account) })
   })
