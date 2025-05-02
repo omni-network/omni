@@ -1,18 +1,18 @@
 {
-	"name": "omni-sdk",
-	"private": true,
-	"description": "Omni SDK workspace",
-	"version": "0.0.0",
-	"type": "module",
-	"packageManager": "pnpm@9.12.1",
-	"scripts": {
-		"build": "pnpm run --r --filter \"./packages/**\" build",
-		"check": "biome check --write",
-		"postinstall": "pnpm run build",
-		"test:unit": "pnpm run --filter '@omni-network/*' test",
-		"test:integration": "cd integration-tests && pnpm test"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^1.9.4"
-	}
+  "name": "omni-sdk",
+  "private": true,
+  "description": "Omni SDK workspace",
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@9.12.1",
+  "scripts": {
+    "build": "pnpm run --r --filter \"./packages/**\" build",
+    "check": "biome check --write",
+    "postinstall": "pnpm run build",
+    "test:unit": "pnpm run --filter '@omni-network/*' test",
+    "test:integration": "cd integration-tests && pnpm test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4"
+  }
 }
