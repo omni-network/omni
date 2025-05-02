@@ -63,6 +63,7 @@ contract SolverNetExecutor is ISolverNetExecutor {
      * @param data   Data to send with the call.
      */
     function execute(address target, uint256 value, bytes calldata data) external payable onlyOutbox {
+        if (target == address(0)) target = address(this);
         (bool success,) = payable(target).call{ value: value }(data);
         if (!success) revert CallFailed();
     }
