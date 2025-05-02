@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -16,9 +17,12 @@ import (
 
 	solana "github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
+	"github.com/gagliardetto/solana-go/rpc/jsonrpc"
 
 	_ "embed"
 )
+
+var Version = "stable"
 
 // Start starts a genesis solana node and returns a client, a funded private key and a stop function or an error.
 // The dir parameter is the location of the docker compose.
@@ -36,7 +40,7 @@ func Start(ctx context.Context, composeDir string) (*rpc.Client, solana.PrivateK
 		return nil, nil, nil, errors.Wrap(err, "get available port")
 	}
 
-	if err := writeComposeFile(composeDir, port, "stable"); err != nil {
+	if err := writeComposeFile(composeDir, port, Version); err != nil {
 		return nil, nil, nil, errors.Wrap(err, "write compose file")
 	}
 
@@ -103,6 +107,7 @@ func Start(ctx context.Context, composeDir string) (*rpc.Client, solana.PrivateK
 func Deploy(ctx context.Context, cl *rpc.Client, composeDir string, program Program) (*rpc.GetTransactionResult, error) {
 	programDir := filepath.Join("/root/.config/solana/", program.Name)
 	soFile := filepath.Join(programDir, program.SOFile())
+	keypairFile := filepath.Join(programDir, program.KeyPairFile())
 
 	_, err := cl.GetAccountInfoWithOpts(ctx, program.MustPublicKey(), &rpc.GetAccountInfoOpts{
 		Commitment: rpc.CommitmentConfirmed,
@@ -111,9 +116,14 @@ func Deploy(ctx context.Context, cl *rpc.Client, composeDir string, program Prog
 		return nil, errors.New("program already deployed", "account", program.MustPublicKey())
 	}
 
+	// TODO(corver): Switch to program-v4 once 'stable' supports --program-keypair flag
+
 	args := []string{
-		"compose", "exec", "solana",
-		"solana", "program", "deploy", soFile,
+		"compose", "exec", "solana", // Container
+		"solana", "program", // Program command
+		"deploy", soFile, // Loader-v4 subcommand
+		// Args...
+		"--program-id", keypairFile,
 		"--verbose",
 		"--commitment", string(rpc.CommitmentConfirmed),
 		"--url", "localhost",
@@ -162,6 +172,43 @@ func Deploy(ctx context.Context, cl *rpc.Client, composeDir string, program Prog
 	}
 
 	return tx, nil
+}
+func SendSimple(ctx context.Context, cl *rpc.Client, privkey solana.PrivateKey, instrs ...solana.Instruction) (solana.Signature, error) {
+	recent, err := cl.GetLatestBlockhash(ctx, rpc.CommitmentConfirmed)
+	if err != nil {
+		return solana.Signature{}, errors.Wrap(err, "get latest blockhash")
+	}
+
+	tx, err := solana.NewTransaction(
+		instrs,
+		recent.Value.Blockhash,
+		solana.TransactionPayer(privkey.PublicKey()),
+	)
+	if err != nil {
+		return solana.Signature{}, errors.Wrap(err, "new tx")
+	}
+
+	sigs, err := tx.Sign(func(pub solana.PublicKey) *solana.PrivateKey {
+		if pub != privkey.PublicKey() {
+			return nil // This will result in Sign returning an error
+		}
+
+		return &privkey
+	})
+	if err != nil {
+		return solana.Signature{}, errors.Wrap(err, "sign tx")
+	} else if len(sigs) != 1 {
+		return solana.Signature{}, errors.New("unexpected number of signatures", "count", len(sigs))
+	}
+
+	txSig, err := cl.SendTransactionWithOpts(ctx, tx, rpc.TransactionOpts{
+		SkipPreflight: true, // Preflights cause "Program not deployed" errors, so skip for now.
+	})
+	if err != nil {
+		return solana.Signature{}, errors.Wrap(err, "send tx")
+	}
+
+	return txSig, nil
 }
 
 func copyProgram(composeDir string, program Program) error {
@@ -243,6 +290,10 @@ func writeComposeFile(dir string, port, version string) error {
 		return errors.Wrap(err, "execute compose template")
 	}
 
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return errors.Wrap(err, "mkdir", "path", dir)
+	}
+
 	err = os.WriteFile(dir+"/compose.yaml", buf.Bytes(), 0644)
 	if err != nil {
 		return errors.Wrap(err, "write compose file")
@@ -269,4 +320,17 @@ func getAvailablePort() (string, error) {
 	}
 
 	return port, nil
+}
+
+func WrapRPCError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	rpcErr := new(jsonrpc.RPCError)
+	if errors.As(err, &rpcErr) {
+		return errors.New("solana rpc error", "code", rpcErr.Code, "message", rpcErr.Message, "data", fmt.Sprintf("%+v", rpcErr.Data))
+	}
+
+	return errors.Wrap(err, "solana rpc error")
 }

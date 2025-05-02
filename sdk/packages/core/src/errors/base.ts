@@ -40,3 +40,7 @@ export class LoadContractsError extends BaseError {
 export class AccountRequiredError extends BaseError {
   override name = 'AccountRequiredError' as const
 }
+
+export class AbortError extends BaseError {
+  override name = 'AbortError' as const
+}

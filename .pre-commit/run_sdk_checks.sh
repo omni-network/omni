@@ -22,6 +22,6 @@ echo "Installing deps via pnpm..."
 pnpm install
 
 # clean + build
-pnpm build
+pnpm run build
 
 pnpm run check

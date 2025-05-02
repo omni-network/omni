@@ -13,7 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 )
 
-func monitorForever(ctx context.Context, db *cctpdb.DB) {
+func monitorForever(ctx context.Context, chains []evmchain.Metadata, db *cctpdb.DB) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
@@ -22,20 +22,20 @@ func monitorForever(ctx context.Context, db *cctpdb.DB) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := monitorOnce(ctx, db); err != nil {
+			if err := monitorOnce(ctx, chains, db); err != nil {
 				log.Warn(ctx, "Monitor failed, will retry", err)
 			}
 		}
 	}
 }
 
-func monitorOnce(ctx context.Context, db *cctpdb.DB) error {
+func monitorOnce(ctx context.Context, chains []evmchain.Metadata, db *cctpdb.DB) error {
 	msgs, err := db.GetMsgs(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get msgs")
 	}
 
-	gaugeInflight(msgs)
+	gaugeInflight(chains, msgs)
 
 	if err := guageOldestMsg(ctx, msgs, db); err != nil {
 		return errors.Wrap(err, "gauge oldest msg")
@@ -45,7 +45,15 @@ func monitorOnce(ctx context.Context, db *cctpdb.DB) error {
 }
 
 // gaugeInflight sets inflight metrics for the given messages.
-func gaugeInflight(msgs []types.MsgSendUSDC) {
+func gaugeInflight(chains []evmchain.Metadata, msgs []types.MsgSendUSDC) {
+	// reset all routes
+	for _, src := range chains {
+		for _, dst := range chains {
+			usdcInFlight.WithLabelValues(src.Name, dst.Name).Set(0)
+			msgsInFlight.WithLabelValues(src.Name, dst.Name).Set(0)
+		}
+	}
+
 	type route struct {
 		src string
 		dst string

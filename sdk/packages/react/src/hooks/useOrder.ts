@@ -1,10 +1,10 @@
 import type {
   DidFillError,
-  OpenOrderReturn,
   OptionalAbis,
   Order,
   OrderStatus,
   ParseOpenEventError,
+  SendOrderReturn,
 } from '@omni-network/core'
 import {
   GetOrderError,
@@ -12,7 +12,7 @@ import {
   OpenError,
   TxReceiptError,
   ValidateOrderError,
-  openOrder,
+  sendOrder,
 } from '@omni-network/core'
 import {
   type UseMutateFunction,
@@ -25,10 +25,11 @@ import {
   type UseWaitForTransactionReceiptReturnType,
   type UseWriteContractReturnType,
   useChainId,
-  useClient,
+  useConfig,
   useWaitForTransactionReceipt,
 } from 'wagmi'
-import { NoClientError } from '../errors/index.js'
+import { getConnectorClient } from 'wagmi/actions'
+import type { NoClientError } from '../errors/index.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 import {
   type UseOmniContractsResult,
@@ -47,7 +48,7 @@ type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
 type MutationError = LoadContractsError | NoClientError | WriteContractErrorType
 
 export type MutationResult = UseMutationResult<
-  OpenOrderReturn,
+  SendOrderReturn,
   MutationError,
   void
 >
@@ -94,21 +95,21 @@ export function useOrder<abis extends OptionalAbis>(
 ): UseOrderReturnType {
   const { validateEnabled, ...order } = params
   const srcChainId = order.srcChainId ?? useChainId()
-  const client = useClient({ chainId: srcChainId })
+  const config = useConfig()
   const contractsResult = useOmniContracts()
   const inboxAddress = contractsResult.data?.inbox
 
-  const txMutation = useMutation<OpenOrderReturn, MutationError>({
+  const txMutation = useMutation<SendOrderReturn, MutationError>({
     mutationFn: async () => {
-      if (client == null) {
-        throw new NoClientError('No client provided')
-      }
+      const client = await getConnectorClient(config, {
+        chainId: srcChainId,
+      })
       if (inboxAddress == null) {
         throw new LoadContractsError(
           'Inbox contract address needs to be loaded',
         )
       }
-      return await openOrder({ client, inboxAddress, order })
+      return await sendOrder({ client, inboxAddress, order })
     },
   })
 

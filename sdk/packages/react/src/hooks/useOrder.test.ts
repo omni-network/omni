@@ -16,6 +16,8 @@ const {
   useOmniContracts,
   useParseOpenEvent,
   useWaitForTransactionReceipt,
+  sendOrder,
+  getConnectorClient,
 } = vi.hoisted(() => {
   return {
     useValidateOrder: vi.fn(),
@@ -29,6 +31,16 @@ const {
         },
       }
     }),
+    getConnectorClient: vi.fn().mockImplementation(() => {
+      return {
+        account: '0xAccount',
+        chain: '0xChain',
+        connector: '0xConnector',
+      }
+    }),
+    sendOrder: vi.fn().mockImplementation(() => {
+      return Promise.resolve('0xTxHash')
+    }),
   }
 })
 
@@ -37,6 +49,14 @@ vi.mock('wagmi', async () => {
   return {
     ...actual,
     useWaitForTransactionReceipt,
+  }
+})
+
+vi.mock('wagmi/actions', async () => {
+  const actual = await vi.importActual('wagmi/actions')
+  return {
+    ...actual,
+    getConnectorClient,
   }
 })
 
@@ -65,7 +85,7 @@ vi.mock('./useParseOpenEvent.js', async () => {
 })
 
 beforeEach(() => {
-  vi.spyOn(core, 'openOrder').mockResolvedValue('0xTxHash')
+  vi.spyOn(core, 'sendOrder').mockResolvedValue('0xTxHash')
   useParseOpenEvent.mockReturnValue({
     resolvedOrder,
     error: null,
@@ -97,6 +117,11 @@ const renderOrderHook = (
 }
 
 test(`default: validates, opens, and transitions order through it's lifecycle`, async () => {
+  vi.mock('@omni-network/core', async () => {
+    const actual = await vi.importActual('@omni-network/core')
+    return { ...actual, sendOrder }
+  })
+
   const { result, rerender } = renderHook(
     ({ validateEnabled }: { validateEnabled: boolean }) =>
       useOrder({ ...orderRequest, validateEnabled }),
@@ -224,8 +249,8 @@ test('behaviour: closed order is handled', async () => {
   })
 })
 
-test('behaviour: handles openOrder error', async () => {
-  vi.spyOn(core, 'openOrder').mockRejectedValue(new Error('Tx mutation error'))
+test('behaviour: handles sendOrder error', async () => {
+  vi.spyOn(core, 'sendOrder').mockRejectedValue(new Error('Tx mutation error'))
 
   const { result } = renderOrderHook({
     ...orderRequest,
@@ -271,7 +296,10 @@ test('behaviour:  handles validation error', async () => {
     error: new Error('Validation failed'),
   })
 
-  const { result } = renderOrderHook({ ...orderRequest, validateEnabled: true })
+  const { result } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: true,
+  })
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
@@ -355,7 +383,10 @@ test('behaviour: handles wait success but order not found', async () => {
     }),
   )
 
-  const { result } = renderOrderHook({ ...orderRequest, validateEnabled: true })
+  const { result } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: true,
+  })
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)

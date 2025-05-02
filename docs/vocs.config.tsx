@@ -7,7 +7,7 @@ export default defineConfig({
   description: 'Documentation for the Omni SDK, SolverNet, and related concepts.',
   logoUrl: '/img/logo.svg',
   iconUrl: '/img/favicon.svg',
-  ogImageUrl: '/img/omni-banner.png',
+  ogImageUrl: 'https://docs.omni.network/img/omni-banner.png',
   editLink: {
     pattern: 'https://github.com/omni-network/omni/tree/main/docs/docs/pages/:path',
     text: 'Suggest changes to this page on GitHub',
