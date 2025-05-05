@@ -126,7 +126,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
-	if err := rebalance.Start(ctx, network, newCCTPClient(network.ID), backends, solverAddr, cfg.DBDir); err != nil {
+	if err := rebalance.Start(ctx, network, newCCTPClient(network.ID), pricer, backends, solverAddr, cfg.DBDir); err != nil {
 		log.Warn(ctx, "Failed to start rebalancing [BUG]", err)
 	}
 
