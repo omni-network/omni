@@ -97,4 +97,34 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Closed);
         assertEq(token1.balanceOf(user), defaultAmount, "deposit should have been returned to the user");
     }
+
+    function test_close_localOrder_succeeds() public {
+        vm.chainId(srcChainId);
+        SolverNet.Call[] memory calls = new SolverNet.Call[](1);
+        calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);
+
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](0);
+
+        (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
+            getOrder(user, srcChainId, uint32(block.timestamp + 1), address(0), defaultAmount, calls, expenses);
+
+        assertTrue(inbox.validate(order), "order should be valid");
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        fundUser(orderData);
+        vm.prank(user);
+        vm.expectEmit(true, true, true, true);
+        emit IERC7683.Open(resolvedOrder.orderId, resolvedOrder);
+        inbox.open{ value: defaultAmount }(order);
+
+        vm.prank(user);
+        vm.warp(block.timestamp + 2);
+        vm.expectEmit(true, true, true, true);
+        emit ISolverNetInbox.Closed(resolvedOrder.orderId);
+        inbox.close(resolvedOrder.orderId);
+
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Closed);
+        assertEq(user.balance, defaultAmount, "deposit should have been returned to the user");
+    }
 }
