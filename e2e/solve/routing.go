@@ -88,28 +88,29 @@ func getRoutes(src netconf.Chain, allChains []netconf.Chain, inbox common.Addres
 			continue
 		}
 
-		var solverNetInbox common.Address
-		var solverNetOutbox common.Address
-		provider := solvernet.None
-		var err error
-
 		// IsDisabled == true will configure zero values for routes to/from disabled chains.
 		if !solvernet.IsDisabled(src.ID) && !solvernet.IsDisabled(dest.ID) {
-			solverNetInbox = inbox
-			solverNetOutbox = outbox
-			provider, err = solvernet.Provider(dest.ID)
-			if err != nil {
-				return nil, errors.Wrap(err, "get provider", "chain", dest.Name)
-			}
+			routes = append(routes, Route{
+				ChainID: dest.ID,
+				Outbox:  common.Address{},
+				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    common.Address{},
+					Provider: solvernet.None,
+				},
+			})
+
+			continue
+		}
+
+		provider, err := solvernet.Provider(dest.ID)
+		if err != nil {
+			return nil, errors.Wrap(err, "get provider", "chain", dest.Name)
 		}
 
 		routes = append(routes, Route{
-			ChainID: dest.ID,
-			Outbox:  solverNetOutbox,
-			InboxConfig: bindings.ISolverNetOutboxInboxConfig{
-				Inbox:    solverNetInbox,
-				Provider: provider,
-			},
+			ChainID:     dest.ID,
+			Outbox:      outbox,
+			InboxConfig: bindings.ISolverNetOutboxInboxConfig{Inbox: inbox, Provider: provider},
 		})
 	}
 
