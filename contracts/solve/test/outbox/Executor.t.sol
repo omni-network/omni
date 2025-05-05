@@ -90,6 +90,19 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         assertEq(token1.balanceOf(user), 1 ether, "balance should be 1 ether");
     }
 
+    function test_execute_target_is_executor() public {
+        vm.prank(address(outbox));
+        executor.execute(
+            address(0),
+            0,
+            abi.encodeCall(
+                ISolverNetExecutor.executeAndTransfer721,
+                (address(milady), 1, user, address(milady), abi.encodeWithSelector(MockERC721.mint.selector))
+            )
+        );
+        assertEq(milady.ownerOf(1), user, "user should have received the Milady NFT from executor");
+    }
+
     function test_executeAndTransfer_erc20_succeeds() public {
         address lstToken = address(lst.token());
         vm.deal(address(executor), 1 ether);
