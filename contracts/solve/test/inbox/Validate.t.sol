@@ -35,12 +35,7 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         });
         order.orderData = abi.encode(orderData);
 
-        // `destChainId` must be non-zero and non-local
-        vm.expectRevert(ISolverNetInbox.InvalidChainId.selector);
-        inbox.validate(order);
-        orderData.destChainId = srcChainId;
-        order.orderData = abi.encode(orderData);
-
+        // `destChainId` must be non-zero
         vm.expectRevert(ISolverNetInbox.InvalidChainId.selector);
         inbox.validate(order);
         orderData.destChainId = destChainId;
@@ -50,11 +45,6 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         vm.expectRevert(ISolverNetInbox.InvalidMissingCalls.selector);
         inbox.validate(order);
         orderData.calls = new SolverNet.Call[](1);
-        order.orderData = abi.encode(orderData);
-
-        // `calls` must not have a zero target
-        vm.expectRevert(ISolverNetInbox.InvalidCallTarget.selector);
-        inbox.validate(order);
         orderData.calls[0].target = address(erc20Vault);
         order.orderData = abi.encode(orderData);
 

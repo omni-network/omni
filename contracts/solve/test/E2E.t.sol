@@ -17,6 +17,7 @@ contract SolverNet_E2E_Test is TestBase {
 
         fundUser(orderData);
 
+        vm.chainId(srcChainId);
         vm.startPrank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         vm.expectEmit(true, true, true, true);
@@ -28,11 +29,11 @@ contract SolverNet_E2E_Test is TestBase {
         assertResolvedEq(resolvedOrder, resolved2);
         assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
+        vm.chainId(destChainId);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
 
-        vm.chainId(destChainId);
         vm.startPrank(solver);
         outbox.fill{ value: defaultAmount + fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
@@ -73,6 +74,7 @@ contract SolverNet_E2E_Test is TestBase {
 
         fundUser(orderData);
 
+        vm.chainId(srcChainId);
         vm.startPrank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         vm.expectEmit(true, true, true, true);
@@ -84,11 +86,11 @@ contract SolverNet_E2E_Test is TestBase {
         assertResolvedEq(resolvedOrder, resolved2);
         assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
+        vm.chainId(destChainId);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
 
-        vm.chainId(destChainId);
         vm.startPrank(solver);
         outbox.fill{ value: fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
@@ -130,6 +132,7 @@ contract SolverNet_E2E_Test is TestBase {
 
         fundUser(orderData);
 
+        vm.chainId(srcChainId);
         vm.startPrank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         vm.expectEmit(true, true, true, true);
@@ -141,11 +144,11 @@ contract SolverNet_E2E_Test is TestBase {
         assertResolvedEq(resolvedOrder, resolved2);
         assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
+        vm.chainId(destChainId);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
 
-        vm.chainId(destChainId);
         vm.startPrank(solver);
         outbox.fill{ value: defaultAmount + fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
@@ -188,6 +191,7 @@ contract SolverNet_E2E_Test is TestBase {
 
         fundUser(orderData);
 
+        vm.chainId(srcChainId);
         vm.startPrank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         vm.expectEmit(true, true, true, true);
@@ -199,11 +203,11 @@ contract SolverNet_E2E_Test is TestBase {
         assertResolvedEq(resolvedOrder, resolved2);
         assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
+        vm.chainId(destChainId);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
 
-        vm.chainId(destChainId);
         vm.startPrank(solver);
         outbox.fill{ value: fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
@@ -249,6 +253,7 @@ contract SolverNet_E2E_Test is TestBase {
 
         fundUser(orderData);
 
+        vm.chainId(srcChainId);
         vm.startPrank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         vm.expectEmit(true, true, true, true);
@@ -260,11 +265,11 @@ contract SolverNet_E2E_Test is TestBase {
         assertResolvedEq(resolvedOrder, resolved2);
         assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
+        vm.chainId(destChainId);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
 
-        vm.chainId(destChainId);
         vm.startPrank(solver);
         outbox.fill{ value: defaultAmount + fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
@@ -295,5 +300,50 @@ contract SolverNet_E2E_Test is TestBase {
             token2.balanceOf(address(erc20Vault)), defaultAmount, "erc20 vault should have received the erc20 deposit"
         );
         assertEq(solver.balance, defaultAmount * 2, "solver should have received the native deposit as their reward");
+    }
+
+    function test_e2e_localOrder() public {
+        vm.chainId(srcChainId);
+        SolverNet.Call[] memory calls = new SolverNet.Call[](1);
+        calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);
+
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](0); // No expense for native call value
+
+        (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
+            getOrder(user, srcChainId, defaultFillDeadline, address(0), defaultAmount, calls, expenses);
+
+        assertTrue(inbox.validate(order), "order should be valid");
+
+        fundUser(orderData);
+
+        vm.startPrank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+        vm.expectEmit(true, true, true, true);
+        emit IERC7683.Open(resolvedOrder.orderId, resolvedOrder);
+        inbox.open{ value: defaultAmount }(order);
+        vm.stopPrank();
+
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
+        assertResolvedEq(resolvedOrder, resolved2);
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
+
+        uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
+        fundSolver(orderData, fillFee);
+
+        vm.prank(solver);
+        outbox.fill{ value: defaultAmount + fillFee }(
+            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
+        );
+
+        vm.prank(solver);
+        inbox.claim(resolvedOrder.orderId, solver);
+
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Claimed);
+        assertEq(
+            nativeVault.balances(user), defaultAmount, "user should have received the native expense as a vault deposit"
+        );
+        assertEq(address(nativeVault).balance, defaultAmount, "native vault should have received the native deposit");
+        assertEq(solver.balance, defaultAmount, "solver should have received the native deposit as their reward");
+        assertEq(fillFee, 0, "fill fee should be 0 for local order");
     }
 }

@@ -85,8 +85,11 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
 
+        vm.chainId(srcChainId);
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        vm.chainId(destChainId);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
 
@@ -99,7 +102,6 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
         }
 
-        vm.chainId(destChainId);
         vm.prank(solver);
         outbox.fill{ value: defaultAmount + fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
@@ -120,8 +122,11 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
 
+        vm.chainId(srcChainId);
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        vm.chainId(destChainId);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
 
@@ -134,7 +139,6 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
         }
 
-        vm.chainId(destChainId);
         vm.prank(solver);
         outbox.fill{ value: fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
@@ -156,8 +160,11 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = getOrder(block.timestamp + 1, orderData);
         assertTrue(inbox.validate(order), "order should be valid");
 
+        vm.chainId(srcChainId);
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        vm.chainId(destChainId);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
 
@@ -170,7 +177,6 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
         }
 
-        vm.chainId(destChainId);
         vm.prank(solver);
         outbox.fill{ value: defaultAmount + fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
@@ -190,8 +196,11 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
 
+        vm.chainId(srcChainId);
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        vm.chainId(destChainId);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee * 2);
 
@@ -204,7 +213,6 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
         }
 
-        vm.chainId(destChainId);
         vm.prank(solver);
         outbox.fill{ value: defaultAmount + (fillFee * 2) }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
@@ -226,8 +234,11 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = getOrder(block.timestamp + 1, orderData);
         assertTrue(inbox.validate(order), "order should be valid");
 
+        vm.chainId(srcChainId);
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        vm.chainId(destChainId);
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
 
@@ -240,7 +251,6 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
         }
 
-        vm.chainId(destChainId);
         vm.prank(solver);
         outbox.fill{ value: fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)

@@ -308,10 +308,11 @@ contract SolverNetInbox is
         OrderState memory state = _orderState[id];
         SolverNet.Header memory header = _orderHeader[id];
 
+        uint256 buffer = header.destChainId == block.chainid ? 0 : CLOSE_BUFFER;
         if (state.status != Status.Pending) revert OrderNotPending();
         if (header.owner != msg.sender) revert Unauthorized();
         if (IOmniPortalPausable(address(omni)).isPaused(ACTION_XSUBMIT, header.destChainId)) revert PortalPaused();
-        if (header.fillDeadline + CLOSE_BUFFER >= block.timestamp) revert OrderStillValid();
+        if (header.fillDeadline + buffer >= block.timestamp) revert OrderStillValid();
 
         _upsertOrder(id, Status.Closed, 0, msg.sender);
         _transferDeposit(id, header.owner);
@@ -328,7 +329,9 @@ contract SolverNetInbox is
      * @param creditedTo Address deposits are credited to, provided by the filler.
      */
     function markFilled(bytes32 id, bytes32 fillHash, address creditedTo) external xrecv {
-        _markFilled(id, fillHash, creditedTo, xmsg.sourceChainId, xmsg.sender);
+        uint64 origin = xmsg.sourceChainId == 0 ? uint64(block.chainid) : xmsg.sourceChainId;
+        address sender = xmsg.sender == address(0) ? msg.sender : xmsg.sender;
+        _markFilled(id, fillHash, creditedTo, origin, sender);
     }
 
     /**
@@ -388,7 +391,7 @@ contract SolverNetInbox is
 
         // Validate SolverNet.OrderData.Header fields
         if (orderData.owner == address(0)) orderData.owner = msg.sender;
-        if (orderData.destChainId == 0 || orderData.destChainId == block.chainid) revert InvalidChainId();
+        if (orderData.destChainId == 0) revert InvalidChainId();
 
         SolverNet.Header memory header = SolverNet.Header({
             owner: orderData.owner,
@@ -400,10 +403,6 @@ contract SolverNetInbox is
         SolverNet.Call[] memory calls = orderData.calls;
         if (calls.length == 0) revert InvalidMissingCalls();
         if (calls.length > MAX_ARRAY_SIZE) revert InvalidArrayLength();
-        for (uint256 i; i < calls.length; ++i) {
-            SolverNet.Call memory call = calls[i];
-            if (call.target == address(0)) revert InvalidCallTarget();
-        }
 
         // Validate SolverNet.OrderData.Expenses
         SolverNet.TokenExpense[] memory expenses = orderData.expenses;
