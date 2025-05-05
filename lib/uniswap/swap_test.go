@@ -3,6 +3,7 @@ package uniswap_test
 import (
 	"crypto/ecdsa"
 	"flag"
+	"log/slog"
 	"math/big"
 	"os"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	"github.com/omni-network/omni/lib/tutil"
@@ -27,14 +29,21 @@ var integration = flag.Bool("integration", false, "run integration tests")
 
 //go:generate go test . -integration -v -run=TestSwapToUSDC
 
-// TestSwapToUSDC tests the SwapToUSDC and SwapFromUSDC functions.
-func TestSwapToFromUSDC(t *testing.T) {
+// TestSwapUSDC tests the SwapToUSDC and SwapUSDCTo functions.
+func TestSwapUSDC(t *testing.T) {
 	t.Parallel()
 	if !*integration {
 		t.Skip("skipping integration test")
 	}
 
 	ctx := t.Context()
+
+	logCfg := log.DefaultConfig()
+	logCfg.Level = slog.LevelDebug.String()
+	logCfg.Color = log.ColorForce
+
+	ctx, err := log.Init(ctx, logCfg)
+	require.NoError(t, err)
 
 	meta, ok := evmchain.MetadataByID(evmchain.IDEthereum)
 	require.True(t, ok, "ethereum metadata not found")
@@ -99,22 +108,22 @@ func TestSwapToFromUSDC(t *testing.T) {
 		tutil.RequireNoError(t, err)
 
 		// Swap to USDC
-		amountUSDC, err := uniswap.SwapToUSDC(ctx, backend, swapper, token, tt.amountIn)
+		usdcOutMin, err := uniswap.SwapToUSDC(ctx, backend, swapper, token, tt.amountIn)
 		tutil.RequireNoError(t, err)
-		tutil.RequireIsPositive(t, amountUSDC)
+		tutil.RequireIsPositive(t, usdcOutMin)
 
 		// Make sure we actually swapped for USDC
-		tutil.RequireEQ(t, amountUSDC, balanceOf(t, backend, usdc, swapper))
+		// We can assert out == min received, because no other swaps in same block
+		tutil.RequireEQ(t, usdcOutMin, balanceOf(t, backend, usdc, swapper))
 
 		// Check we lost some input token
 		balanceOut := balanceOf(t, backend, token, swapper)
 		tutil.RequireGT(t, balanceIn, balanceOut)
 
-		// Swap back to original token
-		amountOut, err := uniswap.SwapFromUSDC(ctx, backend, swapper, token, amountUSDC)
+		// Swap back to original token (re-use amountIn)
+		usdcInMax, err := uniswap.SwapUSDCTo(ctx, backend, swapper, token, bi.Div(tt.amountIn, big.NewInt(2))) // divide by 2, to make sure we don't exceed balance we just got
 		tutil.RequireNoError(t, err)
-		tutil.RequireIsPositive(t, amountOut)
-		tutil.RequireGT(t, tt.amountIn, amountOut) // should lose some due to fees
+		tutil.RequireIsPositive(t, usdcInMax)
 
 		// USDC balance should be back to zero
 		tutil.RequireEQ(t, big.NewInt(0), balanceOf(t, backend, usdc, swapper))

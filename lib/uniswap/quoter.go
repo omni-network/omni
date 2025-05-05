@@ -5,9 +5,11 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/lib/bi"
+	// "github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	// "github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // CallQuoteExactInput calls the quoteExactInput method on the QuoterV2 contract.
@@ -34,4 +36,28 @@ func (q *UniQuoterV2) CallQuoteExactInput(ctx context.Context, path []byte, amou
 	}
 
 	return amountOut, nil
+}
+
+// CallQuoteExactOutput calls the quoteExactOutput method on the QuoterV2 contract.
+func (q *UniQuoterV2) CallQuoteExactOutput(ctx context.Context, path []byte, amountOut *big.Int) (*big.Int, error) {
+	var result []any
+	err := q.UniQuoterV2Caller.contract.Call(&bind.CallOpts{Context: ctx}, &result, "quoteExactOutput", path, amountOut)
+	if err != nil {
+		return nil, errors.Wrap(err, "quote exact output")
+	}
+
+	if len(result) == 0 {
+		return nil, errors.New("empty result")
+	}
+
+	amountIn, ok := result[0].(*big.Int)
+	if !ok {
+		return nil, errors.New("invalid type")
+	}
+
+	if bi.IsZero(amountIn) {
+		return nil, errors.New("zero in")
+	}
+
+	return amountIn, nil
 }

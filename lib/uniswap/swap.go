@@ -25,16 +25,16 @@ type Swap struct {
 	PoolFee  uint32
 }
 
-// SwapToUSDC swaps a token for USDC using Uniswap V3.
+// SwapToUSDC swaps `amountIn` of `token` to USDC, returning the minimum USDC received.
 func SwapToUSDC(
 	ctx context.Context,
 	backend *ethbackend.Backend,
 	user common.Address,
 	token tokens.Token,
-	amount *big.Int,
+	amountIn *big.Int,
 ) (*big.Int, error) {
 	if token.Is(tokens.USDC) {
-		return amount, nil
+		return amountIn, nil
 	}
 
 	swaps, err := routeToUSDC(token)
@@ -42,49 +42,48 @@ func SwapToUSDC(
 		return nil, errors.Wrap(err, "route to USDC")
 	}
 
-	if err := maybeApproveRouter(ctx, backend, user, token, amount); err != nil {
+	if err := maybeApproveRouter(ctx, backend, user, token, amountIn); err != nil {
 		return nil, errors.Wrap(err, "approve router")
 	}
 
-	amountOut, receipt, err := executeSwaps(ctx, backend, user, token, swaps, amount)
+	amountOutMin, receipt, err := swapExactInput(ctx, backend, user, token, swaps, amountIn)
 	if err != nil {
 		return nil, errors.Wrap(err, "execute swaps")
 	}
 
 	log.Debug(ctx, "Swapped to USDC",
-		"in", token.FormatAmt(amount),
-		"out", swaps[len(swaps)-1].TokenOut.FormatAmt(amountOut),
+		"in", token.FormatAmt(amountIn),
+		"out", swaps[len(swaps)-1].TokenOut.FormatAmt(amountOutMin),
 		"tx", receipt.TxHash,
 		"gas_used", receipt.GasUsed,
 	)
 
-	return amountOut, nil
+	return amountOutMin, nil
 }
 
-func SwapFromUSDC(
+// SwapUSDCTo swaps USDC for `amountOut` of `token`, returning the max USDC spent.
+func SwapUSDCTo(
 	ctx context.Context,
 	backend *ethbackend.Backend,
 	user common.Address,
 	token tokens.Token,
-	amount *big.Int,
+	amountOut *big.Int,
 ) (*big.Int, error) {
 	if token.Is(tokens.USDC) {
-		return amount, nil
+		return amountOut, nil
 	}
 
-	swapsTo, err := routeToUSDC(token)
+	swaps, err := routeFromUSDC(token)
 	if err != nil {
 		return nil, errors.Wrap(err, "route to USDC")
 	}
 
-	// Reverse the swaps to get the path from USDC to the token
-	swaps := reverse(swapsTo)
-
-	if err := maybeApproveRouter(ctx, backend, user, swaps[0].TokenIn, amount); err != nil {
+	// Need to approve quoted max in
+	if err := maybeApproveRouter(ctx, backend, user, swaps[0].TokenIn, umath.MaxUint256); err != nil {
 		return nil, errors.Wrap(err, "approve router")
 	}
 
-	amountOut, receipt, err := executeSwaps(ctx, backend, user, swaps[0].TokenIn, swaps, amount)
+	amountInMax, receipt, err := swapExactOutput(ctx, backend, user, swaps, amountOut)
 	if err != nil {
 		return nil, errors.Wrap(err, "execute swaps")
 	}
@@ -103,13 +102,13 @@ func SwapFromUSDC(
 			"gas_used", receipt.GasUsed)
 	}
 
-	log.Debug(ctx, "Swapped from USDC",
-		"in", swaps[0].TokenIn.FormatAmt(amount),
+	log.Debug(ctx, "Swapped USDC to",
+		"in", swaps[0].TokenIn.FormatAmt(amountInMax),
 		"out", token.FormatAmt(amountOut),
 		"tx", receipt.TxHash,
 		"gas_used", receipt.GasUsed)
 
-	return amountOut, nil
+	return amountInMax, nil
 }
 
 // routeToUSDC returns the optimal swap path to convert a token to USDC.
@@ -137,6 +136,16 @@ func routeToUSDC(tkn tokens.Token) ([]Swap, error) {
 	}
 
 	return nil, errors.New("no route to USDC", "token", tkn.Asset, "chain", tkn.ChainID)
+}
+
+// routeFromUSDC returns the optimal swap path to convert USDC to a token.
+func routeFromUSDC(tkn tokens.Token) ([]Swap, error) {
+	to, err := routeToUSDC(tkn)
+	if err != nil {
+		return nil, errors.Wrap(err, "route to USDC")
+	}
+
+	return reverse(to), nil
 }
 
 // usdtToUSDC returns a swap from USDT to USDC, 0.01% fee tier.
@@ -168,8 +177,8 @@ func reverse(swaps []Swap) []Swap {
 	return reversed
 }
 
-// executeSwaps executes a series of Uniswap V3 swaps and returns the amount received.
-func executeSwaps(
+// swapExactInput executes a series of Uniswap V3 swaps with exact input, and returns the minimum output amount.
+func swapExactInput(
 	ctx context.Context,
 	backend *ethbackend.Backend,
 	user common.Address,
@@ -194,7 +203,7 @@ func executeSwaps(
 		return nil, nil, errors.Wrap(err, "encode path")
 	}
 
-	amountOut, err := quoter.CallQuoteExactInput(ctx, path, amountIn)
+	amountOutMin, err := quoter.CallQuoteExactInput(ctx, path, amountIn)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "quote exact input")
 	}
@@ -212,7 +221,7 @@ func executeSwaps(
 		Path:             path,
 		Recipient:        user,
 		AmountIn:         amountIn,
-		AmountOutMinimum: amountOut,
+		AmountOutMinimum: amountOutMin,
 	}
 
 	tx, err := router.ExactInput(txOpts, params)
@@ -225,7 +234,77 @@ func executeSwaps(
 		return nil, nil, errors.Wrap(err, "wait mined")
 	}
 
-	return amountOut, receipt, nil
+	return amountOutMin, receipt, nil
+}
+
+// swapExactOutput executes a series of Uniswap V3 swaps with exact output, and returns the maximum input amount.
+func swapExactOutput(
+	ctx context.Context,
+	backend *ethbackend.Backend,
+	user common.Address,
+	swaps []Swap,
+	amountOut *big.Int,
+) (*big.Int, *ethtypes.Receipt, error) {
+	tokenIn := swaps[0].TokenIn
+	tokenOut := swaps[len(swaps)-1].TokenOut
+	chainID := tokenIn.ChainID
+
+	router, err := newRouter(chainID, backend)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "new router")
+	}
+
+	quoter, err := newQuoter(chainID, backend)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "new quoter")
+	}
+
+	// QuoterV2.quoteExactOutput expects the path to be reversed
+	path, err := encodePath(reverse(swaps))
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "encode path")
+	}
+
+	amountInMax, err := quoter.CallQuoteExactOutput(ctx, path, amountOut)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "quote exact output")
+	}
+
+
+	log.Debug(ctx, "Quoted exact output",
+		"token_in", tokenIn.Asset,
+		"token_out", tokenOut.Asset,
+		"amount_in_max", tokenIn.FormatAmt(amountInMax),
+		"amount_out", tokenOut.FormatAmt(amountOut))
+
+	txOpts, err := backend.BindOpts(ctx, user)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "bind opts")
+	}
+
+	if tokenIn.IsNative() {
+		log.Debug(ctx, "Adding value to tx opts")
+		txOpts.Value = amountInMax // Overpayment is refunded
+	}
+
+	params := IV3SwapRouterExactOutputParams{
+		Path:            path,
+		Recipient:       user,
+		AmountOut:       amountOut,
+		AmountInMaximum: amountInMax,
+	}
+
+	tx, err := router.ExactOutput(txOpts, params)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "exact output")
+	}
+
+	receipt, err := bind.WaitMined(ctx, backend, tx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "wait mined")
+	}
+
+	return amountInMax, receipt, nil
 }
 
 func unwrapWETH(
