@@ -102,10 +102,13 @@ func getRoutes(src netconf.Chain, network netconf.Network, inbox common.Address,
 			continue
 		}
 
-		// If the source chain is not a Hyperlane chain, use the destination chain's provider.
 		provider := solvernet.Hyperlane
 		var err error
-		if !solvernet.IsHLChain(src.ID) {
+		if src.ID == dest.ID {
+			// If the source and destination chains are the same, don't configure a provider.
+			provider = solvernet.None
+		} else if !solvernet.IsHLChain(src.ID) {
+			// If the source chain is not a Hyperlane chain, use the destination chain's provider.
 			provider, err = solvernet.Provider(dest.ID)
 			if err != nil {
 				return nil, errors.Wrap(err, "get provider", "chain", dest.Name)
