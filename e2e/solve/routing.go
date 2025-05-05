@@ -89,7 +89,7 @@ func getRoutes(src netconf.Chain, allChains []netconf.Chain, inbox common.Addres
 		}
 
 		// IsDisabled == true will configure zero values for routes to/from disabled chains.
-		if !solvernet.IsDisabled(src.ID) && !solvernet.IsDisabled(dest.ID) {
+		if solvernet.IsDisabled(src.ID) || solvernet.IsDisabled(dest.ID) {
 			routes = append(routes, Route{
 				ChainID: dest.ID,
 				Outbox:  common.Address{},
