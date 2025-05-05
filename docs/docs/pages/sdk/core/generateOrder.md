@@ -19,9 +19,7 @@ const generator = await generateOrder({
 });
 ```
 
-## Arguments
-
-The `generateOrder` function uses a single parameters object as argument:
+## Parameters
 
 | Prop                | Type                                 | Required | Description                                                                                                                         |
 | ------------------- | ------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |

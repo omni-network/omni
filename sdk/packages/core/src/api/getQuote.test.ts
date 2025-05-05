@@ -3,7 +3,7 @@ import { zeroAddress } from 'viem'
 import { beforeEach, expect, test, vi } from 'vitest'
 import * as api from '../internal/api.js'
 import type { Quoteable } from '../types/quote.js'
-import { type GetQuoteParams, getQuote } from './getQuote.js'
+import { type GetQuoteParameters, getQuote } from './getQuote.js'
 
 const token = '0x123'
 const deposit = { token, isNative: false } satisfies Quoteable
@@ -19,7 +19,7 @@ beforeEach(() => {
   vi.spyOn(api, 'fetchJSON').mockResolvedValue(testQuoteResponse)
 })
 
-const params: GetQuoteParams = {
+const params: GetQuoteParameters = {
   srcChainId: 1,
   destChainId: 2,
   mode: 'expense',

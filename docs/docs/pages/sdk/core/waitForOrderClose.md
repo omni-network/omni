@@ -14,9 +14,7 @@ const orderStatus = await waitForOrderClose({
 });
 ```
 
-## Arguments
-
-The `waitForOrderClose` function uses a single parameters object as argument:
+## Parameters
 
 | Prop                | Type                                 | Required | Description                                                                                                                         |
 | ------------------- | ------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |

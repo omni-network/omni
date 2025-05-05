@@ -14,11 +14,7 @@ const validation = await validateOrder({
 });
 ```
 
-## Arguments
-
-The `validateOrder` function uses the following arguments:
-
-### 1. Order parameters (required)
+## Parameters
 
 | Prop                | Type                                 | Required | Description                                                                                                                         |
 | ------------------- | ------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -27,11 +23,7 @@ The `validateOrder` function uses the following arguments:
 | `deposit`           | `Deposit`                         | Yes      | Describes the asset and amount being deposited on the source chain (paid by the user) - taken from `quote.deposit`. |
 | `expense`           | `Expense`  | Yes      | Describes the asset, amount, and spender on the destination chain (paid by the solver) - taken from `quote.expense`.            |
 | `calls`             | `Call[]`                             | Yes      | An array of contract calls to be executed on the destination chain by the solver.                                                     |
-| `validateEnabled`   | `boolean`                            | No       | Defaults to `true`. Enables pre-validation of the order with Omni. Use this to validate your calls. Recommended to set based on `quote.isSuccess`.
-
-### 2. Environment (optional)
-
-SolverNet environment to use, either `mainnet` (default) or `testnet`.
+| `environment`           | `Environment | string`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
 
 ## Types
 

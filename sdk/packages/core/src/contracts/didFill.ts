@@ -3,7 +3,7 @@ import { readContract } from 'viem/actions'
 import { outboxABI } from '../constants/abis.js'
 import type { ResolvedOrder } from './parseOpenEvent.js'
 
-export type DidFillParams = {
+export type DidFillParameters = {
   client: Client
   outboxAddress: Address
   resolvedOrder: ResolvedOrder
@@ -15,7 +15,7 @@ export async function didFill({
   client,
   outboxAddress,
   resolvedOrder,
-}: DidFillParams): Promise<DidFillReturn> {
+}: DidFillParameters): Promise<DidFillReturn> {
   return await readContract(client, {
     address: outboxAddress,
     abi: outboxABI,

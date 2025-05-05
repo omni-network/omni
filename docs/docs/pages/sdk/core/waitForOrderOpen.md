@@ -14,9 +14,7 @@ const resolvedOrder = await waitForOrderOpen({
 });
 ```
 
-## Arguments
-
-The `waitForOrderOpen` function uses a single parameters object as argument:
+## Parameters
 
 | Prop                | Type                                 | Required | Description                                                                                                                         |
 | ------------------- | ------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |

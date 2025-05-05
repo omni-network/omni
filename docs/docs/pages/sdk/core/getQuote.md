@@ -24,15 +24,11 @@ const quote = await getQuote({
 });
 ```
 
-## Arguments
+## Parameters
 
-The `getQuote` function uses the following arguments:
+Crucially, a quote requires fixing *either* the `deposit` amount *or* the `expense` amount. You tell the function which one you're fixing using the `mode` parameter.
 
-### 1. Quote parameters (required)
-
-Crucially, a quote requires fixing *either* the `deposit` amount *or* the `expense` amount. You tell the hook which one you're fixing using the `mode` parameter.
-
-The hook accepts a configuration object with the following properties.
+The function accepts a configuration object with the following properties.
 
 | Prop          | Type                                   | Required | Description                                                                                                                                |
 | ------------- | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -41,10 +37,7 @@ The hook accepts a configuration object with the following properties.
 | `deposit`     | `QuoteAsset & { amount?: bigint }`     | Yes      | Aasset to deposit on the source chain. Provide `amount` only if using `mode: 'expense'`.                                     |
 | `expense`     | `QuoteAsset & { amount?: bigint }`     | Yes      | Asset to spend on the destination chain. Provide `amount` only if using `mode: 'deposit'`.                                     |
 | `mode`        | `'deposit' \| 'expense'`               | Yes      | Defines the direction of the quote. |
-
-### 2. Environment (optional)
-
-SolverNet environment to use, either `mainnet` (default) or `testnet`.
+| `environment`           | `Environment | string`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
 
 ## Types
 

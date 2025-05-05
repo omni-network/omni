@@ -18,9 +18,7 @@ const resolvedOrder = await openOrder({
 });
 ```
 
-## Arguments
-
-The `openOrder` function uses a single parameters object as argument:
+## Parameters
 
 | Prop                | Type                                 | Required | Description                                                                                                                         |
 | ------------------- | ------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |

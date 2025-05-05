@@ -27,7 +27,10 @@ export async function* generateOrder<abis extends OptionalAbis>(
 ): AsyncGenerator<OrderState> {
   const { environment, pollingInterval, ...sendOrderParams } = params
 
-  const validationResult = await validateOrder(params.order, environment)
+  const validationResult = await validateOrder({
+    ...params.order,
+    environment,
+  })
   assertAcceptedResult(validationResult)
   yield { status: 'valid' }
 

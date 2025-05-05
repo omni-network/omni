@@ -1,4 +1,8 @@
-import type { FetchJSONError, GetQuoteParams, Quote } from '@omni-network/core'
+import type {
+  FetchJSONError,
+  GetQuoteParameters,
+  Quote,
+} from '@omni-network/core'
 import { getQuote } from '@omni-network/core'
 import {
   type UseQueryOptions,
@@ -9,7 +13,7 @@ import { useMemo } from 'react'
 import { useOmniContext } from '../context/omni.js'
 import { hashFn } from '../utils/query.js'
 
-type UseQuoteParams = GetQuoteParams & {
+type UseQuoteParams = GetQuoteParameters & {
   enabled: boolean
   queryOpts?: Omit<
     UseQueryOptions<Quote, QuoteError>,
@@ -49,7 +53,7 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
   const query = useQuery<Quote, QuoteError>({
     ...params.queryOpts,
     queryKey: ['quote', quoteParams],
-    queryFn: async () => getQuote(quoteParams, apiBaseUrl),
+    queryFn: async () => getQuote({ ...quoteParams, environment: apiBaseUrl }),
     queryKeyHashFn: hashFn,
     enabled,
   })

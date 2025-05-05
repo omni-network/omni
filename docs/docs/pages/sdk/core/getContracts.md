@@ -12,11 +12,11 @@ import { getContracts } from '@omni-network/core'
 const contracts = await getContracts();
 ```
 
-## Arguments
+## Parameters
 
-The `getContracts` function use a single argument for the SolverNet environment to use, either `mainnet` or `testnet`.
-
-This argument is optional, defaulting to `mainnet`.
+| Prop                | Type                                 | Required | Description                                                                                                                         |
+| ------------------- | ------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `environment`           | `Environment | string`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
 
 ## Return
 
