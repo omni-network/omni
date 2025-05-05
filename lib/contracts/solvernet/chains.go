@@ -89,6 +89,12 @@ func IsHLRole(role eoa.Role) bool {
 	return false
 }
 
+// IsDisabled returns true if the chain is disabled.
+// This configures all routes for this chain to be disabled locally and remotely.
+func IsDisabled(_ uint64) bool {
+	return false // id == evmchain.IDSepolia
+}
+
 // FilterByEndpoints returns an HL chain selector that excludes chains without endpoints.
 func FilterByEndpoints(endpoints xchain.RPCEndpoints) func(netconf.ID, netconf.Chain) bool {
 	return func(_ netconf.ID, chain netconf.Chain) bool {
