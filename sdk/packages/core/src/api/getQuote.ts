@@ -1,5 +1,5 @@
 import { type Address, type Hex, fromHex, zeroAddress } from 'viem'
-import { fetchJSON } from '../internal/api.js'
+import { safeFetchJSON } from '../internal/api.js'
 import type { Environment } from '../types/config.js'
 import type { Quote, Quoteable } from '../types/quote.js'
 import { getApiUrl } from '../utils/getApiUrl.js'
@@ -32,7 +32,7 @@ export async function getQuote(
     mode,
   } = quote
   const apiUrl = getApiUrl(envOrApiBaseUrl)
-  const json = await fetchJSON(`${apiUrl}/quote`, {
+  const json = await safeFetchJSON(`${apiUrl}/quote`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: toJSON({
@@ -41,7 +41,7 @@ export async function getQuote(
       deposit: toQuoteUnit(depositInput, mode === 'deposit'),
       expense: toQuoteUnit(expenseInput, mode === 'expense'),
     }),
-  })
+  }).getOrThrow()
 
   if (!isQuoteRes(json)) {
     throw new Error(`Unexpected quote response: ${JSON.stringify(json)}`)

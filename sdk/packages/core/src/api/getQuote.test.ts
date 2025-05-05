@@ -1,4 +1,5 @@
 import { testQuote } from '@omni-network/test-utils'
+import { type AsyncResult, Result } from 'typescript-result'
 import { zeroAddress } from 'viem'
 import { beforeEach, expect, test, vi } from 'vitest'
 import * as api from '../internal/api.js'
@@ -9,6 +10,10 @@ const token = '0x123'
 const deposit = { token, isNative: false } satisfies Quoteable
 const nativeExpense = { isNative: true } satisfies Quoteable
 
+function asyncResult<T>(data: T): AsyncResult<T, never> {
+  return Result.fromAsync(Promise.resolve(Result.ok(data)))
+}
+
 // Server response matching the testQuote object with string amounts
 const testQuoteResponse = {
   deposit: { token: zeroAddress, amount: '100' },
@@ -16,7 +21,7 @@ const testQuoteResponse = {
 } as const
 
 beforeEach(() => {
-  vi.spyOn(api, 'fetchJSON').mockResolvedValue(testQuoteResponse)
+  vi.spyOn(api, 'safeFetchJSON').mockReturnValue(asyncResult(testQuoteResponse))
 })
 
 const params: GetQuoteParams = {
@@ -92,7 +97,7 @@ test.each([
   { deposit: { token }, expense: { token } },
   { deposit: { amount: '100' }, expense: { amount: '99' } },
 ])('behaviour: throws if response is not a quote: %s', async (mockReturn) => {
-  vi.spyOn(api, 'fetchJSON').mockResolvedValue(mockReturn)
+  vi.spyOn(api, 'safeFetchJSON').mockReturnValue(asyncResult(mockReturn))
 
   const expectRejection = expect(async () => {
     await getQuote(params)

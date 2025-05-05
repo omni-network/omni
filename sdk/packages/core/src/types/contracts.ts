@@ -1,7 +1,10 @@
-import type { Address } from 'viem'
+import * as z from '@zod/mini'
+import { hexStringSchema } from '../internal/validation.js'
 
-export type OmniContracts = {
-  inbox: Address
-  outbox: Address
-  middleman: Address
-}
+export const omniContractsSchema = z.looseObject({
+  inbox: hexStringSchema,
+  outbox: hexStringSchema,
+  middleman: hexStringSchema,
+})
+
+export type OmniContracts = z.infer<typeof omniContractsSchema>

@@ -1,43 +1,43 @@
 import { testContracts } from '@omni-network/test-utils'
-import { expect, test, vi } from 'vitest'
-import * as api from '../internal/api.js'
-import { getContracts } from './getContracts.js'
+import { Result } from 'typescript-result'
+import { beforeEach, expect, test, vi } from 'vitest'
+import { ValidationError, safeValidate } from '../internal/validation.js'
+import { omniContractsSchema } from '../types/contracts.js'
+
+const { createSafeFetchType } = vi.hoisted(() => ({
+  createSafeFetchType: vi.fn(),
+}))
+vi.mock('../internal/api.js', () => {
+  return { createSafeFetchType }
+})
+
+beforeEach(() => {
+  // ensures import("./getContracts.js") gets re-evaluated with the wanted mock
+  vi.resetModules()
+})
 
 test('default: returns contracts addresses', async () => {
-  const fetchJSONSpy = vi.spyOn(api, 'fetchJSON')
-  fetchJSONSpy.mockResolvedValueOnce(testContracts)
-
+  createSafeFetchType.mockImplementationOnce(() => {
+    return (url: string) => {
+      expect(url).toBe('http://localhost/contracts')
+      return Result.ok(testContracts)
+    }
+  })
+  const { getContracts } = await import('./getContracts.js')
   await expect(getContracts('http://localhost')).resolves.toEqual(testContracts)
-  expect(fetchJSONSpy).toHaveBeenCalledWith('http://localhost/contracts')
 })
 
 test('behaviour: handles invalid response format', async () => {
-  vi.spyOn(api, 'fetchJSON').mockResolvedValueOnce({
-    invalidField: 'value',
+  createSafeFetchType.mockImplementationOnce(() => {
+    return (url: string) => {
+      expect(url).toBe('http://localhost/contracts')
+      return safeValidate(omniContractsSchema, { invalidField: 'value' })
+    }
   })
-
+  const { getContracts } = await import('./getContracts.js')
   const expectRejection = expect(async () => {
     await getContracts('http://localhost')
   }).rejects
-  await expectRejection.toBeInstanceOf(Error)
-  await expectRejection.toHaveProperty(
-    'message',
-    'Unexpected /contracts response',
-  )
-})
-
-test('behaviour: handles invalid response format', async () => {
-  const fetchJSONSpy = vi.spyOn(api, 'fetchJSON')
-  fetchJSONSpy.mockResolvedValueOnce({
-    invalidField: 'value',
-  })
-
-  const expectRejection = expect(async () => {
-    await getContracts('http://localhost')
-  }).rejects
-  await expectRejection.toBeInstanceOf(Error)
-  await expectRejection.toHaveProperty(
-    'message',
-    'Unexpected /contracts response',
-  )
+  await expectRejection.toBeInstanceOf(ValidationError)
+  await expectRejection.toHaveProperty('message', 'Schema validation failed')
 })
