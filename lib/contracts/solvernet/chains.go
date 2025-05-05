@@ -90,6 +90,7 @@ func IsHLRole(role eoa.Role) bool {
 }
 
 // IsDisabled returns true if the chain is disabled.
+// This configures all routes for this chain to be disabled locally and remotely.
 func IsDisabled(_ uint64) bool {
 	return false // id == evmchain.IDSepolia
 }

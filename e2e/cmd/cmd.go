@@ -370,7 +370,7 @@ func newSetSolverNetRoutesCmd(def *app.Definition) *cobra.Command {
 				return errors.Wrap(err, "get solver network and backends")
 			}
 
-			return app.SetSolverNetRoutes(cmd.Context(), network, backends)
+			return solve.SetSolverNetRoutes(cmd.Context(), network, backends)
 		},
 	}
 
