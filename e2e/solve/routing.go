@@ -35,29 +35,28 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 	eg, childCtx := errgroup.WithContext(ctx)
 
 	for _, chain := range network.EVMChains() {
-		// Capture loop variables for the goroutine closure to avoid race conditions
-		_chain := chain
-
-		routes, err := getRoutes(_chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
+		routes, err := getRoutes(chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
 		if err != nil {
-			return errors.Wrap(err, "get routes", "chain", _chain.Name)
+			return errors.Wrap(err, "get routes", "chain", chain.Name)
 		}
 
-		backend, err := backends.Backend(_chain.ID)
+		backend, err := backends.Backend(chain.ID)
 		if err != nil {
-			return errors.Wrap(err, "get backend", "chain", _chain.Name)
+			return errors.Wrap(err, "get backend", "chain", chain.Name)
 		}
 
 		isDeployed, err := checkDeployed(ctx, backend, addrs.SolverNetInbox, addrs.SolverNetOutbox)
 		if !isDeployed || err != nil {
-			return errors.Wrap(err, "isDeployed", "chain", _chain.Name)
+			return errors.Wrap(err, "isDeployed", "chain", chain.Name)
 		}
 
 		txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network.ID, eoa.RoleManager))
 		if err != nil {
-			return errors.Wrap(err, "bind opts", "chain", _chain.Name)
+			return errors.Wrap(err, "bind opts", "chain", chain.Name)
 		}
 
+		// Capture loop variables for the goroutine closure to avoid race conditions
+		_chain := chain
 		eg.Go(func() error {
 			err := configureInbox(childCtx, backend, txOpts, addrs.SolverNetInbox, routes)
 			if err != nil {
