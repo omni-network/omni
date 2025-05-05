@@ -308,10 +308,11 @@ contract SolverNetInbox is
         OrderState memory state = _orderState[id];
         SolverNet.Header memory header = _orderHeader[id];
 
+        uint256 buffer = header.destChainId == block.chainid ? 0 : CLOSE_BUFFER;
         if (state.status != Status.Pending) revert OrderNotPending();
         if (header.owner != msg.sender) revert Unauthorized();
         if (IOmniPortalPausable(address(omni)).isPaused(ACTION_XSUBMIT, header.destChainId)) revert PortalPaused();
-        if (header.fillDeadline + CLOSE_BUFFER >= block.timestamp) revert OrderStillValid();
+        if (header.fillDeadline + buffer >= block.timestamp) revert OrderStillValid();
 
         _upsertOrder(id, Status.Closed, 0, msg.sender);
         _transferDeposit(id, header.owner);

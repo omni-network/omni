@@ -328,7 +328,6 @@ contract SolverNet_E2E_Test is TestBase {
         assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
-        bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
         fundSolver(orderData, fillFee);
 
         vm.prank(solver);
