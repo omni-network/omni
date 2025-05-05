@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokenpricer"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -20,6 +21,7 @@ func Start(
 	ctx context.Context,
 	network netconf.Network,
 	cctpClient cctp.Client,
+	pricer tokenpricer.Pricer,
 	backends ethbackend.Backends,
 	solver common.Address,
 	dbDir string,
@@ -52,7 +54,7 @@ func Start(
 		opt(&o)
 	}
 
-	go rebalanceForever(ctx, o.interval, db, network, backends, solver)
+	go rebalanceForever(ctx, o.interval, db, network, pricer, backends, solver)
 
 	return nil
 }

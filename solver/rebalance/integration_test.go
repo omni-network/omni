@@ -20,6 +20,8 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokenpricer"
+	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	"github.com/omni-network/omni/lib/tutil"
@@ -111,7 +113,7 @@ func TestIntegration(t *testing.T) {
 	// Start rebalancing
 	interval := 5 * time.Second // fast interval for testing
 	dbDir := ""                 // use in-mem db
-	err = rebalance.Start(ctx, network, cctpClient, backends, solver, dbDir, rebalance.WithInterval(interval))
+	err = rebalance.Start(ctx, network, cctpClient, newPricer(ctx), backends, solver, dbDir, rebalance.WithInterval(interval))
 	tutil.RequireNoError(t, err)
 
 	must := func(amt *big.Int, err error) *big.Int {
@@ -226,4 +228,15 @@ func mustToken(t *testing.T, chainID uint64, asset tokens.Asset) tokens.Token {
 	require.True(t, ok)
 
 	return token
+}
+
+func newPricer(ctx context.Context) tokenpricer.Pricer {
+	apiKey := os.Getenv("COINGECKO_API_KEY")
+	pricer := tokenpricer.NewCached(coingecko.New(coingecko.WithAPIKey(apiKey)))
+
+	// use cached pricer avoid spamming coingecko public api
+	const priceCacheEvictInterval = time.Minute * 10
+	go pricer.ClearCacheForever(ctx, priceCacheEvictInterval)
+
+	return pricer
 }

@@ -124,12 +124,3 @@ var (
 		},
 	}
 )
-
-func mustToken(chainID uint64, asset tokens.Asset) tokens.Token {
-	tkn, ok := tokens.ByAsset(chainID, asset)
-	if !ok {
-		panic("token not found")
-	}
-
-	return tkn
-}
