@@ -88,11 +88,6 @@ func getRoutes(src netconf.Chain, network netconf.Network, inbox common.Address,
 			continue
 		}
 
-		// Skip non-Hyperlane routes on Hyperlane chains.
-		if solvernet.IsHLChain(src.ID) && !solvernet.IsHLChain(dest.ID) {
-			continue
-		}
-
 		// IsDisabled == true will configure zero values for routes to/from disabled chains.
 		if solvernet.IsDisabled(src.ID) || solvernet.IsDisabled(dest.ID) {
 			routes = append(routes, Route{
@@ -107,9 +102,14 @@ func getRoutes(src netconf.Chain, network netconf.Network, inbox common.Address,
 			continue
 		}
 
-		provider, err := solvernet.Provider(dest.ID)
-		if err != nil {
-			return nil, errors.Wrap(err, "get provider", "chain", dest.Name)
+		// If the source chain is not a Hyperlane chain, use the destination chain's provider.
+		provider := solvernet.Hyperlane
+		var err error
+		if !solvernet.IsHLChain(src.ID) {
+			provider, err = solvernet.Provider(dest.ID)
+			if err != nil {
+				return nil, errors.Wrap(err, "get provider", "chain", dest.Name)
+			}
 		}
 
 		routes = append(routes, Route{
