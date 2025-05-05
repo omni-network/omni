@@ -19,6 +19,7 @@ contract SolverNet_Inbox_General_Test is TestBase {
         (, IERC7683.OnchainCrossChainOrder memory order) = getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
 
+        vm.chainId(destChainId);
         vm.expectRevert(ISolverNetOutbox.InvalidConfig.selector);
         outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
     }

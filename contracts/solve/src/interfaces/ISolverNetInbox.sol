@@ -12,7 +12,6 @@ interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
     error InvalidChainId();
     error InvalidFillDeadline();
     error InvalidMissingCalls();
-    error InvalidCallTarget();
     error InvalidExpenseToken();
     error InvalidExpenseAmount();
     error InvalidArrayLength();

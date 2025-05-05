@@ -383,10 +383,12 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
     function setRoutes(ISolverNetOutbox.Provider provider) internal {
         // Configure inbox
-        uint64[] memory chainIds = new uint64[](1);
-        chainIds[0] = destChainId;
-        address[] memory outboxes = new address[](1);
+        uint64[] memory chainIds = new uint64[](2);
+        chainIds[0] = srcChainId;
+        chainIds[1] = destChainId;
+        address[] memory outboxes = new address[](2);
         outboxes[0] = address(outbox);
+        outboxes[1] = address(outbox);
         inbox.setOutboxes(chainIds, outboxes);
 
         // Configure outbox
