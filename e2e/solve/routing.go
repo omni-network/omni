@@ -32,10 +32,9 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 		return errors.Wrap(err, "get addresses", "network", network.ID)
 	}
 
-	chainIDs := network.EVMChains()
 	eg, childCtx := errgroup.WithContext(ctx)
 
-	for _, chain := range chainIDs {
+	for _, chain := range network.EVMChains() {
 		// Capture loop variables for the goroutine closure to avoid race conditions
 		_chain := chain
 
