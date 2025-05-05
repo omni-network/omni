@@ -37,36 +37,37 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 
 	for _, chain := range chainIDs {
 		// Capture loop variables for the goroutine closure to avoid race conditions
+		_chain := chain
 
-		routes, err := getRoutes(chain, chainIDs, addrs.SolverNetInbox, addrs.SolverNetOutbox)
+		routes, err := getRoutes(_chain, chainIDs, addrs.SolverNetInbox, addrs.SolverNetOutbox)
 		if err != nil {
-			return errors.Wrap(err, "get routes", "chain", chain.Name)
+			return errors.Wrap(err, "get routes", "chain", _chain.Name)
 		}
 
-		backend, err := backends.Backend(chain.ID)
+		backend, err := backends.Backend(_chain.ID)
 		if err != nil {
-			return errors.Wrap(err, "get backend", "chain", chain.Name)
+			return errors.Wrap(err, "get backend", "chain", _chain.Name)
 		}
 
 		isDeployed, err := checkDeployed(ctx, backend, addrs.SolverNetInbox, addrs.SolverNetOutbox)
 		if !isDeployed || err != nil {
-			return errors.Wrap(err, "isDeployed", "chain", chain.Name)
+			return errors.Wrap(err, "isDeployed", "chain", _chain.Name)
 		}
 
 		txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network.ID, eoa.RoleManager))
 		if err != nil {
-			return errors.Wrap(err, "bind opts", "chain", chain.Name)
+			return errors.Wrap(err, "bind opts", "chain", _chain.Name)
 		}
 
 		eg.Go(func() error {
 			err := configureInbox(childCtx, backend, txOpts, addrs.SolverNetInbox, routes)
 			if err != nil {
-				return errors.Wrap(err, "configure inbox", "chain", chain.Name)
+				return errors.Wrap(err, "configure inbox", "chain", _chain.Name)
 			}
 
 			err = configureOutbox(childCtx, backend, txOpts, addrs.SolverNetOutbox, routes)
 			if err != nil {
-				return errors.Wrap(err, "configure outbox", "chain", chain.Name)
+				return errors.Wrap(err, "configure outbox", "chain", _chain.Name)
 			}
 
 			return nil
