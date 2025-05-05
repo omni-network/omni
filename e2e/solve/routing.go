@@ -39,7 +39,7 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 		// Capture loop variables for the goroutine closure to avoid race conditions
 		_chain := chain
 
-		routes, err := getRoutes(_chain, chainIDs, addrs.SolverNetInbox, addrs.SolverNetOutbox)
+		routes, err := getRoutes(_chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
 		if err != nil {
 			return errors.Wrap(err, "get routes", "chain", _chain.Name)
 		}
@@ -82,10 +82,16 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 }
 
 // getRoutes returns the remote chain IDs, outboxes, and inbox configs for a given chain.
-func getRoutes(src netconf.Chain, allChains []netconf.Chain, inbox common.Address, outbox common.Address) ([]Route, error) {
+func getRoutes(src netconf.Chain, network netconf.Network, inbox common.Address, outbox common.Address) ([]Route, error) {
 	var routes []Route
-	for _, dest := range allChains {
-		if src.ID == dest.ID {
+	for _, dest := range network.EVMChains() {
+		// Skip Hyperlane routes on Omni EVM.
+		if netconf.IsOmniExecution(network.ID, src.ID) && solvernet.IsHLChain(dest.ID) {
+			continue
+		}
+
+		// Skip non-Hyperlane routes on Hyperlane chains.
+		if solvernet.IsHLChain(src.ID) && !solvernet.IsHLChain(dest.ID) {
 			continue
 		}
 
