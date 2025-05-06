@@ -61,7 +61,7 @@ function Quote() {
     deposit: { amount: parseEther('0.1'), isNative: true },
     expense: { isNative: true },
     mode: 'expense',
-    enabled: !!account?.address,
+    enabled: true,
   })
 
   return (
@@ -75,11 +75,11 @@ function Quote() {
           <div>isError: {quote.isError}</div>
           <div>
             quote.deposit.amount:{' '}
-            {quote.isSuccess ? formatEther(quote?.deposit.amount) : ''}
+            {quote.isSuccess ? formatEther(quote.deposit.amount) : ''}
           </div>
           <div>
             quote.expense.amount:{' '}
-            {quote.isSuccess ? formatEther(quote?.expense.amount) : ''}
+            {quote.isSuccess ? formatEther(quote.expense.amount) : ''}
           </div>
         </>
       ) : (
