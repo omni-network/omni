@@ -11,6 +11,7 @@ import (
 	fbproxy "github.com/omni-network/omni/e2e/fbproxy/app"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -102,6 +103,45 @@ func setupChain(ctx context.Context, s shared, name string) (chain, error) {
 	}, nil
 }
 
+// setupChainHL returns chain specific resources for all chains (including Hyperlane chains).
+// starts an fbproxy for non-devnet chains.
+func setupChainHL(ctx context.Context, s shared, c netconf.Chain) (chain, error) {
+	evmchain, err := types.PublicChainByName(c.Name)
+	if err != nil {
+		return chain{}, errors.Wrap(err, "unknown chain", "chain_name", c.Name)
+	}
+
+	rpc, err := s.endpoints.ByNameOrID(c.Name, c.ID)
+	if err != nil {
+		return chain{}, errors.Wrap(err, "unknown chain", "chain_name", c.Name)
+	}
+
+	if s.fireAPIKey != "" || s.fireKeyPath != "" {
+		rpc, err = startFBProxy(ctx, s.testnet.Network, rpc, s.fireAPIKey, s.fireKeyPath)
+		if err != nil {
+			return chain{}, errors.Wrap(err, "start fb proxy")
+		}
+	}
+
+	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
+	if err != nil {
+		return chain{}, errors.Wrap(err, "get addresses")
+	}
+
+	if solvernet.IsHLOnly(c.ID) {
+		return chain{
+			EVMChain:    evmchain,
+			RPCEndpoint: rpc,
+		}, nil
+	}
+
+	return chain{
+		EVMChain:      evmchain,
+		PortalAddress: addrs.Portal,
+		RPCEndpoint:   rpc,
+	}, nil
+}
+
 type runOpts struct {
 	// exclude chains by name.
 	exclude []string
@@ -113,6 +153,19 @@ func withExclude(names ...string) runOpt {
 	return func(o *runOpts) {
 		o.exclude = append(o.exclude, names...)
 	}
+}
+
+// addHLEndpoints adds the Hyperlane endpoints to the shared resources.
+func (s shared) addHLEndpoints(ctx context.Context, def app.Definition) (shared, error) {
+	endpoints, err := app.AddSolverEndpoints(ctx, s.testnet.Network, s.endpoints, def.Cfg.RPCOverrides)
+	if err != nil {
+		return shared{}, errors.Wrap(err, "add solver endpoints")
+	}
+
+	newS := s
+	newS.endpoints = endpoints
+
+	return newS, nil
 }
 
 // run runs a function for all configured chains (all applicable, if not specified).
@@ -139,6 +192,34 @@ func (s shared) run(
 
 		if err := fn(ctx, s, c); err != nil {
 			return errors.Wrap(err, "chain", "chain", name)
+		}
+	}
+
+	return nil
+}
+
+// runHL runs a function for all configured chains (including Hyperlane chains).
+// NOTE: currently does not include options.
+func (s shared) runHL(ctx context.Context, def app.Definition, fn func(context.Context, shared, chain) error) error {
+	_s, err := s.addHLEndpoints(ctx, def)
+	if err != nil {
+		return errors.Wrap(err, "add hl endpoints")
+	}
+
+	network, err := app.HLNetworkFromDef(ctx, def)
+	if err != nil {
+		return errors.Wrap(err, "network from def")
+	}
+	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByEndpoints(_s.endpoints))
+
+	for _, _chain := range network.Chains {
+		c, err := setupChainHL(ctx, _s, _chain)
+		if err != nil {
+			return errors.Wrap(err, "setup chain hl", "chain", _chain.Name)
+		}
+
+		if err := fn(ctx, _s, c); err != nil {
+			return errors.Wrap(err, "chain", "chain", _chain.Name)
 		}
 	}
 

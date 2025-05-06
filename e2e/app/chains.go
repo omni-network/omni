@@ -75,9 +75,9 @@ func AddSolverNetworkAndBackends(ctx context.Context, network netconf.Network, e
 	return network, backends, nil
 }
 
-// networkFromDef returns the network configuration from the definition.
+// HLNetworkFromDef returns the network configuration from the definition.
 // Note that this does not panic as it does in definition.go by manually setting portal addresses without deploy height.
-func hlNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, error) {
+func HLNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, error) {
 	var chains []netconf.Chain
 
 	addrs, err := contracts.GetAddresses(ctx, def.Testnet.Network)
