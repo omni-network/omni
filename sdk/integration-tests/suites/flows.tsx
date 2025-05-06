@@ -179,7 +179,7 @@ describe.concurrent('ETH transfer orders', () => {
           address: account.address,
         })
 
-        const quote = await getQuote(quoteParams, 'devnet')
+        const quote = await getQuote({ ...quoteParams, environment: 'devnet' })
         expect(quote).toEqual({
           deposit: { token: zeroAddress, amount: parseEther('2') },
           expense: { token: zeroAddress, amount: expect.any(BigInt) },
@@ -221,7 +221,7 @@ describe.concurrent('ETH transfer orders', () => {
           address: account.address,
         })
 
-        const quote = await getQuote(quoteParams, 'devnet')
+        const quote = await getQuote({ ...quoteParams, environment: 'devnet' })
         expect(quote).toEqual({
           deposit: { token: zeroAddress, amount: parseEther('2') },
           expense: { token: zeroAddress, amount: expect.any(BigInt) },

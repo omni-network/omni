@@ -111,7 +111,9 @@ export async function executeTestOrderUsingCore(
 ) {
   const { order, rejectReason } = params
   if (rejectReason != null) {
-    await expect(validateOrder(order, 'devnet')).resolves.toMatchObject({
+    await expect(
+      validateOrder({ ...order, environment: 'devnet' }),
+    ).resolves.toMatchObject({
       rejected: true,
       rejectReason,
     })
