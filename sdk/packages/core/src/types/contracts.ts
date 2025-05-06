@@ -1,10 +1,9 @@
 import * as z from '@zod/mini'
-import { hexStringSchema } from '../internal/validation.js'
+import { addressSchema } from './primitives.js'
 
 export const omniContractsSchema = z.looseObject({
-  inbox: hexStringSchema,
-  outbox: hexStringSchema,
-  middleman: hexStringSchema,
+  inbox: addressSchema,
+  outbox: addressSchema,
+  middleman: addressSchema,
 })
-
 export type OmniContracts = z.infer<typeof omniContractsSchema>

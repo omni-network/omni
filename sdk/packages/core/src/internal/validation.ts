@@ -1,24 +1,23 @@
-import { type ZodMiniType, type core, regex, string } from '@zod/mini'
-import { Result } from 'typescript-result'
-import type { Hex } from 'viem'
+import type { ZodMiniType, core } from '@zod/mini'
+import { type AsyncResult, Result } from 'typescript-result'
 
 export type ValidationIssue = core.$ZodIssue
-export type ValidationSchema<T = unknown> = ZodMiniType<T, T>
+export type ValidationSchema<O = unknown, I = O> = ZodMiniType<O, I>
 
-export type ValidationErrorParams<T = unknown> = {
-  schema: ValidationSchema<T>
+export type ValidationErrorParams<O = unknown, I = O> = {
+  schema: ValidationSchema<O, I>
   input: unknown
   issues: ValidationIssue[]
   message?: string
 }
 
-export class ValidationError<T = unknown> extends Error {
+export class ValidationError<O = unknown, I = O> extends Error {
   readonly type = 'SchemaParseError'
-  readonly schema: ValidationSchema<T>
+  readonly schema: ValidationSchema<O, I>
   readonly input: unknown
   readonly issues: ValidationIssue[]
 
-  constructor(params: ValidationErrorParams<T>) {
+  constructor(params: ValidationErrorParams<O, I>) {
     super(params.message ?? 'Schema validation failed')
     this.schema = params.schema
     this.input = params.input
@@ -26,10 +25,10 @@ export class ValidationError<T = unknown> extends Error {
   }
 }
 
-export function safeValidate<T>(
-  schema: ValidationSchema<T>,
+export function safeValidate<O, I = O>(
+  schema: ValidationSchema<O, I>,
   input: unknown,
-): Result<T, ValidationError<T>> {
+): Result<O, ValidationError<O, I>> {
   const parsed = schema.safeParse(input)
   return parsed.success
     ? Result.ok(parsed.data)
@@ -38,6 +37,17 @@ export function safeValidate<T>(
       )
 }
 
-export const hexStringSchema = string().check(
-  regex(/0x[0-9A-Fa-f]{2,}/),
-) as ValidationSchema<Hex>
+export function safeValidateAsync<O, I = O>(
+  schema: ValidationSchema<O, I>,
+  input: unknown,
+): AsyncResult<O, ValidationError<O, I>> {
+  return Result.fromAsync(Promise.resolve(input))
+    .map(schema.safeParseAsync)
+    .map((parsed) => {
+      return parsed.success
+        ? Result.ok(parsed.data)
+        : Result.error(
+            new ValidationError({ schema, input, issues: parsed.error.issues }),
+          )
+    })
+}

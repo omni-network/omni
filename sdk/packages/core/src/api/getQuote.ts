@@ -1,59 +1,10 @@
-import { type Address, type Hex, fromHex, zeroAddress } from 'viem'
-import { safeFetchJSON } from '../internal/api.js'
+import * as z from '@zod/mini'
+import { zeroAddress } from 'viem'
+import { createSafeFetchRequest } from '../internal/api.js'
 import type { Environment } from '../types/config.js'
-import type { Quote, Quoteable } from '../types/quote.js'
-import { getApiUrl } from '../utils/getApiUrl.js'
+import { addressSchema } from '../types/primitives.js'
+import { type Quote, type Quoteable, quoteableSchema } from '../types/quote.js'
 import { toJSON } from '../utils/toJSON.js'
-
-export type GetQuoteParams = {
-  srcChainId?: number
-  destChainId: number
-  mode: 'expense' | 'deposit'
-  deposit: Quoteable
-  expense: Quoteable
-}
-
-// the response from /quote endpoint (amounts are hex encoded bigints)
-type QuoteResponse = {
-  deposit: { token: Address; amount: Hex }
-  expense: { token: Address; amount: Hex }
-}
-
-// getQuote calls the /quote endpoint
-export async function getQuote(
-  quote: GetQuoteParams,
-  envOrApiBaseUrl?: Environment | string,
-): Promise<Quote> {
-  const {
-    srcChainId,
-    destChainId,
-    deposit: depositInput,
-    expense: expenseInput,
-    mode,
-  } = quote
-  const apiUrl = getApiUrl(envOrApiBaseUrl)
-  const json = await safeFetchJSON(`${apiUrl}/quote`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: toJSON({
-      sourceChainId: srcChainId,
-      destChainId: destChainId,
-      deposit: toQuoteUnit(depositInput, mode === 'deposit'),
-      expense: toQuoteUnit(expenseInput, mode === 'expense'),
-    }),
-  }).getOrThrow()
-
-  if (!isQuoteRes(json)) {
-    throw new Error(`Unexpected quote response: ${JSON.stringify(json)}`)
-  }
-
-  const { deposit, expense } = json
-
-  return {
-    deposit: { ...deposit, amount: fromHex(deposit.amount, 'bigint') },
-    expense: { ...expense, amount: fromHex(expense.amount, 'bigint') },
-  } satisfies Quote
-}
 
 // trim params to create obj expected by /quote endpoint
 export const toQuoteUnit = (q: Quoteable, omitAmount: boolean) => ({
@@ -61,17 +12,51 @@ export const toQuoteUnit = (q: Quoteable, omitAmount: boolean) => ({
   token: q.isNative ? zeroAddress : q.token,
 })
 
-// asserts a json response is QuoteResponse
-function isQuoteRes(json: unknown): json is QuoteResponse {
-  // TODO: schema validation
-  const quote = json as QuoteResponse
-  return (
-    json != null &&
-    quote.deposit != null &&
-    quote.expense != null &&
-    typeof quote.deposit.token === 'string' &&
-    typeof quote.deposit.amount === 'string' &&
-    typeof quote.expense.token === 'string' &&
-    typeof quote.expense.amount === 'string'
-  )
+export const quoteParametersSchema = z.pipe(
+  z.object({
+    srcChainId: z.optional(z.number()),
+    destChainId: z.number(),
+    mode: z.enum(['expense', 'deposit']),
+    deposit: quoteableSchema,
+    expense: quoteableSchema,
+  }),
+  z.transform((params) => {
+    const {
+      srcChainId,
+      destChainId,
+      deposit: depositInput,
+      expense: expenseInput,
+      mode,
+    } = params
+    return toJSON({
+      sourceChainId: srcChainId,
+      destChainId: destChainId,
+      deposit: toQuoteUnit(depositInput, mode === 'deposit'),
+      expense: toQuoteUnit(expenseInput, mode === 'expense'),
+    })
+  }),
+)
+export type GetQuoteParams = z.input<typeof quoteParametersSchema>
+
+const quoteResponseEntrySchema = z.object({
+  token: addressSchema,
+  amount: z.coerce.bigint(), // string-encoded number we parse to bigint
+})
+export const quoteResponseSchema = z.object({
+  deposit: quoteResponseEntrySchema,
+  expense: quoteResponseEntrySchema,
+})
+
+export const safeFetchQuote = createSafeFetchRequest(
+  '/quote',
+  quoteParametersSchema,
+  quoteResponseSchema,
+)
+
+// getQuote calls the /quote endpoint
+export async function getQuote(
+  quote: GetQuoteParams,
+  environment?: Environment | string,
+): Promise<Quote> {
+  return await safeFetchQuote({ input: quote, environment }).getOrThrow()
 }

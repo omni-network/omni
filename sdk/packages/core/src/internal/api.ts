@@ -1,10 +1,13 @@
 import * as z from '@zod/mini'
 import { type AsyncResult, Result } from 'typescript-result'
+import type { Environment } from '../types/config.js'
+import { getApiUrl } from '../utils/getApiUrl.js'
 import { version } from '../version.js'
 import {
   type ValidationError,
   type ValidationSchema,
   safeValidate,
+  safeValidateAsync,
 } from './validation.js'
 
 // TODO: remove these types, only kept there while they are used by the React package
@@ -99,15 +102,83 @@ export function safeFetchJSON<Value = Record<string, unknown>>(
     })
 }
 
-export type SafeFetchTypeError<T> = SafeFetchError | ValidationError<T>
+export type SafeFetchResponseError<O, I = O> =
+  | SafeFetchError
+  | ValidationError<O, I>
 
-export type SafeFetchTypeResult<T> = AsyncResult<T, SafeFetchTypeError<T>>
+export type SafeFetchResponse<O, I = O> = AsyncResult<
+  O,
+  SafeFetchResponseError<O, I>
+>
 
-export function createSafeFetchType<T>(schema: ValidationSchema<T>) {
-  return function safeFetchType(
-    url: string,
-    init?: RequestInit,
-  ): AsyncResult<T, SafeFetchTypeError<T>> {
-    return safeFetchJSON(url, init).map((data) => safeValidate(schema, data))
+export type SafeFetchParameters = {
+  environment?: Environment | string
+  request?: RequestInit
+}
+
+export function createSafeFetchResponse<O, I = O>(
+  endpoint: string,
+  responseSchema: ValidationSchema<O, I>,
+) {
+  return function safeFetchResponse(
+    params: SafeFetchParameters,
+  ): SafeFetchResponse<O, I> {
+    const url = getApiUrl(params.environment) + endpoint
+    return safeFetchJSON(url, params.request).map((data) => {
+      return safeValidate(responseSchema, data)
+    })
+  }
+}
+
+export type SafeFetchRequestError<
+  RequestInput,
+  ResponseOutput,
+  ResponseInput = ResponseOutput,
+> =
+  | ValidationError<string, RequestInput>
+  | SafeFetchResponseError<ResponseOutput, ResponseInput>
+
+export type SafeFetchRequest<
+  RequestInput,
+  ResponseOutput,
+  ResponseInput = ResponseOutput,
+> = AsyncResult<
+  ResponseOutput,
+  SafeFetchRequestError<RequestInput, ResponseOutput, ResponseInput>
+>
+
+export type SafeFetchRequestParameters<I> = SafeFetchParameters & { input: I }
+
+export function encodeRequest<I>(
+  schema: ValidationSchema<string, I>,
+  params: SafeFetchRequestParameters<I>,
+): AsyncResult<RequestInit, ValidationError<string, I>> {
+  return safeValidateAsync(schema, params.input).map((body) => {
+    return {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      ...params.request,
+      body,
+    }
+  })
+}
+
+export function createSafeFetchRequest<
+  RequestInput,
+  ResponseOutput,
+  ResponseInput = ResponseOutput,
+>(
+  endpoint: string,
+  requestSchema: ValidationSchema<string, RequestInput>,
+  responseSchema: ValidationSchema<ResponseOutput, ResponseInput>,
+) {
+  const fetchResponse = createSafeFetchResponse(endpoint, responseSchema)
+
+  return function safeFetchRequest(
+    params: SafeFetchRequestParameters<RequestInput>,
+  ): SafeFetchRequest<RequestInput, ResponseOutput, ResponseInput> {
+    return encodeRequest(requestSchema, params).map((request) => {
+      return fetchResponse({ request })
+    })
   }
 }

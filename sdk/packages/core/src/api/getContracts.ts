@@ -1,22 +1,18 @@
-import {
-  type SafeFetchTypeResult,
-  createSafeFetchType,
-} from '../internal/api.js'
+import { createSafeFetchResponse } from '../internal/api.js'
 import type { Environment } from '../types/config.js'
 import { type OmniContracts, omniContractsSchema } from '../types/contracts.js'
-import { getApiUrl } from '../utils/getApiUrl.js'
 
-export const safeFetchContracts = createSafeFetchType(omniContractsSchema)
+export const safeFetchContracts = createSafeFetchResponse(
+  '/contracts',
+  omniContractsSchema,
+)
 
-export function safeGetContracts(
-  envOrApiBaseUrl?: Environment | string,
-): SafeFetchTypeResult<OmniContracts> {
-  const apiUrl = getApiUrl(envOrApiBaseUrl)
-  return safeFetchContracts(`${apiUrl}/contracts`)
+export type GetContractsParameters = {
+  environment?: Environment | string
 }
 
 export async function getContracts(
-  envOrApiBaseUrl?: Environment | string,
+  params: GetContractsParameters,
 ): Promise<OmniContracts> {
-  return await safeGetContracts(envOrApiBaseUrl).getOrThrow()
+  return await safeFetchContracts(params).getOrThrow()
 }
