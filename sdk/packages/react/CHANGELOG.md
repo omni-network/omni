@@ -1,5 +1,9 @@
 # @omni-network/react
 
+## 0.1.1
+
+- Add `watchDidFill` hook - used to watch for order fill on destination chain, and retrieve the destination tx hash.
+
 ## 0.1.0
 
 ### Breaking changes
