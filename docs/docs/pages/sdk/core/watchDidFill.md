@@ -25,12 +25,11 @@ const { unwatch, status, destTxHash } = await watchDidFill({
 | `pollingInterval` | `number`                               | No       | Polling interval in milliseconds, defaults to the `client` polling interval.  |
 | `onError`         | `(error: Error) => void`               | No       | Optional callback that'll be invoked when an error occurs. |
 
-
 ## Return
 
 `watchDidFill` returns three values:
 
-### `Status`
+### `status`
 
 Describes the state of the watch API.
 
