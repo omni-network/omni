@@ -62,25 +62,25 @@ vi.mock('wagmi/actions', async () => {
 
 vi.mock('./useValidateOrder.js', async () => {
   return {
-    useValidateOrder: useValidateOrder,
+    useValidateOrder,
   }
 })
 
 vi.mock('./useOmniContracts.js', async () => {
   return {
-    useOmniContracts: useOmniContracts,
+    useOmniContracts,
   }
 })
 
 vi.mock('./useGetOrderStatus.js', async () => {
   return {
-    useGetOrderStatus: useGetOrderStatus,
+    useGetOrderStatus,
   }
 })
 
 vi.mock('./useParseOpenEvent.js', async () => {
   return {
-    useParseOpenEvent: useParseOpenEvent,
+    useParseOpenEvent,
   }
 })
 
