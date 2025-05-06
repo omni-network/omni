@@ -19,3 +19,9 @@ Run the tests from this directory
 ```bash
 pnpm run test:integration
 ```
+
+To run a specific test you can supply the test file and line number
+
+```bash
+pnpm run test suites/react-hooks.tsx:123
+```
