@@ -126,7 +126,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
-	if err := rebalance.Start(ctx, network, newCCTPClient(network.ID), backends, solverAddr, cfg.DBDir); err != nil {
+	if err := rebalance.Start(ctx, network, newCCTPClient(network.ID), pricer, backends, solverAddr, cfg.DBDir); err != nil {
 		log.Warn(ctx, "Failed to start rebalancing [BUG]", err)
 	}
 
@@ -277,7 +277,7 @@ func startProcessingEvents(
 	targetName := func(pendingData PendingData) string {
 		fill, err := pendingData.ParsedFillOriginData()
 		if err != nil {
-			return "unknown"
+			return "invalid"
 		}
 
 		// use last call target for target name
@@ -297,7 +297,7 @@ func startProcessingEvents(
 			return target.Name
 		}
 
-		return call.Target.Hex()[:7] // Short hex.
+		return "unknown"
 	}
 
 	debugFunc := func(ctx context.Context, order Order, elog types.Log) {
@@ -328,7 +328,7 @@ func startProcessingEvents(
 			DidFill:           newDidFiller(outboxContracts),
 			Reject:            newRejector(inboxContracts, backends, solverAddr, updatePnL),
 			Fill:              newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
-			Claim:             newClaimer(network.ID, inboxContracts, backends, solverAddr, updatePnL),
+			Claim:             newClaimer(inboxContracts, backends, solverAddr, updatePnL),
 			SetCursor:         cursorSetter,
 			ChainName:         network.ChainName,
 			ProcessorName:     network.ChainVersionName(chainVer),

@@ -27,8 +27,8 @@ function Component() {
 | ------------------- | ------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `srcChainId`        | `number`                             | Yes      | The chain ID of the source chain. Must match `useQuote`.                                                                          |
 | `destChainId`       | `number`                             | Yes      | The chain ID of the destination chain. Must match `useQuote`.                                                                     |
-| `deposit`           | `Deposit`                         | Yes      | Describes the asset and amount being deposited on the source chain (paid by the user) - taken from `quote.data.deposit`. |
-| `expense`           | `Expense`  | Yes      | Describes the asset, amount, and spender on the destination chain (paid by the solver) - taken from `quote.data.expense`.            |
+| `deposit`           | `Deposit`                         | Yes      | Describes the asset and amount being deposited on the source chain (paid by the user) - taken from `quote.deposit`. |
+| `expense`           | `Expense`  | Yes      | Describes the asset, amount, and spender on the destination chain (paid by the solver) - taken from `quote.expense`.            |
 | `calls`             | `Call[]`                             | Yes      | An array of contract calls to be executed on the destination chain by the solver.                                                     |
 | `validateEnabled`   | `boolean`                            | No       | Defaults to `true`. Enables pre-validation of the order with Omni. Use this to validate your calls. Recommended to set based on `quote.isSuccess`.                    |
 
@@ -152,9 +152,9 @@ function InitiateAction() {
   const order = useOrder({
     srcChainId: /* ... */,
     destChainId: /* ... */,
-    deposit: quote.data?.deposit, // Use quoted deposit
+    deposit: quote?.deposit, // Use quoted deposit
     expense: {
-        ...quote.data?.expense, // Use quoted expense
+        ...quote?.expense, // Use quoted expense
         spender: /* Address needing approval on dest chain */
     },
     calls: [ /* ... contract call(s) on dest chain ... */ ],
@@ -216,8 +216,8 @@ function DepositComponent() {
     })
 
     // Get quoted amounts, defaulting to 0 if quote is not ready
-    const depositAmt = quote.data?.deposit.amount ?? 0n
-    const expenseAmt = quote.data?.expense.amount ?? 0n
+    const depositAmt = quote?.deposit.amount ?? 0n
+    const expenseAmt = quote?.expense.amount ?? 0n
 
     // 2. Configure the order
     const order = useOrder({

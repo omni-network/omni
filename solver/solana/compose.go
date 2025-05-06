@@ -173,6 +173,7 @@ func Deploy(ctx context.Context, cl *rpc.Client, composeDir string, program Prog
 
 	return tx, nil
 }
+
 func SendSimple(ctx context.Context, cl *rpc.Client, privkey solana.PrivateKey, instrs ...solana.Instruction) (solana.Signature, error) {
 	recent, err := cl.GetLatestBlockhash(ctx, rpc.CommitmentConfirmed)
 	if err != nil {
@@ -322,15 +323,18 @@ func getAvailablePort() (string, error) {
 	return port, nil
 }
 
-func WrapRPCError(err error) error {
+func WrapRPCError(err error, endpoint string, attrs ...any) error {
 	if err == nil {
 		return nil
 	}
 
+	attrs = append(attrs, "endpoint", endpoint)
+
 	rpcErr := new(jsonrpc.RPCError)
 	if errors.As(err, &rpcErr) {
-		return errors.New("solana rpc error", "code", rpcErr.Code, "message", rpcErr.Message, "data", fmt.Sprintf("%+v", rpcErr.Data))
+		attrs = append(attrs, "code", rpcErr.Code, "message", rpcErr.Message, "data", fmt.Sprintf("%+v", rpcErr.Data))
+		return errors.New("solana rpc error", attrs...)
 	}
 
-	return errors.Wrap(err, "solana rpc error")
+	return errors.Wrap(err, "solana rpc error", attrs...)
 }

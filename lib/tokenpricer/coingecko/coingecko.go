@@ -3,14 +3,21 @@ package coingecko
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tracer"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -47,17 +54,31 @@ func (c Client) Price(ctx context.Context, base, quote tokens.Asset) (*big.Rat, 
 	// Coingecko only supports a limited amount of "quote currencies",
 	// So convert to USD first, then to the quote currency.
 
-	m, err := c.getPrice(ctx, currencyUSD, base)
-	if err != nil {
-		return nil, errors.Wrap(err, "get price")
-	}
-	basePrice := m[base]
+	var basePrice, quotePrice *big.Rat
 
-	m, err = c.getPrice(ctx, currencyUSD, quote)
-	if err != nil {
+	eg, ctx := errgroup.WithContext(ctx)
+	eg.Go(func() error {
+		m, err := c.getPrice(ctx, currencyUSD, base)
+		if err != nil {
+			return errors.Wrap(err, "get price")
+		}
+		basePrice = m[base]
+
+		return nil
+	})
+	eg.Go(func() error {
+		m, err := c.getPrice(ctx, currencyUSD, quote)
+		if err != nil {
+			return errors.Wrap(err, "get price")
+		}
+		quotePrice = m[quote]
+
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
 		return nil, errors.Wrap(err, "get price")
 	}
-	quotePrice := m[quote]
 
 	return new(big.Rat).Quo(basePrice, quotePrice), nil
 }
@@ -109,6 +130,12 @@ type simplePriceResponse map[string]map[string]json.Number
 // GetPrice returns the price of each asset in the given currency.
 // See supported currencies: https://api.coingecko.com/api/v3/simple/supported_vs_currencies
 func (c Client) getPrice(ctx context.Context, currency string, assets ...tokens.Asset) (map[tokens.Asset]*big.Rat, error) {
+	ctx, span := tracer.Start(ctx, "coingecko/price", trace.WithAttributes(
+		attribute.String("currency", currency),
+		attribute.String("assets", fmt.Sprint(assets)),
+	))
+	defer span.End()
+
 	ids := make([]string, len(assets))
 	for i, t := range assets {
 		ids[i] = t.CoingeckoID
@@ -154,6 +181,10 @@ func (c Client) getPrice(ctx context.Context, currency string, assets ...tokens.
 
 // doReq makes a GET request to the given path & params, and decodes the response into response.
 func (c Client) doReq(ctx context.Context, path string, params url.Values, response any) error {
+	defer func(t0 time.Time) {
+		latency.WithLabelValues(path).Observe(time.Since(t0).Seconds())
+	}(time.Now())
+
 	uri, err := c.uri(path, params)
 	if err != nil {
 		return err

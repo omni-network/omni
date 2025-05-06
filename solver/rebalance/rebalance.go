@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/uniswap"
 
@@ -33,6 +34,7 @@ func rebalanceForever(
 	interval time.Duration,
 	db *cctpdb.DB,
 	network netconf.Network,
+	pricer tokenpricer.Pricer,
 	backends ethbackend.Backends,
 	solver common.Address,
 ) {
@@ -41,7 +43,7 @@ func rebalanceForever(
 
 		go swapSurplusForever(ctx, interval, backends, solver, chain.ID)
 		go sendSurplusForever(ctx, interval, db, network, backends, solver, chain.ID)
-		go fillDeficitForever(ctx, interval, db, network, backends, solver, chain.ID)
+		go fillDeficitForever(ctx, interval, db, network, pricer, backends, solver, chain.ID)
 	}
 }
 
@@ -115,6 +117,7 @@ func fillDeficitForever(
 	interval time.Duration,
 	db *cctpdb.DB,
 	network netconf.Network,
+	pricer tokenpricer.Pricer,
 	backends ethbackend.Backends,
 	solver common.Address,
 	chainID uint64,
@@ -132,7 +135,7 @@ func fillDeficitForever(
 			ticker.Reset(interval)
 
 			do := func() error {
-				return fillDeficitOnce(ctx, db, network.ID, backends, chainID, solver)
+				return fillDeficitOnce(ctx, db, network.ID, pricer, backends, chainID, solver)
 			}
 
 			if err := expbackoff.Retry(ctx, do); err != nil {
@@ -207,27 +210,36 @@ func swapSurplusOnce(
 	chainID uint64,
 	solver common.Address,
 ) error {
-	if chainID != evmchain.IDBase {
-		// Only swapping surplus wstETH on Base.
-		return nil
-	}
-
 	backend, err := backends.Backend(chainID)
 	if err != nil {
 		return errors.Wrap(err, "get backend")
 	}
 
-	wsteth, ok := tokens.ByAsset(chainID, tokens.WSTETH)
-	if !ok {
-		return errors.New("token not found")
+	for _, token := range TokensByChain(chainID) {
+		if token.Is(tokens.USDC) { // Already USDC, skip.
+			continue
+		}
+
+		if err := swapTokenSurplusOnce(ctx, backend, token, solver); err != nil {
+			return errors.Wrap(err, "swap surplus", "token", token)
+		}
 	}
 
-	surplus, err := GetSurplus(ctx, backend, wsteth, solver)
+	return nil
+}
+
+// swapTokenSurplusOnce swaps any surplus of `token` to USDC.
+func swapTokenSurplusOnce(
+	ctx context.Context,
+	backend *ethbackend.Backend,
+	token tokens.Token,
+	solver common.Address,
+) error {
+	surplus, err := GetSurplus(ctx, backend, token, solver)
 	if err != nil {
 		return errors.Wrap(err, "get surplus")
 	}
 
-	token := wsteth // only wstETH, for now
 	maxSwap := GetFundThreshold(token).MaxSwap()
 	minSwap := GetFundThreshold(token).MinSwap()
 
@@ -242,7 +254,7 @@ func swapSurplusOnce(
 	}
 
 	toSwap := surplus
-	if ok && bi.GT(toSwap, maxSwap) { // Cap swap to maxSwap.
+	if bi.GT(toSwap, maxSwap) { // Cap swap to maxSwap.
 		log.Debug(ctx, "Surplus > maxSwap, capping swap", "amount", token.FormatAmt(toSwap), "max", token.FormatAmt(maxSwap))
 		toSwap = maxSwap
 	}
@@ -263,22 +275,51 @@ func fillDeficitOnce(
 	ctx context.Context,
 	db *cctpdb.DB,
 	networkID netconf.ID,
+	pricer tokenpricer.Pricer,
 	backends ethbackend.Backends,
 	chainID uint64,
 	solver common.Address,
 ) error {
-	if chainID != evmchain.IDEthereum {
-		// Only filling deficit wstETH on Ethereum.
-		return nil
-	}
-
 	// will be used when calculating deficits
 	_ = db
 	_ = networkID
 
-	wsteth, ok := tokens.ByAsset(chainID, tokens.WSTETH)
-	if !ok {
-		return errors.New("token not found")
+	backend, err := backends.Backend(chainID)
+	if err != nil {
+		return errors.Wrap(err, "get backend")
+	}
+
+	for _, token := range TokensByChain(chainID) {
+		if token.Is(tokens.USDC) { // Already USDC, skip.
+			continue
+		}
+
+		if err := fillTokenDeficitOnce(ctx, pricer, backend, token, solver); err != nil {
+			return errors.Wrap(err, "fill deficit", "token", token)
+		}
+	}
+
+	return nil
+}
+
+// fillTokenDeficitOnce fills any deficit of `token` from surplus USDC.
+func fillTokenDeficitOnce(
+	ctx context.Context,
+	pricer tokenpricer.Pricer,
+	backend *ethbackend.Backend,
+	token tokens.Token,
+	solver common.Address,
+) error {
+	chainID := token.ChainID
+
+	deficit, err := GetDeficit(ctx, backend, token, solver)
+	if err != nil {
+		return errors.Wrap(err, "get deficit")
+	}
+
+	if bi.IsZero(deficit) { // No deficit, nothing to fill.
+		log.Debug(ctx, "No deficit", "amount", token.FormatAmt(deficit))
+		return nil
 	}
 
 	usdc, ok := tokens.ByAsset(chainID, tokens.USDC)
@@ -286,35 +327,25 @@ func fillDeficitOnce(
 		return errors.New("token not found")
 	}
 
-	backend, err := backends.Backend(chainID)
-	if err != nil {
-		return errors.Wrap(err, "get backend")
-	}
-
 	surplusUSDC, err := GetSurplus(ctx, backend, usdc, solver)
 	if err != nil {
 		return errors.Wrap(err, "get surplus")
 	}
 
-	if bi.IsZero(surplusUSDC) { // No surplus, nothing to fill deficit.
-		log.Debug(ctx, "No surplus", "amount", usdc.FormatAmt(surplusUSDC))
-		return nil
-	}
-
-	deficit, err := GetDeficit(ctx, backend, wsteth, solver)
+	price, err := pricer.USDPrice(ctx, token.Asset)
 	if err != nil {
-		return errors.Wrap(err, "get deficit")
+		return errors.Wrap(err, "get price")
 	}
 
-	if bi.IsZero(deficit) { // No deficit, nothing to fill.
-		log.Debug(ctx, "No deficit", "amount", wsteth.FormatAmt(deficit))
-		return nil
+	// Use USD deficit to inform swap input.
+	deficitUSD := bi.MulF64(deficit, price)
+
+	toSwap := deficitUSD
+	if bi.GT(toSwap, surplusUSDC) { // Deficit > surplus, cap swap to surplus.
+		log.Debug(ctx, "Deficit > surplus, capping swap", "deficit", usdc.FormatAmt(deficitUSD), "surplus", usdc.FormatAmt(surplusUSDC))
+		toSwap = surplusUSDC
 	}
 
-	// Swap all surplus USDC < maxSwap to wstETH.
-	// TODO: only swap enough to fill deficit.
-
-	toSwap := surplusUSDC
 	minSwap := GetFundThreshold(usdc).MinSwap()
 	maxSwap := GetFundThreshold(usdc).MaxSwap()
 
@@ -333,9 +364,9 @@ func fillDeficitOnce(
 		toSwap = maxSwap
 	}
 
-	log.Debug(ctx, "Filling deficit", "deficit", wsteth.FormatAmt(deficit), "usdc", usdc.FormatAmt(toSwap))
+	log.Debug(ctx, "Filling deficit", "deficit", token.FormatAmt(deficit), "usdc", usdc.FormatAmt(toSwap))
 
-	if _, err = uniswap.SwapFromUSDC(ctx, backend, solver, wsteth, toSwap); err != nil {
+	if _, err = uniswap.SwapFromUSDC(ctx, backend, solver, token, toSwap); err != nil {
 		return errors.Wrap(err, "swap from usdc")
 	}
 

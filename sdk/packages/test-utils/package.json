@@ -4,7 +4,7 @@
   "description": "Shared test utilities for SDK packages",
   "version": "0.0.0",
   "type": "module",
-  "packageManager": "pnpm@9.1.0",
+  "packageManager": "pnpm@9.12.1",
   "sideEffects": false,
   "main": "./dist/esm/index.js",
   "module": "./dist/esm/index.js",

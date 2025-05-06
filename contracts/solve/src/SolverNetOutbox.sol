@@ -109,8 +109,9 @@ contract SolverNetOutbox is
      */
     function fillFee(bytes calldata originData) public view returns (uint256) {
         SolverNet.FillOriginData memory fillData = abi.decode(originData, (SolverNet.FillOriginData));
-        InboxConfig memory inboxConfig = _inboxes[fillData.srcChainId];
+        if (fillData.srcChainId == block.chainid) return 0;
 
+        InboxConfig memory inboxConfig = _inboxes[fillData.srcChainId];
         if (inboxConfig.provider == Provider.OmniCore) {
             return feeFor(fillData.srcChainId, MARK_FILLED_STUB_CDATA, uint64(_fillGasLimit(fillData)));
         } else if (inboxConfig.provider == Provider.Hyperlane) {
@@ -270,8 +271,9 @@ contract SolverNetOutbox is
         InboxConfig memory inboxConfig = _inboxes[fillData.srcChainId];
         uint256 fee;
 
-        if (inboxConfig.provider == Provider.OmniCore) {
-            // mark filled on inbox
+        if (fillData.srcChainId == block.chainid) {
+            ISolverNetInbox(inboxConfig.inbox).markFilled(orderId, fillHash, claimant);
+        } else if (inboxConfig.provider == Provider.OmniCore) {
             fee = xcall({
                 destChainId: fillData.srcChainId,
                 conf: ConfLevel.Finalized,

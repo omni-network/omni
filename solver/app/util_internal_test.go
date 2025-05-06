@@ -63,12 +63,6 @@ func TestManualClaim(t *testing.T) {
 				continue
 			}
 
-			claimant, ok, err := getClaimant(claimNetwork, order)
-			require.NoError(t, err)
-			if !ok {
-				claimant = solverAddr
-			}
-
 			// When required, download the solver private key and add to backends.
 			once.Do(func() {
 				t.Log("Downloading solver private key")
@@ -81,7 +75,7 @@ func TestManualClaim(t *testing.T) {
 			txOpts, err := conn.BindOpts(ctx, chainID, solverAddr)
 			require.NoError(t, err)
 
-			tx, err := inbox.Claim(txOpts, order.ID, claimant)
+			tx, err := inbox.Claim(txOpts, order.ID, solverAddr)
 			require.NoError(t, err)
 
 			rec, err := conn.WaitMined(ctx, chainID, tx)

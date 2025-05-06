@@ -52,19 +52,6 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 
 			go monitorSponsorForever(ctx, sponsor, chain.Name, rpcClients[chain.ID])
 		}
-
-		// Also monitor solvernet claimant balances
-		// These claimants should maybe be added as proper roles and added to isSolverNetRole
-		for _, token := range tokens.UniqueAssets() {
-			claimantAddress, ok := solver.Claimant(network.ID, token)
-			if !ok {
-				continue
-			}
-
-			claimantRole := eoa.Role("claimant")
-			solverCtx := log.WithCtx(ctx, "chain", chain.Name, "role", claimantRole)
-			go monitorSolverNetRoleForever(solverCtx, network.ID, backend, claimantRole, claimantAddress)
-		}
 	}
 
 	return nil
