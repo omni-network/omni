@@ -1,6 +1,6 @@
 import { encodeFunctionData, zeroAddress } from 'viem'
 import { ValidateOrderError } from '../errors/base.js'
-import { fetchJSON } from '../internal/api.js'
+import { safeFetchJSON } from '../internal/api.js'
 import type { OptionalAbis } from '../types/abi.js'
 import type { Environment } from '../types/config.js'
 import { type Order, isContractCall } from '../types/order.js'
@@ -24,11 +24,11 @@ export async function validateOrder<abis extends OptionalAbis>(
   envOrApiBaseUrl?: Environment | string,
 ) {
   const apiUrl = getApiUrl(envOrApiBaseUrl)
-  const json = await fetchJSON(`${apiUrl}/check`, {
+  const json = await safeFetchJSON(`${apiUrl}/check`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: serialize(order),
-  })
+  }).getOrThrow()
 
   if (!isValidateRes(json)) {
     throw new Error(`Unexpected validation response: ${JSON.stringify(json)}`)

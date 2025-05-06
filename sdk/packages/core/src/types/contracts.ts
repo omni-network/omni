@@ -1,7 +1,9 @@
-import type { Address } from 'viem'
+import * as z from '@zod/mini'
+import { addressSchema } from './primitives.js'
 
-export type OmniContracts = {
-  inbox: Address
-  outbox: Address
-  middleman: Address
-}
+export const omniContractsSchema = z.looseObject({
+  inbox: addressSchema,
+  outbox: addressSchema,
+  middleman: addressSchema,
+})
+export type OmniContracts = z.infer<typeof omniContractsSchema>

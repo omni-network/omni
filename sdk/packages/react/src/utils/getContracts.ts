@@ -10,6 +10,6 @@ export function getOmniContractsQueryOptions(
 ): FetchQueryOptions<OmniContracts> {
   return {
     queryKey: ['contracts', config.env],
-    queryFn: () => getContracts(config.apiBaseUrl),
+    queryFn: () => getContracts({ environment: config.apiBaseUrl }),
   }
 }

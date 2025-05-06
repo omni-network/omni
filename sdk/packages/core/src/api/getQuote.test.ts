@@ -1,22 +1,36 @@
 import { testQuote } from '@omni-network/test-utils'
+import { type AsyncResult, Result } from 'typescript-result'
 import { zeroAddress } from 'viem'
 import { beforeEach, expect, test, vi } from 'vitest'
-import * as api from '../internal/api.js'
+import { ValidationError, safeValidateAsync } from '../internal/validation.js'
 import type { Quoteable } from '../types/quote.js'
-import { type GetQuoteParams, getQuote } from './getQuote.js'
+import { type GetQuoteParams, quoteResponseSchema } from './getQuote.js'
+
+const { createSafeFetchRequest } = vi.hoisted(() => ({
+  createSafeFetchRequest: vi.fn(),
+}))
+vi.mock('../internal/api.js', () => {
+  return { createSafeFetchRequest }
+})
 
 const token = '0x123'
 const deposit = { token, isNative: false } satisfies Quoteable
 const nativeExpense = { isNative: true } satisfies Quoteable
 
+function asyncResult<T>(data: T): AsyncResult<T, never> {
+  return Result.fromAsync(Promise.resolve(Result.ok(data)))
+}
+
 // Server response matching the testQuote object with string amounts
-const testQuoteResponse = {
+const testQuoteResponse = quoteResponseSchema.parse({
   deposit: { token: zeroAddress, amount: '100' },
   expense: { token: zeroAddress, amount: '99' },
-} as const
+} as const)
 
 beforeEach(() => {
-  vi.spyOn(api, 'fetchJSON').mockResolvedValue(testQuoteResponse)
+  createSafeFetchRequest.mockReturnValue(() => asyncResult(testQuoteResponse))
+  // ensures import("./getQuote.js") gets re-evaluated with the wanted mock
+  vi.resetModules()
 })
 
 const params: GetQuoteParams = {
@@ -28,10 +42,13 @@ const params: GetQuoteParams = {
 }
 
 test('default: fetches a quote', async () => {
+  const { getQuote } = await import('./getQuote.js')
   await expect(getQuote(params)).resolves.toEqual(testQuote)
 })
 
 test('parameters: expense', async () => {
+  const { getQuote } = await import('./getQuote.js')
+
   await expect(
     getQuote({
       ...params,
@@ -48,6 +65,8 @@ test('parameters: expense', async () => {
 })
 
 test('parameters: deposit', async () => {
+  const { getQuote } = await import('./getQuote.js')
+
   await expect(
     getQuote({
       ...params,
@@ -64,6 +83,8 @@ test('parameters: deposit', async () => {
 })
 
 test('parameters: mode', async () => {
+  const { getQuote } = await import('./getQuote.js')
+
   await expect(
     getQuote({
       ...params,
@@ -92,14 +113,16 @@ test.each([
   { deposit: { token }, expense: { token } },
   { deposit: { amount: '100' }, expense: { amount: '99' } },
 ])('behaviour: throws if response is not a quote: %s', async (mockReturn) => {
-  vi.spyOn(api, 'fetchJSON').mockResolvedValue(mockReturn)
+  createSafeFetchRequest.mockReturnValue(() => {
+    return safeValidateAsync(quoteResponseSchema, mockReturn)
+  })
 
   const expectRejection = expect(async () => {
+    const { getQuote } = await import('./getQuote.js')
     await getQuote(params)
   }).rejects
-  await expectRejection.toBeInstanceOf(Error)
-  await expectRejection.toHaveProperty(
-    'message',
-    `Unexpected quote response: ${JSON.stringify(mockReturn)}`,
-  )
+  await expectRejection.toBeInstanceOf(ValidationError)
+  await expectRejection.toHaveProperty('message', 'Schema validation failed')
+  await expectRejection.toHaveProperty('schema', quoteResponseSchema)
+  await expectRejection.toHaveProperty('input', mockReturn)
 })

@@ -99,6 +99,12 @@ importers:
 
   packages/core:
     dependencies:
+      '@zod/mini':
+        specifier: 4.0.0-beta.20250430T185432
+        version: 4.0.0-beta.20250430T185432
+      typescript-result:
+        specifier: ^3.1.1
+        version: 3.1.1
       viem:
         specifier: 'catalog:'
         version: 2.28.1(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.22.4)
@@ -966,6 +972,12 @@ packages:
 
   '@walletconnect/window-metadata@1.0.1':
     resolution: {integrity: sha512-9koTqyGrM2cqFRW517BPY/iEtUDx2r1+Pwwu5m7sJ7ka79wi3EyqhqcICk/yDmv6jAS1rjKgTKXlEhanYjijcA==}
+
+  '@zod/core@0.10.0':
+    resolution: {integrity: sha512-iMITRygme3v9jPsITJjvRMw60+MQq7MWnNpJleRkfjeSCjBm3c1/tiw3NUS4re/M2CBXVP5kAjI7sQrf22twXA==}
+
+  '@zod/mini@4.0.0-beta.20250430T185432':
+    resolution: {integrity: sha512-PLamkZ3BPeUXAYUhU5CaLY6ZaAQ4PVSoy2bh54UWXPx7fCC/+vWicLmgAt8+lwjaqpe2AW8FwiLXYoCb1UIJxA==}
 
   abitype@1.0.8:
     resolution: {integrity: sha512-ZeiI6h3GnW06uYDLx0etQtX/p8E24UaHHBj57RSjK7YBFe7iuVn07EDpOeP451D06sF27VOz9JJPlIKJmXgkEg==}
@@ -1904,6 +1916,10 @@ packages:
     resolution: {integrity: sha512-gK5GVzDkJK1SI1zwHf32Mqxf2tSJkNx+eYcNly5+nHvWqXUJYUkWBQtKauoESz3ymezAI++ZwT855x5p5eop+Q==}
     engines: {node: '>=18.0.0'}
     hasBin: true
+
+  typescript-result@3.1.1:
+    resolution: {integrity: sha512-KQ7SdBa1UcZCu+qI7pgZ1FdzBIlGiyoHTaQQDshtsKCKiPdzLlkU6OWkJuhjzo+xl+y+dOVO+2HyyEpODNDHyw==}
+    engines: {node: '>=18'}
 
   typescript@5.7.3:
     resolution: {integrity: sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==}
@@ -3684,6 +3700,12 @@ snapshots:
       '@walletconnect/window-getters': 1.0.1
       tslib: 1.14.1
 
+  '@zod/core@0.10.0': {}
+
+  '@zod/mini@4.0.0-beta.20250430T185432':
+    dependencies:
+      '@zod/core': 0.10.0
+
   abitype@1.0.8(typescript@5.7.3)(zod@3.22.4):
     optionalDependencies:
       typescript: 5.7.3
@@ -4655,6 +4677,8 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
     optional: true
+
+  typescript-result@3.1.1: {}
 
   typescript@5.7.3: {}
 
