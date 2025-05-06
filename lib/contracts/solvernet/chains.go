@@ -67,19 +67,6 @@ func HLChains(network netconf.ID) []netconf.Chain {
 	return resp
 }
 
-// IsHLChain returns true if the solvernet chain is secured by hyperlane.
-func IsHLChain(chainID uint64) bool {
-	for _, ids := range hlChains {
-		for _, id := range ids {
-			if id == chainID {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
 // IsHLRole returns true if the role is a hyperlane-related role.
 func IsHLRole(role eoa.Role) bool {
 	if role != eoa.RoleRelayer && role != eoa.RoleMonitor && role != eoa.RoleTester && role != eoa.RoleXCaller {

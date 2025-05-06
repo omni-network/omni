@@ -87,7 +87,7 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 		)
 
 		for _, account := range accounts {
-			if solvernet.IsHLChain(chain.ID) && !solvernet.IsHLRole(account.Role) {
+			if solvernet.IsHLOnly(chain.ID) && !solvernet.IsHLRole(account.Role) {
 				log.Info(ctx, "Skipping non-solvernet role on HL chain", "chain", chain.Name, "role", account.Role, "address", account.Address)
 				continue
 			}

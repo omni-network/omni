@@ -86,7 +86,7 @@ func hlNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, err
 	}
 
 	newChain := func(chain types.EVMChain) netconf.Chain {
-		if solvernet.IsHLChain(chain.ChainID) {
+		if solvernet.IsHLOnly(chain.ChainID) {
 			return netconf.Chain{
 				ID:          chain.ChainID,
 				Name:        chain.Name,

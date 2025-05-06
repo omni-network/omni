@@ -1,19 +1,19 @@
 package solvernet
 
 import (
-	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
-	None      uint8 = iota // 0
-	OmniCore  uint8 = 1    // 1
-	Hyperlane uint8 = 2    // 2
+	ProviderNone uint8 = iota // No provider
+	ProviderCore uint8 = 1    // Omni Core
+	ProviderHL   uint8 = 2    // Hyperlane
 )
 
 var (
+	// mailbox maps chain ID to Hyperlane mailbox address.
 	mailbox = map[uint64]common.Address{
 		// Mainnet
 		evmchain.IDEthereum:    common.HexToAddress("0xc005dc82818d67AF737725bD4bf75435d065D239"),
@@ -41,56 +41,85 @@ var (
 		// Hyperlane doesn't support Omni EVM or Mantle Testnet
 	}
 
-	provider = map[uint64]uint8{
+	// isCore maps chain ID to whether it is a core Omni chain.
+	isCore = map[uint64]bool{
 		// Mainnet
-		evmchain.IDEthereum:    OmniCore,
-		evmchain.IDOptimism:    OmniCore,
-		evmchain.IDBSC:         Hyperlane,
-		evmchain.IDPolygon:     Hyperlane,
-		evmchain.IDOmniMainnet: OmniCore,
-		evmchain.IDHyperEVM:    Hyperlane,
-		evmchain.IDMantle:      Hyperlane,
-		evmchain.IDBase:        OmniCore,
-		evmchain.IDArbitrumOne: OmniCore,
-		evmchain.IDBerachain:   Hyperlane,
-		evmchain.IDPlume:       Hyperlane,
+		evmchain.IDEthereum:    true,
+		evmchain.IDOptimism:    true,
+		evmchain.IDArbitrumOne: true,
+		evmchain.IDBase:        true,
+		evmchain.IDOmniMainnet: true,
 
-		// Testnet
-		evmchain.IDBSCTestnet:      Hyperlane,
-		evmchain.IDOmniOmega:       OmniCore,
-		evmchain.IDHyperEVMTestnet: Hyperlane,
-		evmchain.IDHolesky:         OmniCore,
-		evmchain.IDPolygonAmoy:     Hyperlane,
-		evmchain.IDBaseSepolia:     OmniCore,
-		evmchain.IDPlumeTestnet:    Hyperlane,
-		evmchain.IDArbSepolia:      OmniCore,
-		evmchain.IDSepolia:         Hyperlane,
-		evmchain.IDOpSepolia:       OmniCore,
+		// Omega / Staging
+		evmchain.IDHolesky:     true,
+		evmchain.IDArbSepolia:  true,
+		evmchain.IDBaseSepolia: true,
+		evmchain.IDOpSepolia:   true,
+		evmchain.IDOmniOmega:   true,
+		evmchain.IDOmniStaging: true,
 
 		// Devnet
-		evmchain.IDOmniStaging: OmniCore,
-		evmchain.IDOmniDevnet:  OmniCore,
-		evmchain.IDMockL1:      OmniCore,
-		evmchain.IDMockL2:      OmniCore,
-		evmchain.IDMockOp:      OmniCore,
-		evmchain.IDMockArb:     OmniCore,
+		evmchain.IDMockL1:     true,
+		evmchain.IDMockL2:     true,
+		evmchain.IDOmniDevnet: true,
 	}
 )
 
+// HyperlaneMailbox returns the Hyperlane mailbox address for `chainID`.
 func HyperlaneMailbox(chainID uint64) (common.Address, bool) {
 	addr, ok := mailbox[chainID]
-	if !ok {
-		return common.Address{}, false
-	}
-
-	return addr, true
+	return addr, ok
 }
 
-func Provider(chainID uint64) (uint8, error) {
-	provider, ok := provider[chainID]
-	if !ok {
-		return None, errors.New("provider not found for chainID", "chain_id", chainID)
+// IsCore returns true if the chain supports Omni Core interop.
+func IsCore(chainID uint64) bool {
+	return isCore[chainID]
+}
+
+// IsHL returns true if the chain supports Hyperlane interop.
+func IsHL(chainID uint64) bool {
+	_, ok := mailbox[chainID]
+	return ok
+}
+
+// IsHLOnly returns true if the chain only supports Hyperlane interop.
+func IsHLOnly(chainID uint64) bool {
+	return IsHL(chainID) && !IsCore(chainID)
+}
+
+// IsSupported returns true if the chain ID is supported.
+func IsSupported(chainID uint64) bool {
+	return IsCore(chainID) || IsHL(chainID)
+}
+
+// Provider returns the provider between a source and destination chain.
+// It returns false if the route is not supported.
+func Provider(srcChainID, destChainID uint64) (uint8, bool) {
+	if !IsSupported(srcChainID) || !IsSupported(destChainID) {
+		// Unsupported chain: not supported
+		return ProviderNone, false
 	}
 
-	return provider, nil
+	if srcChainID == destChainID {
+		// Same chain: no provider needed
+		return ProviderNone, true
+	}
+
+	if IsHLOnly(srcChainID) && !IsHL(destChainID) {
+		// HL-only -> No-HL: not supported
+		return ProviderNone, false
+	}
+
+	if !IsHL(srcChainID) && IsHLOnly(destChainID) {
+		// No-HL -> HL-only: not supported
+		return ProviderNone, false
+	}
+
+	if IsCore(srcChainID) && IsCore(destChainID) {
+		// Core -> Core: use Core provider
+		return ProviderCore, true
+	}
+
+	// Default: use HL provider
+	return ProviderHL, true
 }
