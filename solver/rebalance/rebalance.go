@@ -322,6 +322,11 @@ func fillTokenDeficitOnce(
 		return nil
 	}
 
+	deficitUSD, err := AmtToUSD(ctx, pricer, token, deficit)
+	if err != nil {
+		return errors.Wrap(err, "get deficit in usd")
+	}
+
 	usdc, ok := tokens.ByAsset(chainID, tokens.USDC)
 	if !ok {
 		return errors.New("token not found")
@@ -331,14 +336,6 @@ func fillTokenDeficitOnce(
 	if err != nil {
 		return errors.Wrap(err, "get surplus")
 	}
-
-	price, err := pricer.USDPrice(ctx, token.Asset)
-	if err != nil {
-		return errors.Wrap(err, "get price")
-	}
-
-	// Use USD deficit to inform swap input.
-	deficitUSD := bi.MulF64(deficit, price)
 
 	toSwap := deficitUSD
 	if bi.GT(toSwap, surplusUSDC) { // Deficit > surplus, cap swap to surplus.

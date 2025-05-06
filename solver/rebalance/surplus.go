@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
 
@@ -32,4 +33,20 @@ func GetSurplus(
 	}
 
 	return bi.Sub(balance, thresh.Surplus()), nil
+}
+
+// GetUSDSurplus returns surplus balance of `token` for `solver` in USD.
+func GetUSDSurplus(
+	ctx context.Context,
+	client ethclient.Client,
+	pricer tokenpricer.Pricer,
+	token tokens.Token,
+	solver common.Address,
+) (*big.Int, error) {
+	surplus, err := GetSurplus(ctx, client, token, solver)
+	if err != nil {
+		return nil, errors.Wrap(err, "get surplus")
+	}
+
+	return AmtToUSD(ctx, pricer, token, surplus)
 }
