@@ -48,7 +48,7 @@ function getNextAccount(): PrivateKeyAccount {
 }
 
 describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
-  describe.skip('default: succeeds with valid expense', async () => {
+  describe.sequential('default: succeeds with valid expense', async () => {
     const account = getNextAccount()
     const srcClient = createClient({ account, chain: mockL1Chain })
     const destClient = createClient({ chain: omniDevnetChain })
@@ -67,7 +67,7 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
         address: account.address,
         value: amount * 10n,
       })
-      await mintOMNI(srcClient)
+      await mintOMNI(srcClient, amount * 3n)
     })
 
     test('using core APIs', async () => {
@@ -79,7 +79,7 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
     })
   })
 
-  describe.skip('default: succeeds with native deposit', () => {
+  describe.sequential('default: succeeds with native deposit', () => {
     const account = getNextAccount()
     const srcClient = createClient({ account, chain: mockL1Chain })
     const destClient = createClient({ chain: omniDevnetChain })
@@ -98,7 +98,7 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
         address: account.address,
         value: amount * 10n,
       })
-      await mintOMNI(srcClient)
+      await mintOMNI(srcClient, amount * 3n)
     })
 
     test('using core APIs', async () => {

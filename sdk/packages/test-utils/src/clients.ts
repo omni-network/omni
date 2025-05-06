@@ -6,13 +6,7 @@ import type {
   TestClient,
   WalletClient,
 } from 'viem'
-import {
-  http,
-  createTestClient,
-  createWalletClient,
-  parseEther,
-  publicActions,
-} from 'viem'
+import { http, createTestClient, createWalletClient, publicActions } from 'viem'
 import { testAccount } from './accounts.js'
 import { inbox, mockL1Chain, omniTokenAbi, tokenAddress } from './constants.js'
 
@@ -41,20 +35,21 @@ export const mockL1Client: Client<typeof mockL1Chain> = createClient({
   chain: mockL1Chain,
 })
 
-export async function mintOMNI(client: Client<Chain>): Promise<void> {
-  const account = client.account?.address
+export async function mintOMNI(
+  client: Client<Chain>,
+  amount: bigint,
+): Promise<void> {
+  const account = client.account
   if (account == null) {
     throw new Error('Missing account on client')
   }
-  const amount = parseEther('100')
   const mintHash = await client.writeContract({
     account,
     address: tokenAddress,
     abi: omniTokenAbi,
     functionName: 'mint',
-    args: [account, amount],
+    args: [account.address, amount],
   })
-
   await client.waitForTransactionReceipt({
     hash: mintHash,
     pollingInterval: 500,

@@ -1,5 +1,5 @@
 import {
-  type DidFillParams,
+  type DidFillParameters,
   type GetOrderParameters,
   type Order,
   didFill,
@@ -71,7 +71,7 @@ function waitForInboxOrderFilled(
   })
 }
 
-type WaitForOutboxOrderFilledParams = DidFillParams & {
+type WaitForOutboxOrderFilledParams = DidFillParameters & {
   pollingInterval?: number
   timeout?: number
 }
