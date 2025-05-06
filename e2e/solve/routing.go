@@ -32,13 +32,10 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 		return errors.Wrap(err, "get addresses", "network", network.ID)
 	}
 
-	chainIDs := network.EVMChains()
 	eg, childCtx := errgroup.WithContext(ctx)
 
-	for _, chain := range chainIDs {
-		// Capture loop variables for the goroutine closure to avoid race conditions
-
-		routes, err := getRoutes(chain, chainIDs, addrs.SolverNetInbox, addrs.SolverNetOutbox)
+	for _, chain := range network.EVMChains() {
+		routes, err := getRoutes(chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
 		if err != nil {
 			return errors.Wrap(err, "get routes", "chain", chain.Name)
 		}
@@ -58,15 +55,17 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 			return errors.Wrap(err, "bind opts", "chain", chain.Name)
 		}
 
+		// Capture loop variables for the goroutine closure to avoid race conditions
+		_chain := chain
 		eg.Go(func() error {
 			err := configureInbox(childCtx, backend, txOpts, addrs.SolverNetInbox, routes)
 			if err != nil {
-				return errors.Wrap(err, "configure inbox", "chain", chain.Name)
+				return errors.Wrap(err, "configure inbox", "chain", _chain.Name)
 			}
 
 			err = configureOutbox(childCtx, backend, txOpts, addrs.SolverNetOutbox, routes)
 			if err != nil {
-				return errors.Wrap(err, "configure outbox", "chain", chain.Name)
+				return errors.Wrap(err, "configure outbox", "chain", _chain.Name)
 			}
 
 			return nil
@@ -81,10 +80,11 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 }
 
 // getRoutes returns the remote chain IDs, outboxes, and inbox configs for a given chain.
-func getRoutes(src netconf.Chain, allChains []netconf.Chain, inbox common.Address, outbox common.Address) ([]Route, error) {
+func getRoutes(src netconf.Chain, network netconf.Network, inbox common.Address, outbox common.Address) ([]Route, error) {
 	var routes []Route
-	for _, dest := range allChains {
-		if src.ID == dest.ID {
+	for _, dest := range network.EVMChains() {
+		// Skip Hyperlane routes on Omni EVM.
+		if netconf.IsOmniExecution(network.ID, src.ID) && solvernet.IsHLChain(dest.ID) {
 			continue
 		}
 
@@ -102,9 +102,17 @@ func getRoutes(src netconf.Chain, allChains []netconf.Chain, inbox common.Addres
 			continue
 		}
 
-		provider, err := solvernet.Provider(dest.ID)
-		if err != nil {
-			return nil, errors.Wrap(err, "get provider", "chain", dest.Name)
+		provider := solvernet.Hyperlane
+		var err error
+		if src.ID == dest.ID {
+			// If the source and destination chains are the same, don't configure a provider.
+			provider = solvernet.None
+		} else if !solvernet.IsHLChain(src.ID) {
+			// If the source chain is not a Hyperlane chain, use the destination chain's provider.
+			provider, err = solvernet.Provider(dest.ID)
+			if err != nil {
+				return nil, errors.Wrap(err, "get provider", "chain", dest.Name)
+			}
 		}
 
 		routes = append(routes, Route{
