@@ -10,7 +10,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokenpricer"
@@ -38,109 +37,48 @@ func rebalanceForever(
 	backends ethbackend.Backends,
 	solver common.Address,
 ) {
-	for _, chain := range network.EVMChains() {
-		ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
+	go func() {
+		for {
+			start := time.Now()
+			rebalanceOnce(ctx, db, network, pricer, backends, solver)
+			elapsed := time.Since(start)
 
-		go swapSurplusForever(ctx, interval, backends, solver, chain.ID)
-		go sendSurplusForever(ctx, interval, db, network, backends, solver, chain.ID)
-		go fillDeficitForever(ctx, interval, db, network, pricer, backends, solver, chain.ID)
-	}
-}
-
-// swapSurplusForever swaps surplus tokens to USDC on `chainID` forever.
-func swapSurplusForever(
-	ctx context.Context,
-	interval time.Duration,
-	backends ethbackend.Backends,
-	solver common.Address,
-	chainID uint64,
-) {
-	ctx = log.WithCtx(ctx, "loop", "swapSurplus")
-
-	ticker := time.NewTimer(0)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			ticker.Reset(interval)
-
-			do := func() error {
-				return swapSurplusOnce(ctx, backends, chainID, solver)
-			}
-
-			if err := expbackoff.Retry(ctx, do); err != nil {
-				log.Error(ctx, "Swap surplus failed", err)
+			// Sleep for the remaining time in the interval, if any.
+			if elapsed < interval {
+				time.Sleep(interval - elapsed)
 			}
 		}
-	}
+	}()
 }
 
-// sendSurplusForever sends surplus USDC on `chainID` to chains in deficit forever.
-func sendSurplusForever(
+// rebalanceOnce rebalances all chains once.
+func rebalanceOnce(
 	ctx context.Context,
-	interval time.Duration,
-	db *cctpdb.DB,
-	network netconf.Network,
-	backends ethbackend.Backends,
-	solver common.Address,
-	chainID uint64,
-) {
-	ctx = log.WithCtx(ctx, "loop", "sendSurplus")
-
-	ticker := time.NewTimer(0)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			ticker.Reset(interval)
-
-			do := func() error {
-				return sendSurplusOnce(ctx, db, network.ID, backends, chainID, solver)
-			}
-
-			if err := expbackoff.Retry(ctx, do); err != nil {
-				log.Error(ctx, "Send surplus failed", err)
-			}
-		}
-	}
-}
-
-// fillDeficitForever fills token deficits from surplus USDC on `chainID` forever.
-func fillDeficitForever(
-	ctx context.Context,
-	interval time.Duration,
 	db *cctpdb.DB,
 	network netconf.Network,
 	pricer tokenpricer.Pricer,
 	backends ethbackend.Backends,
 	solver common.Address,
-	chainID uint64,
 ) {
-	ctx = log.WithCtx(ctx, "loop", "fillDeficit")
+	for _, chain := range network.EVMChains() {
+		ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
+		log.Info(ctx, "Rebalancing chain")
 
-	ticker := time.NewTimer(0)
-	defer ticker.Stop()
+		// First, swap surplus tokens USDC.
+		if err := swapSurplusOnce(ctx, backends, chain.ID, solver); err != nil {
+			log.Warn(ctx, "Failed to swap surplus", err)
+			continue
+		}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			ticker.Reset(interval)
+		// Then, fill deficits from surplus USDC.
+		if err := fillDeficitOnce(ctx, pricer, backends, chain.ID, solver); err != nil {
+			log.Warn(ctx, "Failed to fill deficit", err)
+			continue
+		}
 
-			do := func() error {
-				return fillDeficitOnce(ctx, db, network.ID, pricer, backends, chainID, solver)
-			}
-
-			if err := expbackoff.Retry(ctx, do); err != nil {
-				log.Error(ctx, "Fill deficit failed", err)
-			}
+		// Finally, send remaining surplus USDC to other chains.
+		if err := sendSurplusOnce(ctx, db, network, pricer, backends, chain.ID, solver); err != nil {
+			log.Warn(ctx, "Failed to send surplus", err)
 		}
 	}
 }
@@ -149,15 +87,13 @@ func fillDeficitForever(
 func sendSurplusOnce(
 	ctx context.Context,
 	db *cctpdb.DB,
-	networkID netconf.ID,
+	network netconf.Network,
+	pricer tokenpricer.Pricer,
 	backends ethbackend.Backends,
 	chainID uint64,
 	solver common.Address,
 ) error {
-	if chainID != evmchain.IDBase {
-		// Only sending surplus wstETH on Base.
-		return nil
-	}
+	ctx = log.WithCtx(ctx, "step", "sendSurplus")
 
 	backend, err := backends.Backend(chainID)
 	if err != nil {
@@ -179,25 +115,77 @@ func sendSurplusOnce(
 		return nil
 	}
 
-	toSend := surplus
-	if bi.GT(toSend, maxSend) { // Cap send to maxSend.
-		log.Debug(ctx, "Surplus > maxSend, capping send", "amount", usdc.FormatAmt(toSend), "max", usdc.FormatAmt(maxSend))
-		toSend = maxSend
+	deficits, err := GetUSDDeficitsDescending(ctx, db, network, backends.Clients(), pricer, solver)
+	if err != nil {
+		return errors.Wrap(err, "get deficits")
 	}
 
-	log.Debug(ctx, "Sending surplus", "amount", usdc.FormatAmt(toSend))
+	// For clarity
+	thisChainID := chainID
 
-	// Just send surplus to Ethereum for now.
-	// TODO: calculate chain deficits, send to most in-need chain.
+	deficitHere, ok := find(deficits, func(d Deficit) bool { return d.ChainID == thisChainID })
+	if !ok {
+		return errors.New("missing deficit")
+	}
 
-	if _, err = cctp.SendUSDC(ctx, db, networkID, backend, cctp.SendUSDCArgs{
-		Sender:      solver,
-		Recipient:   solver,
-		SrcChainID:  chainID,
-		DestChainID: evmchain.IDEthereum,
-		Amount:      toSend,
-	}); err != nil {
-		return errors.Wrap(err, "send usdc")
+	if bi.LT(surplus, deficitHere.Amount) { // Surplus < deficit here, don't send it elsewhere.
+		log.Debug(ctx, "Surplus < deficit here, skipping send",
+			"deficit", usdc.FormatAmt(deficitHere.Amount),
+			"amount", usdc.FormatAmt(surplus))
+
+		return nil
+	}
+
+	// Subtract deficit here from available surplus.
+	// Decrement surplus each time we send USDC.
+	surplus = bi.Sub(surplus, deficitHere.Amount)
+
+	for _, d := range deficits {
+		if d.ChainID == thisChainID { // Skip self.
+			continue
+		}
+
+		ctx := log.WithCtx(ctx,
+			"dest", evmchain.Name(d.ChainID),
+			"deficit", usdc.FormatAmt(d.Amount),
+			"surplus", usdc.FormatAmt(surplus),
+			"min", usdc.FormatAmt(minSend),
+			"max", usdc.FormatAmt(maxSend))
+
+		if bi.LTE(d.Amount, bi.Zero()) { // No deficit, no need to send.
+			log.Debug(ctx, "No deficit, skipping send")
+			continue
+		}
+
+		if bi.LT(surplus, minSend) { // No surplus left to send.
+			log.Debug(ctx, "No surplus left to send")
+			break
+		}
+
+		toSend := d.Amount
+
+		if bi.GT(toSend, surplus) { // Cap send to available surplus.
+			log.Debug(ctx, "Deficit > surplus, capping send")
+			toSend = surplus
+		}
+
+		if bi.GT(toSend, maxSend) { // Cap send to maxSend.
+			log.Debug(ctx, "Send > maxSend, capping send")
+			toSend = maxSend
+		}
+
+		if _, err = cctp.SendUSDC(ctx, db, network.ID, backend, cctp.SendUSDCArgs{
+			Sender:      solver,
+			Recipient:   solver,
+			SrcChainID:  chainID,
+			DestChainID: d.ChainID,
+			Amount:      toSend,
+		}); err != nil {
+			return errors.Wrap(err, "send usdc", "dest", evmchain.Name(d.ChainID))
+		}
+
+		// Decrement surplus by the amount sent.
+		surplus = bi.Sub(surplus, toSend)
 	}
 
 	return nil
@@ -210,6 +198,8 @@ func swapSurplusOnce(
 	chainID uint64,
 	solver common.Address,
 ) error {
+	ctx = log.WithCtx(ctx, "step", "swapSurplus")
+
 	backend, err := backends.Backend(chainID)
 	if err != nil {
 		return errors.Wrap(err, "get backend")
@@ -273,16 +263,12 @@ func swapTokenSurplusOnce(
 // fillDeficitOnce fills token deficits from surplus USDC on `chainID`.
 func fillDeficitOnce(
 	ctx context.Context,
-	db *cctpdb.DB,
-	networkID netconf.ID,
 	pricer tokenpricer.Pricer,
 	backends ethbackend.Backends,
 	chainID uint64,
 	solver common.Address,
 ) error {
-	// will be used when calculating deficits
-	_ = db
-	_ = networkID
+	ctx = log.WithCtx(ctx, "step", "fillDeficit")
 
 	backend, err := backends.Backend(chainID)
 	if err != nil {
@@ -368,4 +354,14 @@ func fillTokenDeficitOnce(
 	}
 
 	return nil
+}
+
+func find[T any](xs []T, f func(T) bool) (T, bool) {
+	for _, x := range xs {
+		if f(x) {
+			return x, true
+		}
+	}
+
+	return *new(T), false
 }

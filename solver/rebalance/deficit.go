@@ -3,12 +3,14 @@ package rebalance
 import (
 	"context"
 	"math/big"
+	"sort"
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cctp"
 	cctpdb "github.com/omni-network/omni/lib/cctp/db"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
@@ -109,4 +111,40 @@ func GetChainUSDDeficit(
 	deficit = bi.Sub(deficit, inflight)
 
 	return deficit, nil
+}
+
+type Deficit struct {
+	ChainID uint64
+	Amount  *big.Int
+}
+
+// GetUSDDeficitsDescending returns the total USD deficit by chain, sorted by amount descending.
+func GetUSDDeficitsDescending(
+	ctx context.Context,
+	db *cctpdb.DB,
+	network netconf.Network,
+	clients map[uint64]ethclient.Client,
+	pricer tokenpricer.Pricer,
+	solver common.Address,
+) ([]Deficit, error) {
+	var deficits []Deficit
+
+	for _, chain := range network.EVMChains() {
+		client, ok := clients[chain.ID]
+		if !ok {
+			return nil, errors.New("no client", "chain", chain.ID)
+		}
+
+		deficit, err := GetChainUSDDeficit(ctx, db, client, pricer, chain.ID, solver)
+		if err != nil {
+			return nil, errors.Wrap(err, "get chain deficit")
+		}
+
+		deficits = append(deficits, Deficit{ChainID: chain.ID, Amount: deficit})
+	}
+
+	// Sort by amount descending
+	sort.Slice(deficits, func(i, j int) bool { return bi.GT(deficits[i].Amount, deficits[j].Amount) })
+
+	return deficits, nil
 }
