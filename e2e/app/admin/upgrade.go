@@ -120,26 +120,22 @@ func UpgradePortalRegistry(ctx context.Context, def app.Definition, cfg Config) 
 
 // UpgradeSolverNet upgrades the SolverNet contracts.
 func UpgradeSolverNetInbox(ctx context.Context, def app.Definition, cfg Config) error {
-	s := setup(def, cfg)
-	return (&s).runHL(ctx, def, upgradeSolverNetInbox)
+	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetInbox)
 }
 
 // UpgradeSolverNetOutbox upgrades the SolverNetOutbox contract.
 func UpgradeSolverNetOutbox(ctx context.Context, def app.Definition, cfg Config) error {
-	s := setup(def, cfg)
-	return (&s).runHL(ctx, def, upgradeSolverNetOutbox)
+	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetOutbox)
 }
 
 // UpgradeSolverNetMiddleman upgrades the SolverNetMiddleman contract.
 func UpgradeSolverNetMiddleman(ctx context.Context, def app.Definition, cfg Config) error {
-	s := setup(def, cfg)
-	return (&s).runHL(ctx, def, upgradeSolverNetMiddleman)
+	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetMiddleman)
 }
 
 // UpgradeSolverNetExecutor upgrades the SolverNetExecutor contract.
 func UpgradeSolverNetExecutor(ctx context.Context, def app.Definition, cfg Config) error {
-	s := setup(def, cfg)
-	return (&s).runHL(ctx, def, upgradeSolverNetExecutor)
+	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetExecutor)
 }
 
 // SetPortalFeeOracleV2 upgrades the OmniPortal's FeeOracle to the FeeOracleV2 contract.

@@ -155,6 +155,19 @@ func withExclude(names ...string) runOpt {
 	}
 }
 
+// addHLEndpoints adds the Hyperlane endpoints to the shared resources.
+func (s shared) addHLEndpoints(ctx context.Context, def app.Definition) (shared, error) {
+	endpoints, err := app.AddSolverEndpoints(ctx, s.testnet.Network, s.endpoints, def.Cfg.RPCOverrides)
+	if err != nil {
+		return shared{}, errors.Wrap(err, "add solver endpoints")
+	}
+
+	newS := s
+	newS.endpoints = endpoints
+
+	return newS, nil
+}
+
 // run runs a function for all configured chains (all applicable, if not specified).
 func (s shared) run(
 	ctx context.Context,
@@ -187,26 +200,25 @@ func (s shared) run(
 
 // runHL runs a function for all configured chains (including Hyperlane chains).
 // NOTE: currently does not include options.
-func (s *shared) runHL(ctx context.Context, def app.Definition, fn func(context.Context, shared, chain) error) error {
-	endpoints, err := app.AddSolverEndpoints(ctx, s.testnet.Network, s.endpoints, def.Cfg.RPCOverrides)
+func (s shared) runHL(ctx context.Context, def app.Definition, fn func(context.Context, shared, chain) error) error {
+	_s, err := s.addHLEndpoints(ctx, def)
 	if err != nil {
-		return errors.Wrap(err, "add solver endpoints")
+		return errors.Wrap(err, "add hl endpoints")
 	}
-	s.endpoints = endpoints
 
 	network, err := app.HLNetworkFromDef(ctx, def)
 	if err != nil {
 		return errors.Wrap(err, "network from def")
 	}
-	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByEndpoints(endpoints))
+	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByEndpoints(_s.endpoints))
 
 	for _, _chain := range network.Chains {
-		c, err := setupChainHL(ctx, *s, _chain)
+		c, err := setupChainHL(ctx, _s, _chain)
 		if err != nil {
 			return errors.Wrap(err, "setup chain hl", "chain", _chain.Name)
 		}
 
-		if err := fn(ctx, *s, c); err != nil {
+		if err := fn(ctx, _s, c); err != nil {
 			return errors.Wrap(err, "chain", "chain", _chain.Name)
 		}
 	}
