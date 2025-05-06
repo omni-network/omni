@@ -46,6 +46,7 @@ export function waitForOrderClose(
         signal?.removeEventListener('abort', onAbort)
         reject(err)
       },
+      pollingInterval,
     })
   })
 }

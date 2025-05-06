@@ -4,7 +4,7 @@ import type { Hex } from 'viem'
 import { useClient } from 'wagmi'
 import { useOmniContracts } from './useOmniContracts.js'
 
-export type UseWatchDidFillProps = {
+export type UseWatchDidFillParams = {
   destChainId: number
   orderId?: Hex
   pollingInterval?: number
@@ -22,7 +22,7 @@ export function useWatchDidFill({
   orderId,
   pollingInterval,
   onError,
-}: UseWatchDidFillProps): UseWatchDidFillReturn {
+}: UseWatchDidFillParams): UseWatchDidFillReturn {
   const unwatchRef = useRef<(() => void) | undefined>()
   const [destTxHash, setDestTxHash] = useState<Hex | undefined>()
   const client = useClient({ chainId: destChainId })

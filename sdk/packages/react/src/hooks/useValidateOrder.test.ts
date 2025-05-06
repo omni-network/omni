@@ -4,8 +4,6 @@ import { expect, test, vi } from 'vitest'
 import { order, renderHook } from '../../test/index.js'
 import { useValidateOrder } from './useValidateOrder.js'
 
-// TODO calls as empty array should not be allowed // throw error
-
 const renderValidateOrderHook = (
   params: Parameters<typeof useValidateOrder>[0],
   options?: Parameters<typeof renderHook>[1],
