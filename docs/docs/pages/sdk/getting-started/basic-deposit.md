@@ -5,7 +5,7 @@ title: Cross-Chain Deposit
 
 # Cross-Chain Deposit
 
-This guide walks through the standard process of enabling a user to deposit assets from one chain into a contract on another chain using the Omni SDK, assuming the target contract supports depositing on behalf of a user (e.g., via an `onBehalfOf` parameter).
+This guide walks through the standard process of enabling a user to deposit assets from one chain into a contract on another chain using our react hooks (`@omni-network/react`), assuming the target contract supports depositing on behalf of a user (e.g., via an `onBehalfOf` parameter).
 
 **Scenario:** A user has wstETH on Base Sepolia and wants to deposit it into a vault contract on Holesky. The vault contract has a `deposit(address onBehalfOf, uint256 amount)` function.
 

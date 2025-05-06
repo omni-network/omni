@@ -56,6 +56,8 @@ export default defineConfig({
           items: [
             { text: 'With React', link: '/sdk/getting-started/react' },
             { text: 'Without framework', link: '/sdk/getting-started/core' },
+            { text: 'Basic Deposit', link: '/guides/basic-deposit' },
+            { text: 'Template', link: '/guides/template' },
           ],
         },
         { text: 'Supported Assets', link: '/sdk/supported-assets' },
@@ -106,17 +108,15 @@ export default defineConfig({
         },
         { text: 'Swaps', link: '/sdk/swaps' },
         {
-          text: 'Guides',
+          text: 'Advanced Guides',
           collapsed: true,
           items: [
-            { text: 'Basic Deposit', link: '/guides/basic-deposit' },
             { text: 'Transfers', link: '/guides/transfers' },
             { text: 'Multi-Step Deposit', link: '/guides/multistep-deposit' },
             { text: 'Contracts without onBehalfOf', link: '/guides/contracts-without-onbehalfof' },
             { text: 'Symbiotic', link: '/guides/examples/symbiotic' },
             { text: 'EigenLayer', link: '/guides/examples/eigenlayer' },
             { text: 'Rocketpool', link: '/guides/examples/rocketpool' },
-            { text: 'Template', link: '/guides/template' },
           ],
         },
         { text: 'FAQ', link: '/sdk/faq' },
