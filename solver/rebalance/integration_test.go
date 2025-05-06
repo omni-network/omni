@@ -135,9 +135,10 @@ func TestIntegration(t *testing.T) {
 			return false
 		}
 
-		// L1 wsteth should not be in deficit
+		// L1 wsteth deficit should be filled (mostly)
+		// "Mostly" because of min / max swap limits, and differences between live and pool prices
 		deficit := must(rebalance.GetDeficit(ctx, clients[evmchain.IDEthereum], l1WSTETH, solver))
-		if !bi.IsZero(deficit) {
+		if !bi.LT(deficit, bi.Ether(0.1)) {
 			log.Info(ctx, "L1 wstETH deficit",
 				"deficit", l1WSTETH.FormatAmt(deficit),
 				"balance", balance(evmchain.IDEthereum, l1WSTETH))
