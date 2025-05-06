@@ -26,29 +26,36 @@ var (
 	dummyInboxAddr  = common.HexToAddress("0x1111111111111111111111111111111111111111")
 	dummyOutboxAddr = common.HexToAddress("0x2222222222222222222222222222222222222222")
 
-	omniDevnetChain = netconf.Chain{
+	// Core Only.
+	omniStaging = netconf.Chain{
 		ID:   evmchain.IDOmniDevnet,
 		Name: "omni_evm",
 	}
-	mockL1Chain = netconf.Chain{
-		ID:   evmchain.IDMockL1,
-		Name: "mock_l1",
+
+	// Core + Hyperlane.
+	opSepolia = netconf.Chain{
+		ID:   evmchain.IDOpSepolia,
+		Name: "op_sepolia",
 	}
-	mockL2Chain = netconf.Chain{
-		ID:   evmchain.IDMockL2,
-		Name: "mock_l2",
+
+	// Core + Hyperlane.
+	arbSepolia = netconf.Chain{
+		ID:   evmchain.IDArbSepolia,
+		Name: "arb_sepolia",
 	}
+
+	// Hyperlane only.
 	sepoliaChain = netconf.Chain{
 		ID:   evmchain.IDSepolia,
 		Name: "sepolia",
 	}
 
-	devnetNetwork = netconf.Network{
-		ID: netconf.Devnet,
+	network = netconf.Network{
+		ID: netconf.Staging,
 		Chains: []netconf.Chain{
-			omniDevnetChain,
-			mockL1Chain,
-			mockL2Chain,
+			omniStaging,
+			opSepolia,
+			arbSepolia,
 			sepoliaChain,
 		},
 	}
@@ -59,33 +66,33 @@ func makeRoutes() []TestRoute {
 
 	routes = append(routes, TestRoute{
 		name:        "Omni EVM (Core-only)",
-		sourceChain: omniDevnetChain,
-		network:     devnetNetwork,
+		sourceChain: omniStaging,
+		network:     network,
 		inboxAddr:   dummyInboxAddr,
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
 			{
-				ChainID: omniDevnetChain.ID,
+				ChainID: omniStaging.ID,
 				Outbox:  dummyOutboxAddr,
 				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.None,
+					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
-				ChainID: mockL1Chain.ID,
+				ChainID: opSepolia.ID,
 				Outbox:  dummyOutboxAddr,
 				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.OmniCore,
+					Provider: solvernet.ProviderCore,
 				},
 			},
 			{
-				ChainID: mockL2Chain.ID,
+				ChainID: arbSepolia.ID,
 				Outbox:  dummyOutboxAddr,
 				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.OmniCore,
+					Provider: solvernet.ProviderCore,
 				},
 			},
 			// Sepolia (Hyperlane) should be skipped
@@ -95,32 +102,25 @@ func makeRoutes() []TestRoute {
 	routes = append(routes, TestRoute{
 		name:        "Sepolia (Hyperlane-only)",
 		sourceChain: sepoliaChain,
-		network:     devnetNetwork,
+		network:     network,
 		inboxAddr:   dummyInboxAddr,
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
+			// Omni EVM (Core) should be skipped
 			{
-				ChainID: omniDevnetChain.ID,
+				ChainID: opSepolia.ID,
 				Outbox:  dummyOutboxAddr,
 				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.Hyperlane,
+					Provider: solvernet.ProviderHL,
 				},
 			},
 			{
-				ChainID: mockL1Chain.ID,
+				ChainID: arbSepolia.ID,
 				Outbox:  dummyOutboxAddr,
 				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.Hyperlane,
-				},
-			},
-			{
-				ChainID: mockL2Chain.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
-					Inbox:    dummyInboxAddr,
-					Provider: solvernet.Hyperlane,
+					Provider: solvernet.ProviderHL,
 				},
 			},
 			{
@@ -128,41 +128,41 @@ func makeRoutes() []TestRoute {
 				Outbox:  dummyOutboxAddr,
 				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.None,
+					Provider: solvernet.ProviderNone,
 				},
 			},
 		},
 	})
 
 	routes = append(routes, TestRoute{
-		name:        "Mock L1 (Both)",
-		sourceChain: mockL1Chain,
-		network:     devnetNetwork,
+		name:        "OP Sepolia (Core + Hyperlane)",
+		sourceChain: opSepolia,
+		network:     network,
 		inboxAddr:   dummyInboxAddr,
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
 			{
-				ChainID: omniDevnetChain.ID,
+				ChainID: omniStaging.ID,
 				Outbox:  dummyOutboxAddr,
 				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.OmniCore,
+					Provider: solvernet.ProviderCore,
 				},
 			},
 			{
-				ChainID: mockL1Chain.ID,
+				ChainID: opSepolia.ID,
 				Outbox:  dummyOutboxAddr,
 				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.None,
+					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
-				ChainID: mockL2Chain.ID,
+				ChainID: arbSepolia.ID,
 				Outbox:  dummyOutboxAddr,
 				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.OmniCore,
+					Provider: solvernet.ProviderCore,
 				},
 			},
 			{
@@ -170,7 +170,7 @@ func makeRoutes() []TestRoute {
 				Outbox:  dummyOutboxAddr,
 				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.Hyperlane,
+					Provider: solvernet.ProviderHL,
 				},
 			},
 		},
@@ -188,8 +188,7 @@ func TestGetRoutes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			actualRoutes, err := getRoutes(tc.sourceChain, tc.network, tc.inboxAddr, tc.outboxAddr)
-			require.NoError(t, err)
+			actualRoutes := getRoutes(tc.sourceChain, tc.network, tc.inboxAddr, tc.outboxAddr)
 			require.ElementsMatch(t, tc.expectedRoutes, actualRoutes, "Routes mismatch")
 		})
 	}

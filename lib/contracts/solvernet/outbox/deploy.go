@@ -155,26 +155,22 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
 	}
 
+	srcChainID := chainID.Uint64()
+
 	// setInboxes
 	var chainIDs []uint64
 	var inboxes []bindings.ISolverNetOutboxInboxConfig
-	for _, chain := range network.EVMChains() {
-		if chain.ID == chainID.Uint64() {
+	for _, dest := range network.EVMChains() {
+		provider, ok := solvernet.Provider(srcChainID, dest.ID)
+		if !ok {
 			continue
 		}
 
-		provider, err := solvernet.Provider(chain.ID)
-		if err != nil {
-			return common.Address{}, nil, errors.Wrap(err, "get provider")
-		}
-
-		if provider != 0 {
-			chainIDs = append(chainIDs, chain.ID)
-			inboxes = append(inboxes, bindings.ISolverNetOutboxInboxConfig{
-				Inbox:    cfg.Inbox,
-				Provider: provider,
-			})
-		}
+		chainIDs = append(chainIDs, dest.ID)
+		inboxes = append(inboxes, bindings.ISolverNetOutboxInboxConfig{
+			Inbox:    cfg.Inbox,
+			Provider: provider,
+		})
 	}
 
 	txOpts, err = backend.BindOpts(ctx, cfg.Owner)

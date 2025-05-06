@@ -35,10 +35,7 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 	eg, childCtx := errgroup.WithContext(ctx)
 
 	for _, chain := range network.EVMChains() {
-		routes, err := getRoutes(chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
-		if err != nil {
-			return errors.Wrap(err, "get routes", "chain", chain.Name)
-		}
+		routes := getRoutes(chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
 
 		backend, err := backends.Backend(chain.ID)
 		if err != nil {
@@ -80,39 +77,18 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 }
 
 // getRoutes returns the remote chain IDs, outboxes, and inbox configs for a given chain.
-func getRoutes(src netconf.Chain, network netconf.Network, inbox common.Address, outbox common.Address) ([]Route, error) {
+func getRoutes(src netconf.Chain, network netconf.Network, inbox common.Address, outbox common.Address) []Route {
 	var routes []Route
 	for _, dest := range network.EVMChains() {
-		// Skip Hyperlane routes on Omni EVM.
-		if netconf.IsOmniExecution(network.ID, src.ID) && solvernet.IsHLChain(dest.ID) {
-			continue
-		}
-
-		// IsDisabled == true will configure zero values for routes to/from disabled chains.
 		if solvernet.IsDisabled(src.ID) || solvernet.IsDisabled(dest.ID) {
-			routes = append(routes, Route{
-				ChainID: dest.ID,
-				Outbox:  common.Address{},
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
-					Inbox:    common.Address{},
-					Provider: solvernet.None,
-				},
-			})
-
+			// If disabled, configure zero values for routes to/from disabled chains.
+			routes = append(routes, Route{ChainID: dest.ID})
 			continue
 		}
 
-		provider := solvernet.Hyperlane
-		var err error
-		if src.ID == dest.ID {
-			// If the source and destination chains are the same, don't configure a provider.
-			provider = solvernet.None
-		} else if !solvernet.IsHLChain(src.ID) {
-			// If the source chain is not a Hyperlane chain, use the destination chain's provider.
-			provider, err = solvernet.Provider(dest.ID)
-			if err != nil {
-				return nil, errors.Wrap(err, "get provider", "chain", dest.Name)
-			}
+		provider, ok := solvernet.Provider(src.ID, dest.ID)
+		if !ok {
+			continue
 		}
 
 		routes = append(routes, Route{
@@ -122,7 +98,7 @@ func getRoutes(src netconf.Chain, network netconf.Network, inbox common.Address,
 		})
 	}
 
-	return routes, nil
+	return routes
 }
 
 // checkDeployed returns true if the SolverNet inbox and outbox are deployed on a given chain.
