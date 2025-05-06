@@ -128,7 +128,7 @@ func setupChainHL(ctx context.Context, s shared, c netconf.Chain) (chain, error)
 		return chain{}, errors.Wrap(err, "get addresses")
 	}
 
-	if solvernet.IsHLChain(c.ID) {
+	if solvernet.IsHLOnly(c.ID) {
 		return chain{
 			EVMChain:    evmchain,
 			RPCEndpoint: rpc,
