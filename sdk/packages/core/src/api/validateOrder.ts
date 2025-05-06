@@ -7,6 +7,10 @@ import { type Order, isContractCall } from '../types/order.js'
 import { getApiUrl } from '../utils/getApiUrl.js'
 import { toJSON } from '../utils/toJSON.js'
 
+export type ValidateOrderParameters<abis extends OptionalAbis> = Order<abis> & {
+  environment?: Environment | string
+}
+
 export type ValidationResponse = {
   accepted?: boolean
   rejected?: boolean
@@ -20,10 +24,10 @@ export type ValidationResponse = {
 
 // validateOrder calls /check - checking if an order is valid
 export async function validateOrder<abis extends OptionalAbis>(
-  order: Order<abis>,
-  envOrApiBaseUrl?: Environment | string,
+  params: ValidateOrderParameters<abis>,
 ) {
-  const apiUrl = getApiUrl(envOrApiBaseUrl)
+  const { environment, ...order } = params
+  const apiUrl = getApiUrl(environment)
   const json = await fetchJSON(`${apiUrl}/check`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

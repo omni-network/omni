@@ -15,7 +15,10 @@ export async function openOrder<abis extends OptionalAbis>(
   params: OpenOrderParameters<abis>,
 ): Promise<ResolvedOrder> {
   const { environment, pollingInterval, ...sendOrderParams } = params
-  const validationResult = await validateOrder(params.order, environment)
+  const validationResult = await validateOrder({
+    ...params.order,
+    environment,
+  })
   assertAcceptedResult(validationResult)
   const txHash = await sendOrder(sendOrderParams)
   return await waitForOrderOpen({

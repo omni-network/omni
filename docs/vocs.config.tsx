@@ -49,14 +49,59 @@ export default defineConfig({
     {
       text: 'SolverNet SDK',
       items: [
-        { text: 'Getting Started', link: '/sdk/getting-started' },
+        {
+          text: 'Getting Started',
+          link: '/sdk/getting-started',
+          collapsed: false,
+          items: [
+            { text: 'With React', link: '/sdk/getting-started/react' },
+            { text: 'Without framework', link: '/sdk/getting-started/core' },
+          ],
+        },
         { text: 'Supported Assets', link: '/sdk/supported-assets' },
         {
-          text: 'Hooks',
+          text: 'React hooks',
           items: [
             { text: 'useQuote', link: '/sdk/hooks/useQuote' },
             { text: 'useOrder', link: '/sdk/hooks/useOrder' },
-            { text: 'withExecAndTransfer', link: '/sdk/utils/withExecAndTransfer' },
+          ],
+        },
+        {
+          text: 'Core functions',
+          items: [
+            {
+              text: 'getContracts',
+              link: '/sdk/core/getContracts',
+            },
+            {
+              text: 'getQuote',
+              link: '/sdk/core/getQuote',
+            },
+            {
+              text: 'openOrder',
+              link: '/sdk/core/openOrder',
+            },
+            {
+              text: 'generateOrder',
+              link: '/sdk/core/generateOrder',
+            },
+            {
+              text: 'waitForOrderOpen',
+              link: '/sdk/core/waitForOrderOpen',
+            },
+            {
+              text: 'waitForOrderClose',
+              link: '/sdk/core/waitForOrderClose',
+            },
+          ],
+        },
+        {
+          text: 'Utility functions',
+          items: [
+            {
+              text: 'withExecAndTransfer',
+              link: '/sdk/utils/withExecAndTransfer',
+            },
           ],
         },
         { text: 'Swaps', link: '/sdk/swaps' },

@@ -7,7 +7,9 @@ test('default: returns contracts addresses', async () => {
   const fetchJSONSpy = vi.spyOn(api, 'fetchJSON')
   fetchJSONSpy.mockResolvedValueOnce(testContracts)
 
-  await expect(getContracts('http://localhost')).resolves.toEqual(testContracts)
+  await expect(
+    getContracts({ environment: 'http://localhost' }),
+  ).resolves.toEqual(testContracts)
   expect(fetchJSONSpy).toHaveBeenCalledWith('http://localhost/contracts')
 })
 
@@ -17,7 +19,7 @@ test('behaviour: handles invalid response format', async () => {
   })
 
   const expectRejection = expect(async () => {
-    await getContracts('http://localhost')
+    await getContracts({ environment: 'http://localhost' })
   }).rejects
   await expectRejection.toBeInstanceOf(Error)
   await expectRejection.toHaveProperty(
@@ -33,7 +35,7 @@ test('behaviour: handles invalid response format', async () => {
   })
 
   const expectRejection = expect(async () => {
-    await getContracts('http://localhost')
+    await getContracts({ environment: 'http://localhost' })
   }).rejects
   await expectRejection.toBeInstanceOf(Error)
   await expectRejection.toHaveProperty(

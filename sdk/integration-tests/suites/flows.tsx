@@ -1,9 +1,15 @@
-import { type Quote, getQuote, withExecAndTransfer } from '@omni-network/core'
+import {
+  type Quote,
+  generateOrder,
+  getQuote,
+  withExecAndTransfer,
+} from '@omni-network/core'
 import { useQuote, useValidateOrder } from '@omni-network/react'
 import {
   availableTestAccounts,
   createAnvilClient,
   createClient,
+  inbox,
   invalidTokenAddress,
   middleman,
   mintOMNI,
@@ -173,7 +179,7 @@ describe.concurrent('ETH transfer orders', () => {
           address: account.address,
         })
 
-        const quote = await getQuote(quoteParams, 'devnet')
+        const quote = await getQuote({ ...quoteParams, environment: 'devnet' })
         expect(quote).toEqual({
           deposit: { token: zeroAddress, amount: parseEther('2') },
           expense: { token: zeroAddress, amount: expect.any(BigInt) },
@@ -185,6 +191,53 @@ describe.concurrent('ETH transfer orders', () => {
           srcClient,
           destClient,
         })
+
+        const postDestBalance = await getBalance(destClient, {
+          address: account.address,
+        })
+        expect(postDestBalance).toBe(
+          preDestBalance + orderParams.calls[0].value,
+        )
+      })
+
+      test('using core generator', async () => {
+        const account = getNextAccount()
+        await createAnvilClient(mockL1Chain).setBalance({
+          address: account.address,
+          value: parseEther('10'),
+        })
+
+        const srcClient = createClient({ account, chain: mockL1Chain })
+        const orderParams = {
+          deposit: { token: zeroAddress, amount: parseEther('2') },
+          expense: { token: zeroAddress, amount: parseEther('1') },
+          calls: [{ target: account.address, value: parseEther('1') }],
+          srcChainId: mockL1Id,
+          destChainId: mockL2Id,
+          validateEnabled: false,
+        }
+
+        const preDestBalance = await getBalance(destClient, {
+          address: account.address,
+        })
+
+        const quote = await getQuote({ ...quoteParams, environment: 'devnet' })
+        expect(quote).toEqual({
+          deposit: { token: zeroAddress, amount: parseEther('2') },
+          expense: { token: zeroAddress, amount: expect.any(BigInt) },
+        })
+        expect(quote.expense.amount).toBeLessThan(parseEther('2'))
+
+        const status: Array<string> = []
+        for await (const state of generateOrder({
+          client: srcClient,
+          environment: 'devnet',
+          inboxAddress: inbox,
+          order: orderParams,
+        })) {
+          status.push(state.status)
+        }
+        expect(status).toEqual(['valid', 'sent', 'open', 'filled'])
 
         const postDestBalance = await getBalance(destClient, {
           address: account.address,

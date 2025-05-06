@@ -57,7 +57,7 @@ export function useValidateOrder<abis extends OptionalAbis>({
 
   const query = useQuery<ValidationResponse, FetchJSONError>({
     queryKey: ['check', order],
-    queryFn: async () => validateOrder(order, apiBaseUrl),
+    queryFn: async () => validateOrder({ ...order, environment: apiBaseUrl }),
     queryKeyHashFn: hashFn,
     enabled,
   })

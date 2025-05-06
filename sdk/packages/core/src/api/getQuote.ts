@@ -5,12 +5,13 @@ import type { Quote, Quoteable } from '../types/quote.js'
 import { getApiUrl } from '../utils/getApiUrl.js'
 import { toJSON } from '../utils/toJSON.js'
 
-export type GetQuoteParams = {
+export type GetQuoteParameters = {
   srcChainId?: number
   destChainId: number
   mode: 'expense' | 'deposit'
   deposit: Quoteable
   expense: Quoteable
+  environment?: Environment | string
 }
 
 // the response from /quote endpoint (amounts are hex encoded bigints)
@@ -20,18 +21,16 @@ type QuoteResponse = {
 }
 
 // getQuote calls the /quote endpoint
-export async function getQuote(
-  quote: GetQuoteParams,
-  envOrApiBaseUrl?: Environment | string,
-): Promise<Quote> {
+export async function getQuote(quote: GetQuoteParameters): Promise<Quote> {
   const {
     srcChainId,
     destChainId,
     deposit: depositInput,
     expense: expenseInput,
     mode,
+    environment,
   } = quote
-  const apiUrl = getApiUrl(envOrApiBaseUrl)
+  const apiUrl = getApiUrl(environment)
   const json = await fetchJSON(`${apiUrl}/quote`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

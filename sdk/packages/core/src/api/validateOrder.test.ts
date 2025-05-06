@@ -10,26 +10,24 @@ test('default: native transfer order', async () => {
     accepted: true,
   })
 
-  const resultPromise = validateOrder(
-    {
-      owner: testAccount.address,
-      srcChainId: 1,
-      destChainId: 2,
-      calls: [
-        {
-          target: testAccount.address,
-          value: 0n,
-        },
-      ],
-      deposit: {
-        amount: 0n,
+  const resultPromise = validateOrder({
+    owner: testAccount.address,
+    srcChainId: 1,
+    destChainId: 2,
+    calls: [
+      {
+        target: testAccount.address,
+        value: 0n,
       },
-      expense: {
-        amount: 0n,
-      },
+    ],
+    deposit: {
+      amount: 0n,
     },
-    'http://localhost',
-  )
+    expense: {
+      amount: 0n,
+    },
+    environment: 'http://localhost',
+  })
   await expect(resultPromise).resolves.toEqual({ accepted: true })
   expect(api.fetchJSON).toHaveBeenCalledWith(
     'http://localhost/check',
@@ -41,7 +39,9 @@ test('default: order', async () => {
   vi.spyOn(api, 'fetchJSON').mockResolvedValue({
     accepted: true,
   })
-  await expect(validateOrder(testOrder, 'http://localhost')).resolves.toEqual({
+  await expect(
+    validateOrder({ ...testOrder, environment: 'http://localhost' }),
+  ).resolves.toEqual({
     accepted: true,
   })
   expect(api.fetchJSON).toHaveBeenCalledWith(
@@ -58,9 +58,9 @@ test('behaviour: resolves if response is supported error object', async () => {
     },
   }
   vi.spyOn(api, 'fetchJSON').mockResolvedValue(response)
-  await expect(validateOrder(testOrder, 'http://localhost')).resolves.toBe(
-    response,
-  )
+  await expect(
+    validateOrder({ ...testOrder, environment: 'http://localhost' }),
+  ).resolves.toBe(response)
 })
 
 test('behaviour: resolves if response is supported rejection object', async () => {

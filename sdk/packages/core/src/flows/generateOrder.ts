@@ -17,8 +17,8 @@ export type GenerateOrderParameters<abis extends OptionalAbis> =
   }
 
 export type OrderState =
-  | { status: 'valid' }
-  | { status: 'sent'; txHash: Hex }
+  | { status: 'valid'; txHash?: never; order?: never }
+  | { status: 'sent'; txHash: Hex; order?: never }
   | { status: 'open'; txHash: Hex; order: ResolvedOrder }
   | { status: TerminalStatus; txHash: Hex; order: ResolvedOrder }
 
@@ -27,7 +27,10 @@ export async function* generateOrder<abis extends OptionalAbis>(
 ): AsyncGenerator<OrderState> {
   const { environment, pollingInterval, ...sendOrderParams } = params
 
-  const validationResult = await validateOrder(params.order, environment)
+  const validationResult = await validateOrder({
+    ...params.order,
+    environment,
+  })
   assertAcceptedResult(validationResult)
   yield { status: 'valid' }
 

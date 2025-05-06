@@ -13,10 +13,14 @@ function isContracts(json: unknown): json is OmniContracts {
   )
 }
 
+export type GetContractsParameters = {
+  environment?: Environment | string
+}
+
 export async function getContracts(
-  envOrApiBaseUrl?: Environment | string,
+  params: GetContractsParameters = {},
 ): Promise<OmniContracts> {
-  const apiUrl = getApiUrl(envOrApiBaseUrl)
+  const apiUrl = getApiUrl(params?.environment)
   const json = await fetchJSON(`${apiUrl}/contracts`)
 
   if (!isContracts(json)) throw new Error('Unexpected /contracts response')
