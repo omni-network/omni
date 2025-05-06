@@ -93,6 +93,10 @@ export default defineConfig({
               text: 'waitForOrderClose',
               link: '/sdk/core/waitForOrderClose',
             },
+            {
+              text: 'watchDidFill',
+              link: '/sdk/core/watchDidFill',
+            },
           ],
         },
         {
