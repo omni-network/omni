@@ -20,7 +20,7 @@ const { unwatch, status, destTxHash } = await watchDidFill({
 | -------------     | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `client`          | `Client`                               | Yes      | Chain ID of the destination chain (where the action occurs and the `expense` is spent on behalf of the user).  |
 | `outboxAddress`   | `number`                               | Yes      | The address of the inbox contract, retrieved using the [`getContracts` function](/sdk/core/getContracts).  |
-| `orderId`         | `Hex` `|` `0x${string}`                | Yes      | Order identifier defined on a [`ResolvedOrder`](/sdk/core/waitForOrderOpen#resolvedorder) |
+| `orderId`         | `0x${string}`                          | Yes      | Order identifier defined on a [`ResolvedOrder`](/sdk/core/waitForOrderOpen#resolvedorder) |
 | `onLogs`          | `(logs: Log[]) => void`                | Yes      | Callback that'll be invoked with the logs of the `Filled` event.  |
 | `pollingInterval` | `number`                               | No       | Polling interval in milliseconds, defaults to the `client` polling interval.  |
 | `onError`         | `(error: Error) => void`               | No       | Optional callback that'll be invoked when an error occurs. |
