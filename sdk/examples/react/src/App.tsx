@@ -1,5 +1,5 @@
-import { useOrder } from '@omni-network/react'
-import { parseEther, zeroAddress } from 'viem'
+import { useOrder, useQuote } from '@omni-network/react'
+import { formatEther, parseEther, zeroAddress } from 'viem'
 import { baseSepolia, holesky } from 'viem/chains'
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
 
@@ -8,6 +8,7 @@ function App() {
     <>
       <Account />
       <Order />
+      <Quote />
     </>
   )
 }
@@ -47,6 +48,42 @@ function Account() {
             {connector.name}
           </button>
         ))
+      )}
+    </div>
+  )
+}
+
+function Quote() {
+  const account = useAccount()
+  const quote = useQuote({
+    srcChainId: baseSepolia.id,
+    destChainId: holesky.id,
+    deposit: { amount: parseEther('0.1'), isNative: true },
+    expense: { isNative: true },
+    mode: 'expense',
+    enabled: true,
+  })
+
+  return (
+    <div>
+      <h2>Order</h2>
+      {account?.address ? (
+        <>
+          <h4>Quote swap amount</h4>
+          <div>isSuccess: {quote.isSuccess}</div>
+          <div>isPending: {quote.isPending}</div>
+          <div>isError: {quote.isError}</div>
+          <div>
+            quote.deposit.amount:{' '}
+            {quote.isSuccess ? formatEther(quote.deposit.amount) : ''}
+          </div>
+          <div>
+            quote.expense.amount:{' '}
+            {quote.isSuccess ? formatEther(quote.expense.amount) : ''}
+          </div>
+        </>
+      ) : (
+        <div>connect...</div>
       )}
     </div>
   )
