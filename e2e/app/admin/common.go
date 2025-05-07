@@ -106,12 +106,12 @@ func setupChain(ctx context.Context, s shared, name string) (chain, error) {
 // setupChainHL returns chain specific resources for all chains (including Hyperlane chains).
 // starts an fbproxy for non-devnet chains.
 func setupChainHL(ctx context.Context, s shared, c netconf.Chain) (chain, error) {
-	evmchain, err := types.PublicChainByName(c.Name)
+	evmchain, err := getEVMChain(s, c)
 	if err != nil {
-		return chain{}, errors.Wrap(err, "unknown chain", "chain_name", c.Name)
+		return chain{}, errors.Wrap(err, "get evm chain")
 	}
 
-	rpc, err := s.endpoints.ByNameOrID(c.Name, c.ID)
+	rpc, err := s.endpoints.ByNameOrID(evmchain.Name, evmchain.ChainID)
 	if err != nil {
 		return chain{}, errors.Wrap(err, "unknown chain", "chain_name", c.Name)
 	}
@@ -128,7 +128,7 @@ func setupChainHL(ctx context.Context, s shared, c netconf.Chain) (chain, error)
 		return chain{}, errors.Wrap(err, "get addresses")
 	}
 
-	if solvernet.IsHLOnly(c.ID) {
+	if solvernet.IsHLOnly(evmchain.ChainID) {
 		return chain{
 			EVMChain:    evmchain,
 			RPCEndpoint: rpc,
@@ -140,6 +140,15 @@ func setupChainHL(ctx context.Context, s shared, c netconf.Chain) (chain, error)
 		PortalAddress: addrs.Portal,
 		RPCEndpoint:   rpc,
 	}, nil
+}
+
+// getEVMChain returns the EVMChain for a given netconf chain, with special handling for the Omni EVM.
+func getEVMChain(s shared, c netconf.Chain) (types.EVMChain, error) {
+	if c.Name == omniEVMName {
+		return types.OmniEVMByNetwork(s.testnet.Network), nil
+	}
+
+	return types.PublicChainByName(c.Name)
 }
 
 type runOpts struct {
