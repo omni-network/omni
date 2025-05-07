@@ -19,7 +19,6 @@ type FillInstruction = {
 export const testContracts = {
   inbox: '0x123',
   outbox: '0x456',
-  middleman: '0x789',
 } as const
 
 export const testOrderId = toHex(toBytes(1n, { size: 32 }))

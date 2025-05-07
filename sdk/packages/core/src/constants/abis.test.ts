@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from 'vitest'
 
-import { inboxABI, middlemanABI, outboxABI } from './abis.js'
+import { executorABI, inboxABI, outboxABI } from './abis.js'
 
 const ASSETS_PATH = fileURLToPath(
   new URL('../test/assets', dirname(import.meta.url)),
@@ -17,8 +17,8 @@ async function readContractFile(
 }
 
 test.each([
+  ['SolverNetExecutor', executorABI],
   ['SolverNetInbox', inboxABI],
-  ['SolverNetMiddleman', middlemanABI],
   ['SolverNetOutbox', outboxABI],
 ])(
   '%s contract contains all the ABIs expected by the SDK',

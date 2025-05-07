@@ -11,7 +11,6 @@ import {
   createClient,
   inbox,
   invalidTokenAddress,
-  middleman,
   mintOMNI,
   mockL1Chain,
   mockL1Id,
@@ -420,7 +419,7 @@ describe.concurrent('ETH transfer orders', () => {
           address: account.address,
         })
 
-        const quote = await getQuote(quoteParams, 'devnet')
+        const quote = await getQuote({ ...quoteParams, environment: 'devnet' })
         expect(quote).toEqual({
           deposit: { token: zeroAddress, amount: parseEther('1') },
           expense: { token: zeroAddress, amount: expect.any(BigInt) },
@@ -446,7 +445,6 @@ describe.concurrent('ETH transfer orders', () => {
             token: zeroAddress,
             to: account.address,
           },
-          middlemanAddress: middleman,
         })
 
         const order = {
@@ -522,7 +520,6 @@ describe.concurrent('ETH transfer orders', () => {
             token: zeroAddress,
             to: account.address,
           },
-          middlemanAddress: middleman,
         })
 
         const order = {
