@@ -24,8 +24,7 @@ func newPricer(ctx context.Context, network netconf.ID, apiKey string) tokenpric
 
 	pricer := tokenpricer.NewCached(coingecko.New(coingecko.WithAPIKey(apiKey)))
 
-	// use cached pricer avoid spamming coingecko public api
-	const priceCacheEvictInterval = time.Minute * 10
+	const priceCacheEvictInterval = time.Minute
 	go pricer.ClearCacheForever(ctx, priceCacheEvictInterval)
 
 	return pricer
