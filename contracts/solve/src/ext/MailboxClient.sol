@@ -40,9 +40,6 @@ abstract contract MailboxClient is OwnableRoles, Initializable, PackageVersioned
 
     uint32 public immutable localDomain;
 
-    // ============ Mutable Storage ============
-    uint256[48] private __GAP; // gap for upgrade safety
-
     /**
      * @notice Only accept messages from a Hyperlane Mailbox contract
      */
