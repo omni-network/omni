@@ -56,8 +56,8 @@ export default defineConfig({
           items: [
             { text: 'With React', link: '/sdk/getting-started/react' },
             { text: 'Without framework', link: '/sdk/getting-started/core' },
-            { text: 'Basic Deposit', link: '/guides/basic-deposit' },
-            { text: 'Template', link: '/guides/template' },
+            { text: 'Basic Deposit', link: '/sdk/getting-started/basic-deposit' },
+            { text: 'Template', link: '/sdk/getting-started/template' },
           ],
         },
         { text: 'Supported Assets', link: '/sdk/supported-assets' },
