@@ -1,6 +1,8 @@
 package solana
 
 import (
+	"github.com/omni-network/omni/anchor/anchorinbox"
+	"github.com/omni-network/omni/anchor/localnet"
 	"github.com/omni-network/omni/solver/solana/events"
 
 	"github.com/gagliardetto/solana-go"
@@ -19,10 +21,19 @@ var (
 		Name:         "events",
 		SharedObject: soEvents,
 		KeyPairJSON:  keyPairEvents,
+		setProgramID: events.SetProgramID,
+	}
+
+	ProgramInbox = Program{
+		Name:         "solver_inbox",
+		SharedObject: localnet.InboxSO,
+		KeyPairJSON:  localnet.InboxKeyPairJSON,
+		setProgramID: anchorinbox.SetProgramID,
 	}
 
 	Programs = []Program{
 		ProgramEvents,
+		ProgramInbox,
 	}
 )
 
@@ -31,6 +42,7 @@ type Program struct {
 	Name         string
 	SharedObject []byte // Compiled BPF shared object
 	KeyPairJSON  []byte
+	setProgramID func(solana.PublicKey)
 }
 
 func (p Program) SOFile() string {
@@ -54,13 +66,9 @@ func (p Program) MustPublicKey() solana.PublicKey {
 	return p.MustPrivateKey().PublicKey()
 }
 
-func (p Program) Init() {
-	events.SetProgramID(p.MustPublicKey())
-}
-
 //nolint:gochecknoinits // init isn't cool, but the generated code requires it.
 func init() {
 	for _, program := range Programs {
-		program.Init()
+		program.setProgramID(program.MustPublicKey())
 	}
 }

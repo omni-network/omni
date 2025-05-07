@@ -1,0 +1,254 @@
+{
+  "address": "AwminMpVyPSX86m3w9KWcxjovtnjwxiKZUNTDgDqrctv",
+  "metadata": {
+    "name": "solver_inbox",
+    "version": "0.0.1",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "open",
+      "discriminator": [
+        228,
+        220,
+        155,
+        71,
+        199,
+        189,
+        60,
+        45
+      ],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "params.order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "OpenParams"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "OrderState",
+      "discriminator": [
+        60,
+        123,
+        67,
+        162,
+        96,
+        43,
+        173,
+        225
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "EventOpened",
+      "discriminator": [
+        178,
+        81,
+        199,
+        118,
+        203,
+        221,
+        6,
+        91
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidID",
+      "msg": "Invalid order ID"
+    }
+  ],
+  "types": [
+    {
+      "name": "EventOpened",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "order_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OpenParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "deposit",
+            "type": {
+              "defined": {
+                "name": "TokenAmount"
+              }
+            }
+          },
+          {
+            "name": "expense",
+            "type": {
+              "defined": {
+                "name": "TokenAmount"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "deposit",
+            "type": {
+              "defined": {
+                "name": "TokenAmount"
+              }
+            }
+          },
+          {
+            "name": "expense",
+            "type": {
+              "defined": {
+                "name": "TokenAmount"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Status",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Invalid"
+          },
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Rejected"
+          },
+          {
+            "name": "Closed"
+          },
+          {
+            "name": "Filled"
+          },
+          {
+            "name": "Claimed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenAmount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "token",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

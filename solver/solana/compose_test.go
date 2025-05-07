@@ -10,10 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/lib/tutil"
 	solcompose "github.com/omni-network/omni/solver/solana"
 	"github.com/omni-network/omni/solver/solana/events"
 
+	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/programs/memo"
 	"github.com/gagliardetto/solana-go/rpc"
@@ -234,6 +236,112 @@ func TestEventsProgram(t *testing.T) {
 		require.Fail(t, "tx sig map not empty")
 		return true
 	})
+}
+
+func TestInbox(t *testing.T) {
+	if !*integration {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := t.Context()
+	cl, privKey0, stop, err := solcompose.Start(ctx, dir)
+	require.NoError(t, err)
+	defer stop()
+
+	prog := solcompose.ProgramInbox
+
+	// Start streaming program tx sigs async
+	async := make(chan solana.Signature, 1000)
+	go func() {
+		streamReq := solcompose.StreamReq{
+			FromSlot:   ptr(uint64(0)),
+			Account:    prog.MustPublicKey(),
+			Commitment: rpc.CommitmentConfirmed,
+		}
+		err := solcompose.Stream(ctx, cl, streamReq, func(ctx context.Context, sig *rpc.TransactionSignature) error {
+			t.Logf("Streamed Tx: slot=%d, sig=%v", sig.Slot, sig.Signature)
+			async <- sig.Signature
+
+			return nil
+		})
+		if err != nil {
+			t.Errorf("stream error: %v", err)
+		}
+	}()
+
+	// Deploy events program
+	tx0, err := solcompose.Deploy(ctx, cl, dir, prog)
+	tutil.RequireNoError(t, err)
+	t.Logf("Deployed inbox program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
+	require.Equal(t, mustFirstTxSig(tx0), <-async)
+
+	// Prep Open instruction
+	owner := privKey0.PublicKey()
+	nonce := uint64(123456)                         // Pick a random nonce
+	orderID := anchorinbox.NewOrderID(owner, nonce) // Calculate order ID
+	t.Logf("OrderID: %s", orderID)
+
+	stateAddr, bump, err := anchorinbox.FindOrderStateAddress(orderID) // Calculate order state account address
+	require.NoError(t, err)
+
+	params := anchorinbox.OpenParams{OrderId: orderID, Nonce: nonce}
+	instr := anchorinbox.NewOpenInstruction(params, stateAddr, privKey0.PublicKey(), solana.SystemProgramID)
+
+	// Send Open instruction
+	txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, instr.Build())
+	require.NoError(t, err)
+
+	txResp1, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig1)
+	require.NoError(t, err)
+	require.Nil(t, txResp1.Meta.Err)
+	t.Logf("Open Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp1.Slot, txResp1.BlockTime, txSig1, txResp1.Meta.LogMessages)
+	require.Equal(t, mustFirstTxSig(txResp1), <-async)
+
+	// Ensure Opened event
+	openEvent := anchorinbox.EventOpened{
+		OrderId:    orderID,
+		OrderState: stateAddr,
+		Status:     anchorinbox.StatusPending,
+	}
+	ensureInboxEvent(t, prog, txResp1, anchorinbox.EventNameOpened, openEvent)
+
+	// Get OrderState account
+	info, err := cl.GetAccountInfoWithOpts(ctx, stateAddr, &rpc.GetAccountInfoOpts{
+		Commitment: rpc.CommitmentConfirmed,
+	})
+	require.NoError(t, err)
+
+	orderState := anchorinbox.OrderStateAccount{}
+	err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(&orderState)
+	require.NoError(t, err)
+
+	// Ensure OrderState account is correct
+	expected := anchorinbox.OrderStateAccount{
+		OrderId:   orderID,
+		Status:    anchorinbox.StatusPending,
+		Authority: privKey0.PublicKey(),
+		Bump:      bump,
+	}
+	require.Equal(t, expected, orderState)
+}
+
+func ensureInboxEvent(t *testing.T, prog solcompose.Program, txRes *rpc.GetTransactionResult, expectName string, expectData any) {
+	t.Helper()
+
+	evnts, err := anchorinbox.DecodeEvents(txRes, prog.MustPublicKey(), nil)
+	require.NoError(t, err)
+	require.Len(t, evnts, 1)
+
+	for _, evnt := range evnts {
+		require.Equal(t, expectName, evnt.Name)
+
+		expectJSON, err := json.MarshalIndent(expectData, "", "  ")
+		require.NoError(t, err)
+		actualJSON, err := json.MarshalIndent(evnt.Data, "", "  ")
+		require.NoError(t, err)
+
+		require.JSONEq(t, string(expectJSON), string(actualJSON))
+	}
 }
 
 func ensureEvent(t *testing.T, prog solcompose.Program, txRes *rpc.GetTransactionResult, expectName string, expectData any) {
