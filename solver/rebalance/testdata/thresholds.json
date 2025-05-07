@@ -1,0 +1,93 @@
+{
+ "arbitrum_one:ETH": {
+  "maxSwap": "5 ETH",
+  "min": "1 ETH",
+  "minSwap": "1 ETH",
+  "surplus": "8 ETH",
+  "target": "6 ETH"
+ },
+ "arbitrum_one:USDC": {
+  "maxSwap": "10000 USDC",
+  "min": "5000 USDC",
+  "minSwap": "1000 USDC",
+  "surplus": "20000 USDC",
+  "target": "15000 USDC"
+ },
+ "arbitrum_one:USDT": {
+  "maxSwap": "10000 USDT",
+  "min": "5000 USDT",
+  "minSwap": "1000 USDT",
+  "surplus": "12000 USDT",
+  "target": "10000 USDT"
+ },
+ "base:ETH": {
+  "maxSwap": "5 ETH",
+  "min": "1 ETH",
+  "minSwap": "1 ETH",
+  "surplus": "5 ETH",
+  "target": "3 ETH"
+ },
+ "base:USDC": {
+  "maxSwap": "10000 USDC",
+  "min": "20000 USDC",
+  "minSwap": "1000 USDC",
+  "surplus": "50000 USDC",
+  "target": "40000 USDC"
+ },
+ "base:wstETH": {
+  "maxSwap": "5 wstETH",
+  "min": "0 wstETH",
+  "minSwap": "1 wstETH",
+  "surplus": "0 wstETH",
+  "target": "0 wstETH"
+ },
+ "ethereum:ETH": {
+  "maxSwap": "5 ETH",
+  "min": "20 ETH",
+  "minSwap": "1 ETH",
+  "surplus": "60 ETH",
+  "target": "50 ETH"
+ },
+ "ethereum:USDC": {
+  "maxSwap": "10000 USDC",
+  "min": "50000 USDC",
+  "minSwap": "1000 USDC",
+  "surplus": "120000 USDC",
+  "target": "100000 USDC"
+ },
+ "ethereum:USDT": {
+  "maxSwap": "10000 USDT",
+  "min": "1000 USDT",
+  "minSwap": "1000 USDT",
+  "surplus": "10000 USDT",
+  "target": "5000 USDT"
+ },
+ "ethereum:wstETH": {
+  "maxSwap": "5 wstETH",
+  "min": "20 wstETH",
+  "minSwap": "1 wstETH",
+  "surplus": "55 wstETH",
+  "target": "50 wstETH"
+ },
+ "optimism:ETH": {
+  "maxSwap": "5 ETH",
+  "min": "1 ETH",
+  "minSwap": "1 ETH",
+  "surplus": "8 ETH",
+  "target": "6 ETH"
+ },
+ "optimism:USDC": {
+  "maxSwap": "10000 USDC",
+  "min": "5000 USDC",
+  "minSwap": "1000 USDC",
+  "surplus": "20000 USDC",
+  "target": "15000 USDC"
+ },
+ "optimism:USDT": {
+  "maxSwap": "10000 USDT",
+  "min": "5000 USDT",
+  "minSwap": "1000 USDT",
+  "surplus": "12000 USDT",
+  "target": "10000 USDT"
+ }
+}
