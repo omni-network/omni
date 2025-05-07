@@ -69,12 +69,12 @@ contract SolverNetMiddleman {
 
 **Key Points:**
 
-*   The `token` in the `transfer` configuration of `withExecAndTransfer` is the address of the asset you expect the *executor* to receive *as a result of* executing your `call`. This is the asset the executor will forward to the final `to` address. Use `zeroAddress` if the `call` results in native ETH being sent to the executor.
+*   The `token` in the `transfer` configuration of `withExecAndTransfer` is the address of the asset you expect the *middleman* to receive *as a result of* executing your `call`. This is the asset the middleman will forward to the final `to` address. Use `zeroAddress` if the `call` results in native ETH being sent to the middleman.
 
 ## Usage
 
 1.  **Define your target call:** This is the call to the target contract function (e.g., `vault.deposit{ value: amount }()`) that sends assets to `msg.sender`.
-2.  **Wrap it:** Use `withExecAndTransfer`, providing your original call, the `token` you expect the executor to receive, and the final recipient (`to`).
+2.  **Wrap it:** Use `withExecAndTransfer`, providing the Omni `middlemanAddress`, your original call, the `token` you expect the middleman to receive, and the final recipient (`to`).
 3.  **Use the wrapped call:** Pass the result of `withExecAndTransfer` (which is a `Call` object itself) into the `calls` array for `useOrder`.
 
 ```typescript
@@ -92,6 +92,7 @@ const vaultABI = [
     },
 ] as const;
 
+const middlemanAddress = "0x..." as const;  // Omni contract address
 const vaultAddress = "0x..." as const;      // Your tokenized vault address
 const vaultTokenAddress = "0x..." as const; // The ERC20 token minted by the vault to msg.sender
 const vaultDepositAmt = parseEther('1');    // Amount to deposit into the vault
@@ -107,9 +108,10 @@ const targetCall = {
 
 // 2. Wrap the call
 const wrappedCall = withExecAndTransfer({
+    middlemanAddress: middlemanAddress,
     call: targetCall,
     transfer: {
-        token: vaultTokenAddress, // Token the executor should forward
+        token: vaultTokenAddress, // Token the middleman should forward
         to: userAddress,          // Final recipient
     }
 });
