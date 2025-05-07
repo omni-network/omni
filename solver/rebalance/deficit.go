@@ -57,7 +57,7 @@ func GetUSDDeficit(
 }
 
 // AmtToUSD converts a token amount to USD using the given price.
-// USD amount is rebased to 6 decimals.
+// USD amount is rebased to usdDecimals (6) to match USDC.
 func AmtToUSD(
 	ctx context.Context,
 	pricer tokenpricer.Pricer,
@@ -69,7 +69,7 @@ func AmtToUSD(
 		return nil, errors.Wrap(err, "get price")
 	}
 
-	return bi.Rebase(bi.MulF64(amount, price), token.Decimals, 6), nil
+	return bi.Rebase(bi.MulF64(amount, price), token.Decimals, usdDecimals), nil
 }
 
 // GetChainUSDDeficit returns the total USD deficit for a given chain.
@@ -113,7 +113,7 @@ func GetChainUSDDeficit(
 	return deficit, nil
 }
 
-type Deficit struct {
+type ChainAmount struct {
 	ChainID uint64
 	Amount  *big.Int
 }
@@ -126,8 +126,8 @@ func GetUSDDeficitsDescending(
 	clients map[uint64]ethclient.Client,
 	pricer tokenpricer.Pricer,
 	solver common.Address,
-) ([]Deficit, error) {
-	var deficits []Deficit
+) ([]ChainAmount, error) {
+	var deficits []ChainAmount
 
 	for _, chain := range network.EVMChains() {
 		client, ok := clients[chain.ID]
@@ -140,7 +140,7 @@ func GetUSDDeficitsDescending(
 			return nil, errors.Wrap(err, "get chain deficit")
 		}
 
-		deficits = append(deficits, Deficit{ChainID: chain.ID, Amount: deficit})
+		deficits = append(deficits, ChainAmount{ChainID: chain.ID, Amount: deficit})
 	}
 
 	// Sort by amount descending

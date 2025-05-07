@@ -123,14 +123,14 @@ func sendSurplusOnce(
 	// For clarity
 	thisChainID := chainID
 
-	deficitHere, ok := find(deficits, func(d Deficit) bool { return d.ChainID == thisChainID })
+	deficitHere, ok := find(deficits, func(d ChainAmount) bool { return d.ChainID == thisChainID })
 	if !ok {
 		return errors.New("missing deficit")
 	}
 
 	if bi.LT(surplus, deficitHere.Amount) { // Surplus < deficit here, don't send it elsewhere.
 		log.Debug(ctx, "Surplus < deficit here, skipping send",
-			"deficit", usdc.FormatAmt(deficitHere.Amount),
+			"deficit", formatUSD(deficitHere.Amount),
 			"amount", usdc.FormatAmt(surplus))
 
 		return nil
@@ -147,7 +147,7 @@ func sendSurplusOnce(
 
 		ctx := log.WithCtx(ctx,
 			"dest", evmchain.Name(d.ChainID),
-			"deficit", usdc.FormatAmt(d.Amount),
+			"deficit", formatUSD(d.Amount),
 			"surplus", usdc.FormatAmt(surplus),
 			"min", usdc.FormatAmt(minSend),
 			"max", usdc.FormatAmt(maxSend))
@@ -325,7 +325,7 @@ func fillTokenDeficitOnce(
 
 	toSwap := deficitUSD
 	if bi.GT(toSwap, surplusUSDC) { // Deficit > surplus, cap swap to surplus.
-		log.Debug(ctx, "Deficit > surplus, capping swap", "deficit", usdc.FormatAmt(deficitUSD), "surplus", usdc.FormatAmt(surplusUSDC))
+		log.Debug(ctx, "Deficit > surplus, capping swap", "deficit", formatUSD(deficitUSD), "surplus", usdc.FormatAmt(surplusUSDC))
 		toSwap = surplusUSDC
 	}
 
