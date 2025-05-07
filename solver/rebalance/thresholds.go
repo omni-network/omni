@@ -101,26 +101,100 @@ func GetFundThreshold(token tokens.Token) FundThreshold {
 
 var (
 	thresholds = map[tokens.Token]FundThreshold{
-		mustToken(evmchain.IDEthereum, tokens.WSTETH): {
-			min:     10,
+		// ETH
+		mustToken(evmchain.IDEthereum, tokens.ETH): {
+			min:     20,
 			target:  50,
-			surplus: inf,
+			surplus: 60,
+			minSwap: 1,
+			maxSwap: 5,
 		},
+		mustToken(evmchain.IDBase, tokens.ETH): {
+			min:     1,
+			target:  3,
+			surplus: 5,
+			minSwap: 1,
+			maxSwap: 5,
+		},
+		mustToken(evmchain.IDArbitrumOne, tokens.ETH): {
+			min:     1,
+			target:  6,
+			surplus: 8,
+			minSwap: 1,
+			maxSwap: 5,
+		},
+		mustToken(evmchain.IDOptimism, tokens.ETH): {
+			min:     1,
+			target:  6,
+			surplus: 8,
+			minSwap: 1,
+			maxSwap: 5,
+		},
+
+		// USDC
 		mustToken(evmchain.IDEthereum, tokens.USDC): {
-			min:     50_000,
-			target:  100_000,
-			surplus: 120_000,
+			min:     50000,
+			target:  100000,
+			surplus: 120000,
 			minSwap: 1000,
-			maxSwap: 5000,
+			maxSwap: 10000,
+		},
+		mustToken(evmchain.IDBase, tokens.USDC): {
+			min:     20000,
+			target:  40000,
+			surplus: 50000,
+			minSwap: 1000,
+			maxSwap: 10000,
+		},
+		mustToken(evmchain.IDArbitrumOne, tokens.USDC): {
+			min:     5000,
+			target:  15000,
+			surplus: 20000,
+			minSwap: 1000,
+			maxSwap: 10000,
+		},
+		mustToken(evmchain.IDOptimism, tokens.USDC): {
+			min:     5000,
+			target:  15000,
+			surplus: 20000,
+			minSwap: 1000,
+			maxSwap: 10000,
+		},
+
+		// USDT
+		mustToken(evmchain.IDEthereum, tokens.USDT): {
+			min:     1000,
+			target:  5000,
+			surplus: 10000,
+			minSwap: 1000,
+			maxSwap: 10000,
+		},
+		mustToken(evmchain.IDOptimism, tokens.USDT): {
+			min:     5000,
+			target:  10000,
+			surplus: 12000,
+			minSwap: 1000,
+			maxSwap: 10000,
+		},
+		mustToken(evmchain.IDArbitrumOne, tokens.USDT): {
+			min:     5000,
+			target:  10000,
+			surplus: 12000,
+			minSwap: 1000,
+			maxSwap: 10000,
+		},
+
+		// WSTETH
+		mustToken(evmchain.IDEthereum, tokens.WSTETH): {
+			min:     20,
+			target:  50,
+			surplus: 55,
+			minSwap: 1,
+			maxSwap: 5,
 		},
 		mustToken(evmchain.IDBase, tokens.WSTETH): {
 			minSwap: 1,
-			maxSwap: 3,
-		},
-		mustToken(evmchain.IDBase, tokens.USDC): {
-			min:     20_000,
-			target:  40_000,
-			surplus: 50_000,
+			maxSwap: 5,
 		},
 	}
 )
