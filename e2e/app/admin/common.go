@@ -221,7 +221,7 @@ func (s shared) runHL(ctx context.Context, def app.Definition, fn func(context.C
 	}
 	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByEndpoints(_s.endpoints))
 
-	for _, _chain := range network.Chains {
+	for _, _chain := range network.EVMChains() {
 		c, err := setupChainHL(ctx, _s, _chain)
 		if err != nil {
 			return errors.Wrap(err, "setup chain hl", "chain", _chain.Name)
