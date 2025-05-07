@@ -277,7 +277,7 @@ export const outboxABI = [
   },
 ] as const
 
-export const middlemanABI = [
+export const executorABI = [
   {
     type: 'function',
     inputs: [

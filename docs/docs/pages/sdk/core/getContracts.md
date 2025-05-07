@@ -28,7 +28,6 @@ const contracts = await getContracts();
 type OmniContracts = {
   inbox: Address
   outbox: Address
-  middleman: Address
 }
 ```
 

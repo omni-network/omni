@@ -3,6 +3,7 @@
   "description": "Core logic for interacting with Omni Solvernet",
   "version": "0.1.1",
   "type": "module",
+  "license": "MIT",
   "packageManager": "pnpm@9.12.1",
   "sideEffects": false,
   "main": "./dist/esm/index.js",
