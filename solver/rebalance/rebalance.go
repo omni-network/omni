@@ -21,10 +21,10 @@ import (
 
 var (
 	// minSend is the minimum amount of surplus USDC to send to other chains.
-	minSend = bi.Dec6(1000) // 1000 USDC
+	minSend = bi.Dec6(1000) // 1k USDC
 
 	// maxSend is the maximum amount of USDC allowed in a single send.
-	maxSend = bi.Dec6(5000) // 5000 USDC
+	maxSend = bi.Dec6(10000) // 10k USDC
 )
 
 // rebalanceForever starts rebalancing loops for each chain in the network.
@@ -115,7 +115,7 @@ func sendSurplusOnce(
 		return nil
 	}
 
-	deficits, err := GetUSDDeficitsDescending(ctx, db, network, backends.Clients(), pricer, solver)
+	deficits, err := GetUSDChainDeficits(ctx, db, network, backends.Clients(), pricer, solver)
 	if err != nil {
 		return errors.Wrap(err, "get deficits")
 	}

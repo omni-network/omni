@@ -72,9 +72,9 @@ func AmtToUSD(
 	return bi.Rebase(bi.MulF64(amount, price), token.Decimals, usdDecimals), nil
 }
 
-// GetChainUSDDeficit returns the total USD deficit for a given chain.
+// GetUSDChainDeficit returns the total USD deficit for a given chain.
 // Total Deficit = (Sum token deficits) - (Sum token surplus) - (Inflight USDC to the chain).
-func GetChainUSDDeficit(
+func GetUSDChainDeficit(
 	ctx context.Context,
 	db *cctpdb.DB,
 	client ethclient.Client,
@@ -103,6 +103,11 @@ func GetChainUSDDeficit(
 		deficit = bi.Sub(deficit, s)
 	}
 
+	// If no DB, we can't get inflight USDC, so return deficit as is.
+	if db == nil {
+		return deficit, nil
+	}
+
 	// Subtract inflight USDC to the chain
 	inflight, err := cctp.GetInflightUSDC(ctx, db, chainID)
 	if err != nil {
@@ -118,8 +123,8 @@ type ChainAmount struct {
 	Amount  *big.Int
 }
 
-// GetUSDDeficitsDescending returns the total USD deficit by chain, sorted by amount descending.
-func GetUSDDeficitsDescending(
+// GetUSDChainDeficits returns the total USD deficit by chain, sorted by amount descending.
+func GetUSDChainDeficits(
 	ctx context.Context,
 	db *cctpdb.DB,
 	network netconf.Network,
@@ -135,7 +140,7 @@ func GetUSDDeficitsDescending(
 			return nil, errors.New("no client", "chain", chain.ID)
 		}
 
-		deficit, err := GetChainUSDDeficit(ctx, db, client, pricer, chain.ID, solver)
+		deficit, err := GetUSDChainDeficit(ctx, db, client, pricer, chain.ID, solver)
 		if err != nil {
 			return nil, errors.Wrap(err, "get chain deficit")
 		}

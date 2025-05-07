@@ -2,8 +2,10 @@ package rebalance_test
 
 import (
 	"flag"
+	"fmt"
 	"log/slog"
 	"math/big"
+	"strconv"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -29,6 +31,8 @@ type tokenAmt struct {
 }
 
 // Usage: go test . -snapshot -v -run=TestSnapshot.
+
+// TestSnapshot reports current mainnet solver balances and surpluses/deficits.
 func TestSnapshot(t *testing.T) {
 	t.Parallel()
 
@@ -117,4 +121,34 @@ func TestSnapshot(t *testing.T) {
 			"surplus", s.token.FormatAmt(s.amt),
 			"surplus_threshold", s.token.FormatAmt(rebalance.GetFundThreshold(s.token).Surplus()))
 	}
+
+	// Log chain deficits
+	pricer := newPricer(ctx)
+	chainIDs := []uint64{evmchain.IDEthereum, evmchain.IDBase, evmchain.IDArbitrumOne, evmchain.IDOptimism}
+	network := netconf.Network{ID: netconf.Mainnet}
+	for _, chainID := range chainIDs {
+		network.Chains = append(network.Chains, netconf.Chain{ID: chainID, Name: evmchain.Name(chainID)})
+	}
+
+	chainUSDDeficits, err := rebalance.GetUSDChainDeficits(ctx, nil, network, clients, pricer, solverAddr)
+	tutil.RequireNoError(t, err)
+
+	log.Info(ctx, "------------------")
+	for _, d := range chainUSDDeficits {
+		log.Info(ctx, "Chain USD deficit",
+			"chain", evmchain.Name(d.ChainID),
+			"deficit", formatUSD(d.Amount))
+	}
+}
+
+// copied from rebalance/usd.go.
+func formatUSD(n *big.Int) string {
+	if n == nil {
+		return "nil"
+	}
+
+	return fmt.Sprintf("%s %s",
+		strconv.FormatFloat(bi.ToF64(n, 6), 'f', -1, 64),
+		"USD",
+	)
 }
