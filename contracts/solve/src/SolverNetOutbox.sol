@@ -47,7 +47,7 @@ contract SolverNetOutbox is
         abi.encodeCall(ISolverNetInbox.markFilled, (TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Address));
 
     /**
-     * @notice Addresses of the inbox contracts.
+     * @notice Configurations of the inbox contracts.
      */
     mapping(uint64 chainId => InboxConfig) internal _inboxes;
 
@@ -82,17 +82,26 @@ contract SolverNetOutbox is
         _executor = SolverNetExecutor(payable(executor_));
     }
 
+    function initializeV2(uint64[] calldata chainIds, InboxConfig[] calldata configs) external reinitializer(2) {
+        _setInboxes(chainIds, configs);
+    }
+
     /**
-     * @notice Set the inbox addresses for the given chain IDs.
+     * @notice Set the inbox configs for the given chain IDs.
      * @param chainIds IDs of the chains.
      * @param configs  Configurations for the inboxes.
      */
     function setInboxes(uint64[] calldata chainIds, InboxConfig[] calldata configs) external onlyOwner {
-        if (chainIds.length != configs.length) revert InvalidArrayLength();
-        for (uint256 i; i < chainIds.length; ++i) {
-            _inboxes[chainIds[i]] = configs[i];
-            emit InboxSet(chainIds[i], configs[i].inbox, configs[i].provider);
-        }
+        _setInboxes(chainIds, configs);
+    }
+
+    /**
+     * @notice Returns the inbox configuration for the given chain ID.
+     * @param chainId ID of the chain.
+     * @return config Inbox configuration.
+     */
+    function getInboxConfig(uint64 chainId) external view returns (InboxConfig memory) {
+        return _inboxes[chainId];
     }
 
     /**
@@ -330,5 +339,18 @@ contract SolverNetOutbox is
         }
 
         return metadataGas + callsGas + expensesGas + 100_000; // 100k base gas limit
+    }
+
+    /**
+     * @notice Set the inbox configs for the given chain IDs.
+     * @param chainIds IDs of the chains.
+     * @param configs  Configurations for the inboxes.
+     */
+    function _setInboxes(uint64[] calldata chainIds, InboxConfig[] calldata configs) internal {
+        if (chainIds.length != configs.length) revert InvalidArrayLength();
+        for (uint256 i; i < chainIds.length; ++i) {
+            _inboxes[chainIds[i]] = configs[i];
+            emit InboxSet(chainIds[i], configs[i].inbox, configs[i].provider);
+        }
     }
 }

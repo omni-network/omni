@@ -20,7 +20,7 @@ import { Slashing } from "src/octane/Slashing.sol";
 import { Distribution } from "src/octane/Distribution.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { SolverNetInbox } from "solve/src/SolverNetInbox.sol";
-import { SolverNetOutbox } from "solve/src/SolverNetOutbox.sol";
+import { SolverNetOutbox, ISolverNetOutbox } from "solve/src/SolverNetOutbox.sol";
 import { SolverNetMiddleman } from "solve/src/SolverNetMiddleman.sol";
 import { SolverNetExecutor } from "solve/src/SolverNetExecutor.sol";
 import { Script } from "forge-std/Script.sol";
@@ -484,7 +484,9 @@ contract Admin is Script {
         address deployer,
         address proxy,
         address mailbox,
-        bytes calldata data
+        bytes calldata data,
+        uint64[] calldata chainIds,
+        ISolverNetOutbox.InboxConfig[] calldata configs
     ) public {
         SolverNetOutbox outbox = SolverNetOutbox(proxy);
 
@@ -506,7 +508,7 @@ contract Admin is Script {
         require(address(outbox.omni()) == omni, "omni changed");
         require(outbox.executor() == executor, "executor changed");
 
-        new SolverNetPostUpgradeTest().runOutbox(proxy);
+        new SolverNetPostUpgradeTest().runOutbox(proxy, chainIds, configs);
     }
 
     /**

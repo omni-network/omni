@@ -5,7 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { VmSafe } from "forge-std/Vm.sol";
 
 import { SolverNetInbox, ISolverNetInbox } from "solve/src/SolverNetInbox.sol";
-import { SolverNetOutbox } from "solve/src/SolverNetOutbox.sol";
+import { SolverNetOutbox, ISolverNetOutbox } from "solve/src/SolverNetOutbox.sol";
 import { SolverNetMiddleman } from "solve/src/SolverNetMiddleman.sol";
 import { SolverNetExecutor } from "solve/src/SolverNetExecutor.sol";
 import { IERC7683 } from "solve/src/erc7683/IERC7683.sol";
@@ -32,11 +32,14 @@ contract SolverNetPostUpgradeTest is Test {
         _openOrder();
     }
 
-    function runOutbox(address addr) public {
+    function runOutbox(address addr, uint64[] calldata chainIds, ISolverNetOutbox.InboxConfig[] calldata configs)
+        public
+    {
         (VmSafe.CallerMode mode,,) = vm.readCallers();
         require(mode == VmSafe.CallerMode.None, "no broadcast");
 
         _setupOutbox(addr);
+        _checkInboxConfigs(chainIds, configs);
     }
 
     function runMiddleman(address addr) public {
@@ -105,5 +108,14 @@ contract SolverNetPostUpgradeTest is Test {
         vm.expectEmit(address(inbox));
         emit ISolverNetInbox.FillOriginData(id, fillOriginData);
         inbox.open{ value: 1 ether }(order);
+    }
+
+    function _checkInboxConfigs(uint64[] calldata chainIds, ISolverNetOutbox.InboxConfig[] calldata configs)
+        internal
+        view
+    {
+        for (uint256 i; i < chainIds.length; ++i) {
+            assertEq(keccak256(abi.encode(outbox.getInboxConfig(chainIds[i]))), keccak256(abi.encode(configs[i])));
+        }
     }
 }

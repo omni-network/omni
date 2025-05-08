@@ -208,8 +208,8 @@ func (s shared) run(
 }
 
 // runHL runs a function for all configured chains (including Hyperlane chains).
-// NOTE: currently does not include options.
-func (s shared) runHL(ctx context.Context, def app.Definition, fn func(context.Context, shared, chain) error) error {
+// NOTE: currently does not include options, network is passed as shared.testnet.EVMChains() doesn't reflect the updated network.
+func (s shared) runHL(ctx context.Context, def app.Definition, fn func(context.Context, shared, netconf.Network, chain) error) error {
 	_s, err := s.addHLEndpoints(ctx, def)
 	if err != nil {
 		return errors.Wrap(err, "add hl endpoints")
@@ -227,7 +227,7 @@ func (s shared) runHL(ctx context.Context, def app.Definition, fn func(context.C
 			return errors.Wrap(err, "setup chain hl", "chain", _chain.Name)
 		}
 
-		if err := fn(ctx, _s, c); err != nil {
+		if err := fn(ctx, _s, network, c); err != nil {
 			return errors.Wrap(err, "chain", "chain", _chain.Name)
 		}
 	}

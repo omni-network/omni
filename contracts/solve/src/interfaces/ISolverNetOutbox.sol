@@ -55,6 +55,13 @@ interface ISolverNetOutbox is IDestinationSettler {
     function setInboxes(uint64[] calldata chainIds, InboxConfig[] calldata configs) external;
 
     /**
+     * @notice Returns the inbox configuration for the given chain ID.
+     * @param chainId ID of the chain.
+     * @return config Inbox configuration.
+     */
+    function getInboxConfig(uint64 chainId) external view returns (InboxConfig memory);
+
+    /**
      * @notice Returns the address of the executor contract.
      */
     function executor() external view returns (address);
