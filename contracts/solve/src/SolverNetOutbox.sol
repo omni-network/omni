@@ -5,13 +5,12 @@ import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { DeployedAt } from "./util/DeployedAt.sol";
-import { XAppBase } from "core/src/pkg/XAppBase.sol";
+import { XAppBase } from "./lib/XAppBase.sol";
 import { MailboxClient } from "./ext/MailboxClient.sol";
 import { ISolverNetOutbox } from "./interfaces/ISolverNetOutbox.sol";
 import { SolverNetExecutor } from "./SolverNetExecutor.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { FixedPointMathLib } from "solady/src/utils/FixedPointMathLib.sol";
-import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
 import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
@@ -37,34 +36,47 @@ contract SolverNetOutbox is
      * @notice Role for solvers.
      * @dev _ROLE_0 evaluates to '1'.
      */
-    uint256 internal constant SOLVER = _ROLE_0;
+    uint256 private constant SOLVER = _ROLE_0;
 
     /**
      * @notice Stubbed calldata for SolveInbox.markFilled. Used to estimate the gas cost.
      * @dev Type maxes used to ensure no non-zero bytes in fee estimation.
      */
-    bytes internal constant MARK_FILLED_STUB_CDATA =
+    bytes private constant MARK_FILLED_STUB_CDATA =
         abi.encodeCall(ISolverNetInbox.markFilled, (TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Address));
-
-    /**
-     * @notice Configurations of the inbox contracts.
-     */
-    mapping(uint64 chainId => InboxConfig) internal _inboxes;
 
     /**
      * @notice Executor contract handling calls.
      * @dev An executor is used so infinite approvals from solvers cannot be abused.
      */
-    SolverNetExecutor internal _executor;
+    SolverNetExecutor private immutable _executor;
+
+    /**
+     * @notice Configurations of the inbox contracts.
+     */
+    mapping(uint64 chainId => InboxConfig) private _inboxes;
+
+    /**
+     * @notice Deprecated `_executor` variable in favor of an immutable equivalent.
+     * @dev This variable is used to avoid a storage slot collision.
+     */
+    SolverNetExecutor private _deprecatedExecutor;
 
     /**
      * @notice Maps fillHash (hash of fill instruction origin data) to true, if filled.
      * @dev Used to prevent duplicate fulfillment.
      */
-    mapping(bytes32 fillHash => bool filled) internal _filled;
+    mapping(bytes32 fillHash => bool filled) private _filled;
 
-    constructor(address _mailbox) MailboxClient(_mailbox) {
+    /**
+     * @notice Constructor sets the SolverNetExecutor, OmniPortal, and Hyperlane Mailbox contract addresses.
+     * @param executor_ Address of the SolverNetExecutor.
+     * @param omni_     Address of the OmniPortal.
+     * @param mailbox_  Address of the Hyperlane Mailbox.
+     */
+    constructor(address executor_, address omni_, address mailbox_) XAppBase(omni_) MailboxClient(mailbox_) {
         _disableInitializers();
+        _executor = SolverNetExecutor(payable(executor_));
     }
 
     /**
@@ -72,16 +84,18 @@ contract SolverNetOutbox is
      * @dev Used instead of constructor as we want to use the transparent upgradeable proxy pattern.
      * @param owner_    Address of the owner.
      * @param solver_   Address of the solver.
-     * @param omni_     Address of the OmniPortal.
-     * @param executor_ Address of the executor.
      */
-    function initialize(address owner_, address solver_, address omni_, address executor_) external initializer {
+    function initialize(address owner_, address solver_) external initializer {
         _initializeOwner(owner_);
         _grantRoles(solver_, SOLVER);
-        _setOmniPortal(omni_);
-        _executor = SolverNetExecutor(payable(executor_));
     }
 
+    /**
+     * @notice Set the inbox configs for the given chain IDs.
+     * @dev Necessary as `_inboxes` storage layout had changed.
+     * @param chainIds IDs of the chains.
+     * @param configs  Configurations for the inboxes.
+     */
     function initializeV2(uint64[] calldata chainIds, InboxConfig[] calldata configs) external reinitializer(2) {
         _setInboxes(chainIds, configs);
     }
@@ -218,7 +232,7 @@ contract SolverNetOutbox is
      * @return totalNativeValue total native value of the calls.
      */
     function _executeCalls(SolverNet.FillOriginData memory fillData)
-        internal
+        private
         withExpenses(fillData.expenses)
         returns (uint256)
     {
@@ -249,7 +263,7 @@ contract SolverNetOutbox is
         SolverNet.FillOriginData memory fillData,
         address claimant,
         uint256 totalNativeValue
-    ) internal {
+    ) private {
         // mark filled on outbox (here)
         bytes32 fillHash = _fillHash(orderId, abi.encode(fillData));
         if (_filled[fillHash]) revert AlreadyFilled();
@@ -275,7 +289,7 @@ contract SolverNetOutbox is
      * @return fee     Fee amount in native currency.
      */
     function _routeMsg(bytes32 orderId, bytes32 fillHash, address claimant, SolverNet.FillOriginData memory fillData)
-        internal
+        private
         returns (uint256)
     {
         InboxConfig memory inboxConfig = _inboxes[fillData.srcChainId];
@@ -286,7 +300,6 @@ contract SolverNetOutbox is
         } else if (inboxConfig.provider == Provider.OmniCore) {
             fee = xcall({
                 destChainId: fillData.srcChainId,
-                conf: ConfLevel.Finalized,
                 to: inboxConfig.inbox,
                 data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash, claimant)),
                 gasLimit: uint64(_fillGasLimit(fillData))
@@ -307,7 +320,7 @@ contract SolverNetOutbox is
     /**
      * @dev Returns call hash. Used to discern fulfillment.
      */
-    function _fillHash(bytes32 srcReqId, bytes memory originData) internal pure returns (bytes32) {
+    function _fillHash(bytes32 srcReqId, bytes memory originData) private pure returns (bytes32) {
         return keccak256(abi.encode(srcReqId, originData));
     }
 
@@ -316,7 +329,7 @@ contract SolverNetOutbox is
      * @param fillData ABI decoded fill originData.
      * @return gasLimit Gas limit for the fill.
      */
-    function _fillGasLimit(SolverNet.FillOriginData memory fillData) internal pure returns (uint256) {
+    function _fillGasLimit(SolverNet.FillOriginData memory fillData) private pure returns (uint256) {
         // 2500 gas for the Metadata struct SLOAD.
         uint256 metadataGas = 2500;
 
@@ -349,7 +362,7 @@ contract SolverNetOutbox is
      * @param chainIds IDs of the chains.
      * @param configs  Configurations for the inboxes.
      */
-    function _setInboxes(uint64[] calldata chainIds, InboxConfig[] calldata configs) internal {
+    function _setInboxes(uint64[] calldata chainIds, InboxConfig[] calldata configs) private {
         if (chainIds.length != configs.length) revert InvalidArrayLength();
         for (uint256 i; i < chainIds.length; ++i) {
             _inboxes[chainIds[i]] = configs[i];

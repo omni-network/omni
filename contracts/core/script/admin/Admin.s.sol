@@ -487,6 +487,8 @@ contract Admin is Script {
         address admin,
         address deployer,
         address proxy,
+        address executor,
+        address omni,
         address mailbox,
         bytes calldata data,
         uint64[] calldata chainIds,
@@ -496,11 +498,11 @@ contract Admin is Script {
 
         address owner = outbox.owner();
         // uint256 deployedAt = outbox.deployedAt();
-        address omni = address(outbox.omni());
-        address executor = outbox.executor();
+        require(address(outbox.omni()) == omni, "omni changed");
+        require(outbox.executor() == executor, "executor changed");
 
         vm.startBroadcast(deployer);
-        address impl = address(new SolverNetOutbox(mailbox));
+        address impl = address(new SolverNetOutbox(executor, omni, mailbox));
         vm.stopBroadcast();
 
         _upgradeProxy(admin, proxy, impl, data, true, true);
@@ -509,8 +511,8 @@ contract Admin is Script {
         // NOTE: This is disabled because ArbSys on Arbitrum chains doesn't work when forked by anvil
         // We will need to address this if we don't want the deployedAt value to change for upgrades
         // require(outbox.deployedAt() > deployedAt, "deployedAt didn't increase");
-        require(address(outbox.omni()) == omni, "omni changed");
-        require(outbox.executor() == executor, "executor changed");
+        require(address(outbox.omni()) == omni, "omni changed post upgrade");
+        require(outbox.executor() == executor, "executor changed post upgrade");
 
         new SolverNetPostUpgradeTest().runOutbox(proxy, chainIds, configs);
     }

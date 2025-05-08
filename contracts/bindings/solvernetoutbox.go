@@ -81,7 +81,7 @@ var SolverNetOutboxABI = SolverNetOutboxMetaData.ABI
 var SolverNetOutboxBin = SolverNetOutboxMetaData.Bin
 
 // DeploySolverNetOutbox deploys a new Ethereum contract, binding an instance of SolverNetOutbox to it.
-func DeploySolverNetOutbox(auth *bind.TransactOpts, backend bind.ContractBackend, _mailbox common.Address) (common.Address, *types.Transaction, *SolverNetOutbox, error) {
+func DeploySolverNetOutbox(auth *bind.TransactOpts, backend bind.ContractBackend, executor_ common.Address, omni_ common.Address, mailbox_ common.Address) (common.Address, *types.Transaction, *SolverNetOutbox, error) {
 	parsed, err := SolverNetOutboxMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, nil, err
@@ -90,7 +90,7 @@ func DeploySolverNetOutbox(auth *bind.TransactOpts, backend bind.ContractBackend
 		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(SolverNetOutboxBin), backend, _mailbox)
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(SolverNetOutboxBin), backend, executor_, omni_, mailbox_)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -268,37 +268,6 @@ func (_SolverNetOutbox *SolverNetOutboxSession) PACKAGEVERSION() (string, error)
 // Solidity: function PACKAGE_VERSION() view returns(string)
 func (_SolverNetOutbox *SolverNetOutboxCallerSession) PACKAGEVERSION() (string, error) {
 	return _SolverNetOutbox.Contract.PACKAGEVERSION(&_SolverNetOutbox.CallOpts)
-}
-
-// DefaultConfLevel is a free data retrieval call binding the contract method 0x74eeb847.
-//
-// Solidity: function defaultConfLevel() view returns(uint8)
-func (_SolverNetOutbox *SolverNetOutboxCaller) DefaultConfLevel(opts *bind.CallOpts) (uint8, error) {
-	var out []interface{}
-	err := _SolverNetOutbox.contract.Call(opts, &out, "defaultConfLevel")
-
-	if err != nil {
-		return *new(uint8), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
-
-	return out0, err
-
-}
-
-// DefaultConfLevel is a free data retrieval call binding the contract method 0x74eeb847.
-//
-// Solidity: function defaultConfLevel() view returns(uint8)
-func (_SolverNetOutbox *SolverNetOutboxSession) DefaultConfLevel() (uint8, error) {
-	return _SolverNetOutbox.Contract.DefaultConfLevel(&_SolverNetOutbox.CallOpts)
-}
-
-// DefaultConfLevel is a free data retrieval call binding the contract method 0x74eeb847.
-//
-// Solidity: function defaultConfLevel() view returns(uint8)
-func (_SolverNetOutbox *SolverNetOutboxCallerSession) DefaultConfLevel() (uint8, error) {
-	return _SolverNetOutbox.Contract.DefaultConfLevel(&_SolverNetOutbox.CallOpts)
 }
 
 // DeployedAt is a free data retrieval call binding the contract method 0xeae4c19f.
@@ -819,25 +788,25 @@ func (_SolverNetOutbox *SolverNetOutboxTransactorSession) GrantRoles(user common
 	return _SolverNetOutbox.Contract.GrantRoles(&_SolverNetOutbox.TransactOpts, user, roles)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0xf8c8765e.
+// Initialize is a paid mutator transaction binding the contract method 0x485cc955.
 //
-// Solidity: function initialize(address owner_, address solver_, address omni_, address executor_) returns()
-func (_SolverNetOutbox *SolverNetOutboxTransactor) Initialize(opts *bind.TransactOpts, owner_ common.Address, solver_ common.Address, omni_ common.Address, executor_ common.Address) (*types.Transaction, error) {
-	return _SolverNetOutbox.contract.Transact(opts, "initialize", owner_, solver_, omni_, executor_)
+// Solidity: function initialize(address owner_, address solver_) returns()
+func (_SolverNetOutbox *SolverNetOutboxTransactor) Initialize(opts *bind.TransactOpts, owner_ common.Address, solver_ common.Address) (*types.Transaction, error) {
+	return _SolverNetOutbox.contract.Transact(opts, "initialize", owner_, solver_)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0xf8c8765e.
+// Initialize is a paid mutator transaction binding the contract method 0x485cc955.
 //
-// Solidity: function initialize(address owner_, address solver_, address omni_, address executor_) returns()
-func (_SolverNetOutbox *SolverNetOutboxSession) Initialize(owner_ common.Address, solver_ common.Address, omni_ common.Address, executor_ common.Address) (*types.Transaction, error) {
-	return _SolverNetOutbox.Contract.Initialize(&_SolverNetOutbox.TransactOpts, owner_, solver_, omni_, executor_)
+// Solidity: function initialize(address owner_, address solver_) returns()
+func (_SolverNetOutbox *SolverNetOutboxSession) Initialize(owner_ common.Address, solver_ common.Address) (*types.Transaction, error) {
+	return _SolverNetOutbox.Contract.Initialize(&_SolverNetOutbox.TransactOpts, owner_, solver_)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0xf8c8765e.
+// Initialize is a paid mutator transaction binding the contract method 0x485cc955.
 //
-// Solidity: function initialize(address owner_, address solver_, address omni_, address executor_) returns()
-func (_SolverNetOutbox *SolverNetOutboxTransactorSession) Initialize(owner_ common.Address, solver_ common.Address, omni_ common.Address, executor_ common.Address) (*types.Transaction, error) {
-	return _SolverNetOutbox.Contract.Initialize(&_SolverNetOutbox.TransactOpts, owner_, solver_, omni_, executor_)
+// Solidity: function initialize(address owner_, address solver_) returns()
+func (_SolverNetOutbox *SolverNetOutboxTransactorSession) Initialize(owner_ common.Address, solver_ common.Address) (*types.Transaction, error) {
+	return _SolverNetOutbox.Contract.Initialize(&_SolverNetOutbox.TransactOpts, owner_, solver_)
 }
 
 // InitializeV2 is a paid mutator transaction binding the contract method 0x3443f357.

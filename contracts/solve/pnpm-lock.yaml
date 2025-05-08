@@ -23,6 +23,9 @@ importers:
       solady:
         specifier: ^0.1.14
         version: 0.1.14
+      solmate:
+        specifier: ^6.8.0
+        version: 6.8.0
     devDependencies:
       ds-test:
         specifier: github:dapphub/ds-test
@@ -2026,6 +2029,9 @@ packages:
 
   solidity-bytes-utils@0.8.3:
     resolution: {integrity: sha512-sbOHjKF9miqASaqYYC1vvxNnBrzA/wuFPQlOle7rZOSkDiFmCd5x8wQfx2vN95tNGfy8Cf1e5QumW8ZwcByBuQ==}
+
+  solmate@6.8.0:
+    resolution: {integrity: sha512-/oI8kgEvSxGG1mrFv3FmCEZd0F8Z9VzRmoYMIhzmmzt6mjtPwfdCm3oh8yOL7bMHJBSfXJuMpnMPrM0uyaKsKg==}
 
   sonic-boom@3.8.1:
     resolution: {integrity: sha512-y4Z8LCDBuum+PBP3lSV7RHrXscqksve/bi0as7mhwVnBW+/wUqKT/2Kb7um8yqcFy0duYbbPxzt89Zy2nOCaxg==}
@@ -5001,6 +5007,8 @@ snapshots:
     optional: true
 
   solidity-bytes-utils@0.8.3: {}
+
+  solmate@6.8.0: {}
 
   sonic-boom@3.8.1:
     dependencies:

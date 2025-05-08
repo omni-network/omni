@@ -71,6 +71,7 @@ func deployBoxes(ctx context.Context, network netconf.Network, backends ethbacke
 			return nil
 		})
 
+		// TODO(zodomo): Deprecate
 		eg.Go(func() error {
 			addr, receipt, err := middleman.Deploy(ctx, network, backend)
 			if err != nil {
