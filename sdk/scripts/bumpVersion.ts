@@ -1,13 +1,14 @@
 // updates package version.ts files to use version in code w/out importing package.json
 
+import fs from 'node:fs/promises'
 import path from 'node:path'
 
 console.log('bumping version files...')
 
-// get package.json files
-const packagePaths = await Array.fromAsync(
-  new Bun.Glob('**/package.json').scan(),
-)
+const packagePaths = [
+  'packages/react/package.json',
+  'packages/core/package.json',
+]
 
 let count = 0
 for (const packagePath of packagePaths) {
@@ -16,8 +17,8 @@ for (const packagePath of packagePaths) {
     private?: boolean | undefined
     version?: string | undefined
   }
-  const file = Bun.file(packagePath)
-  const packageJson = (await file.json()) as Package
+  const fileContents = await fs.readFile(packagePath, 'utf-8')
+  const packageJson = JSON.parse(fileContents) as Package
 
   // skip private
   if (packageJson.private) continue
@@ -30,7 +31,7 @@ for (const packagePath of packagePaths) {
     'src',
     'version.ts',
   )
-  await Bun.write(
+  await fs.writeFile(
     versionFilePath,
     `export const version = '${packageJson.version}'\n`,
   )
