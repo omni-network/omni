@@ -69,9 +69,19 @@ func FundUSDC(ctx context.Context, client ethclient.Client, token common.Address
 	return FundERC20(ctx, client, token, amount, account, WithSlotIdx(9))
 }
 
-func FundUSDT(ctx context.Context, client ethclient.Client, token common.Address, amount *big.Int, account common.Address) error {
-	// USDT mapping `_balances` at slot 2.
+func FundL1USDT(ctx context.Context, client ethclient.Client, token common.Address, amount *big.Int, account common.Address) error {
+	// L1 USDT mapping `_balances` at slot 2.
 	return FundERC20(ctx, client, token, amount, account, WithSlotIdx(2))
+}
+
+func FundArbUSDT(ctx context.Context, client ethclient.Client, token common.Address, amount *big.Int, account common.Address) error {
+	// Arb USDT mapping `_balances` at slot 51.
+	return FundERC20(ctx, client, token, amount, account, WithSlotIdx(51))
+}
+
+func FundOPUSDT(ctx context.Context, client ethclient.Client, token common.Address, amount *big.Int, account common.Address) error {
+	// OP USDT mapping `_balances` at slot 0.
+	return FundERC20(ctx, client, token, amount, account, WithSlotIdx(0))
 }
 
 var (
