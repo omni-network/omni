@@ -16,7 +16,7 @@ _Single chain + intents_ - this approach offers a superior alternative to previo
     *   Value Optimism's public goods funding? Deploy on OP Mainnet.
     *   Want proximity to high DeFi activity? Choose Base or Arbitrum.
     *   This keeps your backend simple, secure, and easy to manage.
-2.  **Integrate the Omni SDK into Your Frontend:** Add the `@omni-network/react` package and use the hooks (`useQuote`, `useOrder`) in your application's user interface.
+2.  **Integrate the Omni SDK into Your Frontend:** Add the `@omni-network/react` and `@omni-network/core` packages and use the hooks (`useQuote`, `useOrder`) in your application's user interface.
     *   This integration typically takes only a few hours and adds minimal code (often just **~100 lines of TypeScript**).
     *   Requires **zero changes** to your existing smart contracts.
     *   No additional audits needed for your backend.
