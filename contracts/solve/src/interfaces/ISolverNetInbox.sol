@@ -117,6 +117,13 @@ interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
     function setOutboxes(uint64[] calldata chainIds, address[] calldata outboxes) external;
 
     /**
+     * @notice Returns the outbox address for the given chain ID.
+     * @param chainId ID of the chain.
+     * @return outbox Outbox address.
+     */
+    function getOutbox(uint64 chainId) external view returns (address);
+
+    /**
      * @notice Returns the order, its state, and offset with the given ID.
      * @param id ID of the order.
      */
