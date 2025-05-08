@@ -169,9 +169,9 @@ func fundUnbalanced(t *testing.T, ctx context.Context, pricer tokenpricer.Pricer
 	}()
 
 	// Goal total deficit / surplus (should match, so we can rebalance)
-	// NOTE: target thresholds may prever us from matching defict target
+	// Surplus target > deficit target, so we can rebalance (and avoid flaps)
 	totalDeficitUSD := float64(100_000)
-	totalSurplusUSD := float64(100_000)
+	totalSurplusUSD := float64(120_000)
 
 	// Fund deficit tokens
 	for _, token := range toDeficit {
