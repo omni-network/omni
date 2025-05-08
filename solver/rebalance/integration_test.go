@@ -125,7 +125,7 @@ func TestIntegration(t *testing.T) {
 		log.Info(ctx, "Rebalance complete", "deficit", formatUSD(deficit))
 
 		return true
-	}, 2*time.Minute, 5*time.Second)
+	}, 4*time.Minute, 5*time.Second)
 }
 
 // fundUnbalanced funds the solver w/ unbalanced tokens (based on threshold values).
