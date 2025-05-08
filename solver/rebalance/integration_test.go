@@ -91,13 +91,39 @@ func TestIntegration(t *testing.T) {
 	sumDeficits := func() *big.Int {
 		sum := bi.Zero()
 
+		// Log deficits
 		for _, tkn := range rebalance.Tokens() {
 			d, err := rebalance.GetUSDDeficit(ctx, clients[tkn.ChainID], pricer, tkn, solver)
 			tutil.RequireNoError(t, err)
+
 			sum = bi.Add(sum, d)
 		}
 
 		return sum
+	}
+
+	logSnapshot := func() {
+		for _, tkn := range rebalance.Tokens() {
+			d, err := rebalance.GetDeficit(ctx, clients[tkn.ChainID], tkn, solver)
+			tutil.RequireNoError(t, err)
+
+			dUSD, err := rebalance.AmtToUSD(ctx, pricer, tkn, d)
+			tutil.RequireNoError(t, err)
+
+			s, err := rebalance.GetSurplus(ctx, clients[tkn.ChainID], tkn, solver)
+			tutil.RequireNoError(t, err)
+
+			sUSD, err := rebalance.AmtToUSD(ctx, pricer, tkn, s)
+			tutil.RequireNoError(t, err)
+
+			log.Info(ctx, "Token snapshot",
+				"chain", evmchain.Name(tkn.ChainID),
+				"token", tkn.Asset,
+				"deficit", tkn.FormatAmt(d),
+				"deficit_usd", formatUSD(dUSD),
+				"surplus", tkn.FormatAmt(s),
+				"surplus_usd", formatUSD(sUSD))
+		}
 	}
 
 	// Confirm unbalance
@@ -113,6 +139,8 @@ func TestIntegration(t *testing.T) {
 
 	// Wait for rebalance
 	tutil.RequireEventually(t, ctx, func() bool {
+		logSnapshot()
+
 		deficit := sumDeficits()
 
 		// Consider < 10k deficit as "rebalanced"
@@ -125,7 +153,7 @@ func TestIntegration(t *testing.T) {
 		log.Info(ctx, "Rebalance complete", "deficit", formatUSD(deficit))
 
 		return true
-	}, 4*time.Minute, 5*time.Second)
+	}, 4*time.Minute, 10*time.Second)
 }
 
 // fundUnbalanced funds the solver w/ unbalanced tokens (based on threshold values).
@@ -257,8 +285,22 @@ func fundToken(t *testing.T, ctx context.Context, client ethclient.Client, token
 		return
 	}
 
-	if token.Is(tokens.USDT) {
-		err := anvil.FundUSDT(ctx, client, token.Address, amt, account)
+	if token.Is(tokens.USDT) && token.ChainID == evmchain.IDEthereum {
+		err := anvil.FundL1USDT(ctx, client, token.Address, amt, account)
+		tutil.RequireNoError(t, err)
+
+		return
+	}
+
+	if token.Is(tokens.USDT) && token.ChainID == evmchain.IDArbitrumOne {
+		err := anvil.FundArbUSDT(ctx, client, token.Address, amt, account)
+		tutil.RequireNoError(t, err)
+
+		return
+	}
+
+	if token.Is(tokens.USDT) && token.ChainID == evmchain.IDOptimism {
+		err := anvil.FundOPUSDT(ctx, client, token.Address, amt, account)
 		tutil.RequireNoError(t, err)
 
 		return
