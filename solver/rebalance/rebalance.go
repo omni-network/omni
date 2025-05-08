@@ -159,14 +159,14 @@ func sendSurplusOnce(
 
 		toSend := d.Amount
 
-		if bi.LT(toSend, minSend) { // Not enough worth sending.
-			log.Debug(ctx, "Surplus < minSend, skipping send")
-			break
-		}
-
 		if bi.GT(toSend, surplus) { // Cap send to available surplus.
 			log.Debug(ctx, "Deficit > surplus, capping send")
 			toSend = surplus
+		}
+
+		if bi.LT(toSend, minSend) { // Not enough worth sending.
+			log.Debug(ctx, "Send < minSend, skipping send")
+			break // Can break, because deficits is sorted by descending amount.
 		}
 
 		if bi.GT(toSend, maxSend) { // Cap send to maxSend.
