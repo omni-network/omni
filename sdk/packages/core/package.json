@@ -22,7 +22,7 @@
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "coverage": "vitest run --coverage",
     "prepublishOnly": "pnpm build",
-    "publish": "pnpm publish --access public",
+    "publish": "pnpm publish",
     "test": "vitest run"
   },
   "files": ["dist/**", "src/**", "!dist/**/*.tsbuildinfo"],
