@@ -39,4 +39,8 @@ contract MockERC721 is ERC721 {
     function mint() external {
         _mint(msg.sender, ++totalSupply);
     }
+
+    function mintTo(address to) external {
+        _mint(to, ++totalSupply);
+    }
 }

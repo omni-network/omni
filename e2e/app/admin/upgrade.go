@@ -129,7 +129,7 @@ func UpgradeSolverNetOutbox(ctx context.Context, def app.Definition, cfg Config)
 	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetOutbox)
 }
 
-// UpgradeSolverNetMiddleman upgrades the SolverNetMiddleman contract.
+// TODO(zodomo): Deprecate.
 func UpgradeSolverNetMiddleman(ctx context.Context, def app.Definition, cfg Config) error {
 	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetMiddleman)
 }
@@ -377,13 +377,14 @@ func upgradePortalRegistry(ctx context.Context, s shared, c chain) error {
 }
 
 func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c chain) error {
-	// TODO: replace if re-initialization is required
-	initializer := []byte{}
-
 	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}
+
+	// var inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
+	// TODO: replace if re-initialization is required
+	initializer := []byte{}
 
 	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
 
@@ -409,8 +410,6 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 		return errors.Wrap(err, "get addrs")
 	}
 
-	var outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
-
 	var chainIDs []uint64
 	var inboxes []bindings.ISolverNetOutboxInboxConfig
 	for _, dest := range network.EVMChains() {
@@ -426,6 +425,7 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 		})
 	}
 
+	var outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
 	// TODO: replace if re-initialization is required
 	initializer, err := outboxABI.Pack("initializeV2", chainIDs, inboxes)
 	if err != nil {
@@ -449,6 +449,7 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 	return nil
 }
 
+// TODO(zodomo): Deprecate.
 func upgradeSolverNetMiddleman(ctx context.Context, s shared, _ netconf.Network, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
@@ -473,16 +474,22 @@ func upgradeSolverNetMiddleman(ctx context.Context, s shared, _ netconf.Network,
 	return nil
 }
 
-func upgradeSolverNetExecutor(ctx context.Context, s shared, _ netconf.Network, c chain) error {
-	// TODO: replace if re-initialization is required
-	initializer := []byte{}
-
+func upgradeSolverNetExecutor(ctx context.Context, s shared, network netconf.Network, c chain) error {
 	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetExecutor", s.upgrader, s.deployer, addrs.SolverNetExecutor, addrs.SolverNetOutbox, initializer)
+	var chainIDs []uint64
+	for _, dest := range network.EVMChains() {
+		chainIDs = append(chainIDs, dest.ID)
+	}
+
+	// var executorABI = mustGetABI(bindings.SolverNetExecutorMetaData)
+	// TODO: replace if re-initialization is required
+	initializer := []byte{}
+
+	calldata, err := adminABI.Pack("upgradeSolverNetExecutor", s.upgrader, s.deployer, addrs.SolverNetExecutor, addrs.SolverNetOutbox, initializer, chainIDs)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}

@@ -441,6 +441,7 @@ contract Admin is Script {
      * @param deployer  The address of the account that will deploy the new implementation.
      * @param proxy     The address of the SolverNetInbox proxy to upgrade.
      * @param mailbox   The address of the mailbox to use for the SolverNetInbox.
+     * @param data      Calldata to execute after upgrading the contract.
      */
     function upgradeSolverNetInbox(address admin, address deployer, address proxy, address mailbox, bytes calldata data)
         public
@@ -478,6 +479,9 @@ contract Admin is Script {
      * @param deployer  The address of the account that will deploy the new implementation.
      * @param proxy     The address of the SolverNetOutbox proxy to upgrade.
      * @param mailbox   The address of the mailbox to use for the SolverNetOutbox.
+     * @param data      Calldata to execute after upgrading the contract.
+     * @param chainIds  The chain IDs of the chains to upgrade the SolverNetOutbox for.
+     * @param configs   The inbox configs to use for the SolverNetOutbox.
      */
     function upgradeSolverNetOutbox(
         address admin,
@@ -532,13 +536,17 @@ contract Admin is Script {
      * @param admin     The address of the admin account, owner of the proxy admin
      * @param deployer  The address of the account that will deploy the new implementation.
      * @param proxy     The address of the SolverNetExecutor proxy to upgrade.
+     * @param outbox    The address of the SolverNetOutbox to use for the SolverNetExecutor.
+     * @param data      Calldata to execute after upgrading the contract.
+     * @param chainIds  The chain IDs of the chains to upgrade the SolverNetExecutor for.
      */
     function upgradeSolverNetExecutor(
         address admin,
         address deployer,
         address proxy,
         address outbox,
-        bytes calldata data
+        bytes calldata data,
+        uint64[] calldata chainIds
     ) public {
         SolverNetExecutor executor = SolverNetExecutor(payable(proxy));
 
@@ -552,7 +560,7 @@ contract Admin is Script {
 
         require(executor.outbox() == _outbox, "outbox changed");
 
-        new SolverNetPostUpgradeTest().runExecutor(proxy);
+        new SolverNetPostUpgradeTest().runExecutor(proxy, chainIds);
     }
 
     /**
