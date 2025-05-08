@@ -8,11 +8,14 @@
   "scripts": {
     "build": "pnpm run --r --filter \"./packages/**\" build",
     "check": "biome check --write",
+    "dev:react": "pnpm --filter react-example dev",
     "postinstall": "pnpm run build",
     "test:unit": "pnpm run --filter '@omni-network/*' test",
-    "test:integration": "cd integration-tests && pnpm test"
+    "test:integration": "cd integration-tests && pnpm test",
+    "version:bump": "node --experimental-strip-types scripts/bumpVersion.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4"
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.15.16"
   }
 }
