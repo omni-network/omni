@@ -5,7 +5,7 @@ import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { DeployedAt } from "./util/DeployedAt.sol";
-import { XAppBase } from "core/src/pkg/XAppBase.sol";
+import { XAppBase } from "./lib/XAppBase.sol";
 import { MailboxClient } from "./ext/MailboxClient.sol";
 import { IERC7683 } from "./erc7683/IERC7683.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
@@ -142,7 +142,12 @@ contract SolverNetInbox is
         _;
     }
 
-    constructor(address _mailbox) MailboxClient(_mailbox) {
+    /**
+     * @notice Constructor sets the OmniPortal, and Hyperlane Mailbox contract addresses.
+     * @param omni_     Address of the OmniPortal.
+     * @param mailbox_  Address of the Hyperlane Mailbox.
+     */
+    constructor(address omni_, address mailbox_) XAppBase(omni_) MailboxClient(mailbox_) {
         _disableInitializers();
     }
 
@@ -160,12 +165,10 @@ contract SolverNetInbox is
      * @dev Used instead of constructor as we want to use the transparent upgradeable proxy pattern.
      * @param owner_  Address of the owner.
      * @param solver_ Address of the solver.
-     * @param omni_   Address of the OmniPortal.
      */
-    function initialize(address owner_, address solver_, address omni_) external initializer {
+    function initialize(address owner_, address solver_) external initializer {
         _initializeOwner(owner_);
         _grantRoles(solver_, SOLVER);
-        _setOmniPortal(omni_);
     }
 
     /**
