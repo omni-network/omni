@@ -36,7 +36,7 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newUpgradePortalRegistryCmd(def, &cfg),
 		newUpgradeSolverNetInboxCmd(def, &cfg),
 		newUpgradeSolverNetOutboxCmd(def, &cfg),
-		newUpgradeSolverNetMiddlemanCmd(def, &cfg),
+		newUpgradeSolverNetMiddlemanCmd(def, &cfg), // TODO(zodomo): Deprecate
 		newUpgradeSolverNetExecutorCmd(def, &cfg),
 		newSetPortalFeeOracleV2Cmd(def, &cfg),
 		newAllowValidatorsCmd(def, &cfg),
@@ -264,6 +264,7 @@ func newUpgradeSolverNetOutboxCmd(def *app.Definition, cfg *admin.Config) *cobra
 	return cmd
 }
 
+// TODO(zodomo): Deprecate.
 func newUpgradeSolverNetMiddlemanCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upgrade-solvernet-middleman",
