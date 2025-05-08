@@ -13,6 +13,72 @@ import (
 	"strings"
 )
 
+type EventMarkFilledEventData struct {
+	OrderId    ag_solanago.PublicKey
+	OrderState ag_solanago.PublicKey
+	Status     Status
+}
+
+var EventMarkFilledEventDataDiscriminator = [8]byte{31, 79, 180, 35, 225, 64, 132, 162}
+
+func (obj EventMarkFilledEventData) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+	// Write account discriminator:
+	err = encoder.WriteBytes(EventMarkFilledEventDataDiscriminator[:], false)
+	if err != nil {
+		return err
+	}
+	// Serialize `OrderId` param:
+	err = encoder.Encode(obj.OrderId)
+	if err != nil {
+		return err
+	}
+	// Serialize `OrderState` param:
+	err = encoder.Encode(obj.OrderState)
+	if err != nil {
+		return err
+	}
+	// Serialize `Status` param:
+	err = encoder.Encode(obj.Status)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *EventMarkFilledEventData) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+	// Read and check account discriminator:
+	{
+		discriminator, err := decoder.ReadTypeID()
+		if err != nil {
+			return err
+		}
+		if !discriminator.Equal(EventMarkFilledEventDataDiscriminator[:]) {
+			return fmt.Errorf(
+				"wrong discriminator: wanted %s, got %s",
+				"[31 79 180 35 225 64 132 162]",
+				fmt.Sprint(discriminator[:]))
+		}
+	}
+	// Deserialize `OrderId`:
+	err = decoder.Decode(&obj.OrderId)
+	if err != nil {
+		return err
+	}
+	// Deserialize `OrderState`:
+	err = decoder.Decode(&obj.OrderState)
+	if err != nil {
+		return err
+	}
+	// Deserialize `Status`:
+	err = decoder.Decode(&obj.Status)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (*EventMarkFilledEventData) isEventData() {}
+
 type EventOpenedEventData struct {
 	OrderId    ag_solanago.PublicKey
 	OrderState ag_solanago.PublicKey
@@ -79,8 +145,14 @@ func (obj *EventOpenedEventData) UnmarshalWithDecoder(decoder *ag_binary.Decoder
 
 func (*EventOpenedEventData) isEventData() {}
 
-var eventTypes = map[[8]byte]reflect.Type{EventOpenedEventDataDiscriminator: reflect.TypeOf(EventOpenedEventData{})}
-var eventNames = map[[8]byte]string{EventOpenedEventDataDiscriminator: "EventOpened"}
+var eventTypes = map[[8]byte]reflect.Type{
+	EventMarkFilledEventDataDiscriminator: reflect.TypeOf(EventMarkFilledEventData{}),
+	EventOpenedEventDataDiscriminator:     reflect.TypeOf(EventOpenedEventData{}),
+}
+var eventNames = map[[8]byte]string{
+	EventMarkFilledEventDataDiscriminator: "EventMarkFilled",
+	EventOpenedEventDataDiscriminator:     "EventOpened",
+}
 var (
 	_ *strings.Builder = nil
 )

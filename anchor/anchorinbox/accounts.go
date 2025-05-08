@@ -8,13 +8,77 @@ import (
 	ag_solanago "github.com/gagliardetto/solana-go"
 )
 
+type InboxStateAccount struct {
+	Admin      ag_solanago.PublicKey
+	DeployedAt uint64
+	Bump       uint8
+}
+
+var InboxStateAccountDiscriminator = [8]byte{161, 5, 9, 33, 125, 185, 63, 116}
+
+func (obj InboxStateAccount) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+	// Write account discriminator:
+	err = encoder.WriteBytes(InboxStateAccountDiscriminator[:], false)
+	if err != nil {
+		return err
+	}
+	// Serialize `Admin` param:
+	err = encoder.Encode(obj.Admin)
+	if err != nil {
+		return err
+	}
+	// Serialize `DeployedAt` param:
+	err = encoder.Encode(obj.DeployedAt)
+	if err != nil {
+		return err
+	}
+	// Serialize `Bump` param:
+	err = encoder.Encode(obj.Bump)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *InboxStateAccount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+	// Read and check account discriminator:
+	{
+		discriminator, err := decoder.ReadTypeID()
+		if err != nil {
+			return err
+		}
+		if !discriminator.Equal(InboxStateAccountDiscriminator[:]) {
+			return fmt.Errorf(
+				"wrong discriminator: wanted %s, got %s",
+				"[161 5 9 33 125 185 63 116]",
+				fmt.Sprint(discriminator[:]))
+		}
+	}
+	// Deserialize `Admin`:
+	err = decoder.Decode(&obj.Admin)
+	if err != nil {
+		return err
+	}
+	// Deserialize `DeployedAt`:
+	err = decoder.Decode(&obj.DeployedAt)
+	if err != nil {
+		return err
+	}
+	// Deserialize `Bump`:
+	err = decoder.Decode(&obj.Bump)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type OrderStateAccount struct {
-	OrderId   ag_solanago.PublicKey
-	Status    Status
-	Authority ag_solanago.PublicKey
-	Bump      uint8
-	Deposit   TokenAmount
-	Expense   TokenAmount
+	OrderId ag_solanago.PublicKey
+	Status  Status
+	Owner   ag_solanago.PublicKey
+	Bump    uint8
+	Deposit TokenAmount
+	Expense TokenAmount
 }
 
 var OrderStateAccountDiscriminator = [8]byte{60, 123, 67, 162, 96, 43, 173, 225}
@@ -35,8 +99,8 @@ func (obj OrderStateAccount) MarshalWithEncoder(encoder *ag_binary.Encoder) (err
 	if err != nil {
 		return err
 	}
-	// Serialize `Authority` param:
-	err = encoder.Encode(obj.Authority)
+	// Serialize `Owner` param:
+	err = encoder.Encode(obj.Owner)
 	if err != nil {
 		return err
 	}
@@ -82,8 +146,8 @@ func (obj *OrderStateAccount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (
 	if err != nil {
 		return err
 	}
-	// Deserialize `Authority`:
-	err = decoder.Decode(&obj.Authority)
+	// Deserialize `Owner`:
+	err = decoder.Decode(&obj.Owner)
 	if err != nil {
 		return err
 	}

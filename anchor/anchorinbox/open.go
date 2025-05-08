@@ -11,7 +11,7 @@ import (
 	ag_v5 "github.com/vmihailenco/msgpack/v5"
 )
 
-// Open is the `open` instruction.
+// Open a new order
 type Open struct {
 	Params *OpenParams
 

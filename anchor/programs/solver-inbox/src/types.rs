@@ -1,5 +1,18 @@
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 
+#[account]
+pub struct InboxState {
+    pub admin: Pubkey,  // Inbox admin
+    pub deployed_at: u64, // Slot when the inbox was deployed
+    pub bump: u8,          // Bump seed
+}
+
+impl InboxState {
+    pub const SIZE: usize = 32 // Admin
+        + 8 // Deployed at
+        + 1; // Bump seed
+}
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq, Eq)]
 pub enum Status {
     Invalid,
@@ -14,7 +27,7 @@ pub enum Status {
 pub struct OrderState {
     pub order_id: Pubkey,  // Order ID
     pub status: Status,    // Order status
-    pub authority: Pubkey, // Authority of this account
+    pub owner: Pubkey, // Owner of this order
     pub bump: u8,          // Bump seed
     pub deposit: TokenAmount,
     pub expense: TokenAmount,

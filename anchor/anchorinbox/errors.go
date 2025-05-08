@@ -21,7 +21,15 @@ var (
 		msg:  "Invalid order ID",
 		name: "InvalidID",
 	}
-	Errors = map[int]CustomError{6000: ErrInvalidID}
+	ErrInvalidStatus = &customErrorDef{
+		code: 6001,
+		msg:  "Invalid status",
+		name: "InvalidStatus",
+	}
+	Errors = map[int]CustomError{
+		6000: ErrInvalidID,
+		6001: ErrInvalidStatus,
+	}
 )
 
 type CustomError interface {

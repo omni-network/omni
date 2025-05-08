@@ -8,4 +8,6 @@ use anchor_lang::prelude::*;
 pub enum InboxError {
     #[msg("Invalid order ID")]
     InvalidID,
+    #[msg("Invalid status")]
+    InvalidStatus,
 }

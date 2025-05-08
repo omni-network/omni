@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	EventNameOpened = "EventOpened"
+	EventNameOpened     = "EventOpened"
+	EventNameMarkFilled = "EventMarkFilled"
 )
 
 // NewOrderID returns the order ID (32 byte array Pubkey),
@@ -38,6 +39,18 @@ func FindOrderStateAddress(orderID solana.PublicKey) (solana.PublicKey, uint8, e
 		orderID[:],
 	}
 
+	account, bump, err := solana.FindProgramAddress(seeds, ProgramID)
+	if err != nil {
+		return solana.PublicKey{}, 0, errors.Wrap(err, "find program address")
+	}
+
+	return account, bump, nil
+}
+
+// FindInboxStateAddress returns the address of the inbox state account.
+// This is equivalent to anchor: `seeds = [b"inbox-state"]`.
+func FindInboxStateAddress() (solana.PublicKey, uint8, error) {
+	seeds := [][]byte{[]byte("inbox-state")}
 	account, bump, err := solana.FindProgramAddress(seeds, ProgramID)
 	if err != nil {
 		return solana.PublicKey{}, 0, errors.Wrap(err, "find program address")
