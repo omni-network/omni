@@ -26,7 +26,7 @@ func AwaitConfirmedTransaction(ctx context.Context, cl *rpc.Client, txSig solana
 		} else if err != nil {
 			return nil, errors.Wrap(err, "get confirmed transaction")
 		} else if tx.Meta.Err != nil {
-			return nil, errors.New("transaction failed", "meta_err", tx.Meta.Err, "signature", txSig)
+			return tx, errors.New("transaction failed", "meta_err", tx.Meta.Err, "signature", txSig)
 		}
 
 		return tx, nil

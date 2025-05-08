@@ -178,63 +178,69 @@ func TestEventsProgram(t *testing.T) {
 	}()
 
 	// Deploy events program
-	tx0, err := solcompose.Deploy(ctx, cl, dir, prog)
-	tutil.RequireNoError(t, err)
-	t.Logf("Deployed events program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
-	require.Equal(t, mustFirstTxSig(tx0), <-async)
+	t.Run("deploy", func(t *testing.T) {
+		tx0, err := solcompose.Deploy(ctx, cl, dir, prog)
+		tutil.RequireNoError(t, err)
+		t.Logf("Deployed events program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
+		require.Equal(t, mustFirstTxSig(tx0), <-async)
 
-	// Sent Initialize instruction
-	txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, events.NewInitializeInstruction().Build())
-	require.NoError(t, err)
+		// Sent Init instruction
+		txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, events.NewInitializeInstruction().Build())
+		require.NoError(t, err)
 
-	txResp1, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig1)
-	require.NoError(t, err)
-	t.Logf("Initialize Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp1.Slot, txResp1.BlockTime, txSig1, txResp1.Meta.LogMessages)
+		txResp1, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig1)
+		require.NoError(t, err)
+		t.Logf("Init Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp1.Slot, txResp1.BlockTime, txSig1, txResp1.Meta.LogMessages)
 
-	ensureEvent(t, prog, txResp1, events.EventMyEvent, events.MyEventEventData{Data: 5, Label: "hello"})
-	require.Equal(t, mustFirstTxSig(txResp1), <-async)
+		ensureEvent(t, prog, txResp1, events.EventMyEvent, events.MyEventEventData{Data: 5, Label: "hello"})
+		require.Equal(t, mustFirstTxSig(txResp1), <-async)
+	})
 
-	// Send TestEvent instruction
-	txSig2, err := solcompose.SendSimple(ctx, cl, privKey0, events.NewTestEventInstruction().Build())
-	require.NoError(t, err)
+	t.Run("send event", func(t *testing.T) {
+		// Send TestEvent instruction
+		txSig2, err := solcompose.SendSimple(ctx, cl, privKey0, events.NewTestEventInstruction().Build())
+		require.NoError(t, err)
 
-	txResp2, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig2)
-	require.NoError(t, err)
-	t.Logf("TestEvent Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp2.Slot, txResp2.BlockTime, txSig2, txResp2.Meta.LogMessages)
+		txResp2, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig2)
+		require.NoError(t, err)
+		t.Logf("TestEvent Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp2.Slot, txResp2.BlockTime, txSig2, txResp2.Meta.LogMessages)
 
-	ensureEvent(t, prog, txResp2, events.EventMyOtherEvent, events.MyOtherEventEventData{Data: 6, Label: "bye"})
-	require.Equal(t, mustFirstTxSig(txResp2), <-async)
+		ensureEvent(t, prog, txResp2, events.EventMyOtherEvent, events.MyOtherEventEventData{Data: 6, Label: "bye"})
+		require.Equal(t, mustFirstTxSig(txResp2), <-async)
+	})
 
-	// Send N async txs
-	const N = 16
-	var sigs sync.Map
-	for i := range N {
-		go func() {
-			time.Sleep(time.Millisecond * time.Duration(rand.IntN(2000))) // Delay up to 2s
-			txSig, err := solcompose.SendSimple(ctx, cl, privKey0,
-				events.NewTestEventInstruction().Build(),
-				memo.NewMemoInstruction([]byte{byte(i)}, privKey0.PublicKey()).Build(), // Add uniqueness to tx
-			)
-			if err != nil {
-				t.Error("error sending tx:", err)
-			}
-			t.Logf("Async sent tx: %s", txSig)
-			sigs.Store(txSig, true)
-		}()
-	}
+	t.Run("send multi-concurrent", func(t *testing.T) {
+		// Send N async txs
+		const N = 16
+		var sigs sync.Map
+		for i := range N {
+			go func() {
+				time.Sleep(time.Millisecond * time.Duration(rand.IntN(2000))) // Delay up to 2s
+				txSig, err := solcompose.SendSimple(ctx, cl, privKey0,
+					events.NewTestEventInstruction().Build(),
+					memo.NewMemoInstruction([]byte{byte(i)}, privKey0.PublicKey()).Build(), // Add uniqueness to tx
+				)
+				if err != nil {
+					t.Error("error sending tx:", err)
+				}
+				t.Logf("Async sent tx: %s", txSig)
+				sigs.Store(txSig, true)
+			}()
+		}
 
-	for range N {
-		txSig := <-async
-		require.NotNil(t, txSig)
-		require.Eventuallyf(t, func() bool {
-			_, ok := sigs.LoadAndDelete(txSig)
-			return ok
-		}, time.Second*10, time.Second, "tx sig not found in map: %s", txSig)
-	}
+		for range N {
+			txSig := <-async
+			require.NotNil(t, txSig)
+			require.Eventuallyf(t, func() bool {
+				_, ok := sigs.LoadAndDelete(txSig)
+				return ok
+			}, time.Second*10, time.Second, "tx sig not found in map: %s", txSig)
+		}
 
-	sigs.Range(func(k, _ any) bool {
-		require.Fail(t, "tx sig map not empty")
-		return true
+		sigs.Range(func(k, _ any) bool {
+			require.Fail(t, "tx sig map not empty")
+			return true
+		})
 	})
 }
 
@@ -270,114 +276,157 @@ func TestInbox(t *testing.T) {
 	}()
 
 	// Deploy events program
-	tx0, err := solcompose.Deploy(ctx, cl, dir, prog)
-	tutil.RequireNoError(t, err)
-	t.Logf("Deployed inbox program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
-	require.Equal(t, mustFirstTxSig(tx0), <-async)
+	t.Run("deploy", func(t *testing.T) {
+		tx0, err := solcompose.Deploy(ctx, cl, dir, prog)
+		tutil.RequireNoError(t, err)
+		t.Logf("Deployed inbox program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
+		require.Equal(t, mustFirstTxSig(tx0), <-async)
+	})
 
-	// Initialize inbox state
 	inboxStateAddr, bump, err := anchorinbox.FindInboxStateAddress()
 	require.NoError(t, err)
-	init := anchorinbox.NewInitInstruction(inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
-	txSig0, err := solcompose.SendSimple(ctx, cl, privKey0, init.Build())
-	require.NoError(t, err)
-	txResp0, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig0)
-	require.NoError(t, err)
-	require.Nil(t, txResp0.Meta.Err)
-	t.Logf("Init Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp0.Slot, txResp0.BlockTime, txSig0, txResp0.Meta.LogMessages)
-	require.Equal(t, mustFirstTxSig(txResp0), <-async)
 
-	// Get InboxState account
-	info, err := cl.GetAccountInfoWithOpts(ctx, inboxStateAddr, &rpc.GetAccountInfoOpts{Commitment: rpc.CommitmentConfirmed})
-	require.NoError(t, err)
-	inboxState := anchorinbox.InboxStateAccount{}
-	err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(&inboxState)
-	require.NoError(t, err)
-	// Ensure inbox state is as expected
-	expInboxState := anchorinbox.InboxStateAccount{
-		Admin:      privKey0.PublicKey(),
-		DeployedAt: txResp0.Slot,
-		Bump:       bump,
-	}
-	require.Equal(t, expInboxState, inboxState)
+	t.Run("init", func(t *testing.T) {
+		// Initialize inbox state
+		init := anchorinbox.NewInitInstruction(inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
+		txSig0, err := solcompose.SendSimple(ctx, cl, privKey0, init.Build())
+		require.NoError(t, err)
+		txResp0, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig0)
+		require.NoError(t, err)
+		require.Nil(t, txResp0.Meta.Err)
+		t.Logf("Init Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp0.Slot, txResp0.BlockTime, txSig0, txResp0.Meta.LogMessages)
+		require.Equal(t, mustFirstTxSig(txResp0), <-async)
 
-	// Prep Open instruction
+		// Get InboxState account
+		info, err := cl.GetAccountInfoWithOpts(ctx, inboxStateAddr, &rpc.GetAccountInfoOpts{Commitment: rpc.CommitmentConfirmed})
+		require.NoError(t, err)
+		inboxState := anchorinbox.InboxStateAccount{}
+		err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(&inboxState)
+		require.NoError(t, err)
+		// Ensure inbox state is as expected
+		expInboxState := anchorinbox.InboxStateAccount{
+			Admin:      privKey0.PublicKey(),
+			DeployedAt: txResp0.Slot,
+			Bump:       bump,
+		}
+		require.Equal(t, expInboxState, inboxState)
+	})
+
 	owner := privKey0.PublicKey()
 	nonce := uint64(123456)                         // Pick a random nonce
 	orderID := anchorinbox.NewOrderID(owner, nonce) // Calculate order ID
 	t.Logf("OrderID: %s", orderID)
-
 	stateAddr, bump, err := anchorinbox.FindOrderStateAddress(orderID) // Calculate order state account address
 	require.NoError(t, err)
 
-	params := anchorinbox.OpenParams{OrderId: orderID, Nonce: nonce}
-	instr := anchorinbox.NewOpenInstruction(params, stateAddr, privKey0.PublicKey(), solana.SystemProgramID)
+	// Prep Open instruction
+	t.Run("open", func(t *testing.T) {
+		params := anchorinbox.OpenParams{OrderId: orderID, Nonce: nonce}
+		instr := anchorinbox.NewOpenInstruction(params, stateAddr, privKey0.PublicKey(), solana.SystemProgramID)
 
-	// Send Open instruction
-	txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, instr.Build())
-	require.NoError(t, err)
+		// Send Open instruction
+		txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, instr.Build())
+		require.NoError(t, err)
 
-	txResp1, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig1)
-	require.NoError(t, err)
-	require.Nil(t, txResp1.Meta.Err)
-	t.Logf("Open Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp1.Slot, txResp1.BlockTime, txSig1, txResp1.Meta.LogMessages)
-	require.Equal(t, mustFirstTxSig(txResp1), <-async)
+		txResp1, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig1)
+		require.NoError(t, err)
+		require.Nil(t, txResp1.Meta.Err)
+		t.Logf("Open Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp1.Slot, txResp1.BlockTime, txSig1, txResp1.Meta.LogMessages)
+		require.Equal(t, mustFirstTxSig(txResp1), <-async)
 
-	// Ensure Opened event
-	openEvent := anchorinbox.EventOpened{
-		OrderId:    orderID,
-		OrderState: stateAddr,
-		Status:     anchorinbox.StatusPending,
-	}
-	ensureInboxEvent(t, prog, txResp1, anchorinbox.EventNameOpened, openEvent)
+		// Ensure Opened event
+		openEvent := anchorinbox.EventOpened{
+			OrderId:    orderID,
+			OrderState: stateAddr,
+			Status:     anchorinbox.StatusPending,
+		}
+		ensureInboxEvent(t, prog, txResp1, anchorinbox.EventNameOpened, openEvent)
 
-	// Get OrderState account
-	info, err = cl.GetAccountInfoWithOpts(ctx, stateAddr, &rpc.GetAccountInfoOpts{
-		Commitment: rpc.CommitmentConfirmed,
+		// Get OrderState account
+		info, err := cl.GetAccountInfoWithOpts(ctx, stateAddr, &rpc.GetAccountInfoOpts{
+			Commitment: rpc.CommitmentConfirmed,
+		})
+		require.NoError(t, err)
+
+		orderState := anchorinbox.OrderStateAccount{}
+		err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(&orderState)
+		require.NoError(t, err)
+
+		// Ensure OrderState account is correct
+		expOrderState := anchorinbox.OrderStateAccount{
+			OrderId: orderID,
+			Status:  anchorinbox.StatusPending,
+			Owner:   privKey0.PublicKey(),
+			Bump:    bump,
+		}
+		require.Equal(t, expOrderState, orderState)
 	})
-	require.NoError(t, err)
-
-	orderState := anchorinbox.OrderStateAccount{}
-	err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(&orderState)
-	require.NoError(t, err)
-
-	// Ensure OrderState account is correct
-	expOrderState := anchorinbox.OrderStateAccount{
-		OrderId: orderID,
-		Status:  anchorinbox.StatusPending,
-		Owner:   privKey0.PublicKey(),
-		Bump:    bump,
-	}
-	require.Equal(t, expOrderState, orderState)
 
 	// Send MarkFilled instruction
-	markFilled := anchorinbox.NewMarkFilledInstruction(orderID, stateAddr, inboxStateAddr, privKey0.PublicKey())
-	txSig2, err := solcompose.SendSimple(ctx, cl, privKey0, markFilled.Build())
-	require.NoError(t, err)
-	txResp2, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig2)
-	require.NoError(t, err)
-	require.Nil(t, txResp2.Meta.Err)
-	t.Logf("MarkFilled Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp2.Slot, txResp2.BlockTime, txSig2, txResp2.Meta.LogMessages)
-	require.Equal(t, mustFirstTxSig(txResp2), <-async)
+	t.Run("mark filled", func(t *testing.T) {
+		markFilled := anchorinbox.NewMarkFilledInstruction(orderID, stateAddr, inboxStateAddr, privKey0.PublicKey())
+		txSig2, err := solcompose.SendSimple(ctx, cl, privKey0, markFilled.Build())
+		require.NoError(t, err)
+		txResp2, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig2)
+		require.NoError(t, err)
+		require.Nil(t, txResp2.Meta.Err)
+		t.Logf("MarkFilled Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp2.Slot, txResp2.BlockTime, txSig2, txResp2.Meta.LogMessages)
+		require.Equal(t, mustFirstTxSig(txResp2), <-async)
 
-	// Ensure MarkFilled event
-	markFilledEvent := anchorinbox.EventMarkFilled{
-		OrderId:    orderID,
-		OrderState: stateAddr,
-		Status:     anchorinbox.StatusFilled,
-	}
-	ensureInboxEvent(t, prog, txResp2, anchorinbox.EventNameMarkFilled, markFilledEvent)
+		// Ensure MarkFilled event
+		markFilledEvent := anchorinbox.EventMarkFilled{
+			OrderId:    orderID,
+			OrderState: stateAddr,
+			Status:     anchorinbox.StatusFilled,
+		}
+		ensureInboxEvent(t, prog, txResp2, anchorinbox.EventNameMarkFilled, markFilledEvent)
 
-	// Ensure OrderState account is updated
-	info, err = cl.GetAccountInfoWithOpts(ctx, stateAddr, &rpc.GetAccountInfoOpts{
-		Commitment: rpc.CommitmentConfirmed,
+		// Ensure OrderState account is updated
+		info, err := cl.GetAccountInfoWithOpts(ctx, stateAddr, &rpc.GetAccountInfoOpts{
+			Commitment: rpc.CommitmentConfirmed,
+		})
+		require.NoError(t, err)
+		orderState := anchorinbox.OrderStateAccount{}
+		err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(&orderState)
+		require.NoError(t, err)
+
+		// Ensure OrderState account is correct
+		expOrderState := anchorinbox.OrderStateAccount{
+			OrderId: orderID,
+			Status:  anchorinbox.StatusFilled,
+			Owner:   privKey0.PublicKey(),
+			Bump:    bump,
+		}
+		require.Equal(t, expOrderState, orderState)
 	})
-	require.NoError(t, err)
-	orderState = anchorinbox.OrderStateAccount{}
-	err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(&orderState)
-	require.NoError(t, err)
-	expOrderState.Status = anchorinbox.StatusFilled
-	require.Equal(t, expOrderState, orderState)
+
+	t.Run("init fail", func(t *testing.T) {
+		init := anchorinbox.NewInitInstruction(inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
+		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, init.Build())
+		require.NoError(t, err)
+		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		require.ErrorContains(t, err, "transaction failed")
+		require.Equal(t, mustFirstTxSig(txResp), <-async)
+	})
+
+	t.Run("open fail", func(t *testing.T) {
+		params := anchorinbox.OpenParams{OrderId: orderID, Nonce: nonce}
+		open := anchorinbox.NewOpenInstruction(params, stateAddr, privKey0.PublicKey(), solana.SystemProgramID)
+		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, open.Build())
+		require.NoError(t, err)
+		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		require.ErrorContains(t, err, "transaction failed")
+		require.Equal(t, mustFirstTxSig(txResp), <-async)
+	})
+
+	t.Run("mark filled fail", func(t *testing.T) {
+		markFilled := anchorinbox.NewMarkFilledInstruction(orderID, stateAddr, inboxStateAddr, privKey0.PublicKey())
+		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, markFilled.Build())
+		require.NoError(t, err)
+		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		require.ErrorContains(t, err, "transaction failed")
+		require.Equal(t, mustFirstTxSig(txResp), <-async)
+	})
 }
 
 func ensureInboxEvent(t *testing.T, prog solcompose.Program, txRes *rpc.GetTransactionResult, expectName string, expectData any) {
