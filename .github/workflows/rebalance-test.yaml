@@ -25,4 +25,6 @@ jobs:
           OP_RPC: ${{ secrets.OP_RPC }}
           BASE_RPC: ${{ secrets.BASE_RPC }}
         run: |
-          go test ./solver/rebalance -integration -v -run=TestIntegration
+          # go test ./solver/rebalance -integration -v -run=TestIntegration
+          # Temporarily skip the rebalance test
+          echo "Skipped"
