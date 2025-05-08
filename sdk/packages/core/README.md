@@ -1,7 +1,5 @@
 # Omni SDK core
 
-## Note - The SDK is in alpha so expect breaking changes
-
 ## Overview
 
 The Omni SDK contains APIs for interfacing with Omni SolverNet, your gateway to any transaction, on any chain.
