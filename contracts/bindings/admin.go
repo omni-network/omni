@@ -806,25 +806,25 @@ func (_Admin *AdminTransactorSession) UpgradeSolverNetExecutor(admin common.Addr
 	return _Admin.Contract.UpgradeSolverNetExecutor(&_Admin.TransactOpts, admin, deployer, proxy, outbox, data, chainIds)
 }
 
-// UpgradeSolverNetInbox is a paid mutator transaction binding the contract method 0x5a87f1a5.
+// UpgradeSolverNetInbox is a paid mutator transaction binding the contract method 0xc8f4e918.
 //
-// Solidity: function upgradeSolverNetInbox(address admin, address deployer, address proxy, address mailbox, bytes data) returns()
-func (_Admin *AdminTransactor) UpgradeSolverNetInbox(opts *bind.TransactOpts, admin common.Address, deployer common.Address, proxy common.Address, mailbox common.Address, data []byte) (*types.Transaction, error) {
-	return _Admin.contract.Transact(opts, "upgradeSolverNetInbox", admin, deployer, proxy, mailbox, data)
+// Solidity: function upgradeSolverNetInbox(address admin, address deployer, address proxy, address omni, address mailbox, bytes data) returns()
+func (_Admin *AdminTransactor) UpgradeSolverNetInbox(opts *bind.TransactOpts, admin common.Address, deployer common.Address, proxy common.Address, omni common.Address, mailbox common.Address, data []byte) (*types.Transaction, error) {
+	return _Admin.contract.Transact(opts, "upgradeSolverNetInbox", admin, deployer, proxy, omni, mailbox, data)
 }
 
-// UpgradeSolverNetInbox is a paid mutator transaction binding the contract method 0x5a87f1a5.
+// UpgradeSolverNetInbox is a paid mutator transaction binding the contract method 0xc8f4e918.
 //
-// Solidity: function upgradeSolverNetInbox(address admin, address deployer, address proxy, address mailbox, bytes data) returns()
-func (_Admin *AdminSession) UpgradeSolverNetInbox(admin common.Address, deployer common.Address, proxy common.Address, mailbox common.Address, data []byte) (*types.Transaction, error) {
-	return _Admin.Contract.UpgradeSolverNetInbox(&_Admin.TransactOpts, admin, deployer, proxy, mailbox, data)
+// Solidity: function upgradeSolverNetInbox(address admin, address deployer, address proxy, address omni, address mailbox, bytes data) returns()
+func (_Admin *AdminSession) UpgradeSolverNetInbox(admin common.Address, deployer common.Address, proxy common.Address, omni common.Address, mailbox common.Address, data []byte) (*types.Transaction, error) {
+	return _Admin.Contract.UpgradeSolverNetInbox(&_Admin.TransactOpts, admin, deployer, proxy, omni, mailbox, data)
 }
 
-// UpgradeSolverNetInbox is a paid mutator transaction binding the contract method 0x5a87f1a5.
+// UpgradeSolverNetInbox is a paid mutator transaction binding the contract method 0xc8f4e918.
 //
-// Solidity: function upgradeSolverNetInbox(address admin, address deployer, address proxy, address mailbox, bytes data) returns()
-func (_Admin *AdminTransactorSession) UpgradeSolverNetInbox(admin common.Address, deployer common.Address, proxy common.Address, mailbox common.Address, data []byte) (*types.Transaction, error) {
-	return _Admin.Contract.UpgradeSolverNetInbox(&_Admin.TransactOpts, admin, deployer, proxy, mailbox, data)
+// Solidity: function upgradeSolverNetInbox(address admin, address deployer, address proxy, address omni, address mailbox, bytes data) returns()
+func (_Admin *AdminTransactorSession) UpgradeSolverNetInbox(admin common.Address, deployer common.Address, proxy common.Address, omni common.Address, mailbox common.Address, data []byte) (*types.Transaction, error) {
+	return _Admin.Contract.UpgradeSolverNetInbox(&_Admin.TransactOpts, admin, deployer, proxy, omni, mailbox, data)
 }
 
 // UpgradeSolverNetMiddleman is a paid mutator transaction binding the contract method 0xbb0820b8.
