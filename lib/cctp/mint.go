@@ -113,7 +113,12 @@ func tryMintSubmitted(
 
 	for _, msg := range msgs {
 		if err := tryMint(ctx, db, usdc, minter, client, backend, msgTransmitter, msg); err != nil {
-			return errors.Wrap(err, "try mint once")
+			return errors.Wrap(err, "try mint once",
+				"msg_hash", msg.MessageHash,
+				"msg_tx_hash", msg.TxHash,
+				"src_chain", evmchain.Name(msg.SrcChainID),
+				"dest_chain", evmchain.Name(msg.DestChainID),
+			)
 		}
 	}
 
