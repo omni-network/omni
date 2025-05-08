@@ -95,12 +95,24 @@ func GetUSDChainDeficit(
 
 	// Subtract all the token surpluses
 	for _, token := range TokensByChain(chainID) {
-		s, err := GetUSDSurplus(ctx, client, pricer, token, solver)
+		sTkn, err := GetSurplus(ctx, client, token, solver)
 		if err != nil {
 			return nil, errors.Wrap(err, "get surplus")
 		}
 
-		deficit = bi.Sub(deficit, s)
+		if bi.LT(sTkn, GetFundThreshold(token).MinSwap()) {
+			// If surplus < min swap, don't deduct from deficit.
+			// We cannot use it to fill deficit.
+			continue
+		}
+
+		// Convert surplus to USD
+		sUSD, err := AmtToUSD(ctx, pricer, token, sTkn)
+		if err != nil {
+			return nil, errors.Wrap(err, "get surplus in usd")
+		}
+
+		deficit = bi.Sub(deficit, sUSD)
 	}
 
 	// If no DB, we can't get inflight USDC, so return deficit as is.
