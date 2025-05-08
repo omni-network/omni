@@ -39,7 +39,7 @@ var (
 	integration = flag.Bool("integration", false, "run integration tests")
 )
 
-//go:generate go test . -integration -v -run=TestIntegration
+// Usage: go test . -integration -v -run=TestIntegration
 
 func TestIntegration(t *testing.T) {
 	t.Parallel()
