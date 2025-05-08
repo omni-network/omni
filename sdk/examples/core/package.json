@@ -1,0 +1,17 @@
+{
+  "name": "core-example",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/run.js",
+    "build": "tsc -p tsconfig.json --outdir dist"
+  },
+  "dependencies": {
+    "@omni-network/core": "workspace:*",
+    "viem": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.2"
+  }
+}
