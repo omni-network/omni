@@ -25,6 +25,7 @@ type Config struct {
 	DBDir           string
 	Tracer          tracer.Config
 	CoinGeckoAPIKey string
+	RPCOverrides    map[string]string
 }
 
 func DefaultConfig() Config {
