@@ -45,11 +45,16 @@ abstract contract XAppBase {
 
     /**
      * @notice Read current xmsg into storage before execution, delete it afterwards
+     * @dev If `omni` is not set, xmsg is not modified.
      */
     modifier xrecv() {
-        xmsg = omni.xmsg();
-        _;
-        delete xmsg;
+        if (address(omni) != address(0)) {
+            xmsg = omni.xmsg();
+            _;
+            delete xmsg;
+        } else {
+            _;
+        }
     }
 
     constructor(address omni_) {
