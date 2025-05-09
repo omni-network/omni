@@ -12,9 +12,6 @@
    "USDC": {
     "min": "110000 USDC"
    },
-   "stETH": {
-    "min": "10 stETH"
-   },
    "wstETH": {
     "min": "10 wstETH"
    }

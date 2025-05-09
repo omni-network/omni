@@ -45,5 +45,4 @@ Instead of being locked into a single network, devs can onboard users from acros
 ### SDK Examples
 
 *   **[Basic ETH Deposit Example](/sdk/getting-started/basic-deposit.md):** Deposit ETH from Base Sepolia to Holesky.
-*   **[EigenLayer Restake Example](/guides/examples/eigenlayer.mdx):** Deposit ETH from Base Sepolia into EigenLayer's stETH strategy on Holesky, showcasing signature handling.
 *   **[Handling Contracts Without "onBehalfOf"](/guides/contracts-without-onbehalfof.mdx):** Using `withExecAndTransfer` (for contracts that credit `msg.sender`).
