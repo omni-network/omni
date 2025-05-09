@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -58,7 +59,14 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
+	hlNetwork := solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, cfg.RPCEndpoints))
+
 	ethClients, err := initializeEthClients(ctx, network.EVMChains(), cfg.RPCEndpoints)
+	if err != nil {
+		return err
+	}
+
+	hlEthClients, err := initializeEthClients(ctx, hlNetwork.EVMChains(), cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -68,11 +76,11 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if err := flowgen.Start(ctx, network, ethClients, cfg.FlowGenKey, cfg.SolverAddress); err != nil {
+	if err := flowgen.Start(ctx, hlNetwork, hlEthClients, cfg.FlowGenKey, cfg.SolverAddress); err != nil {
 		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
 	}
 
-	if err := account.StartMonitoring(ctx, network, ethClients); err != nil {
+	if err := account.StartMonitoring(ctx, hlNetwork, hlEthClients); err != nil {
 		return errors.Wrap(err, "start account monitor")
 	}
 
@@ -98,11 +106,11 @@ func Run(ctx context.Context, cfg Config) error {
 		log.Error(ctx, "Failed to start xfee manager [BUG]", err)
 	}
 
-	if err := cctpgen.Start(ctx, network, ethClients, cfg.PrivateKey, cfg.DBDir); err != nil {
+	if err := cctpgen.Start(ctx, hlNetwork, hlEthClients, cfg.PrivateKey, cfg.DBDir); err != nil {
 		log.Error(ctx, "Failed to start cctpgen [BUG]", err)
 	}
 
-	startMonitoringSyncDiff(ctx, network, ethClients)
+	startMonitoringSyncDiff(ctx, hlNetwork, hlEthClients)
 	go runHistoricalBaselineForever(ctx, network, cprov)
 	go monitorUpgradesForever(ctx, cprov)
 	go routerecon.ReconForever(ctx, network, cfg.RouteScanAPIKey, xprov, ethClients)
