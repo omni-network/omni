@@ -51,6 +51,16 @@
  },
  {
   "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 11155111,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "maxSpend": "3 ETH",
+  "minSpend": "0.001 ETH",
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
   "chainId": 421614,
   "coingeckoId": "ethereum",
   "isMock": false,
