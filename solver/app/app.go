@@ -72,7 +72,14 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return err
 	}
-	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, cfg.RPCEndpoints))
+
+	hlEndpoints, err := AddSolverEndpoints(ctx, cfg.Network, cfg.RPCEndpoints, cfg.RPCOverrides)
+	if err != nil {
+		return errors.Wrap(err, "add solver endpoints")
+	}
+
+	hlNetwork := solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, hlEndpoints))
+	log.Debug(ctx, "Hyperlane network initialized", "network", hlNetwork.ID, "chain_ids", hlNetwork.ChainIDs()) // Use in log to avoid linter for now
 
 	if cfg.SolverPrivKey == "" {
 		return errors.New("private key not set")
@@ -84,6 +91,7 @@ func Run(ctx context.Context, cfg Config) error {
 	solverAddr := ethcrypto.PubkeyToAddress(privKey.PublicKey)
 	log.Debug(ctx, "Using solver address", "address", solverAddr.Hex())
 
+	// Get Core backends for xprovider
 	backends, err := ethbackend.BackendsFromNetwork(ctx, network, cfg.RPCEndpoints, privKey)
 	if err != nil {
 		return err
@@ -91,6 +99,15 @@ func Run(ctx context.Context, cfg Config) error {
 	backends.StartIdleConnectionClosing(ctx)
 
 	xprov := xprovider.New(network, backends.Clients(), nil)
+
+	// Get extended backends including Hyperlane chains
+	/*
+		backends, err = ethbackend.BackendsFromNetwork(ctx, hlNetwork, hlEndpoints, privKey)
+		if err != nil {
+			return err
+		}
+		backends.StartIdleConnectionClosing(ctx)
+	*/
 
 	db, err := newSolverDB(cfg.DBDir)
 	if err != nil {
