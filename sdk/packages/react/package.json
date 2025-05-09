@@ -42,7 +42,6 @@
     "wagmi": "2.x"
   },
   "devDependencies": {
-    "@omni-network/test-utils": "workspace:^",
     "@testing-library/dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",

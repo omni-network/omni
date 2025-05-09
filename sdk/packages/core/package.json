@@ -25,7 +25,13 @@
     "publish": "pnpm publish",
     "test": "vitest run"
   },
-  "files": ["dist/**", "src/**", "!dist/**/*.tsbuildinfo"],
+  "files": [
+    "dist/**",
+    "src/**",
+    "!dist/**/*.tsbuildinfo",
+    "!src/**/*.test.ts",
+    "!src/**/*.test-d.ts"
+  ],
   "engines": {
     "node": ">=22.x"
   },
@@ -33,7 +39,6 @@
     "viem": "catalog:"
   },
   "devDependencies": {
-    "@omni-network/test-utils": "workspace:^",
     "typescript": "^5.7.2",
     "vite": "^6.2.6",
     "vitest": "^3.0.7"
