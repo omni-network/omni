@@ -42,6 +42,7 @@ func TestGenTokens(t *testing.T) {
 
 		// Native ETH (testnet)
 		nativeETH(evmchain.IDHolesky),
+		nativeETH(evmchain.IDSepolia),
 		nativeETH(evmchain.IDArbSepolia),
 		nativeETH(evmchain.IDBaseSepolia),
 		nativeETH(evmchain.IDOpSepolia),
