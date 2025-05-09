@@ -27,6 +27,7 @@ type DeploymentConfig struct {
 	Deployer        common.Address
 	ExpectedAddr    common.Address
 	Executor        common.Address
+	Mailbox         common.Address
 }
 
 func (cfg DeploymentConfig) Validate() error {
@@ -66,6 +67,13 @@ func (cfg DeploymentConfig) Validate() error {
 
 // Deploy idempotently deploys a new SolverNetOutbox contract and returns the address and receipt.
 func Deploy(ctx context.Context, network netconf.Network, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
+	chainID, err := backend.ChainID(ctx)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get chain id")
+	}
+
+	mailbox, _ := solvernet.HyperlaneMailbox(chainID.Uint64())
+
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get addresses")
@@ -94,6 +102,7 @@ func Deploy(ctx context.Context, network netconf.Network, backend *ethbackend.Ba
 		Inbox:           addrs.SolverNetInbox,
 		ExpectedAddr:    addrs.SolverNetOutbox,
 		Executor:        addrs.SolverNetExecutor,
+		Mailbox:         mailbox,
 	}
 
 	return deploy(ctx, cfg, network, backend)
@@ -103,13 +112,6 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
-
-	chainID, err := backend.ChainID(ctx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get chain id")
-	}
-
-	mailbox, _ := solvernet.HyperlaneMailbox(chainID.Uint64())
 
 	txOpts, err := backend.BindOpts(ctx, cfg.Deployer)
 	if err != nil {
@@ -130,7 +132,7 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
-	impl, tx, _, err := bindings.DeploySolverNetOutbox(txOpts, backend, mailbox)
+	impl, tx, _, err := bindings.DeploySolverNetOutbox(txOpts, backend, cfg.Executor, cfg.Portal, cfg.Mailbox)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
 	}
@@ -155,6 +157,10 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
 	}
 
+	chainID, err := backend.ChainID(ctx)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get chain id")
+	}
 	srcChainID := chainID.Uint64()
 
 	// setInboxes
@@ -207,7 +213,7 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := outboxAbi.Pack("initialize", cfg.Owner, cfg.Solver, cfg.Portal, cfg.Executor)
+	initializer, err := outboxAbi.Pack("initialize", cfg.Owner, cfg.Solver)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode initializer")
 	}
