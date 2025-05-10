@@ -39,3 +39,11 @@ jobs:
   rebalance-test:
     uses: ./.github/workflows/rebalance-test.yaml
     secrets: inherit
+  sdk-changesets:
+    name: SDK changesets
+    needs: [e2e, sdk-unit-tests]
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/changeset.yaml
+    secrets: inherit

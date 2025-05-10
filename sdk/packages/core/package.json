@@ -33,7 +33,6 @@
     "viem": "catalog:"
   },
   "devDependencies": {
-    "@omni-network/test-utils": "workspace:^",
     "typescript": "^5.7.2",
     "vite": "^6.2.6",
     "vitest": "^3.0.7"
