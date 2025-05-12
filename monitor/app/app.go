@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -53,12 +54,20 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	network, err := netconf.AwaitOnExecutionChain(ctx, cfg.Network, portalReg, cfg.RPCEndpoints.Keys())
+	network, err := netconf.AwaitOnExecutionChain(ctx, cfg.Network, portalReg, solvernet.OnlyCoreEndpoints(cfg.RPCEndpoints).Keys())
 	if err != nil {
 		return err
 	}
 
-	ethClients, err := initializeEthClients(ctx, network.EVMChains(), cfg.RPCEndpoints)
+	ethClients, err := initializeEthClients(ctx, network.EVMChains(), solvernet.OnlyCoreEndpoints(cfg.RPCEndpoints))
+	if err != nil {
+		return err
+	}
+
+	// Create hyperlane network and ETH clients to iteratively migrate monitor logic to
+	hlNetwork := solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, cfg.RPCEndpoints))
+
+	hlEthClients, err := initializeEthClients(ctx, hlNetwork.EVMChains(), cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -72,7 +81,7 @@ func Run(ctx context.Context, cfg Config) error {
 		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
 	}
 
-	if err := account.StartMonitoring(ctx, network, ethClients); err != nil {
+	if err := account.StartMonitoring(ctx, hlNetwork, hlEthClients); err != nil {
 		return errors.Wrap(err, "start account monitor")
 	}
 

@@ -591,6 +591,18 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 		}
 	}
 
+	// Extend endpoints with non-manifest HL chains, passed in via rpc overrides.
+	for _, chain := range solvernet.HLChains(def.Testnet.Network) {
+		rpc, ok := def.Cfg.RPCOverrides[chain.Name]
+		if !ok {
+			continue
+		}
+
+		if _, ok := endpoints[chain.Name]; !ok {
+			endpoints[chain.Name] = rpc
+		}
+	}
+
 	// Save private key
 	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleMonitor)
 	if err != nil {

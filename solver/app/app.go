@@ -15,7 +15,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -69,7 +68,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	network, err := netconf.AwaitOnExecutionChain(ctx, cfg.Network, portalReg, onlyCoreEndpoints(cfg.RPCEndpoints).Keys())
+	network, err := netconf.AwaitOnExecutionChain(ctx, cfg.Network, portalReg, solvernet.OnlyCoreEndpoints(cfg.RPCEndpoints).Keys())
 	if err != nil {
 		return err
 	}
@@ -428,24 +427,4 @@ func newCCTPClient(networkID netconf.ID) cctp.Client {
 	}
 
 	return cctp.NewClient(api)
-}
-
-// onlyCoreEndpoints filters the given RPC endpoints to only include core endpoints.
-// Necessary prereq for netconf.AwaitOnExecutionChain, which expects all
-// endopints to have portal registrations.
-func onlyCoreEndpoints(endpoints xchain.RPCEndpoints) xchain.RPCEndpoints {
-	out := make(xchain.RPCEndpoints)
-
-	for name, rpc := range endpoints {
-		meta, ok := evmchain.MetadataByName(name)
-		if !ok {
-			continue
-		}
-
-		if solvernet.IsCore(meta.ChainID) {
-			out[name] = rpc
-		}
-	}
-
-	return out
 }
