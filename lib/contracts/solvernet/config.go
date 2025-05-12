@@ -2,6 +2,7 @@ package solvernet
 
 import (
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -90,6 +91,26 @@ func IsHLOnly(chainID uint64) bool {
 // IsSupported returns true if the chain ID is supported.
 func IsSupported(chainID uint64) bool {
 	return IsCore(chainID) || IsHL(chainID)
+}
+
+// onlyCoreEndpoints filters the given RPC endpoints to only include core endpoints.
+// Necessary prereq for netconf.AwaitOnExecutionChain, which expects all
+// endopints to have portal registrations.
+func OnlyCoreEndpoints(endpoints xchain.RPCEndpoints) xchain.RPCEndpoints {
+	out := make(xchain.RPCEndpoints)
+
+	for name, rpc := range endpoints {
+		meta, ok := evmchain.MetadataByName(name)
+		if !ok {
+			continue
+		}
+
+		if IsCore(meta.ChainID) {
+			out[name] = rpc
+		}
+	}
+
+	return out
 }
 
 // Provider returns the provider between a source and destination chain.
