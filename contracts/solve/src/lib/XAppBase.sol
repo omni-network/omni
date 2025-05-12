@@ -47,7 +47,6 @@ abstract contract XAppBase {
     }
 
     constructor(address omni_) {
-        require(omni_ != address(0), "XApp: no zero omni");
         omni = IOmniPortal(omni_);
     }
 
