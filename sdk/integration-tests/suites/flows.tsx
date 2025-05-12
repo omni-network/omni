@@ -23,11 +23,13 @@ import {
   vault,
 } from '@omni-network/test-utils'
 import { act, waitFor } from '@testing-library/react'
+import { ethers } from 'ethers'
 import { type PrivateKeyAccount, parseEther, zeroAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { getBalance } from 'viem/actions'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { useBalance } from 'wagmi'
+import { ethersToViemClient } from '../ethers.js'
 import {
   type AnyOrder,
   createRenderHook,
@@ -184,6 +186,58 @@ describe.concurrent('ETH transfer orders', () => {
           expense: { token: zeroAddress, amount: expect.any(BigInt) },
         })
         expect(quote.expense.amount).toBeLessThan(parseEther('2'))
+
+        await executeTestOrderUsingCore({
+          order: orderParams,
+          srcClient,
+          destClient,
+        })
+
+        const postDestBalance = await getBalance(destClient, {
+          address: account.address,
+        })
+        expect(postDestBalance).toBe(
+          preDestBalance + orderParams.calls[0].value,
+        )
+      })
+
+      test('using ethers provider and signer with core', async () => {
+        const account = getNextAccount()
+        await createAnvilClient(mockL1Chain).setBalance({
+          address: account.address,
+          value: parseEther('10'),
+        })
+
+        // Create ethers provider and signer
+        const rpcUrl = mockL1Chain.rpcUrls.default.http[0]
+        const ethersProvider = new ethers.JsonRpcProvider(rpcUrl)
+        const privateKey =
+          availableTestAccounts[
+            account.address as keyof typeof availableTestAccounts
+          ]
+        const ethersSigner = new ethers.Wallet(privateKey, ethersProvider)
+
+        // Convert ethers types to viem client
+        const srcClient = await ethersToViemClient(ethersSigner, mockL1Chain)
+        const orderParams = {
+          deposit: { token: zeroAddress, amount: parseEther('2') },
+          expense: { token: zeroAddress, amount: parseEther('1') },
+          calls: [{ target: account.address, value: parseEther('1') }],
+          srcChainId: mockL1Id,
+          destChainId: mockL2Id,
+          validateEnabled: false,
+        }
+
+        const quote = await getQuote({ ...quoteParams, environment: 'devnet' })
+        expect(quote).toEqual({
+          deposit: { token: zeroAddress, amount: parseEther('2') },
+          expense: { token: zeroAddress, amount: expect.any(BigInt) },
+        })
+        expect(quote.expense.amount).toBeLessThan(parseEther('2'))
+
+        const preDestBalance = await getBalance(destClient, {
+          address: account.address,
+        })
 
         await executeTestOrderUsingCore({
           order: orderParams,
