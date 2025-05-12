@@ -70,9 +70,10 @@ abstract contract MailboxClient is OwnableRoles, Initializable, PackageVersioned
         address _target,
         uint256 _value,
         bytes memory _messageBody,
-        uint256 _gasLimit
+        uint256 _gasLimit,
+        address _refundAddress
     ) internal returns (bytes32) {
-        bytes memory _hookMetadata = StandardHookMetadata.overrideGasLimit(_gasLimit);
+        bytes memory _hookMetadata = StandardHookMetadata.formatMetadata(0, _gasLimit, _refundAddress, "");
         return mailbox.dispatch{ value: _value }(_destinationDomain, _target.toBytes32(), _messageBody, _hookMetadata);
     }
 
@@ -83,12 +84,14 @@ abstract contract MailboxClient is OwnableRoles, Initializable, PackageVersioned
      * @param _messageBody The message body.
      * @param _gasLimit The gas limit.
      */
-    function _quoteDispatch(uint32 _destinationDomain, address _target, bytes memory _messageBody, uint256 _gasLimit)
-        internal
-        view
-        returns (uint256)
-    {
-        bytes memory _hookMetadata = StandardHookMetadata.overrideGasLimit(_gasLimit);
+    function _quoteDispatch(
+        uint32 _destinationDomain,
+        address _target,
+        bytes memory _messageBody,
+        uint256 _gasLimit,
+        address _refundAddress
+    ) internal view returns (uint256) {
+        bytes memory _hookMetadata = StandardHookMetadata.formatMetadata(0, _gasLimit, _refundAddress, "");
         return mailbox.quoteDispatch(_destinationDomain, _target.toBytes32(), _messageBody, _hookMetadata);
     }
 }
