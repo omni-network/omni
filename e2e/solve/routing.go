@@ -35,11 +35,15 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 	eg, childCtx := errgroup.WithContext(ctx)
 
 	for _, chain := range network.EVMChains() {
-		routes := getRoutes(chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
-
 		backend, err := backends.Backend(chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "get backend", "chain", chain.Name)
+		}
+
+		routes := getRoutes(chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
+		routes, err = filterRoutes(ctx, chain, network, backend, addrs.SolverNetInbox, addrs.SolverNetOutbox, routes)
+		if err != nil {
+			return errors.Wrap(err, "filter routes", "chain", chain.Name)
 		}
 
 		isDeployed, err := checkDeployed(ctx, backend, addrs.SolverNetInbox, addrs.SolverNetOutbox)
@@ -77,7 +81,7 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 }
 
 // getRoutes returns the remote chain IDs, outboxes, and inbox configs for a given chain.
-func getRoutes(src netconf.Chain, network netconf.Network, inbox common.Address, outbox common.Address) []Route {
+func getRoutes(src netconf.Chain, network netconf.Network, inboxAddr common.Address, outboxAddr common.Address) []Route {
 	var routes []Route
 	for _, dest := range network.EVMChains() {
 		if solvernet.IsDisabled(src.ID) || solvernet.IsDisabled(dest.ID) {
@@ -93,12 +97,58 @@ func getRoutes(src netconf.Chain, network netconf.Network, inbox common.Address,
 
 		routes = append(routes, Route{
 			ChainID:     dest.ID,
-			Outbox:      outbox,
-			InboxConfig: bindings.ISolverNetOutboxInboxConfig{Inbox: inbox, Provider: provider},
+			Outbox:      outboxAddr,
+			InboxConfig: bindings.ISolverNetOutboxInboxConfig{Inbox: inboxAddr, Provider: provider},
 		})
 	}
 
 	return routes
+}
+
+// filterRoutes filters out routes that are already configured on a given chain.
+func filterRoutes(ctx context.Context, src netconf.Chain, network netconf.Network, backend *ethbackend.Backend, inboxAddr common.Address, outboxAddr common.Address, routes []Route) ([]Route, error) {
+	var currentRoutes []Route
+	for _, dest := range network.EVMChains() {
+		callOpts := &bind.CallOpts{Context: ctx}
+
+		inbox, err := bindings.NewSolverNetInbox(inboxAddr, backend)
+		if err != nil {
+			return nil, errors.Wrap(err, "bind inbox", "chain", backend.Name())
+		}
+
+		inboxConfig, err := inbox.GetOutbox(callOpts, dest.ID)
+		if err != nil {
+			return nil, errors.Wrap(err, "get inbox outbox", "chain", backend.Name())
+		}
+
+		outbox, err := bindings.NewSolverNetOutbox(outboxAddr, backend)
+		if err != nil {
+			return nil, errors.Wrap(err, "bind outbox", "chain", backend.Name())
+		}
+
+		outboxConfig, err := outbox.GetInboxConfig(callOpts, src.ID)
+		if err != nil {
+			return nil, errors.Wrap(err, "get outbox inbox config", "chain", backend.Name())
+		}
+
+		currentRoutes = append(currentRoutes, Route{
+			ChainID:     dest.ID,
+			Outbox:      inboxConfig,
+			InboxConfig: outboxConfig,
+		})
+	}
+
+	// Filter out routes that are already configured.
+	var filteredRoutes []Route
+	for _, route := range routes {
+		for _, currentRoute := range currentRoutes {
+			if route.ChainID == currentRoute.ChainID && route != currentRoute {
+				filteredRoutes = append(filteredRoutes, route)
+			}
+		}
+	}
+
+	return filteredRoutes, nil
 }
 
 // checkDeployed returns true if the SolverNet inbox and outbox are deployed on a given chain.
