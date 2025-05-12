@@ -155,6 +155,34 @@ contract SolverNetPostUpgradeTest is Test {
 
             bytes32 orderId = bytes32(type(uint256).max - i);
             uint256 fillFee = outbox.fillFee(abi.encode(fillOriginData));
+            bool sameChain = chainIds[chainIds.length - 1 - i] == uint64(block.chainid);
+
+            // If same chain order, it needs to be opened first
+            if (sameChain) {
+                ISolverNetOutbox.InboxConfig memory config = outbox.getInboxConfig(uint64(block.chainid));
+                inbox = SolverNetInbox(config.inbox);
+                orderId = inbox.getNextOrderId(user);
+                vm.deal(user, value);
+
+                SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(0), amount: uint96(value) });
+                SolverNet.OrderData memory orderData = SolverNet.OrderData({
+                    owner: user,
+                    destChainId: uint64(block.chainid),
+                    deposit: deposit,
+                    calls: calls,
+                    expenses: expenses
+                });
+                IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
+                    fillDeadline: type(uint32).max,
+                    orderDataType: ORDERDATA_TYPEHASH,
+                    orderData: abi.encode(orderData)
+                });
+                assertTrue(inbox.validate(order), "order should be valid");
+
+                vm.prank(user);
+                inbox.open{ value: value }(order);
+            }
+
             vm.deal(solver, value + fillFee);
             vm.prank(solver);
             outbox.fill{ value: fillFee }(orderId, abi.encode(fillOriginData), abi.encode(solver));
