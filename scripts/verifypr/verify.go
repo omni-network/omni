@@ -16,11 +16,8 @@ import (
 )
 
 var (
-	optionalLink    = `(fix\w*\s|close\w*\s|resolve\w*\s)?`    // Optional issue linking prefix, see https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue.
-	descRegex       = regexp.MustCompile(`^[a-z][-\w\s]+$`)    // e.g. "add foo-bar"
-	scopeRegex      = regexp.MustCompile(`^[*\w]+(/[*\w]+)?$`) // e.g. "*" or "foo" or "foo/bar"
-	issueRegexFull  = regexp.MustCompile(`^` + optionalLink + `https://github.com/omni-network/\w+/issues/\d+$`)
-	issueRegexShort = regexp.MustCompile(`^` + optionalLink + `#\d+$`) // e.g. "#1334"
+	descRegex  = regexp.MustCompile(`^[a-z][-\w\s]+$`)    // e.g. "add foo-bar"
+	scopeRegex = regexp.MustCompile(`^[*\w]+(/[*\w]+)?$`) // e.g. "*" or "foo" or "foo/bar"
 )
 
 // run runs the verification.
@@ -104,11 +101,6 @@ func verify(commitMsg string) error {
 		return errors.New("body empty")
 	}
 
-	// Verify footer is valid.
-	if err := verifyFooter(commit); err != nil {
-		return err
-	}
-
 	// Verify scope is valid.
 	if err := verifyScope(commit); err != nil {
 		return err
@@ -143,35 +135,6 @@ func verifyScope(commit *cc.ConventionalCommit) error {
 
 	if !scopeRegex.MatchString(scope) {
 		return errors.New("scope doesn't match regex")
-	}
-
-	return nil
-}
-
-func verifyFooter(commit *cc.ConventionalCommit) error {
-	const issueFooter = "issue"
-	if len(commit.Footers) == 0 {
-		return errors.New("missing `issue` footer")
-	}
-	if len(commit.Footers[issueFooter]) == 0 {
-		return errors.New("missing `issue` footer")
-	}
-
-	if len(commit.Footers[issueFooter]) != 1 {
-		return errors.New("invalid number of issue footers, only one allowed")
-	}
-
-	issue := strings.TrimSpace(commit.Footers[issueFooter][0])
-	if issue == "" {
-		return errors.New("issue footer empty")
-	} else if issue == "none" {
-		// None is fine
-	} else if issueRegexFull.MatchString(issue) {
-		// Full issue URL
-	} else if issueRegexShort.MatchString(issue) {
-		// Short issue URL
-	} else {
-		return errors.New("issue footer doesn't match regex")
 	}
 
 	return nil
