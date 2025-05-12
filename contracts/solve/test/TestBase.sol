@@ -371,7 +371,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
     function deploySolverNetInbox(address expectedInboxAddr) internal {
         address mailbox = address(mailboxes[uint32(srcChainId)]);
-        address impl = address(new SolverNetInbox(mailbox));
+        address impl = address(new SolverNetInbox(address(portal), mailbox));
         inbox = SolverNetInbox(
             create3.deploy(
                 keccak256("inbox"),
@@ -410,7 +410,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     }
 
     function initializeInbox() internal {
-        inbox.initialize(address(this), solver, address(portal));
+        inbox.initialize(address(this), solver);
     }
 
     function initializeOutbox() internal {

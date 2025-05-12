@@ -111,11 +111,9 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
         if (address(inbox).code.length != 0) return;
 
         // NOTE: If this is ever required again, we need to pass in the correct address for the mailbox
-        SolverNetInbox inboxImpl = new SolverNetInbox(address(0));
+        SolverNetInbox inboxImpl = new SolverNetInbox(address(portal), address(0));
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(inboxImpl),
-            address(deployer),
-            abi.encodeCall(SolverNetInbox.initialize, (deployer, deployer, address(portal)))
+            address(inboxImpl), address(deployer), abi.encodeCall(SolverNetInbox.initialize, (deployer, deployer))
         );
 
         vm.etch(address(inbox), address(proxy).code);

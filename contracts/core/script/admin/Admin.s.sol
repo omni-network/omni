@@ -440,23 +440,28 @@ contract Admin is Script {
      * @param admin     The address of the admin account, owner of the proxy admin
      * @param deployer  The address of the account that will deploy the new implementation.
      * @param proxy     The address of the SolverNetInbox proxy to upgrade.
+     * @param omni      The address of the OmniPortal.
      * @param mailbox   The address of the mailbox to use for the SolverNetInbox.
      * @param data      Calldata to execute after upgrading the contract.
      */
-    function upgradeSolverNetInbox(address admin, address deployer, address proxy, address mailbox, bytes calldata data)
-        public
-    {
+    function upgradeSolverNetInbox(
+        address admin,
+        address deployer,
+        address proxy,
+        address omni,
+        address mailbox,
+        bytes calldata data
+    ) public {
         SolverNetInbox inbox = SolverNetInbox(proxy);
 
         address owner = inbox.owner();
         // uint256 deployedAt = inbox.deployedAt();
-        address omni = address(inbox.omni());
-        uint8 defaultConfLevel = inbox.defaultConfLevel();
+        address _omni = address(inbox.omni());
         uint8 pauseState = inbox.pauseState();
         uint248 offset = inbox.getLatestOrderOffset();
 
         vm.startBroadcast(deployer);
-        address impl = address(new SolverNetInbox(mailbox));
+        address impl = address(new SolverNetInbox(omni, mailbox));
         vm.stopBroadcast();
 
         _upgradeProxy(admin, proxy, impl, data, true, true);
@@ -465,8 +470,7 @@ contract Admin is Script {
         // NOTE: This is disabled because ArbSys on Arbitrum chains doesn't work when forked by anvil
         // We will need to address this if we don't want the deployedAt value to change for upgrades
         // require(inbox.deployedAt() > deployedAt, "deployedAt didn't increase");
-        require(address(inbox.omni()) == omni, "omni changed");
-        require(inbox.defaultConfLevel() == defaultConfLevel, "defaultConfLevel changed");
+        require(address(inbox.omni()) == _omni, "omni changed");
         require(inbox.pauseState() == pauseState, "pauseState changed");
         require(inbox.getLatestOrderOffset() == offset, "offset changed");
 

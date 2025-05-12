@@ -388,7 +388,7 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c c
 
 	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
 
-	calldata, err := adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, mailbox, initializer)
+	calldata, err := adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, addrs.Portal, mailbox, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
