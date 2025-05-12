@@ -39,8 +39,8 @@ func (inst *Init) SetInboxStateAccount(inboxState ag_solanago.PublicKey) *Init {
 
 func (inst *Init) findFindInboxStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	var seeds [][]byte
-	// const: inbox-state
-	seeds = append(seeds, []byte{byte(0x69), byte(0x6e), byte(0x62), byte(0x6f), byte(0x78), byte(0x2d), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
+	// const: inbox_state
+	seeds = append(seeds, []byte{byte(0x69), byte(0x6e), byte(0x62), byte(0x6f), byte(0x78), byte(0x5f), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
 
 	if knownBumpSeed != 0 {
 		seeds = append(seeds, []byte{byte(bumpSeed)})

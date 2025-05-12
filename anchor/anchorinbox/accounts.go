@@ -73,12 +73,13 @@ func (obj *InboxStateAccount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (
 }
 
 type OrderStateAccount struct {
-	OrderId ag_solanago.PublicKey
-	Status  Status
-	Owner   ag_solanago.PublicKey
-	Bump    uint8
-	Deposit TokenAmount
-	Expense TokenAmount
+	OrderId     ag_solanago.PublicKey
+	Status      Status
+	Owner       ag_solanago.PublicKey
+	ClaimableBy ag_solanago.PublicKey
+	Bump        uint8
+	Deposit     TokenAmount
+	Expense     TokenAmount
 }
 
 var OrderStateAccountDiscriminator = [8]byte{60, 123, 67, 162, 96, 43, 173, 225}
@@ -101,6 +102,11 @@ func (obj OrderStateAccount) MarshalWithEncoder(encoder *ag_binary.Encoder) (err
 	}
 	// Serialize `Owner` param:
 	err = encoder.Encode(obj.Owner)
+	if err != nil {
+		return err
+	}
+	// Serialize `ClaimableBy` param:
+	err = encoder.Encode(obj.ClaimableBy)
 	if err != nil {
 		return err
 	}
@@ -148,6 +154,11 @@ func (obj *OrderStateAccount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (
 	}
 	// Deserialize `Owner`:
 	err = decoder.Decode(&obj.Owner)
+	if err != nil {
+		return err
+	}
+	// Deserialize `ClaimableBy`:
+	err = decoder.Decode(&obj.ClaimableBy)
 	if err != nil {
 		return err
 	}

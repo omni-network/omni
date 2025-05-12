@@ -19,16 +19,25 @@ type Open struct {
 	//
 	// [1] = [WRITE, SIGNER] owner
 	//
-	// [2] = [] system_program
+	// [2] = [WRITE] mint_account
+	//
+	// [3] = [WRITE] owner_token_account
+	//
+	// [4] = [WRITE] order_token_account
+	//
+	// [5] = [] token_program
+	//
+	// [6] = [] system_program
 	ag_solanago.AccountMetaSlice `bin:"-"`
 }
 
 // NewOpenInstructionBuilder creates a new `Open` instruction builder.
 func NewOpenInstructionBuilder() *Open {
 	nd := &Open{
-		AccountMetaSlice: make(ag_solanago.AccountMetaSlice, 3),
+		AccountMetaSlice: make(ag_solanago.AccountMetaSlice, 7),
 	}
-	nd.AccountMetaSlice[2] = ag_solanago.Meta(Addresses["11111111111111111111111111111111"])
+	nd.AccountMetaSlice[5] = ag_solanago.Meta(Addresses["TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"])
+	nd.AccountMetaSlice[6] = ag_solanago.Meta(Addresses["11111111111111111111111111111111"])
 	return nd
 }
 
@@ -46,8 +55,8 @@ func (inst *Open) SetOrderStateAccount(orderState ag_solanago.PublicKey) *Open {
 
 func (inst *Open) findFindOrderStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	var seeds [][]byte
-	// const: order-state
-	seeds = append(seeds, []byte{byte(0x6f), byte(0x72), byte(0x64), byte(0x65), byte(0x72), byte(0x2d), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
+	// const: order_state
+	seeds = append(seeds, []byte{byte(0x6f), byte(0x72), byte(0x64), byte(0x65), byte(0x72), byte(0x5f), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
 	// arg: ParamsOrderId
 	paramsOrderIdSeed, err := ag_v5.Marshal(inst.Params.OrderId)
 	if err != nil {
@@ -108,15 +117,107 @@ func (inst *Open) GetOwnerAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(1)
 }
 
+// SetMintAccount sets the "mint_account" account.
+func (inst *Open) SetMintAccount(mintAccount ag_solanago.PublicKey) *Open {
+	inst.AccountMetaSlice[2] = ag_solanago.Meta(mintAccount).WRITE()
+	return inst
+}
+
+// GetMintAccount gets the "mint_account" account.
+func (inst *Open) GetMintAccount() *ag_solanago.AccountMeta {
+	return inst.AccountMetaSlice.Get(2)
+}
+
+// SetOwnerTokenAccount sets the "owner_token_account" account.
+func (inst *Open) SetOwnerTokenAccount(ownerTokenAccount ag_solanago.PublicKey) *Open {
+	inst.AccountMetaSlice[3] = ag_solanago.Meta(ownerTokenAccount).WRITE()
+	return inst
+}
+
+// GetOwnerTokenAccount gets the "owner_token_account" account.
+func (inst *Open) GetOwnerTokenAccount() *ag_solanago.AccountMeta {
+	return inst.AccountMetaSlice.Get(3)
+}
+
+// SetOrderTokenAccount sets the "order_token_account" account.
+func (inst *Open) SetOrderTokenAccount(orderTokenAccount ag_solanago.PublicKey) *Open {
+	inst.AccountMetaSlice[4] = ag_solanago.Meta(orderTokenAccount).WRITE()
+	return inst
+}
+
+func (inst *Open) findFindOrderTokenAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+	var seeds [][]byte
+	// const: order_token
+	seeds = append(seeds, []byte{byte(0x6f), byte(0x72), byte(0x64), byte(0x65), byte(0x72), byte(0x5f), byte(0x74), byte(0x6f), byte(0x6b), byte(0x65), byte(0x6e)})
+	// arg: ParamsOrderId
+	paramsOrderIdSeed, err := ag_v5.Marshal(inst.Params.OrderId)
+	if err != nil {
+		return
+	}
+	seeds = append(seeds, paramsOrderIdSeed)
+
+	if knownBumpSeed != 0 {
+		seeds = append(seeds, []byte{byte(bumpSeed)})
+		pda, err = ag_solanago.CreateProgramAddress(seeds, ProgramID)
+	} else {
+		pda, bumpSeed, err = ag_solanago.FindProgramAddress(seeds, ProgramID)
+	}
+	return
+}
+
+// FindOrderTokenAddressWithBumpSeed calculates OrderTokenAccount account address with given seeds and a known bump seed.
+func (inst *Open) FindOrderTokenAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
+	pda, _, err = inst.findFindOrderTokenAddress(bumpSeed)
+	return
+}
+
+func (inst *Open) MustFindOrderTokenAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
+	pda, _, err := inst.findFindOrderTokenAddress(bumpSeed)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+// FindOrderTokenAddress finds OrderTokenAccount account address with given seeds.
+func (inst *Open) FindOrderTokenAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+	pda, bumpSeed, err = inst.findFindOrderTokenAddress(0)
+	return
+}
+
+func (inst *Open) MustFindOrderTokenAddress() (pda ag_solanago.PublicKey) {
+	pda, _, err := inst.findFindOrderTokenAddress(0)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+// GetOrderTokenAccount gets the "order_token_account" account.
+func (inst *Open) GetOrderTokenAccount() *ag_solanago.AccountMeta {
+	return inst.AccountMetaSlice.Get(4)
+}
+
+// SetTokenProgramAccount sets the "token_program" account.
+func (inst *Open) SetTokenProgramAccount(tokenProgram ag_solanago.PublicKey) *Open {
+	inst.AccountMetaSlice[5] = ag_solanago.Meta(tokenProgram)
+	return inst
+}
+
+// GetTokenProgramAccount gets the "token_program" account.
+func (inst *Open) GetTokenProgramAccount() *ag_solanago.AccountMeta {
+	return inst.AccountMetaSlice.Get(5)
+}
+
 // SetSystemProgramAccount sets the "system_program" account.
 func (inst *Open) SetSystemProgramAccount(systemProgram ag_solanago.PublicKey) *Open {
-	inst.AccountMetaSlice[2] = ag_solanago.Meta(systemProgram)
+	inst.AccountMetaSlice[6] = ag_solanago.Meta(systemProgram)
 	return inst
 }
 
 // GetSystemProgramAccount gets the "system_program" account.
 func (inst *Open) GetSystemProgramAccount() *ag_solanago.AccountMeta {
-	return inst.AccountMetaSlice.Get(2)
+	return inst.AccountMetaSlice.Get(6)
 }
 
 func (inst Open) Build() *Instruction {
@@ -153,6 +254,18 @@ func (inst *Open) Validate() error {
 			return errors.New("accounts.Owner is not set")
 		}
 		if inst.AccountMetaSlice[2] == nil {
+			return errors.New("accounts.MintAccount is not set")
+		}
+		if inst.AccountMetaSlice[3] == nil {
+			return errors.New("accounts.OwnerTokenAccount is not set")
+		}
+		if inst.AccountMetaSlice[4] == nil {
+			return errors.New("accounts.OrderTokenAccount is not set")
+		}
+		if inst.AccountMetaSlice[5] == nil {
+			return errors.New("accounts.TokenProgram is not set")
+		}
+		if inst.AccountMetaSlice[6] == nil {
 			return errors.New("accounts.SystemProgram is not set")
 		}
 	}
@@ -173,10 +286,14 @@ func (inst *Open) EncodeToTree(parent ag_treeout.Branches) {
 					})
 
 					// Accounts of the instruction:
-					instructionBranch.Child("Accounts[len=3]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
+					instructionBranch.Child("Accounts[len=7]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
 						accountsBranch.Child(ag_format.Meta("   order_state", inst.AccountMetaSlice.Get(0)))
 						accountsBranch.Child(ag_format.Meta("         owner", inst.AccountMetaSlice.Get(1)))
-						accountsBranch.Child(ag_format.Meta("system_program", inst.AccountMetaSlice.Get(2)))
+						accountsBranch.Child(ag_format.Meta("         mint_", inst.AccountMetaSlice.Get(2)))
+						accountsBranch.Child(ag_format.Meta("  owner_token_", inst.AccountMetaSlice.Get(3)))
+						accountsBranch.Child(ag_format.Meta("  order_token_", inst.AccountMetaSlice.Get(4)))
+						accountsBranch.Child(ag_format.Meta(" token_program", inst.AccountMetaSlice.Get(5)))
+						accountsBranch.Child(ag_format.Meta("system_program", inst.AccountMetaSlice.Get(6)))
 					})
 				})
 		})
@@ -206,10 +323,18 @@ func NewOpenInstruction(
 	// Accounts:
 	orderState ag_solanago.PublicKey,
 	owner ag_solanago.PublicKey,
+	mintAccount ag_solanago.PublicKey,
+	ownerTokenAccount ag_solanago.PublicKey,
+	orderTokenAccount ag_solanago.PublicKey,
+	tokenProgram ag_solanago.PublicKey,
 	systemProgram ag_solanago.PublicKey) *Open {
 	return NewOpenInstructionBuilder().
 		SetParams(params).
 		SetOrderStateAccount(orderState).
 		SetOwnerAccount(owner).
+		SetMintAccount(mintAccount).
+		SetOwnerTokenAccount(ownerTokenAccount).
+		SetOrderTokenAccount(orderTokenAccount).
+		SetTokenProgramAccount(tokenProgram).
 		SetSystemProgramAccount(systemProgram)
 }

@@ -26,9 +26,15 @@ var (
 		msg:  "Invalid status",
 		name: "InvalidStatus",
 	}
+	ErrInvalidMint = &customErrorDef{
+		code: 6002,
+		msg:  "Invalid mint",
+		name: "InvalidMint",
+	}
 	Errors = map[int]CustomError{
 		6000: ErrInvalidID,
 		6001: ErrInvalidStatus,
+		6002: ErrInvalidMint,
 	}
 )
 

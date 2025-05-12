@@ -7,6 +7,50 @@ import (
 	ag_solanago "github.com/gagliardetto/solana-go"
 )
 
+type EventClaimed struct {
+	OrderId    ag_solanago.PublicKey
+	OrderState ag_solanago.PublicKey
+	Status     Status
+}
+
+func (obj EventClaimed) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+	// Serialize `OrderId` param:
+	err = encoder.Encode(obj.OrderId)
+	if err != nil {
+		return err
+	}
+	// Serialize `OrderState` param:
+	err = encoder.Encode(obj.OrderState)
+	if err != nil {
+		return err
+	}
+	// Serialize `Status` param:
+	err = encoder.Encode(obj.Status)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *EventClaimed) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+	// Deserialize `OrderId`:
+	err = decoder.Decode(&obj.OrderId)
+	if err != nil {
+		return err
+	}
+	// Deserialize `OrderState`:
+	err = decoder.Decode(&obj.OrderState)
+	if err != nil {
+		return err
+	}
+	// Deserialize `Status`:
+	err = decoder.Decode(&obj.Status)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type EventMarkFilled struct {
 	OrderId    ag_solanago.PublicKey
 	OrderState ag_solanago.PublicKey
@@ -140,10 +184,11 @@ func (obj *InboxState) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 }
 
 type OpenParams struct {
-	OrderId ag_solanago.PublicKey
-	Nonce   uint64
-	Deposit TokenAmount
-	Expense TokenAmount
+	OrderId       ag_solanago.PublicKey
+	Nonce         uint64
+	DepositAmount uint64
+	ExpenseMint   ag_solanago.PublicKey
+	ExpenseAmount uint64
 }
 
 func (obj OpenParams) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
@@ -157,13 +202,18 @@ func (obj OpenParams) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error)
 	if err != nil {
 		return err
 	}
-	// Serialize `Deposit` param:
-	err = encoder.Encode(obj.Deposit)
+	// Serialize `DepositAmount` param:
+	err = encoder.Encode(obj.DepositAmount)
 	if err != nil {
 		return err
 	}
-	// Serialize `Expense` param:
-	err = encoder.Encode(obj.Expense)
+	// Serialize `ExpenseMint` param:
+	err = encoder.Encode(obj.ExpenseMint)
+	if err != nil {
+		return err
+	}
+	// Serialize `ExpenseAmount` param:
+	err = encoder.Encode(obj.ExpenseAmount)
 	if err != nil {
 		return err
 	}
@@ -181,13 +231,18 @@ func (obj *OpenParams) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 	if err != nil {
 		return err
 	}
-	// Deserialize `Deposit`:
-	err = decoder.Decode(&obj.Deposit)
+	// Deserialize `DepositAmount`:
+	err = decoder.Decode(&obj.DepositAmount)
 	if err != nil {
 		return err
 	}
-	// Deserialize `Expense`:
-	err = decoder.Decode(&obj.Expense)
+	// Deserialize `ExpenseMint`:
+	err = decoder.Decode(&obj.ExpenseMint)
+	if err != nil {
+		return err
+	}
+	// Deserialize `ExpenseAmount`:
+	err = decoder.Decode(&obj.ExpenseAmount)
 	if err != nil {
 		return err
 	}
@@ -195,12 +250,13 @@ func (obj *OpenParams) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 }
 
 type OrderState struct {
-	OrderId ag_solanago.PublicKey
-	Status  Status
-	Owner   ag_solanago.PublicKey
-	Bump    uint8
-	Deposit TokenAmount
-	Expense TokenAmount
+	OrderId     ag_solanago.PublicKey
+	Status      Status
+	Owner       ag_solanago.PublicKey
+	ClaimableBy ag_solanago.PublicKey
+	Bump        uint8
+	Deposit     TokenAmount
+	Expense     TokenAmount
 }
 
 func (obj OrderState) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
@@ -216,6 +272,11 @@ func (obj OrderState) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error)
 	}
 	// Serialize `Owner` param:
 	err = encoder.Encode(obj.Owner)
+	if err != nil {
+		return err
+	}
+	// Serialize `ClaimableBy` param:
+	err = encoder.Encode(obj.ClaimableBy)
 	if err != nil {
 		return err
 	}
@@ -250,6 +311,11 @@ func (obj *OrderState) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 	}
 	// Deserialize `Owner`:
 	err = decoder.Decode(&obj.Owner)
+	if err != nil {
+		return err
+	}
+	// Deserialize `ClaimableBy`:
+	err = decoder.Decode(&obj.ClaimableBy)
 	if err != nil {
 		return err
 	}
@@ -302,13 +368,13 @@ func (value Status) String() string {
 }
 
 type TokenAmount struct {
-	Token  ag_solanago.PublicKey
+	Mint   ag_solanago.PublicKey
 	Amount uint64
 }
 
 func (obj TokenAmount) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
-	// Serialize `Token` param:
-	err = encoder.Encode(obj.Token)
+	// Serialize `Mint` param:
+	err = encoder.Encode(obj.Mint)
 	if err != nil {
 		return err
 	}
@@ -321,8 +387,8 @@ func (obj TokenAmount) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error
 }
 
 func (obj *TokenAmount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
-	// Deserialize `Token`:
-	err = decoder.Decode(&obj.Token)
+	// Deserialize `Mint`:
+	err = decoder.Decode(&obj.Mint)
 	if err != nil {
 		return err
 	}
