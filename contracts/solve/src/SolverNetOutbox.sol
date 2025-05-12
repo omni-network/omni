@@ -128,7 +128,8 @@ contract SolverNetOutbox is
                 uint32(fillData.srcChainId),
                 inboxConfig.inbox,
                 abi.encode(TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Address),
-                _fillGasLimit(fillData)
+                _fillGasLimit(fillData),
+                msg.sender
             );
         } else {
             revert InvalidConfig();
@@ -292,8 +293,10 @@ contract SolverNetOutbox is
             });
         } else if (inboxConfig.provider == Provider.Hyperlane) {
             bytes memory message = abi.encode(orderId, fillHash, claimant);
-            fee = _quoteDispatch(uint32(fillData.srcChainId), inboxConfig.inbox, message, _fillGasLimit(fillData));
-            _dispatch(uint32(fillData.srcChainId), inboxConfig.inbox, fee, message, _fillGasLimit(fillData));
+            fee = _quoteDispatch(
+                uint32(fillData.srcChainId), inboxConfig.inbox, message, _fillGasLimit(fillData), msg.sender
+            );
+            _dispatch(uint32(fillData.srcChainId), inboxConfig.inbox, fee, message, _fillGasLimit(fillData), msg.sender);
         } else {
             revert InvalidConfig();
         }
