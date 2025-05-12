@@ -18,5 +18,4 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *solver.Config) {
 	flags.StringVar(&cfg.APIAddr, "api-addr", cfg.APIAddr, "The address to bind the API server")
 	flags.StringVar(&cfg.DBDir, "db-dir", cfg.DBDir, "The path to the database directory")
 	flags.StringVar(&cfg.CoinGeckoAPIKey, "coingecko-apikey", cfg.CoinGeckoAPIKey, "The CoinGecko API key to use for fetching token prices")
-	flags.StringToStringVar(&cfg.RPCOverrides, "rpc-overrides", cfg.RPCOverrides, "Public chain rpc overrides: '<chain1>=<url1>,<url2>'")
 }
