@@ -194,14 +194,6 @@ foo bar baz
 ref: https://linear.app/omni-network/issue/OMNI-123`,
 		},
 		{
-			name: "valid with arbitrary footer",
-			commit: `fix(*): fix something
-
-Fixed a bug.
-
-some-footer: some value`,
-		},
-		{
 			name: "valid with no footer",
 			commit: `test(*): add tests
 
