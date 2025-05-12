@@ -22,6 +22,7 @@ import (
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
 	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
@@ -515,6 +516,18 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 	endpoints := internalEndpoints(def, "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
 		endpoints = ExternalEndpoints(def)
+	}
+
+	// Extend endpoints with non-manifest HL chains, passed in via rpc overrides.
+	for _, chain := range solvernet.HLChains(def.Testnet.Network) {
+		rpc, ok := def.Cfg.RPCOverrides[chain.Name]
+		if !ok {
+			continue
+		}
+
+		if _, ok := endpoints[chain.Name]; !ok {
+			endpoints[chain.Name] = rpc
+		}
 	}
 
 	solverPrivKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleSolver)
