@@ -72,25 +72,25 @@ func makeRoutes() []TestRoute {
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
 			{
-				ChainID: omniStaging.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:     omniStaging.ID,
+				InboxConfig: dummyOutboxAddr,
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
-				ChainID: opSepolia.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:     opSepolia.ID,
+				InboxConfig: dummyOutboxAddr,
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
 				},
 			},
 			{
-				ChainID: arbSepolia.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:     arbSepolia.ID,
+				InboxConfig: dummyOutboxAddr,
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
 				},
@@ -108,25 +108,25 @@ func makeRoutes() []TestRoute {
 		expectedRoutes: []Route{
 			// Omni EVM (Core) should be skipped
 			{
-				ChainID: opSepolia.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:     opSepolia.ID,
+				InboxConfig: dummyOutboxAddr,
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderHL,
 				},
 			},
 			{
-				ChainID: arbSepolia.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:     arbSepolia.ID,
+				InboxConfig: dummyOutboxAddr,
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderHL,
 				},
 			},
 			{
-				ChainID: sepoliaChain.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:     sepoliaChain.ID,
+				InboxConfig: dummyOutboxAddr,
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderNone,
 				},
@@ -142,33 +142,33 @@ func makeRoutes() []TestRoute {
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
 			{
-				ChainID: omniStaging.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:     omniStaging.ID,
+				InboxConfig: dummyOutboxAddr,
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
 				},
 			},
 			{
-				ChainID: opSepolia.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:     opSepolia.ID,
+				InboxConfig: dummyOutboxAddr,
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
-				ChainID: arbSepolia.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:     arbSepolia.ID,
+				InboxConfig: dummyOutboxAddr,
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
 				},
 			},
 			{
-				ChainID: sepoliaChain.ID,
-				Outbox:  dummyOutboxAddr,
-				InboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:     sepoliaChain.ID,
+				InboxConfig: dummyOutboxAddr,
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderHL,
 				},

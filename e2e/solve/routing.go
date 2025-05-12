@@ -20,9 +20,9 @@ import (
 
 // Route represents a SolverNet route from a source chain to a destination chain.
 type Route struct {
-	ChainID     uint64
-	Outbox      common.Address
-	InboxConfig bindings.ISolverNetOutboxInboxConfig
+	ChainID      uint64
+	InboxConfig  common.Address
+	OutboxConfig bindings.ISolverNetOutboxInboxConfig
 }
 
 // SetSolverNetRoutes sets the SolverNet routes for all chains in a given network.
@@ -96,9 +96,9 @@ func getRoutes(src netconf.Chain, network netconf.Network, inboxAddr common.Addr
 		}
 
 		routes = append(routes, Route{
-			ChainID:     dest.ID,
-			Outbox:      outboxAddr,
-			InboxConfig: bindings.ISolverNetOutboxInboxConfig{Inbox: inboxAddr, Provider: provider},
+			ChainID:      dest.ID,
+			InboxConfig:  outboxAddr,
+			OutboxConfig: bindings.ISolverNetOutboxInboxConfig{Inbox: inboxAddr, Provider: provider},
 		})
 	}
 
@@ -132,9 +132,9 @@ func filterRoutes(ctx context.Context, src netconf.Chain, network netconf.Networ
 		}
 
 		currentRoutes = append(currentRoutes, Route{
-			ChainID:     dest.ID,
-			Outbox:      inboxConfig,
-			InboxConfig: outboxConfig,
+			ChainID:      dest.ID,
+			InboxConfig:  inboxConfig,
+			OutboxConfig: outboxConfig,
 		})
 	}
 
@@ -228,7 +228,7 @@ func chainIDs(routes []Route) []uint64 {
 func outboxes(routes []Route) []common.Address {
 	outboxes := make([]common.Address, 0, len(routes))
 	for _, route := range routes {
-		outboxes = append(outboxes, route.Outbox)
+		outboxes = append(outboxes, route.InboxConfig)
 	}
 
 	return outboxes
@@ -238,7 +238,7 @@ func outboxes(routes []Route) []common.Address {
 func inboxConfigs(routes []Route) []bindings.ISolverNetOutboxInboxConfig {
 	inboxConfigs := make([]bindings.ISolverNetOutboxInboxConfig, 0, len(routes))
 	for _, route := range routes {
-		inboxConfigs = append(inboxConfigs, route.InboxConfig)
+		inboxConfigs = append(inboxConfigs, route.OutboxConfig)
 	}
 
 	return inboxConfigs
