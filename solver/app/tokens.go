@@ -18,7 +18,6 @@ var (
 		tokens.ETH:    true,
 		tokens.OMNI:   true,
 		tokens.WSTETH: true,
-		tokens.STETH:  true,
 		tokens.USDC:   true,
 		tokens.USDT:   true,
 	}
@@ -88,20 +87,6 @@ var (
 			tokens.ClassDevent: {
 				MinSpend: bi.Ether(0.001), // 0.001 wstETH
 				MaxSpend: bi.Ether(0.01),  // 0.1 wstETH
-			},
-		},
-		tokens.STETH: {
-			tokens.ClassMainnet: {
-				MinSpend: bi.Ether(0.001), // 0.001 stETH
-				MaxSpend: bi.Ether(6),     // 6 stETH
-			},
-			tokens.ClassTestnet: {
-				MinSpend: bi.Ether(0.001), // 0.001 stETH
-				MaxSpend: bi.Ether(0.1),   // 0.1 stETH
-			},
-			tokens.ClassDevent: {
-				MinSpend: bi.Ether(0.001), // 0.001 stETH
-				MaxSpend: bi.Ether(0.1),   // 0.1 stETH
 			},
 		},
 		tokens.USDC: {

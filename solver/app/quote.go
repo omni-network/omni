@@ -126,20 +126,7 @@ func quoteDeposit(ctx context.Context, priceFunc priceFunc, depositTkn tokens.To
 }
 
 func areEqualBySymbol(a, b tokens.Token) bool {
-	if a.Symbol == b.Symbol {
-		return true
-	}
-
-	equivalents := map[string]string{}
-	makeEq := func(a, b string) {
-		equivalents[a] = b
-		equivalents[b] = a
-	}
-
-	// consider stETH and ETH as equivalent
-	makeEq(tokens.STETH.Symbol, tokens.ETH.Symbol)
-
-	return equivalents[a.Symbol] == b.Symbol
+	return a.Symbol == b.Symbol
 }
 
 // feeBips returns the fee in bips for a given pair.
