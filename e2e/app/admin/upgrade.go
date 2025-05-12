@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // UpgradePortal upgrades the portal contracts on a network.
@@ -388,7 +389,12 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c c
 
 	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
 
-	calldata, err := adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, addrs.Portal, mailbox, initializer)
+	var calldata []byte
+	if solvernet.IsHLOnly(c.ChainID) {
+		calldata, err = adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, common.Address{}, mailbox, initializer)
+	} else {
+		calldata, err = adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, addrs.Portal, mailbox, initializer)
+	}
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
