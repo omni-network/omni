@@ -11,17 +11,6 @@ import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
  */
 abstract contract XAppBase {
     /**
-     * @notice Emitted when the OmniPortal contract address is set
-     */
-    event OmniPortalSet(address omni);
-
-    /**
-     * @notice Emitted when the default confirmation level is set
-     * @param conf  Confirmation level
-     */
-    event DefaultConfLevelSet(uint8 conf);
-
-    /**
      * @notice Deprecated `_omni` variable in favor of an immutable equivalent.
      * @dev This variable is used to avoid a storage slot collision.
      */
@@ -60,14 +49,6 @@ abstract contract XAppBase {
     constructor(address omni_) {
         require(omni_ != address(0), "XApp: no zero omni");
         omni = IOmniPortal(omni_);
-        emit OmniPortalSet(omni_);
-    }
-
-    /**
-     * @notice Return true if the current call is an xcall from the OmniPortal
-     */
-    function isXCall() internal view returns (bool) {
-        return omni.isXCall() && msg.sender == address(omni);
     }
 
     /**
@@ -75,13 +56,6 @@ abstract contract XAppBase {
      */
     function feeFor(uint64 destChainId, bytes memory data, uint64 gasLimit) internal view returns (uint256) {
         return omni.feeFor(destChainId, data, gasLimit);
-    }
-
-    /**
-     * @notice Returns the chain ID of the Omni EVM in this Omni network
-     */
-    function omniChainId() internal view returns (uint64) {
-        return omni.omniChainId();
     }
 
     /**
