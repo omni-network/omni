@@ -440,7 +440,12 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 
 	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
 
-	calldata, err := adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, addrs.SolverNetExecutor, addrs.Portal, mailbox, initializer, chainIDs, inboxes)
+	var calldata []byte
+	if solvernet.IsHLOnly(c.ChainID) {
+		calldata, err = adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, addrs.SolverNetExecutor, common.Address{}, mailbox, initializer, chainIDs, inboxes)
+	} else {
+		calldata, err = adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, addrs.SolverNetExecutor, addrs.Portal, mailbox, initializer, chainIDs, inboxes)
+	}
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
