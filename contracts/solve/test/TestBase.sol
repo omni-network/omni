@@ -24,6 +24,7 @@ import { Test, console2 } from "forge-std/Test.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
 import { FixedPointMathLib } from "solady/src/utils/FixedPointMathLib.sol";
 import { AddrUtils } from "src/lib/AddrUtils.sol";
+import { Create3 } from "core/src/deploy/Create3.sol";
 
 /**
  * @title TestBase
@@ -45,6 +46,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     MockMultiTokenVault multiTokenVault;
 
     MockPortal portal;
+    Create3 create3;
 
     uint64 srcChainId = 1;
     uint64 destChainId = 2;
@@ -77,10 +79,16 @@ contract TestBase is Test, MockHyperlaneEnvironment {
         erc20Vault = new MockVault(address(token2));
         multiTokenVault = new MockMultiTokenVault();
         portal = new MockPortal();
+        create3 = new Create3();
 
-        inbox = deploySolverNetInbox();
-        outbox = deploySolverNetOutbox();
-        executor = new SolverNetExecutor(address(outbox));
+        address expectedInboxAddr = create3.getDeployed(address(this), keccak256("inbox"));
+        address expectedOutboxAddr = create3.getDeployed(address(this), keccak256("outbox"));
+        address expectedExecutorAddr = create3.getDeployed(address(this), keccak256("executor"));
+
+        deploySolverNetInbox(expectedInboxAddr);
+        deploySolverNetOutbox(expectedOutboxAddr, expectedExecutorAddr);
+        deploySolverNetExecutor(expectedExecutorAddr, expectedOutboxAddr);
+
         initializeInbox();
         initializeOutbox();
         setRoutes(ISolverNetOutbox.Provider.OmniCore);
@@ -361,16 +369,44 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
     // Setup functions
 
-    function deploySolverNetInbox() internal returns (SolverNetInbox) {
+    function deploySolverNetInbox(address expectedInboxAddr) internal {
         address mailbox = address(mailboxes[uint32(srcChainId)]);
         address impl = address(new SolverNetInbox(mailbox));
-        return SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
+        inbox = SolverNetInbox(
+            create3.deploy(
+                keccak256("inbox"),
+                abi.encodePacked(
+                    type(TransparentUpgradeableProxy).creationCode, abi.encode(impl, proxyAdmin, bytes(""))
+                )
+            )
+        );
+        require(address(inbox) == expectedInboxAddr, "inbox address mismatch");
     }
 
-    function deploySolverNetOutbox() internal returns (SolverNetOutbox) {
+    function deploySolverNetOutbox(address expectedOutboxAddr, address expectedExecutorAddr) internal {
         address mailbox = address(mailboxes[uint32(destChainId)]);
-        address impl = address(new SolverNetOutbox(mailbox));
-        return SolverNetOutbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
+        address impl = address(new SolverNetOutbox(expectedExecutorAddr, address(portal), mailbox));
+        outbox = SolverNetOutbox(
+            create3.deploy(
+                keccak256("outbox"),
+                abi.encodePacked(
+                    type(TransparentUpgradeableProxy).creationCode, abi.encode(impl, proxyAdmin, bytes(""))
+                )
+            )
+        );
+        require(address(outbox) == expectedOutboxAddr, "outbox address mismatch");
+    }
+
+    function deploySolverNetExecutor(address expectedExecutorAddr, address expectedOutboxAddr) internal {
+        executor = SolverNetExecutor(
+            payable(
+                create3.deploy(
+                    keccak256("executor"),
+                    abi.encodePacked(type(SolverNetExecutor).creationCode, abi.encode(address(expectedOutboxAddr)))
+                )
+            )
+        );
+        require(address(executor) == expectedExecutorAddr, "executor address mismatch");
     }
 
     function initializeInbox() internal {
@@ -378,7 +414,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     }
 
     function initializeOutbox() internal {
-        outbox.initialize(address(this), solver, address(portal), address(executor));
+        outbox.initialize(address(this), solver);
     }
 
     function setRoutes(ISolverNetOutbox.Provider provider) internal {
