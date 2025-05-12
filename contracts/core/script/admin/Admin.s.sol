@@ -457,6 +457,7 @@ contract Admin is Script {
         address owner = inbox.owner();
         // uint256 deployedAt = inbox.deployedAt();
         address _omni = address(inbox.omni());
+        if (_omni.code.length == 0) _omni = address(0); // Allow for replacing portal address with zero address if not deployed
         uint8 pauseState = inbox.pauseState();
         uint248 offset = inbox.getLatestOrderOffset();
 
@@ -502,7 +503,9 @@ contract Admin is Script {
 
         address owner = outbox.owner();
         // uint256 deployedAt = outbox.deployedAt();
-        require(address(outbox.omni()) == omni, "omni changed");
+        if (address(outbox.omni()).code.length != 0) {
+            require(address(outbox.omni()) == omni, "omni changed");
+        }
         require(outbox.executor() == executor, "executor changed");
 
         vm.startBroadcast(deployer);
