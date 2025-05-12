@@ -105,25 +105,32 @@ func FilterByContracts(ctx context.Context, endpoints xchain.RPCEndpoints) func(
 	return func(network netconf.ID, chain netconf.Chain) bool {
 		endpoint, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		if err != nil {
+			log.Debug(ctx, "Endpoint", "error", err.Error())
 			return false
 		}
 
 		ethCl, err := ethclient.DialContext(ctx, chain.Name, endpoint)
 		if err != nil {
+			log.Debug(ctx, "Dial", "error", err.Error())
 			return false
 		}
 
 		addrs, err := contracts.GetAddresses(ctx, network)
 		if err != nil {
+			log.Debug(ctx, "Addresses", "error", err.Error())
 			return false
 		}
 
 		contract, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, ethCl)
 		if err != nil {
+			log.Debug(ctx, "Inbox contract", "error", err.Error())
 			return false
 		}
 
 		_, err = contract.DeployedAt(&bind.CallOpts{Context: ctx})
+		if err != nil {
+			log.Debug(ctx, "Deployed at", "error", err.Error())
+		}
 
 		return err == nil
 	}

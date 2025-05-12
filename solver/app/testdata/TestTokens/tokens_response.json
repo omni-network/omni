@@ -42,16 +42,6 @@
   },
   {
    "enabled": true,
-   "name": "Lido Staked Ether",
-   "symbol": "stETH",
-   "chainId": 1,
-   "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
-   "decimals": 18,
-   "expenseMin": "0x38d7ea4c68000",
-   "expenseMax": "0x53444835ec580000"
-  },
-  {
-   "enabled": true,
    "name": "Wrapped Staked Ether",
    "symbol": "wstETH",
    "chainId": 1,

@@ -28,7 +28,6 @@ var (
 		netconf.Mainnet: {
 			evmchain.IDEthereum: {
 				tokens.WSTETH: {minEther: 10},     // 10 wstETH
-				tokens.STETH:  {minEther: 10},     // 10 stETH
 				tokens.ETH:    {minEther: 70},     // 70 ETH
 				tokens.USDC:   {minDec6: 110_000}, // 110k USDC
 			},

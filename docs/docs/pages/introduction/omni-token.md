@@ -17,8 +17,8 @@ OMNI serves several crucial roles within the Omni protocol:
 *   **Staking & Security:** OMNI can be staked by or delegated to Omni validators to contribute to the network's economic security, along with restaked ETH. Staking or delegating OMNI earns rewards.
 *   **Governance:** Staking OMNI will allow users to participate in network governance when it is live.
 
-## Genesis Staking
+## Staking
 
-Before the launch on mainnet, users can help bootstrap the network's security by participating in the Genesis Staking program by staking their OMNI tokens through the staking portal:
+Support the network and earn rewards by staking your OMNI on the staking portal:
 
 *   **[Omni Staking Portal](https://app.omni.network/)**

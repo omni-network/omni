@@ -1,0 +1,466 @@
+{
+  "address": "AwminMpVyPSX86m3w9KWcxjovtnjwxiKZUNTDgDqrctv",
+  "metadata": {
+    "name": "solver_inbox",
+    "version": "0.0.1",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "init",
+      "docs": [
+        "Initialize the inbox state",
+        "This should be called only once, preferably by the upgrade authority."
+      ],
+      "discriminator": [
+        220,
+        59,
+        207,
+        236,
+        108,
+        250,
+        47,
+        100
+      ],
+      "accounts": [
+        {
+          "name": "inbox_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  98,
+                  111,
+                  120,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "mark_filled",
+      "docs": [
+        "Mark an order as filled",
+        "This may only be called by the inbox admin."
+      ],
+      "discriminator": [
+        192,
+        137,
+        170,
+        0,
+        70,
+        5,
+        127,
+        160
+      ],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "inbox_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  98,
+                  111,
+                  120,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "_order_id",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "open",
+      "docs": [
+        "Open a new order"
+      ],
+      "discriminator": [
+        228,
+        220,
+        155,
+        71,
+        199,
+        189,
+        60,
+        45
+      ],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "params.order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "OpenParams"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "InboxState",
+      "discriminator": [
+        161,
+        5,
+        9,
+        33,
+        125,
+        185,
+        63,
+        116
+      ]
+    },
+    {
+      "name": "OrderState",
+      "discriminator": [
+        60,
+        123,
+        67,
+        162,
+        96,
+        43,
+        173,
+        225
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "EventMarkFilled",
+      "discriminator": [
+        31,
+        79,
+        180,
+        35,
+        225,
+        64,
+        132,
+        162
+      ]
+    },
+    {
+      "name": "EventOpened",
+      "discriminator": [
+        178,
+        81,
+        199,
+        118,
+        203,
+        221,
+        6,
+        91
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidID",
+      "msg": "Invalid order ID"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidStatus",
+      "msg": "Invalid status"
+    }
+  ],
+  "types": [
+    {
+      "name": "EventMarkFilled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "order_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventOpened",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "order_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InboxState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "deployed_at",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OpenParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "deposit",
+            "type": {
+              "defined": {
+                "name": "TokenAmount"
+              }
+            }
+          },
+          {
+            "name": "expense",
+            "type": {
+              "defined": {
+                "name": "TokenAmount"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "deposit",
+            "type": {
+              "defined": {
+                "name": "TokenAmount"
+              }
+            }
+          },
+          {
+            "name": "expense",
+            "type": {
+              "defined": {
+                "name": "TokenAmount"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Status",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Invalid"
+          },
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Rejected"
+          },
+          {
+            "name": "Closed"
+          },
+          {
+            "name": "Filled"
+          },
+          {
+            "name": "Claimed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenAmount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "token",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -72,7 +72,14 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return err
 	}
-	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, cfg.RPCEndpoints))
+
+	endpoints, err := AddSolverEndpoints(ctx, cfg.Network, cfg.RPCEndpoints, cfg.RPCOverrides)
+	if err != nil {
+		return errors.Wrap(err, "add solver endpoints")
+	}
+
+	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, endpoints))
+	log.Debug(ctx, "Hyperlane network initialized", "network", network.ID, "chain_ids", network.ChainIDs())
 
 	if cfg.SolverPrivKey == "" {
 		return errors.New("private key not set")
@@ -84,7 +91,7 @@ func Run(ctx context.Context, cfg Config) error {
 	solverAddr := ethcrypto.PubkeyToAddress(privKey.PublicKey)
 	log.Debug(ctx, "Using solver address", "address", solverAddr.Hex())
 
-	backends, err := ethbackend.BackendsFromNetwork(ctx, network, cfg.RPCEndpoints, privKey)
+	backends, err := ethbackend.BackendsFromNetwork(ctx, network, endpoints, privKey)
 	if err != nil {
 		return err
 	}

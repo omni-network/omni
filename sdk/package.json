@@ -7,6 +7,9 @@
   "packageManager": "pnpm@9.12.1",
   "scripts": {
     "build": "pnpm run --r --filter \"./packages/**\" build",
+    "changeset:prepublish": "pnpm build",
+    "changeset:publish": "pnpm changeset:prepublish && changeset publish",
+    "changeset:version": "changeset version && pnpm version:bump && pnpm check",
     "check": "biome check --write",
     "dev:react": "pnpm --filter react-example dev",
     "postinstall": "pnpm run build",
@@ -15,7 +18,9 @@
     "version:bump": "node --experimental-strip-types scripts/bumpVersion.ts"
   },
   "devDependencies": {
+    "@omni-network/test-utils": "workspace:*",
     "@biomejs/biome": "^1.9.4",
+    "@changesets/cli": "^2.29.3",
     "@types/node": "^22.15.16"
   }
 }
