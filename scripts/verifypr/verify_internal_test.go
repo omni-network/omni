@@ -118,15 +118,6 @@ foo bar baz
 issue: none`,
 		},
 		{
-			name:    "invalid link short github issue",
-			wantErr: true,
-			commit: `feat(*): add foo bar
-
-foo bar baz
-
-issue: ifix #1334`,
-		},
-		{
 			name:    "invalid description punctuation",
 			wantErr: true,
 			commit: `feat(*): foo, baz, bar.
@@ -193,6 +184,20 @@ foo bar baz
 
 more: stuff
 issue:  none `,
+		},
+		{
+			name: "valid with linear footer",
+			commit: `feat(*): add foo bar
+
+foo bar baz
+
+ref: https://linear.app/omni-network/issue/OMNI-123`,
+		},
+		{
+			name: "valid with no footer",
+			commit: `test(*): add tests
+
+Added tests for the new feature.`,
 		},
 	}
 
