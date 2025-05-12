@@ -25,4 +25,9 @@ jobs:
           OP_RPC: ${{ secrets.OP_RPC }}
           BASE_RPC: ${{ secrets.BASE_RPC }}
         run: |
+          if [ -z "$ETH_RPC" ]; then
+            echo "Secrets not available - skipping."
+            exit 0
+          fi
+
           go test ./solver/rebalance -integration -v -run=TestIntegration
