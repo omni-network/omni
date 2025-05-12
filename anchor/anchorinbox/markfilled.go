@@ -11,10 +11,11 @@ import (
 	ag_v5 "github.com/vmihailenco/msgpack/v5"
 )
 
-// Mark an order as filled
+// Mark an order as filled, and set the claimable_by account.
 // This may only be called by the inbox admin.
 type MarkFilled struct {
-	OrderId *ag_solanago.PublicKey
+	OrderId     *ag_solanago.PublicKey
+	ClaimableBy *ag_solanago.PublicKey
 
 	// [0] = [WRITE] order_state
 	//
@@ -38,6 +39,12 @@ func (inst *MarkFilled) SetOrderId(_order_id ag_solanago.PublicKey) *MarkFilled 
 	return inst
 }
 
+// SetClaimableBy sets the "claimable_by" parameter.
+func (inst *MarkFilled) SetClaimableBy(claimable_by ag_solanago.PublicKey) *MarkFilled {
+	inst.ClaimableBy = &claimable_by
+	return inst
+}
+
 // SetOrderStateAccount sets the "order_state" account.
 func (inst *MarkFilled) SetOrderStateAccount(orderState ag_solanago.PublicKey) *MarkFilled {
 	inst.AccountMetaSlice[0] = ag_solanago.Meta(orderState).WRITE()
@@ -46,8 +53,8 @@ func (inst *MarkFilled) SetOrderStateAccount(orderState ag_solanago.PublicKey) *
 
 func (inst *MarkFilled) findFindOrderStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	var seeds [][]byte
-	// const: order-state
-	seeds = append(seeds, []byte{byte(0x6f), byte(0x72), byte(0x64), byte(0x65), byte(0x72), byte(0x2d), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
+	// const: order_state
+	seeds = append(seeds, []byte{byte(0x6f), byte(0x72), byte(0x64), byte(0x65), byte(0x72), byte(0x5f), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
 	// arg: OrderId
 	orderIdSeed, err := ag_v5.Marshal(inst.OrderId)
 	if err != nil {
@@ -105,8 +112,8 @@ func (inst *MarkFilled) SetInboxStateAccount(inboxState ag_solanago.PublicKey) *
 
 func (inst *MarkFilled) findFindInboxStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	var seeds [][]byte
-	// const: inbox-state
-	seeds = append(seeds, []byte{byte(0x69), byte(0x6e), byte(0x62), byte(0x6f), byte(0x78), byte(0x2d), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
+	// const: inbox_state
+	seeds = append(seeds, []byte{byte(0x69), byte(0x6e), byte(0x62), byte(0x6f), byte(0x78), byte(0x5f), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
 
 	if knownBumpSeed != 0 {
 		seeds = append(seeds, []byte{byte(bumpSeed)})
@@ -184,6 +191,9 @@ func (inst *MarkFilled) Validate() error {
 		if inst.OrderId == nil {
 			return errors.New("OrderId parameter is not set")
 		}
+		if inst.ClaimableBy == nil {
+			return errors.New("ClaimableBy parameter is not set")
+		}
 	}
 
 	// Check whether all (required) accounts are set:
@@ -210,8 +220,9 @@ func (inst *MarkFilled) EncodeToTree(parent ag_treeout.Branches) {
 				ParentFunc(func(instructionBranch ag_treeout.Branches) {
 
 					// Parameters of the instruction:
-					instructionBranch.Child("Params[len=1]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
-						paramsBranch.Child(ag_format.Param("  OrderId", *inst.OrderId))
+					instructionBranch.Child("Params[len=2]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
+						paramsBranch.Child(ag_format.Param("     OrderId", *inst.OrderId))
+						paramsBranch.Child(ag_format.Param(" ClaimableBy", *inst.ClaimableBy))
 					})
 
 					// Accounts of the instruction:
@@ -230,11 +241,21 @@ func (obj MarkFilled) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error)
 	if err != nil {
 		return err
 	}
+	// Serialize `ClaimableBy` param:
+	err = encoder.Encode(obj.ClaimableBy)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 func (obj *MarkFilled) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
 	// Deserialize `OrderId`:
 	err = decoder.Decode(&obj.OrderId)
+	if err != nil {
+		return err
+	}
+	// Deserialize `ClaimableBy`:
+	err = decoder.Decode(&obj.ClaimableBy)
 	if err != nil {
 		return err
 	}
@@ -245,12 +266,14 @@ func (obj *MarkFilled) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 func NewMarkFilledInstruction(
 	// Parameters:
 	_order_id ag_solanago.PublicKey,
+	claimable_by ag_solanago.PublicKey,
 	// Accounts:
 	orderState ag_solanago.PublicKey,
 	inboxState ag_solanago.PublicKey,
 	admin ag_solanago.PublicKey) *MarkFilled {
 	return NewMarkFilledInstructionBuilder().
 		SetOrderId(_order_id).
+		SetClaimableBy(claimable_by).
 		SetOrderStateAccount(orderState).
 		SetInboxStateAccount(inboxState).
 		SetAdminAccount(admin)

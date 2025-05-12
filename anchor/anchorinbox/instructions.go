@@ -28,11 +28,15 @@ func init() {
 }
 
 var (
+	Instruction_Claim = ag_binary.TypeID([8]byte{62, 198, 214, 193, 213, 159, 108, 210})
+
+	Instruction_Close = ag_binary.TypeID([8]byte{98, 165, 201, 177, 108, 65, 206, 96})
+
 	// Initialize the inbox state
 	// This should be called only once, preferably by the upgrade authority.
 	Instruction_Init = ag_binary.TypeID([8]byte{220, 59, 207, 236, 108, 250, 47, 100})
 
-	// Mark an order as filled
+	// Mark an order as filled, and set the claimable_by account.
 	// This may only be called by the inbox admin.
 	Instruction_MarkFilled = ag_binary.TypeID([8]byte{192, 137, 170, 0, 70, 5, 127, 160})
 
@@ -43,6 +47,10 @@ var (
 // InstructionIDToName returns the name of the instruction given its ID.
 func InstructionIDToName(id ag_binary.TypeID) string {
 	switch id {
+	case Instruction_Claim:
+		return "Claim"
+	case Instruction_Close:
+		return "Close"
 	case Instruction_Init:
 		return "Init"
 	case Instruction_MarkFilled:
@@ -69,6 +77,12 @@ func (inst *Instruction) EncodeToTree(parent ag_treeout.Branches) {
 var InstructionImplDef = ag_binary.NewVariantDefinition(
 	ag_binary.AnchorTypeIDEncoding,
 	[]ag_binary.VariantType{
+		{
+			Name: "claim", Type: (*Claim)(nil),
+		},
+		{
+			Name: "close", Type: (*Close)(nil),
+		},
 		{
 			Name: "init", Type: (*Init)(nil),
 		},

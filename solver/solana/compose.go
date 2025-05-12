@@ -175,30 +175,61 @@ func Deploy(ctx context.Context, cl *rpc.Client, composeDir string, program Prog
 }
 
 func SendSimple(ctx context.Context, cl *rpc.Client, privkey solana.PrivateKey, instrs ...solana.Instruction) (solana.Signature, error) {
+	return Send(ctx, cl, WithPrivateKeys(privkey), WithInstructions(instrs...))
+}
+
+type sendOpts struct {
+	Instructions []solana.Instruction
+	PrivateKeys  []solana.PrivateKey
+}
+
+func WithInstructions(instrs ...solana.Instruction) func(*sendOpts) {
+	return func(opts *sendOpts) {
+		opts.Instructions = instrs
+	}
+}
+
+func WithPrivateKeys(privkeys ...solana.PrivateKey) func(*sendOpts) {
+	return func(opts *sendOpts) {
+		opts.PrivateKeys = privkeys
+	}
+}
+
+func Send(ctx context.Context, cl *rpc.Client, opts ...func(*sendOpts)) (solana.Signature, error) {
+	var o sendOpts
+	for _, opt := range opts {
+		opt(&o)
+	}
+	if len(o.PrivateKeys) == 0 {
+		return solana.Signature{}, errors.New("no private keys provided")
+	}
+
 	recent, err := cl.GetLatestBlockhash(ctx, rpc.CommitmentConfirmed)
 	if err != nil {
 		return solana.Signature{}, errors.Wrap(err, "get latest blockhash")
 	}
 
 	tx, err := solana.NewTransaction(
-		instrs,
+		o.Instructions,
 		recent.Value.Blockhash,
-		solana.TransactionPayer(privkey.PublicKey()),
+		solana.TransactionPayer(o.PrivateKeys[0].PublicKey()),
 	)
 	if err != nil {
 		return solana.Signature{}, errors.Wrap(err, "new tx")
 	}
 
 	sigs, err := tx.Sign(func(pub solana.PublicKey) *solana.PrivateKey {
-		if pub != privkey.PublicKey() {
-			return nil // This will result in Sign returning an error
+		for _, privkey := range o.PrivateKeys {
+			if privkey.PublicKey().Equals(pub) {
+				return &privkey
+			}
 		}
 
-		return &privkey
+		return nil
 	})
 	if err != nil {
 		return solana.Signature{}, errors.Wrap(err, "sign tx")
-	} else if len(sigs) != 1 {
+	} else if len(sigs) != len(o.PrivateKeys) {
 		return solana.Signature{}, errors.New("unexpected number of signatures", "count", len(sigs))
 	}
 

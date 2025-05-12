@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 
+	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
 )
@@ -31,4 +32,22 @@ func AwaitConfirmedTransaction(ctx context.Context, cl *rpc.Client, txSig solana
 
 		return tx, nil
 	}
+}
+
+// GetAccountDataInto retrieves account data and decodes it into the provided value.
+// It uses commitment level of "confirmed".
+func GetAccountDataInto(ctx context.Context, cl *rpc.Client, address solana.PublicKey, val any) (*rpc.GetAccountInfoResult, error) {
+	info, err := cl.GetAccountInfoWithOpts(ctx, address, &rpc.GetAccountInfoOpts{
+		Commitment: rpc.CommitmentConfirmed,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "get account info")
+	}
+
+	err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(val)
+	if err != nil {
+		return nil, errors.Wrap(err, "decode account data")
+	}
+
+	return info, nil
 }

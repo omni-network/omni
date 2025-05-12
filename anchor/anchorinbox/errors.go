@@ -26,9 +26,21 @@ var (
 		msg:  "Invalid status",
 		name: "InvalidStatus",
 	}
+	ErrInvalidMint = &customErrorDef{
+		code: 6002,
+		msg:  "Invalid mint",
+		name: "InvalidMint",
+	}
+	ErrNotClosable = &customErrorDef{
+		code: 6003,
+		msg:  "Order not closable yet",
+		name: "NotClosable",
+	}
 	Errors = map[int]CustomError{
 		6000: ErrInvalidID,
 		6001: ErrInvalidStatus,
+		6002: ErrInvalidMint,
+		6003: ErrNotClosable,
 	}
 )
 

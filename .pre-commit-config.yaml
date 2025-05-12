@@ -99,3 +99,10 @@ repos:
         files: ^sdk/.*\.(ts|tsx)$
         types: [ file, ts ]
         pass_filenames: true
+
+      - id: run-rust-checks
+        name: run-rust-checks
+        language: script
+        entry: .pre-commit/run_rust_checks.sh
+        types: [ file, rust ]
+        pass_filenames: false

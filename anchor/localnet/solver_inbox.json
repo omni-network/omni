@@ -8,6 +8,186 @@
   },
   "instructions": [
     {
+      "name": "claim",
+      "discriminator": [
+        62,
+        198,
+        214,
+        193,
+        213,
+        159,
+        108,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  95,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "claimer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "claimer_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_id",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "close",
+      "discriminator": [
+        98,
+        165,
+        201,
+        177,
+        108,
+        65,
+        206,
+        96
+      ],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  95,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_token_account",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_id",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "init",
       "docs": [
         "Initialize the inbox state",
@@ -37,7 +217,7 @@
                   98,
                   111,
                   120,
-                  45,
+                  95,
                   115,
                   116,
                   97,
@@ -58,12 +238,17 @@
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "close_buffer",
+          "type": "i64"
+        }
+      ]
     },
     {
       "name": "mark_filled",
       "docs": [
-        "Mark an order as filled",
+        "Mark an order as filled, and set the claimable_by account.",
         "This may only be called by the inbox admin."
       ],
       "discriminator": [
@@ -90,7 +275,7 @@
                   100,
                   101,
                   114,
-                  45,
+                  95,
                   115,
                   116,
                   97,
@@ -117,7 +302,7 @@
                   98,
                   111,
                   120,
-                  45,
+                  95,
                   115,
                   116,
                   97,
@@ -137,6 +322,10 @@
       "args": [
         {
           "name": "_order_id",
+          "type": "pubkey"
+        },
+        {
+          "name": "claimable_by",
           "type": "pubkey"
         }
       ]
@@ -170,7 +359,7 @@
                   100,
                   101,
                   114,
-                  45,
+                  95,
                   115,
                   116,
                   97,
@@ -189,6 +378,69 @@
           "name": "owner",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "mint_account",
+          "writable": true
+        },
+        {
+          "name": "owner_token_account",
+          "writable": true
+        },
+        {
+          "name": "order_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  95,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "params.order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "inbox_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  98,
+                  111,
+                  120,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "system_program",
@@ -237,6 +489,32 @@
   ],
   "events": [
     {
+      "name": "EventClaimed",
+      "discriminator": [
+        151,
+        103,
+        226,
+        237,
+        202,
+        18,
+        97,
+        190
+      ]
+    },
+    {
+      "name": "EventClosed",
+      "discriminator": [
+        136,
+        138,
+        5,
+        113,
+        129,
+        202,
+        80,
+        85
+      ]
+    },
+    {
       "name": "EventMarkFilled",
       "discriminator": [
         31,
@@ -273,9 +551,67 @@
       "code": 6001,
       "name": "InvalidStatus",
       "msg": "Invalid status"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidMint",
+      "msg": "Invalid mint"
+    },
+    {
+      "code": 6003,
+      "name": "NotClosable",
+      "msg": "Order not closable yet"
     }
   ],
   "types": [
+    {
+      "name": "EventClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "order_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "order_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          }
+        ]
+      }
+    },
     {
       "name": "EventMarkFilled",
       "type": {
@@ -340,6 +676,10 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "close_buffer_secs",
+            "type": "i64"
           }
         ]
       }
@@ -358,20 +698,16 @@
             "type": "u64"
           },
           {
-            "name": "deposit",
-            "type": {
-              "defined": {
-                "name": "TokenAmount"
-              }
-            }
+            "name": "deposit_amount",
+            "type": "u64"
           },
           {
-            "name": "expense",
-            "type": {
-              "defined": {
-                "name": "TokenAmount"
-              }
-            }
+            "name": "expense_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "expense_amount",
+            "type": "u64"
           }
         ]
       }
@@ -395,6 +731,18 @@
           },
           {
             "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "closable_at",
+            "type": "i64"
+          },
+          {
+            "name": "claimable_by",
             "type": "pubkey"
           },
           {
@@ -452,7 +800,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "token",
+            "name": "mint",
             "type": "pubkey"
           },
           {

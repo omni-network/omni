@@ -14,10 +14,11 @@ cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
 
 
 [dependencies]
 anchor-lang = "0.31.0"
-fixed-hash = "0.8.0"
+anchor-spl = "0.31.1"
 sha2 = "0.10.9"

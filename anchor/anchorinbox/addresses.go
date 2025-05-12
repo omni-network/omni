@@ -4,4 +4,7 @@ package anchorinbox
 
 import ag_solanago "github.com/gagliardetto/solana-go"
 
-var Addresses = map[string]ag_solanago.PublicKey{"11111111111111111111111111111111": ag_solanago.MustPublicKeyFromBase58("11111111111111111111111111111111")}
+var Addresses = map[string]ag_solanago.PublicKey{
+	"11111111111111111111111111111111":            ag_solanago.MustPublicKeyFromBase58("11111111111111111111111111111111"),
+	"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA": ag_solanago.MustPublicKeyFromBase58("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+}
