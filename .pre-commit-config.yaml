@@ -30,12 +30,6 @@ repos:
        types: [ file, solidity ]
        require_serial: true
 
-  - repo: https://github.com/doublify/pre-commit-rust
-    rev: v1.0
-    hooks:
-      - id: fmt
-      - id: cargo-check
-
   # Then run code validators (on the formatted code)
 
   - repo: https://github.com/golangci/golangci-lint # See .golangci.yaml for config
@@ -105,3 +99,10 @@ repos:
         files: ^sdk/.*\.(ts|tsx)$
         types: [ file, ts ]
         pass_filenames: true
+
+      - id: run-rust-checks
+        name: run-rust-checks
+        language: script
+        entry: .pre-commit/run_rust_checks.sh
+        types: [ file, rust ]
+        pass_filenames: false

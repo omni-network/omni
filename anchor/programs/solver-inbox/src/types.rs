@@ -38,7 +38,7 @@ impl OrderState {
     pub const SEED_PREFIX: &'static [u8; 11] = b"order_state";
 }
 
-pub const ORDER_TOKEN_SEED_PREFIX: &'static [u8; 11] = b"order_token";
+pub const ORDER_TOKEN_SEED_PREFIX: &[u8; 11] = b"order_token";
 
 #[derive(AnchorSerialize, AnchorDeserialize, InitSpace, Clone, Debug, PartialEq, Eq)]
 pub struct TokenAmount {

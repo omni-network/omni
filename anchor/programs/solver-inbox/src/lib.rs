@@ -1,3 +1,4 @@
+#![allow(unexpected_cfgs)]
 mod error;
 mod event;
 mod helpers;
