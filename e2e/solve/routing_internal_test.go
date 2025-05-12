@@ -95,7 +95,15 @@ func makeRoutes() []TestRoute {
 					Provider: solvernet.ProviderCore,
 				},
 			},
-			// Sepolia (Hyperlane) should be skipped
+			// When Sepolia is disabled, it should have a zeroed route.
+			{
+				ChainID:     sepoliaChain.ID,
+				InboxConfig: common.Address{},
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    common.Address{},
+					Provider: solvernet.ProviderNone,
+				},
+			},
 		},
 	})
 
@@ -107,27 +115,62 @@ func makeRoutes() []TestRoute {
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
 			// Omni EVM (Core) should be skipped
+			/*
+				{
+					ChainID:     opSepolia.ID,
+					InboxConfig: dummyOutboxAddr,
+					OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+						Inbox:    dummyInboxAddr,
+						Provider: solvernet.ProviderHL,
+					},
+				},
+				{
+					ChainID:     arbSepolia.ID,
+					InboxConfig: dummyOutboxAddr,
+					OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+						Inbox:    dummyInboxAddr,
+						Provider: solvernet.ProviderHL,
+					},
+				},
+				{
+					ChainID:     sepoliaChain.ID,
+					InboxConfig: dummyOutboxAddr,
+					OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+						Inbox:    dummyInboxAddr,
+						Provider: solvernet.ProviderNone,
+					},
+				},
+			*/
+			// When Sepolia is disabled, all outbound routes should be zeroed.
 			{
 				ChainID:     opSepolia.ID,
-				InboxConfig: dummyOutboxAddr,
+				InboxConfig: common.Address{},
 				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
-					Inbox:    dummyInboxAddr,
-					Provider: solvernet.ProviderHL,
+					Inbox:    common.Address{},
+					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
 				ChainID:     arbSepolia.ID,
-				InboxConfig: dummyOutboxAddr,
+				InboxConfig: common.Address{},
 				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
-					Inbox:    dummyInboxAddr,
-					Provider: solvernet.ProviderHL,
+					Inbox:    common.Address{},
+					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
 				ChainID:     sepoliaChain.ID,
-				InboxConfig: dummyOutboxAddr,
+				InboxConfig: common.Address{},
 				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
-					Inbox:    dummyInboxAddr,
+					Inbox:    common.Address{},
+					Provider: solvernet.ProviderNone,
+				},
+			},
+			{
+				ChainID:     omniStaging.ID,
+				InboxConfig: common.Address{},
+				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    common.Address{},
 					Provider: solvernet.ProviderNone,
 				},
 			},
@@ -165,12 +208,23 @@ func makeRoutes() []TestRoute {
 					Provider: solvernet.ProviderCore,
 				},
 			},
+			/*
+				{
+					ChainID:     sepoliaChain.ID,
+					InboxConfig: dummyOutboxAddr,
+					OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+						Inbox:    dummyInboxAddr,
+						Provider: solvernet.ProviderHL,
+					},
+				},
+			*/
+			// When Sepolia is disabled, it should have a zeroed route.
 			{
 				ChainID:     sepoliaChain.ID,
-				InboxConfig: dummyOutboxAddr,
+				InboxConfig: common.Address{},
 				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
-					Inbox:    dummyInboxAddr,
-					Provider: solvernet.ProviderHL,
+					Inbox:    common.Address{},
+					Provider: solvernet.ProviderNone,
 				},
 			},
 		},
