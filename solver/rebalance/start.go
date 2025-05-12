@@ -56,12 +56,6 @@ func Start(
 
 	go rebalanceForever(ctx, o.interval, db, network, pricer, backends, solver)
 
-	go func() {
-		if err := wrapSTETH(ctx, backends, solver); err != nil {
-			log.Warn(ctx, "Failed to wrap steth", err)
-		}
-	}()
-
 	return nil
 }
 
