@@ -389,12 +389,12 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c c
 
 	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
 
-	var calldata []byte
+	portal := addrs.Portal
 	if solvernet.IsHLOnly(c.ChainID) {
-		calldata, err = adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, common.Address{}, mailbox, initializer)
-	} else {
-		calldata, err = adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, addrs.Portal, mailbox, initializer)
+		portal = common.Address{}
 	}
+
+	calldata, err := adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, portal, mailbox, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
@@ -440,12 +440,12 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 
 	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
 
-	var calldata []byte
+	portal := addrs.Portal
 	if solvernet.IsHLOnly(c.ChainID) {
-		calldata, err = adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, addrs.SolverNetExecutor, common.Address{}, mailbox, initializer, chainIDs, inboxes)
-	} else {
-		calldata, err = adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, addrs.SolverNetExecutor, addrs.Portal, mailbox, initializer, chainIDs, inboxes)
+		portal = common.Address{}
 	}
+
+	calldata, err := adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, addrs.SolverNetExecutor, portal, mailbox, initializer, chainIDs, inboxes)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
