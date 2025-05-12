@@ -30,6 +30,12 @@ repos:
        types: [ file, solidity ]
        require_serial: true
 
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: master
+    hooks:
+      - id: fmt
+      - id: cargo-check
+
   # Then run code validators (on the formatted code)
 
   - repo: https://github.com/golangci/golangci-lint # See .golangci.yaml for config
