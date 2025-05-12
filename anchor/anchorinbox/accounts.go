@@ -9,9 +9,10 @@ import (
 )
 
 type InboxStateAccount struct {
-	Admin      ag_solanago.PublicKey
-	DeployedAt uint64
-	Bump       uint8
+	Admin           ag_solanago.PublicKey
+	DeployedAt      uint64
+	Bump            uint8
+	CloseBufferSecs int64
 }
 
 var InboxStateAccountDiscriminator = [8]byte{161, 5, 9, 33, 125, 185, 63, 116}
@@ -34,6 +35,11 @@ func (obj InboxStateAccount) MarshalWithEncoder(encoder *ag_binary.Encoder) (err
 	}
 	// Serialize `Bump` param:
 	err = encoder.Encode(obj.Bump)
+	if err != nil {
+		return err
+	}
+	// Serialize `CloseBufferSecs` param:
+	err = encoder.Encode(obj.CloseBufferSecs)
 	if err != nil {
 		return err
 	}
@@ -69,6 +75,11 @@ func (obj *InboxStateAccount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (
 	if err != nil {
 		return err
 	}
+	// Deserialize `CloseBufferSecs`:
+	err = decoder.Decode(&obj.CloseBufferSecs)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -76,6 +87,8 @@ type OrderStateAccount struct {
 	OrderId     ag_solanago.PublicKey
 	Status      Status
 	Owner       ag_solanago.PublicKey
+	CreatedAt   int64
+	ClosableAt  int64
 	ClaimableBy ag_solanago.PublicKey
 	Bump        uint8
 	Deposit     TokenAmount
@@ -102,6 +115,16 @@ func (obj OrderStateAccount) MarshalWithEncoder(encoder *ag_binary.Encoder) (err
 	}
 	// Serialize `Owner` param:
 	err = encoder.Encode(obj.Owner)
+	if err != nil {
+		return err
+	}
+	// Serialize `CreatedAt` param:
+	err = encoder.Encode(obj.CreatedAt)
+	if err != nil {
+		return err
+	}
+	// Serialize `ClosableAt` param:
+	err = encoder.Encode(obj.ClosableAt)
 	if err != nil {
 		return err
 	}
@@ -154,6 +177,16 @@ func (obj *OrderStateAccount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (
 	}
 	// Deserialize `Owner`:
 	err = decoder.Decode(&obj.Owner)
+	if err != nil {
+		return err
+	}
+	// Deserialize `CreatedAt`:
+	err = decoder.Decode(&obj.CreatedAt)
+	if err != nil {
+		return err
+	}
+	// Deserialize `ClosableAt`:
+	err = decoder.Decode(&obj.ClosableAt)
 	if err != nil {
 		return err
 	}

@@ -290,9 +290,11 @@ func TestInbox(t *testing.T) {
 	inboxStateAddr, bump, err := anchorinbox.FindInboxStateAddress()
 	require.NoError(t, err)
 
+	const closeBuffer = 0
+
 	t.Run("init", func(t *testing.T) {
 		// Initialize inbox state
-		init := anchorinbox.NewInitInstruction(inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
+		init := anchorinbox.NewInitInstruction(closeBuffer, inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
 		txSig0, err := solcompose.SendSimple(ctx, cl, privKey0, init.Build())
 		require.NoError(t, err)
 		txResp0, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig0)
@@ -308,26 +310,16 @@ func TestInbox(t *testing.T) {
 		require.NoError(t, err)
 		// Ensure inbox state is as expected
 		expInboxState := anchorinbox.InboxStateAccount{
-			Admin:      privKey0.PublicKey(),
-			DeployedAt: txResp0.Slot,
-			Bump:       bump,
+			Admin:           privKey0.PublicKey(),
+			DeployedAt:      txResp0.Slot,
+			Bump:            bump,
+			CloseBufferSecs: closeBuffer,
 		}
 		require.Equal(t, expInboxState, inboxState)
 	})
 
 	owner := privKey0.PublicKey()
-	nonce := uint64(123456)      // Pick a random nonce
 	depositAmount := uint64(1e3) // 1K tokens
-
-	orderID := anchorinbox.NewOrderID(owner, nonce) // Calculate order ID
-	t.Logf("OrderID: %s", orderID)
-
-	// Calculate order state account address
-	orderStateAddress, bumpS, err := anchorinbox.FindOrderStateAddress(orderID)
-	require.NoError(t, err)
-	// Calculate order token account address
-	orderTokenAddress, _, err := anchorinbox.FindOrderTokenAddress(orderID)
-	require.NoError(t, err)
 
 	claimer, err := solana.NewRandomPrivateKey()
 	require.NoError(t, err)
@@ -348,20 +340,15 @@ func TestInbox(t *testing.T) {
 	})
 
 	// Prep Open instruction
+	var openOrder anchorinbox.OpenOrder
 	t.Run("open", func(t *testing.T) {
-		params := anchorinbox.OpenParams{OrderId: orderID, Nonce: nonce, DepositAmount: depositAmount}
-		instr := anchorinbox.NewOpenInstruction(
-			params,
-			orderStateAddress,
-			privKey0.PublicKey(),
-			mintResp.MintAccount,
-			mintResp.TokenAccount,
-			orderTokenAddress,
-			token.ProgramID,
-			solana.SystemProgramID)
+		openOrder, err = anchorinbox.NewOpenOrder(anchorinbox.OpenParams{
+			DepositAmount: depositAmount,
+		}, owner, mintResp.MintAccount, mintResp.TokenAccount)
+		require.NoError(t, err)
 
 		// Send Open instruction
-		txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, instr.Build())
+		txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, openOrder.Build())
 		require.NoError(t, err)
 
 		txResp1, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig1)
@@ -371,23 +358,25 @@ func TestInbox(t *testing.T) {
 
 		// Ensure Opened event
 		openEvent := anchorinbox.EventOpened{
-			OrderId:    orderID,
-			OrderState: orderStateAddress,
+			OrderId:    openOrder.ID,
+			OrderState: openOrder.StateAddress,
 			Status:     anchorinbox.StatusPending,
 		}
 		ensureInboxEvent(t, prog, txResp1, anchorinbox.EventNameOpened, openEvent)
 
 		// Get OrderState account
 		var orderState anchorinbox.OrderStateAccount
-		_, err = solcompose.GetAccountDataInto(ctx, cl, orderStateAddress, &orderState)
+		_, err = solcompose.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
 		require.NoError(t, err)
 
 		// Ensure OrderState account is correct
 		expOrderState := anchorinbox.OrderStateAccount{
-			OrderId: orderID,
-			Status:  anchorinbox.StatusPending,
-			Owner:   privKey0.PublicKey(),
-			Bump:    bumpS,
+			OrderId:    openOrder.ID,
+			Status:     anchorinbox.StatusPending,
+			Owner:      privKey0.PublicKey(),
+			Bump:       openOrder.StateBump,
+			CreatedAt:  txResp1.BlockTime.Time().Unix(),
+			ClosableAt: txResp1.BlockTime.Time().Unix() + closeBuffer,
 			Deposit: anchorinbox.TokenAmount{
 				Mint:   mintResp.MintAccount,
 				Amount: depositAmount,
@@ -396,7 +385,7 @@ func TestInbox(t *testing.T) {
 		require.Equal(t, expOrderState, orderState)
 
 		// Ensure deposit amount transferred to order token account
-		bal, err := cl.GetTokenAccountBalance(ctx, orderTokenAddress, rpc.CommitmentConfirmed)
+		bal, err := cl.GetTokenAccountBalance(ctx, openOrder.TokenAddress, rpc.CommitmentConfirmed)
 		require.NoError(t, err)
 		require.Equal(t, depositAmount, uint64(*bal.Value.UiAmount))
 
@@ -407,7 +396,7 @@ func TestInbox(t *testing.T) {
 
 	// Send MarkFilled instruction
 	t.Run("mark filled", func(t *testing.T) {
-		markFilled := anchorinbox.NewMarkFilledInstruction(orderID, claimer.PublicKey(), orderStateAddress, inboxStateAddr, privKey0.PublicKey())
+		markFilled := anchorinbox.NewMarkFilledInstruction(openOrder.ID, claimer.PublicKey(), openOrder.StateAddress, inboxStateAddr, privKey0.PublicKey())
 		txSig2, err := solcompose.SendSimple(ctx, cl, privKey0, markFilled.Build())
 		require.NoError(t, err)
 		txResp2, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig2)
@@ -417,27 +406,24 @@ func TestInbox(t *testing.T) {
 
 		// Ensure MarkFilled event
 		markFilledEvent := anchorinbox.EventMarkFilled{
-			OrderId:    orderID,
-			OrderState: orderStateAddress,
+			OrderId:    openOrder.ID,
+			OrderState: openOrder.StateAddress,
 			Status:     anchorinbox.StatusFilled,
 		}
 		ensureInboxEvent(t, prog, txResp2, anchorinbox.EventNameMarkFilled, markFilledEvent)
 
-		// Ensure OrderState account is updated
-		info, err := cl.GetAccountInfoWithOpts(ctx, orderStateAddress, &rpc.GetAccountInfoOpts{
-			Commitment: rpc.CommitmentConfirmed,
-		})
-		require.NoError(t, err)
-		orderState := anchorinbox.OrderStateAccount{}
-		err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(&orderState)
+		var orderState anchorinbox.OrderStateAccount
+		_, err = solcompose.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
 		require.NoError(t, err)
 
 		// Ensure OrderState account is correct
 		expOrderState := anchorinbox.OrderStateAccount{
-			OrderId: orderID,
-			Status:  anchorinbox.StatusFilled,
-			Owner:   privKey0.PublicKey(),
-			Bump:    bumpS,
+			OrderId:    openOrder.ID,
+			Status:     anchorinbox.StatusFilled,
+			Owner:      privKey0.PublicKey(),
+			Bump:       openOrder.StateBump,
+			CreatedAt:  orderState.CreatedAt,
+			ClosableAt: orderState.ClosableAt,
 			Deposit: anchorinbox.TokenAmount{
 				Mint:   mintResp.MintAccount,
 				Amount: depositAmount,
@@ -449,9 +435,9 @@ func TestInbox(t *testing.T) {
 
 	t.Run("claim", func(t *testing.T) {
 		claim := anchorinbox.NewClaimInstruction(
-			orderID,
-			orderStateAddress,
-			orderTokenAddress,
+			openOrder.ID,
+			openOrder.StateAddress,
+			openOrder.TokenAddress,
 			claimer.PublicKey(),
 			claimerATA,
 			token.ProgramID,
@@ -468,13 +454,63 @@ func TestInbox(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, depositAmount, uint64(*bal.Value.UiAmount))
 
-		bal, err = cl.GetTokenAccountBalance(ctx, orderTokenAddress, rpc.CommitmentConfirmed)
+		bal, err = cl.GetTokenAccountBalance(ctx, openOrder.TokenAddress, rpc.CommitmentConfirmed)
 		require.NoError(t, err)
-		require.Equal(t, 0, uint64(*bal.Value.UiAmount))
+		require.Equal(t, uint64(0), uint64(*bal.Value.UiAmount))
+	})
+
+	// Prep Open instruction
+	t.Run("open and close", func(t *testing.T) {
+		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount, mintResp.TokenAccount)
+		require.NoError(t, err)
+		closeOrder := anchorinbox.NewCloseInstruction(
+			openOrder.ID,
+			openOrder.StateAddress,
+			openOrder.TokenAddress,
+			mintResp.TokenAccount,
+			owner,
+			token.ProgramID,
+		)
+		// Send Open instruction
+		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, openOrder.Build(), closeOrder.Build())
+		require.NoError(t, err)
+
+		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		require.NoError(t, err)
+		t.Logf("Open and Close Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
+		require.Equal(t, mustFirstTxSig(txResp), <-async)
+
+		// Get OrderState account
+		var orderState anchorinbox.OrderStateAccount
+		_, err = solcompose.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
+		require.NoError(t, err)
+
+		// Ensure OrderState account is correct
+		expOrderState := anchorinbox.OrderStateAccount{
+			OrderId:    openOrder.ID,
+			Status:     anchorinbox.StatusClosed,
+			Owner:      privKey0.PublicKey(),
+			Bump:       openOrder.StateBump,
+			CreatedAt:  orderState.CreatedAt,
+			ClosableAt: orderState.ClosableAt,
+			Deposit: anchorinbox.TokenAmount{
+				Mint:   mintResp.MintAccount,
+				Amount: depositAmount,
+			},
+		}
+		require.Equal(t, expOrderState, orderState)
+
+		// Ensure deposit amount transferred to back to owner
+		_, err = cl.GetTokenAccountBalance(ctx, openOrder.TokenAddress, rpc.CommitmentConfirmed)
+		require.Contains(t, errors.Format(solcompose.WrapRPCError(err, "getTokenAccountBalance")), "could not find account")
+
+		bal, err := cl.GetTokenAccountBalance(ctx, mintResp.TokenAccount, rpc.CommitmentConfirmed)
+		require.NoError(t, err)
+		require.Equal(t, 1e9-int64(depositAmount), int64(*bal.Value.UiAmount))
 	})
 
 	t.Run("init fail", func(t *testing.T) {
-		init := anchorinbox.NewInitInstruction(inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
+		init := anchorinbox.NewInitInstruction(0, inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
 		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, init.Build())
 		require.NoError(t, err)
 		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
@@ -483,8 +519,8 @@ func TestInbox(t *testing.T) {
 	})
 
 	t.Run("open fail", func(t *testing.T) {
-		params := anchorinbox.OpenParams{OrderId: orderID, Nonce: nonce}
-		open := anchorinbox.NewOpenInstruction(params, orderStateAddress, privKey0.PublicKey(), mintResp.MintAccount, mintResp.TokenAccount, orderTokenAddress, token.ProgramID, solana.SystemProgramID)
+		params := anchorinbox.OpenParams{OrderId: openOrder.ID, Nonce: openOrder.Params.Nonce}
+		open := anchorinbox.NewOpenInstruction(params, openOrder.StateAddress, privKey0.PublicKey(), mintResp.MintAccount, mintResp.TokenAccount, openOrder.TokenAddress, token.ProgramID, inboxStateAddr, solana.SystemProgramID)
 		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, open.Build())
 		require.NoError(t, err)
 		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
@@ -493,7 +529,7 @@ func TestInbox(t *testing.T) {
 	})
 
 	t.Run("mark filled fail", func(t *testing.T) {
-		markFilled := anchorinbox.NewMarkFilledInstruction(orderID, claimer.PublicKey(), orderStateAddress, inboxStateAddr, privKey0.PublicKey())
+		markFilled := anchorinbox.NewMarkFilledInstruction(openOrder.ID, claimer.PublicKey(), openOrder.StateAddress, inboxStateAddr, privKey0.PublicKey())
 		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, markFilled.Build())
 		require.NoError(t, err)
 		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)

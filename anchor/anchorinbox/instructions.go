@@ -30,6 +30,8 @@ func init() {
 var (
 	Instruction_Claim = ag_binary.TypeID([8]byte{62, 198, 214, 193, 213, 159, 108, 210})
 
+	Instruction_Close = ag_binary.TypeID([8]byte{98, 165, 201, 177, 108, 65, 206, 96})
+
 	// Initialize the inbox state
 	// This should be called only once, preferably by the upgrade authority.
 	Instruction_Init = ag_binary.TypeID([8]byte{220, 59, 207, 236, 108, 250, 47, 100})
@@ -47,6 +49,8 @@ func InstructionIDToName(id ag_binary.TypeID) string {
 	switch id {
 	case Instruction_Claim:
 		return "Claim"
+	case Instruction_Close:
+		return "Close"
 	case Instruction_Init:
 		return "Init"
 	case Instruction_MarkFilled:
@@ -75,6 +79,9 @@ var InstructionImplDef = ag_binary.NewVariantDefinition(
 	[]ag_binary.VariantType{
 		{
 			Name: "claim", Type: (*Claim)(nil),
+		},
+		{
+			Name: "close", Type: (*Close)(nil),
 		},
 		{
 			Name: "init", Type: (*Init)(nil),

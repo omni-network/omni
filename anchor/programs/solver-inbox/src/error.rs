@@ -12,4 +12,6 @@ pub enum InboxError {
     InvalidStatus,
     #[msg("Invalid mint")]
     InvalidMint,
+    #[msg("Order not closable yet")]
+    NotClosable,
 }

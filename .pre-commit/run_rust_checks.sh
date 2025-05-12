@@ -17,4 +17,4 @@ cd "${ANCHOR_DIR}"
 
 cargo fmt
 cargo check
-cargo clippy -- -D warning
+cargo clippy -- -D warnings

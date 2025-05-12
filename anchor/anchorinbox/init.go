@@ -13,6 +13,7 @@ import (
 // Initialize the inbox state
 // This should be called only once, preferably by the upgrade authority.
 type Init struct {
+	CloseBuffer *int64
 
 	// [0] = [WRITE] inbox_state
 	//
@@ -29,6 +30,12 @@ func NewInitInstructionBuilder() *Init {
 	}
 	nd.AccountMetaSlice[2] = ag_solanago.Meta(Addresses["11111111111111111111111111111111"])
 	return nd
+}
+
+// SetCloseBuffer sets the "close_buffer" parameter.
+func (inst *Init) SetCloseBuffer(close_buffer int64) *Init {
+	inst.CloseBuffer = &close_buffer
+	return inst
 }
 
 // SetInboxStateAccount sets the "inbox_state" account.
@@ -124,6 +131,13 @@ func (inst Init) ValidateAndBuild() (*Instruction, error) {
 }
 
 func (inst *Init) Validate() error {
+	// Check whether all (required) parameters are set:
+	{
+		if inst.CloseBuffer == nil {
+			return errors.New("CloseBuffer parameter is not set")
+		}
+	}
+
 	// Check whether all (required) accounts are set:
 	{
 		if inst.AccountMetaSlice[0] == nil {
@@ -148,7 +162,9 @@ func (inst *Init) EncodeToTree(parent ag_treeout.Branches) {
 				ParentFunc(func(instructionBranch ag_treeout.Branches) {
 
 					// Parameters of the instruction:
-					instructionBranch.Child("Params[len=0]").ParentFunc(func(paramsBranch ag_treeout.Branches) {})
+					instructionBranch.Child("Params[len=1]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
+						paramsBranch.Child(ag_format.Param(" CloseBuffer", *inst.CloseBuffer))
+					})
 
 					// Accounts of the instruction:
 					instructionBranch.Child("Accounts[len=3]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
@@ -161,19 +177,32 @@ func (inst *Init) EncodeToTree(parent ag_treeout.Branches) {
 }
 
 func (obj Init) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+	// Serialize `CloseBuffer` param:
+	err = encoder.Encode(obj.CloseBuffer)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 func (obj *Init) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+	// Deserialize `CloseBuffer`:
+	err = decoder.Decode(&obj.CloseBuffer)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // NewInitInstruction declares a new Init instruction with the provided parameters and accounts.
 func NewInitInstruction(
+	// Parameters:
+	close_buffer int64,
 	// Accounts:
 	inboxState ag_solanago.PublicKey,
 	admin ag_solanago.PublicKey,
 	systemProgram ag_solanago.PublicKey) *Init {
 	return NewInitInstructionBuilder().
+		SetCloseBuffer(close_buffer).
 		SetInboxStateAccount(inboxState).
 		SetAdminAccount(admin).
 		SetSystemProgramAccount(systemProgram)

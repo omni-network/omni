@@ -27,17 +27,19 @@ type Open struct {
 	//
 	// [5] = [] token_program
 	//
-	// [6] = [] system_program
+	// [6] = [] inbox_state
+	//
+	// [7] = [] system_program
 	ag_solanago.AccountMetaSlice `bin:"-"`
 }
 
 // NewOpenInstructionBuilder creates a new `Open` instruction builder.
 func NewOpenInstructionBuilder() *Open {
 	nd := &Open{
-		AccountMetaSlice: make(ag_solanago.AccountMetaSlice, 7),
+		AccountMetaSlice: make(ag_solanago.AccountMetaSlice, 8),
 	}
 	nd.AccountMetaSlice[5] = ag_solanago.Meta(Addresses["TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"])
-	nd.AccountMetaSlice[6] = ag_solanago.Meta(Addresses["11111111111111111111111111111111"])
+	nd.AccountMetaSlice[7] = ag_solanago.Meta(Addresses["11111111111111111111111111111111"])
 	return nd
 }
 
@@ -209,15 +211,68 @@ func (inst *Open) GetTokenProgramAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(5)
 }
 
+// SetInboxStateAccount sets the "inbox_state" account.
+func (inst *Open) SetInboxStateAccount(inboxState ag_solanago.PublicKey) *Open {
+	inst.AccountMetaSlice[6] = ag_solanago.Meta(inboxState)
+	return inst
+}
+
+func (inst *Open) findFindInboxStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+	var seeds [][]byte
+	// const: inbox_state
+	seeds = append(seeds, []byte{byte(0x69), byte(0x6e), byte(0x62), byte(0x6f), byte(0x78), byte(0x5f), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
+
+	if knownBumpSeed != 0 {
+		seeds = append(seeds, []byte{byte(bumpSeed)})
+		pda, err = ag_solanago.CreateProgramAddress(seeds, ProgramID)
+	} else {
+		pda, bumpSeed, err = ag_solanago.FindProgramAddress(seeds, ProgramID)
+	}
+	return
+}
+
+// FindInboxStateAddressWithBumpSeed calculates InboxState account address with given seeds and a known bump seed.
+func (inst *Open) FindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
+	pda, _, err = inst.findFindInboxStateAddress(bumpSeed)
+	return
+}
+
+func (inst *Open) MustFindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
+	pda, _, err := inst.findFindInboxStateAddress(bumpSeed)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+// FindInboxStateAddress finds InboxState account address with given seeds.
+func (inst *Open) FindInboxStateAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+	pda, bumpSeed, err = inst.findFindInboxStateAddress(0)
+	return
+}
+
+func (inst *Open) MustFindInboxStateAddress() (pda ag_solanago.PublicKey) {
+	pda, _, err := inst.findFindInboxStateAddress(0)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+// GetInboxStateAccount gets the "inbox_state" account.
+func (inst *Open) GetInboxStateAccount() *ag_solanago.AccountMeta {
+	return inst.AccountMetaSlice.Get(6)
+}
+
 // SetSystemProgramAccount sets the "system_program" account.
 func (inst *Open) SetSystemProgramAccount(systemProgram ag_solanago.PublicKey) *Open {
-	inst.AccountMetaSlice[6] = ag_solanago.Meta(systemProgram)
+	inst.AccountMetaSlice[7] = ag_solanago.Meta(systemProgram)
 	return inst
 }
 
 // GetSystemProgramAccount gets the "system_program" account.
 func (inst *Open) GetSystemProgramAccount() *ag_solanago.AccountMeta {
-	return inst.AccountMetaSlice.Get(6)
+	return inst.AccountMetaSlice.Get(7)
 }
 
 func (inst Open) Build() *Instruction {
@@ -266,6 +321,9 @@ func (inst *Open) Validate() error {
 			return errors.New("accounts.TokenProgram is not set")
 		}
 		if inst.AccountMetaSlice[6] == nil {
+			return errors.New("accounts.InboxState is not set")
+		}
+		if inst.AccountMetaSlice[7] == nil {
 			return errors.New("accounts.SystemProgram is not set")
 		}
 	}
@@ -286,14 +344,15 @@ func (inst *Open) EncodeToTree(parent ag_treeout.Branches) {
 					})
 
 					// Accounts of the instruction:
-					instructionBranch.Child("Accounts[len=7]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
+					instructionBranch.Child("Accounts[len=8]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
 						accountsBranch.Child(ag_format.Meta("   order_state", inst.AccountMetaSlice.Get(0)))
 						accountsBranch.Child(ag_format.Meta("         owner", inst.AccountMetaSlice.Get(1)))
 						accountsBranch.Child(ag_format.Meta("         mint_", inst.AccountMetaSlice.Get(2)))
 						accountsBranch.Child(ag_format.Meta("  owner_token_", inst.AccountMetaSlice.Get(3)))
 						accountsBranch.Child(ag_format.Meta("  order_token_", inst.AccountMetaSlice.Get(4)))
 						accountsBranch.Child(ag_format.Meta(" token_program", inst.AccountMetaSlice.Get(5)))
-						accountsBranch.Child(ag_format.Meta("system_program", inst.AccountMetaSlice.Get(6)))
+						accountsBranch.Child(ag_format.Meta("   inbox_state", inst.AccountMetaSlice.Get(6)))
+						accountsBranch.Child(ag_format.Meta("system_program", inst.AccountMetaSlice.Get(7)))
 					})
 				})
 		})
@@ -327,6 +386,7 @@ func NewOpenInstruction(
 	ownerTokenAccount ag_solanago.PublicKey,
 	orderTokenAccount ag_solanago.PublicKey,
 	tokenProgram ag_solanago.PublicKey,
+	inboxState ag_solanago.PublicKey,
 	systemProgram ag_solanago.PublicKey) *Open {
 	return NewOpenInstructionBuilder().
 		SetParams(params).
@@ -336,5 +396,6 @@ func NewOpenInstruction(
 		SetOwnerTokenAccount(ownerTokenAccount).
 		SetOrderTokenAccount(orderTokenAccount).
 		SetTokenProgramAccount(tokenProgram).
+		SetInboxStateAccount(inboxState).
 		SetSystemProgramAccount(systemProgram)
 }

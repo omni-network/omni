@@ -98,6 +98,96 @@
       ]
     },
     {
+      "name": "close",
+      "discriminator": [
+        98,
+        165,
+        201,
+        177,
+        108,
+        65,
+        206,
+        96
+      ],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  95,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_token_account",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_id",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "init",
       "docs": [
         "Initialize the inbox state",
@@ -148,7 +238,12 @@
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "close_buffer",
+          "type": "i64"
+        }
+      ]
     },
     {
       "name": "mark_filled",
@@ -325,6 +420,29 @@
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
+          "name": "inbox_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  98,
+                  111,
+                  120,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
@@ -384,6 +502,19 @@
       ]
     },
     {
+      "name": "EventClosed",
+      "discriminator": [
+        136,
+        138,
+        5,
+        113,
+        129,
+        202,
+        80,
+        85
+      ]
+    },
+    {
       "name": "EventMarkFilled",
       "discriminator": [
         31,
@@ -425,11 +556,40 @@
       "code": 6002,
       "name": "InvalidMint",
       "msg": "Invalid mint"
+    },
+    {
+      "code": 6003,
+      "name": "NotClosable",
+      "msg": "Order not closable yet"
     }
   ],
   "types": [
     {
       "name": "EventClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "order_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventClosed",
       "type": {
         "kind": "struct",
         "fields": [
@@ -516,6 +676,10 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "close_buffer_secs",
+            "type": "i64"
           }
         ]
       }
@@ -568,6 +732,14 @@
           {
             "name": "owner",
             "type": "pubkey"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "closable_at",
+            "type": "i64"
           },
           {
             "name": "claimable_by",

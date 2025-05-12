@@ -5,7 +5,7 @@ mod helpers;
 mod types;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token::*;
 use error::*;
 use event::*;
 use helpers::*;
@@ -19,11 +19,12 @@ pub mod solver_inbox {
 
     /// Initialize the inbox state
     /// This should be called only once, preferably by the upgrade authority.
-    pub fn init(ctx: Context<Init>) -> Result<()> {
+    pub fn init(ctx: Context<Init>, close_buffer: i64) -> Result<()> {
         let state = &mut ctx.accounts.inbox_state;
         state.admin = ctx.accounts.admin.key();
         state.deployed_at = Clock::get()?.slot;
         state.bump = ctx.bumps.inbox_state;
+        state.close_buffer_secs = close_buffer;
 
         Ok(())
     }
@@ -49,6 +50,8 @@ pub mod solver_inbox {
         state.order_id = order_id;
         state.status = Status::Pending;
         state.owner = ctx.accounts.owner.key();
+        state.created_at = Clock::get()?.unix_timestamp;
+        state.closable_at = state.created_at + ctx.accounts.inbox_state.close_buffer_secs;
         state.bump = ctx.bumps.order_state;
         state.deposit = TokenAmount {
             mint: ctx.accounts.mint_account.key(),
@@ -76,8 +79,6 @@ pub mod solver_inbox {
         claimable_by: Pubkey,
     ) -> Result<()> {
         let state = &mut ctx.accounts.order_state;
-        require!(state.status == Status::Pending, InboxError::InvalidID);
-
         state.status = Status::Filled;
         state.claimable_by = claimable_by;
 
@@ -93,8 +94,6 @@ pub mod solver_inbox {
     // Claims the deposit of an filled order
     pub fn claim(ctx: Context<Claim>, order_id: Pubkey) -> Result<()> {
         let state = &mut ctx.accounts.order_state;
-        require!(state.status == Status::Filled, InboxError::InvalidID);
-
         state.status = Status::Claimed;
 
         // Sign transfer with order token PDA
@@ -118,7 +117,63 @@ pub mod solver_inbox {
             state.deposit.amount,
         )?;
 
+        // TODO(corver): Close the order state and token accounts, returning rent to owner.
+
         emit!(EventClaimed {
+            order_id: state.order_id,
+            status: state.status.clone(),
+            order_state: state.key(),
+        });
+
+        Ok(())
+    }
+
+    // Close an order
+    pub fn close(ctx: Context<Close>, order_id: Pubkey) -> Result<()> {
+        let state = &mut ctx.accounts.order_state;
+        require_gte!(
+            Clock::get()?.unix_timestamp,
+            state.closable_at,
+            InboxError::NotClosable
+        );
+
+        state.status = Status::Closed;
+
+        // Sign transfer and close_account with order token PDA
+        let order_token_seeds: &[&[&[u8]]] = &[&[
+            ORDER_TOKEN_SEED_PREFIX,
+            order_id.as_ref(),
+            &[ctx.bumps.order_token_account],
+        ]];
+
+        // Transfer the deposit to the owner account
+        transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.order_token_account.to_account_info(),
+                    to: ctx.accounts.owner_token_account.to_account_info(),
+                    authority: ctx.accounts.order_token_account.to_account_info(),
+                },
+            )
+            .with_signer(order_token_seeds),
+            state.deposit.amount,
+        )?;
+
+        // Close the order token account andrent to owner
+        close_account(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                CloseAccount {
+                    account: ctx.accounts.order_token_account.to_account_info(),
+                    destination: ctx.accounts.owner_token_account.to_account_info(),
+                    authority: ctx.accounts.order_token_account.to_account_info(),
+                },
+            )
+            .with_signer(order_token_seeds),
+        )?;
+
+        emit!(EventClosed {
             order_id: state.order_id,
             status: state.status.clone(),
             order_state: state.key(),
@@ -182,6 +237,11 @@ pub struct Open<'info> {
 
     // The global token program
     pub token_program: Program<'info, Token>,
+    #[account(
+        seeds = [InboxState::SEED_PREFIX],
+        bump,
+    )]
+    pub inbox_state: Account<'info, InboxState>,
     pub system_program: Program<'info, System>,
 }
 
@@ -192,6 +252,7 @@ pub struct MarkFilled<'info> {
         mut,
         seeds = [OrderState::SEED_PREFIX, order_id.as_ref()],
         bump,
+        constraint = order_state.status == Status::Pending,
     )]
     pub order_state: Account<'info, OrderState>,
     #[account(
@@ -212,6 +273,7 @@ pub struct Claim<'info> {
         seeds = [OrderState::SEED_PREFIX, order_id.as_ref()],
         bump,
         constraint = order_state.claimable_by == claimer.key(),
+        constraint = order_state.status == Status::Filled,
     )]
     pub order_state: Account<'info, OrderState>,
     #[account(
@@ -230,5 +292,36 @@ pub struct Claim<'info> {
         token::authority = claimer,
     )]
     pub claimer_token_account: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+#[instruction(order_id: Pubkey)]
+pub struct Close<'info> {
+    #[account(
+        mut,
+        seeds = [OrderState::SEED_PREFIX, order_id.as_ref()],
+        bump,
+        constraint = order_state.owner == owner.key(),
+    constraint = order_state.status == Status::Pending,
+    )]
+    pub order_state: Account<'info, OrderState>,
+    #[account(
+        mut,
+        seeds = [ORDER_TOKEN_SEED_PREFIX, order_id.as_ref()],
+        bump,
+        token::mint = order_state.deposit.mint,
+        token::authority = order_token_account,
+    )]
+    pub order_token_account: Account<'info, TokenAccount>,
+    #[account(
+        mut,
+        token::mint = order_state.deposit.mint,
+        token::authority = owner,
+    )]
+    pub owner_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub owner: Signer<'info>,
     pub token_program: Program<'info, Token>,
 }

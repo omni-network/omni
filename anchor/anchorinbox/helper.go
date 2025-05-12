@@ -1,12 +1,15 @@
 package anchorinbox
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/gagliardetto/solana-go"
+	"github.com/gagliardetto/solana-go/programs/system"
+	"github.com/gagliardetto/solana-go/programs/token"
 )
 
 var (
@@ -79,4 +82,58 @@ func FindOrderTokenAddress(orderID solana.PublicKey) (solana.PublicKey, uint8, e
 // Generated code variant is fine, since no instruction arguments required.
 func FindInboxStateAddress() (solana.PublicKey, uint8, error) {
 	return new(Init).FindInboxStateAddress()
+}
+
+type OpenOrder struct {
+	*Open
+
+	ID           solana.PublicKey
+	StateAddress solana.PublicKey
+	StateBump    uint8
+	TokenAddress solana.PublicKey
+	TokenBump    uint8
+}
+
+// NewOpenOrder returns a convenient OpenOrder struct that extends *Open
+// and includes inbox pda accounts.
+//
+// Note that OpenParams Nonce and OrderID will be generated if omitted.
+func NewOpenOrder(params OpenParams, owner, mint, ownerToken solana.PublicKey) (OpenOrder, error) {
+	for params.Nonce == 0 {
+		params.Nonce = randU64()
+	}
+	params.OrderId = NewOrderID(owner, params.Nonce)
+
+	orderState, stateBump, err := FindOrderStateAddress(params.OrderId)
+	if err != nil {
+		return OpenOrder{}, err
+	}
+
+	orderToken, tokenBump, err := FindOrderTokenAddress(params.OrderId)
+	if err != nil {
+		return OpenOrder{}, err
+	}
+
+	inboxAddr, _, err := FindInboxStateAddress()
+	if err != nil {
+		return OpenOrder{}, err
+	}
+
+	open := NewOpenInstruction(params, orderState, owner, mint, ownerToken, orderToken, token.ProgramID, inboxAddr, system.ProgramID)
+
+	return OpenOrder{
+		Open:         open,
+		ID:           params.OrderId,
+		StateAddress: orderState,
+		StateBump:    stateBump,
+		TokenAddress: orderToken,
+		TokenBump:    tokenBump,
+	}, nil
+}
+
+func randU64() uint64 {
+	var b [8]byte
+	_, _ = rand.Read(b[:])
+
+	return binary.LittleEndian.Uint64(b[:])
 }
