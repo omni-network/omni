@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -78,7 +79,8 @@ func mintChainForever(
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
-				log.Warn(ctx, "Mint failed (will retry)", err)
+				// Individual mint errors are logged in tryMint
+				log.Error(ctx, "Mint failed with unexpected error", err)
 			}
 		}
 	}
@@ -113,12 +115,12 @@ func tryMintSubmitted(
 
 	for _, msg := range msgs {
 		if err := tryMint(ctx, db, usdc, minter, client, backend, msgTransmitter, msg); err != nil {
-			return errors.Wrap(err, "try mint once",
+			// Just warn, so we try all messages
+			log.Warn(ctx, "Mint failed (will retry)", errors.Wrap(err, "try mint"),
 				"msg_hash", msg.MessageHash,
 				"msg_tx_hash", msg.TxHash,
 				"src_chain", evmchain.Name(msg.SrcChainID),
-				"dest_chain", evmchain.Name(msg.DestChainID),
-			)
+				"dest_chain", evmchain.Name(msg.DestChainID))
 		}
 	}
 
@@ -362,27 +364,35 @@ func purgeChainForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := tryPurge(ctx, db, backend, chain.ChainID)
+			err := tryPurgeConfirmed(ctx, db, backend, chain.ChainID)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
-				log.Warn(ctx, "Purge failed (will retry)", err)
+				log.Warn(ctx, "Purge confirmed failed (will retry)", err)
+			}
+
+			err = tryPurgeBadTx(ctx, db, backend, chain.ChainID)
+			if ctx.Err() != nil {
+				return
+			} else if err != nil {
+				log.Warn(ctx, "Purge bad tx failed (will retry)", err)
 			}
 		}
 	}
 }
 
-func tryPurge(
+// tryPurgeConfirmed purges confirmed minted messages from the DB.
+func tryPurgeConfirmed(
 	ctx context.Context,
 	db *cctpdb.DB,
 	backend *ethbackend.Backend,
-	chainID uint64,
+	destChainID uint64,
 ) error {
-	ctx = log.WithCtx(ctx, "chain_id", chainID)
+	ctx = log.WithCtx(ctx, "chain_id", destChainID)
 
 	msgs, err := db.GetMsgsBy(ctx, cctpdb.MsgFilter{
 		Status:      types.MsgStatusMinted,
-		DestChainID: chainID,
+		DestChainID: destChainID,
 	})
 	if err != nil {
 		return errors.Wrap(err, "get minted msgs")
@@ -411,6 +421,62 @@ func tryPurge(
 		}
 
 		log.Info(ctx, "Purged confirmed message", "msg_hash", msg.MessageHash, "tx_hash", msg.TxHash)
+	}
+
+	return nil
+}
+
+// tryPurgeBadTx purges messages with tx hashes that do not exist on the chain.
+// This can happen when transaction is "dropped and replaced". The correct tx will be inserted by audit.
+func tryPurgeBadTx(
+	ctx context.Context,
+	db *cctpdb.DB,
+	backend *ethbackend.Backend,
+	srcChainID uint64,
+) error {
+	ctx = log.WithCtx(ctx, "chain_id", srcChainID)
+
+	msgs, err := db.GetMsgsBy(ctx, cctpdb.MsgFilter{
+		Status:     types.MsgStatusSubmitted,
+		SrcChainID: srcChainID,
+	})
+	if err != nil {
+		return errors.Wrap(err, "get submitted msgs")
+	}
+
+	cursor, ok, err := db.GetCursor(ctx, srcChainID)
+	if err != nil {
+		return errors.Wrap(err, "get cursor")
+	} else if !ok {
+		return errors.New("cursor not found", "chain_id", srcChainID)
+	}
+
+	var toDelete []types.MsgSendUSDC
+
+	// Mark messages for deletion
+	for _, msg := range msgs {
+		if cursor < msg.BlockHeight {
+			// Only consider messages past the audit cursor
+			continue
+		}
+
+		_, err = backend.TxReceipt(ctx, msg.TxHash)
+		if errors.Is(err, ethereum.NotFound) {
+			// Not found, mark for deletion
+			toDelete = append(toDelete, msg)
+		} else if err != nil {
+			// Some other error, return
+			return errors.Wrap(err, "get tx receipt")
+		}
+	}
+
+	// Delete messages
+	for _, msg := range toDelete {
+		if err := db.DeleteMsg(ctx, msg.TxHash); err != nil {
+			return errors.Wrap(err, "delete msg")
+		}
+
+		log.Info(ctx, "Purged bad tx message", "msg_hash", msg.MessageHash, "tx_hash", msg.TxHash)
 	}
 
 	return nil

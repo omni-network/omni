@@ -99,7 +99,7 @@ func TestIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Mint / audit forever
-	err = cctp.MintAuditForever(ctx, db, cctpClient, network, backends, minter, recipient)
+	err = cctp.MintAuditForever(ctx, db, cctpClient, network, backends, minter, recipient, cctp.WithPurgeInterval(10*time.Second))
 	require.NoError(t, err)
 
 	// Track initial balances
@@ -123,8 +123,7 @@ func TestIntegration(t *testing.T) {
 
 	// wrongDb is used to simulate messages missed, and not stored in the db.
 	// these should be caught by audit.
-	wrongCosmosDB := cosmosdb.NewMemDB()
-	wrongDB, err := cctpdb.New(wrongCosmosDB)
+	wrongDB, err := cctpdb.New(cosmosdb.NewMemDB())
 	require.NoError(t, err)
 
 	// Define sends
@@ -171,6 +170,16 @@ func TestIntegration(t *testing.T) {
 		expectedBalances[send.destChainID] = bi.Add(expectedBalances[send.destChainID], send.amount)
 	}
 
+	// Inster one tx that does not exist in the db (should be purged)
+	badMsg := testutil.RandMsg()
+	badMsg.SrcChainID = evmchain.IDEthereum
+	badMsg.DestChainID = evmchain.IDOptimism
+	badMsg.BlockHeight = 5
+	badMsg.Recipient = devAddr
+	badMsg.Status = types.MsgStatusSubmitted
+	err = db.InsertMsg(ctx, badMsg)
+	require.NoError(t, err)
+
 	// Wait for all sends
 	tutil.RequireEventually(t, ctx, func() bool {
 		for chainID, expectedBalance := range expectedBalances {
@@ -199,12 +208,13 @@ func TestIntegration(t *testing.T) {
 		require.True(t, received, "message not received on dest chain %d", msg.DestChainID)
 	}
 
-	// Wait for all purged (confirmed and deleted)
+	// Wait for all purged (confirmed and deleted, or removed bad tx hashs)
 	tutil.RequireEventually(t, ctx, func() bool {
 		msgs, err := db.GetMsgs(ctx)
 		require.NoError(t, err)
 
 		if len(msgs) > 0 {
+			log.Info(ctx, "Messages not purged", "msgs", len(msgs))
 			return false
 		}
 
