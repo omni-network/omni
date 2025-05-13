@@ -43,13 +43,13 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 		// Get all expected route configurations for the current chain.
 		routes := getRoutes(chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
 
+		log.Info(ctx, "Expected routes", "chain", chain.Name, "routes", routes)
+
 		// Filter out routes that are already configured on the current chain.
 		routes, err = filterRoutes(ctx, network, backend, addrs.SolverNetInbox, addrs.SolverNetOutbox, routes)
 		if err != nil {
 			return errors.Wrap(err, "filter routes", "chain", chain.Name)
 		}
-
-		log.Info(ctx, "Expected routes", "chain", chain.Name, "routes", routes)
 
 		if len(routes) == 0 {
 			log.Info(ctx, "No routes to configure", "chain", chain.Name)
