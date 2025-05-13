@@ -1,5 +1,6 @@
 import {
   useGetOrder,
+  useOmniAssets,
   useOmniContracts,
   useParseOpenEvent,
   useQuote,
@@ -437,5 +438,49 @@ describe.concurrent('useOmniContracts()', () => {
 
     const expectedKeys = ['portal', 'inbox', 'outbox', 'middleman', 'executor']
     expect(Object.keys(omniContracts).sort()).toEqual(expectedKeys.sort())
+  })
+})
+
+describe.concurrent('useOmniAssets()', () => {
+  test('default: returns expected asset shape', async () => {
+    const renderHook = createRenderHook()
+
+    const omniAssetsHook = renderHook(() => {
+      return useOmniAssets()
+    })
+
+    await waitFor(() => {
+      expect(omniAssetsHook.result.current.data).toBeDefined()
+    })
+
+    // biome-ignore lint/style/noNonNullAssertion: safe due to throwing condition above
+    const omniAssets = omniAssetsHook.result.current.data!
+
+    expect(omniAssets).toBeInstanceOf(Array)
+
+    const asset = omniAssets[0]
+    expect(asset).toBeInstanceOf(Object)
+    const expectedKeys = [
+      'address',
+      'chainId',
+      'decimals',
+      'expenseMin',
+      'expenseMax',
+      'enabled',
+      'name',
+      'symbol',
+    ]
+    expect(Object.keys(asset).sort()).toEqual(expectedKeys.sort())
+    expect(asset.enabled).toBeTypeOf('boolean')
+    expect(asset.name).toBeTypeOf('string')
+    expect(asset.symbol).toBeTypeOf('string')
+    expect(asset.address).toBeTypeOf('string')
+    expect(asset.address.startsWith('0x')).toBe(true)
+    expect(asset.decimals).toBeTypeOf('number')
+    expect(asset.chainId).toBeTypeOf('number')
+    expect(asset.expenseMin).toBeTypeOf('bigint')
+    expect(asset.expenseMax).toBeTypeOf('bigint')
+    expect(asset.expenseMin).toBeGreaterThan(0n)
+    expect(asset.expenseMax).toBeGreaterThan(0n)
   })
 })
