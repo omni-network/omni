@@ -26,6 +26,8 @@ jobs:
         with:
           # fetches entire git history for changesets to generate changelogs considering the correct commits
           fetch-depth: 0
+        env:
+          GITHUB_TOKEN: ${{ secrets.CHANGESET_PA_TOKEN }}
 
       - name: Check for SDK changes
         id: sdk_changes
@@ -51,49 +53,18 @@ jobs:
         working-directory: sdk
         run: pnpm install
 
-      - name: Debug Filesystem State
-        run: |
-          echo "--- cwd info ---"
-          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-          echo "CWD before 'Bump versions' step: $(pwd)"
-
-          echo "----"
-          echo "GITHUB_WORKSPACE:"
-          ls -la $GITHUB_WORKSPACE
-
-          echo ""
-          echo "Checking existence of $GITHUB_WORKSPACE/sdk:"
-          if [ -d "$GITHUB_WORKSPACE/sdk" ]; then
-            echo "✅ $GITHUB_WORKSPACE/sdk EXISTS."
-            ls -la $GITHUB_WORKSPACE/sdk
-          else
-            echo "❌ $GITHUB_WORKSPACE/sdk DOES NOT EXIST."
-          fi
-
-          echo ""
-          echo "contents of current PWD ($(pwd)):"
-          ls -la .
-
-          echo ""
-          echo "Checking existence of ./sdk (relative to PWD):"
-          if [ -d "./sdk" ]; then
-            echo "✅ ./sdk (relative to PWD) EXISTS."
-          else
-            echo "❌ ./sdk (relative to PWD) DOES NOT EXIST."
-          fi
-          echo "--- end cwd info ---"
-
       - name: Bump versions
         # if: steps.sdk_changes.outputs.any_changed == 'true'
         uses: changesets/action@v1
-        working-directory: sdk
         with:
+          cwd: ${{ github.workspace }}/sdk
           commit: "chore(sdk): bump versions"
           title: "chore(sdk): bump versions"
           version: "pnpm changeset:version"
+          commitMode: "github-api"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CHANGESET_PA_TOKEN }}
 
       - name: Log no SDK changes
-        # if: steps.sdk_changes.outputs.any_changed != 'true'
+        if: steps.sdk_changes.outputs.any_changed != 'true'
         run: echo "No changes in the sdk/ directory - skipping version bump..."
