@@ -86,7 +86,6 @@ jobs:
       - name: Bump versions
         # if: steps.sdk_changes.outputs.any_changed == 'true'
         uses: changesets/action@v1
-        working-directory: sdk
         with:
           commit: "chore(sdk): bump versions"
           title: "chore(sdk): bump versions"
