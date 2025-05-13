@@ -26,7 +26,11 @@ const resolvedOrder = await openOrder({
 | `inboxAddress`       | `Address`                             | Yes      | The address of the inbox contract, retrieved using the [`getContracts` function](/sdk/core/getContracts).                                                                     |
 | `order`           | `Order`                         | Yes      | [Order parameters](/sdk/core/validateOrder#1-order-parameters-required) |
 | `pollinginterval`       | `number`                             | No      | Polling interval in milliseconds, defaults to the `client` polling interval.                                                                     |
-| `environment`           | `Environment | string`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
+| `environment`           | `Environment`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
+| `gas`                   | `bigint` | No | [Gas limit for the transaction](https://viem.sh/docs/contract/writeContract#gas-optional) |
+| `maxFeePerGas`          | `bigint` | No | [Total fee per gas (in wei)](https://viem.sh/docs/contract/writeContract#maxfeepergas-optional) |
+| `maxPriorityFeePerGas`  | `bigint` | No | [Max priority fee per gas (in wei)](https://viem.sh/docs/contract/writeContract#maxpriorityfeepergas-optional) |
+
 
 ## Return
 
