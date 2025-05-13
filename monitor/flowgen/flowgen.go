@@ -33,6 +33,11 @@ func Start(
 	keyPath string,
 	solverAddress string,
 ) error {
+	if network.ID == netconf.Mainnet {
+		log.Info(ctx, "Skipping flowgen on mainnet")
+		return nil
+	}
+
 	if keyPath == "" {
 		return errors.New("private key is required")
 	}
