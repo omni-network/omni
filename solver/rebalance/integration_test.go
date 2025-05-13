@@ -28,6 +28,7 @@ import (
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
+	"github.com/omni-network/omni/solver/fundthresh"
 	"github.com/omni-network/omni/solver/rebalance"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -183,7 +184,7 @@ func fundUnbalanced(t *testing.T, ctx context.Context, pricer tokenpricer.Pricer
 
 			// filter out tokens we can never surplus
 			toSurplus = filter(toSurplus, func(t tokens.Token) bool {
-				return !rebalance.GetFundThreshold(t).NeverSurplus()
+				return !fundthresh.Get(t).NeverSurplus()
 			})
 
 			// retry, should generally not happen
@@ -208,7 +209,7 @@ func fundUnbalanced(t *testing.T, ctx context.Context, pricer tokenpricer.Pricer
 		price, err := pricer.USDPrice(ctx, token.Asset)
 		tutil.RequireNoError(t, err)
 
-		thresh := rebalance.GetFundThreshold(token)
+		thresh := fundthresh.Get(token)
 		toDeficit := bi.MulF64(oneOf(token), toDeficitUSD/price)
 		toFund := bi.Sub(thresh.Target(), toDeficit)
 
@@ -229,7 +230,7 @@ func fundUnbalanced(t *testing.T, ctx context.Context, pricer tokenpricer.Pricer
 
 	// Fund surplus tokens
 	for _, token := range toSurplus {
-		thresh := rebalance.GetFundThreshold(token)
+		thresh := fundthresh.Get(token)
 		require.False(t, thresh.NeverSurplus())
 
 		toSurplusUSD := totalSurplusUSD / float64(len(toSurplus))

@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/uniswap"
+	"github.com/omni-network/omni/solver/fundthresh"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -230,8 +231,8 @@ func swapTokenSurplusOnce(
 		return errors.Wrap(err, "get surplus")
 	}
 
-	maxSwap := GetFundThreshold(token).MaxSwap()
-	minSwap := GetFundThreshold(token).MinSwap()
+	maxSwap := fundthresh.Get(token).MaxSwap()
+	minSwap := fundthresh.Get(token).MinSwap()
 
 	if bi.IsZero(maxSwap) { // Require max swap.
 		log.Warn(ctx, "No max swap set, skipping", errors.New("missing max swap"), "token", token)
@@ -329,8 +330,8 @@ func fillTokenDeficitOnce(
 		toSwap = surplusUSDC
 	}
 
-	minSwap := GetFundThreshold(usdc).MinSwap()
-	maxSwap := GetFundThreshold(usdc).MaxSwap()
+	minSwap := fundthresh.Get(usdc).MinSwap()
+	maxSwap := fundthresh.Get(usdc).MaxSwap()
 
 	if bi.IsZero(maxSwap) { // Require max swap.
 		log.Warn(ctx, "No max swap set, skipping", errors.New("missing max swap"), "token", usdc)

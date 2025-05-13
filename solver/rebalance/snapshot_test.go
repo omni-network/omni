@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	"github.com/omni-network/omni/lib/tutil"
 	solver "github.com/omni-network/omni/solver/app"
+	"github.com/omni-network/omni/solver/fundthresh"
 	"github.com/omni-network/omni/solver/rebalance"
 )
 
@@ -109,7 +110,7 @@ func TestSnapshot(t *testing.T) {
 			"chain", evmchain.Name(d.token.ChainID),
 			"token", d.token.Asset,
 			"deficit", d.token.FormatAmt(d.amt),
-			"target", d.token.FormatAmt(rebalance.GetFundThreshold(d.token).Target()))
+			"target", d.token.FormatAmt(fundthresh.Get(d.token).Target()))
 	}
 
 	// Log surpluses
@@ -119,7 +120,7 @@ func TestSnapshot(t *testing.T) {
 			"chain", evmchain.Name(s.token.ChainID),
 			"token", s.token.Asset,
 			"surplus", s.token.FormatAmt(s.amt),
-			"surplus_threshold", s.token.FormatAmt(rebalance.GetFundThreshold(s.token).Surplus()))
+			"surplus_threshold", s.token.FormatAmt(fundthresh.Get(s.token).Surplus()))
 	}
 
 	// Log chain deficits
