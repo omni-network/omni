@@ -1,4 +1,5 @@
 export * from './accounts.js'
+export * from './assets.js'
 export * from './clients.js'
 export * from './constants.js'
 export * from './contracts.js'
