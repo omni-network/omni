@@ -6,8 +6,8 @@ prometheus   = true
 
 pinned_halo_tag = "v0.14.1"
 pinned_relayer_tag = "07c4ac7"
-pinned_monitor_tag = "03452ee"
-pinned_solver_tag = "210db56"
+pinned_monitor_tag = "e704542"
+pinned_solver_tag = "e704542"
 
 [node.validator01]
 [node.validator02]
