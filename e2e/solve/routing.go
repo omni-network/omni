@@ -41,7 +41,7 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 		}
 
 		routes := getRoutes(chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
-		routes, err = filterRoutes(ctx, chain, network, backend, addrs.SolverNetInbox, addrs.SolverNetOutbox, routes)
+		routes, err = filterRoutes(ctx, network, backend, addrs.SolverNetInbox, addrs.SolverNetOutbox, routes)
 		if err != nil {
 			return errors.Wrap(err, "filter routes", "chain", chain.Name)
 		}
@@ -106,7 +106,7 @@ func getRoutes(src netconf.Chain, network netconf.Network, inboxAddr common.Addr
 }
 
 // filterRoutes filters out routes that are already configured on a given chain.
-func filterRoutes(ctx context.Context, src netconf.Chain, network netconf.Network, backend *ethbackend.Backend, inboxAddr common.Address, outboxAddr common.Address, routes []Route) ([]Route, error) {
+func filterRoutes(ctx context.Context, network netconf.Network, backend *ethbackend.Backend, inboxAddr common.Address, outboxAddr common.Address, routes []Route) ([]Route, error) {
 	var currentRoutes []Route
 	for _, dest := range network.EVMChains() {
 		callOpts := &bind.CallOpts{Context: ctx}
@@ -126,7 +126,7 @@ func filterRoutes(ctx context.Context, src netconf.Chain, network netconf.Networ
 			return nil, errors.Wrap(err, "bind outbox", "chain", backend.Name())
 		}
 
-		outboxConfig, err := outbox.GetInboxConfig(callOpts, src.ID)
+		outboxConfig, err := outbox.GetInboxConfig(callOpts, dest.ID)
 		if err != nil {
 			return nil, errors.Wrap(err, "get outbox inbox config", "chain", backend.Name())
 		}
