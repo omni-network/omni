@@ -72,34 +72,34 @@ func makeRoutes() []TestRoute {
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
 			{
-				ChainID:     omniStaging.ID,
-				InboxConfig: dummyOutboxAddr,
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           omniStaging.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
-				ChainID:     opSepolia.ID,
-				InboxConfig: dummyOutboxAddr,
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
 				},
 			},
 			{
-				ChainID:     arbSepolia.ID,
-				InboxConfig: dummyOutboxAddr,
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
 				},
 			},
 			// When Sepolia is disabled, it should have a zeroed route.
 			{
-				ChainID:     sepoliaChain.ID,
-				InboxConfig: common.Address{},
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: common.Address{},
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    common.Address{},
 					Provider: solvernet.ProviderNone,
 				},
@@ -118,24 +118,24 @@ func makeRoutes() []TestRoute {
 			/*
 				{
 					ChainID:     opSepolia.ID,
-					InboxConfig: dummyOutboxAddr,
-					OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+					OutboxAddrOnInbox: dummyOutboxAddr,
+					InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 						Inbox:    dummyInboxAddr,
 						Provider: solvernet.ProviderHL,
 					},
 				},
 				{
 					ChainID:     arbSepolia.ID,
-					InboxConfig: dummyOutboxAddr,
-					OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+					OutboxAddrOnInbox: dummyOutboxAddr,
+					InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 						Inbox:    dummyInboxAddr,
 						Provider: solvernet.ProviderHL,
 					},
 				},
 				{
 					ChainID:     sepoliaChain.ID,
-					InboxConfig: dummyOutboxAddr,
-					OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+					OutboxAddrOnInbox: dummyOutboxAddr,
+					InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 						Inbox:    dummyInboxAddr,
 						Provider: solvernet.ProviderNone,
 					},
@@ -143,33 +143,33 @@ func makeRoutes() []TestRoute {
 			*/
 			// When Sepolia is disabled, all outbound routes should be zeroed.
 			{
-				ChainID:     opSepolia.ID,
-				InboxConfig: common.Address{},
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: common.Address{},
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    common.Address{},
 					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
-				ChainID:     arbSepolia.ID,
-				InboxConfig: common.Address{},
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: common.Address{},
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    common.Address{},
 					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
-				ChainID:     sepoliaChain.ID,
-				InboxConfig: common.Address{},
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: common.Address{},
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    common.Address{},
 					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
-				ChainID:     omniStaging.ID,
-				InboxConfig: common.Address{},
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           omniStaging.ID,
+				OutboxAddrOnInbox: common.Address{},
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    common.Address{},
 					Provider: solvernet.ProviderNone,
 				},
@@ -185,25 +185,25 @@ func makeRoutes() []TestRoute {
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
 			{
-				ChainID:     omniStaging.ID,
-				InboxConfig: dummyOutboxAddr,
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           omniStaging.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
 				},
 			},
 			{
-				ChainID:     opSepolia.ID,
-				InboxConfig: dummyOutboxAddr,
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderNone,
 				},
 			},
 			{
-				ChainID:     arbSepolia.ID,
-				InboxConfig: dummyOutboxAddr,
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
 				},
@@ -211,8 +211,8 @@ func makeRoutes() []TestRoute {
 			/*
 				{
 					ChainID:     sepoliaChain.ID,
-					InboxConfig: dummyOutboxAddr,
-					OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+					OutboxAddrOnInbox: dummyOutboxAddr,
+					InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 						Inbox:    dummyInboxAddr,
 						Provider: solvernet.ProviderHL,
 					},
@@ -220,9 +220,9 @@ func makeRoutes() []TestRoute {
 			*/
 			// When Sepolia is disabled, it should have a zeroed route.
 			{
-				ChainID:     sepoliaChain.ID,
-				InboxConfig: common.Address{},
-				OutboxConfig: bindings.ISolverNetOutboxInboxConfig{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: common.Address{},
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    common.Address{},
 					Provider: solvernet.ProviderNone,
 				},

@@ -20,9 +20,9 @@ import (
 
 // Route represents a SolverNet route from a source chain to a destination chain.
 type Route struct {
-	ChainID      uint64
-	InboxConfig  common.Address
-	OutboxConfig bindings.ISolverNetOutboxInboxConfig
+	ChainID             uint64                               // Remote chain ID used for source chain configuration
+	OutboxAddrOnInbox   common.Address                       // Outbox address assigned on the source inbox for ChainID
+	InboxConfigOnOutbox bindings.ISolverNetOutboxInboxConfig // Inbox config assigned on the source outbox for ChainID
 }
 
 // SetSolverNetRoutes sets the SolverNet routes for all chains in a given network.
@@ -40,11 +40,23 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 			return errors.Wrap(err, "get backend", "chain", chain.Name)
 		}
 
+		// Get all expected route configurations for the current chain.
 		routes := getRoutes(chain, network, addrs.SolverNetInbox, addrs.SolverNetOutbox)
+
+		// Filter out routes that are already configured on the current chain.
 		routes, err = filterRoutes(ctx, network, backend, addrs.SolverNetInbox, addrs.SolverNetOutbox, routes)
 		if err != nil {
 			return errors.Wrap(err, "filter routes", "chain", chain.Name)
 		}
+
+		log.Info(ctx, "Expected routes", "chain", chain.Name, "routes", routes)
+
+		if len(routes) == 0 {
+			log.Info(ctx, "No routes to configure", "chain", chain.Name)
+			continue
+		}
+
+		log.Info(ctx, "Routes to configure", "chain", chain.Name, "routes", routes)
 
 		isDeployed, err := checkDeployed(ctx, backend, addrs.SolverNetInbox, addrs.SolverNetOutbox)
 		if !isDeployed || err != nil {
@@ -96,9 +108,9 @@ func getRoutes(src netconf.Chain, network netconf.Network, inboxAddr common.Addr
 		}
 
 		routes = append(routes, Route{
-			ChainID:      dest.ID,
-			InboxConfig:  outboxAddr,
-			OutboxConfig: bindings.ISolverNetOutboxInboxConfig{Inbox: inboxAddr, Provider: provider},
+			ChainID:             dest.ID,
+			OutboxAddrOnInbox:   outboxAddr,
+			InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{Inbox: inboxAddr, Provider: provider},
 		})
 	}
 
@@ -116,7 +128,7 @@ func filterRoutes(ctx context.Context, network netconf.Network, backend *ethback
 			return nil, errors.Wrap(err, "bind inbox", "chain", backend.Name())
 		}
 
-		inboxConfig, err := inbox.GetOutbox(callOpts, dest.ID)
+		outboxAddrOnInbox, err := inbox.GetOutbox(callOpts, dest.ID)
 		if err != nil {
 			return nil, errors.Wrap(err, "get inbox outbox", "chain", backend.Name())
 		}
@@ -126,15 +138,15 @@ func filterRoutes(ctx context.Context, network netconf.Network, backend *ethback
 			return nil, errors.Wrap(err, "bind outbox", "chain", backend.Name())
 		}
 
-		outboxConfig, err := outbox.GetInboxConfig(callOpts, dest.ID)
+		inboxConfigOnOutbox, err := outbox.GetInboxConfig(callOpts, dest.ID)
 		if err != nil {
 			return nil, errors.Wrap(err, "get outbox inbox config", "chain", backend.Name())
 		}
 
 		currentRoutes = append(currentRoutes, Route{
-			ChainID:      dest.ID,
-			InboxConfig:  inboxConfig,
-			OutboxConfig: outboxConfig,
+			ChainID:             dest.ID,
+			OutboxAddrOnInbox:   outboxAddrOnInbox,
+			InboxConfigOnOutbox: inboxConfigOnOutbox,
 		})
 	}
 
@@ -171,6 +183,8 @@ func checkDeployed(ctx context.Context, backend *ethbackend.Backend, inbox commo
 }
 
 // configureInbox configures the routes on a SolverNetInbox contract for a given chain.
+//
+//nolint:dupl // Inbox contract and method are different from outbox contract and method
 func configureInbox(ctx context.Context, backend *ethbackend.Backend, txOpts *bind.TransactOpts, inbox common.Address, routes []Route) error {
 	solverNetInbox, err := bindings.NewSolverNetInbox(inbox, backend)
 	if err != nil {
@@ -187,12 +201,14 @@ func configureInbox(ctx context.Context, backend *ethbackend.Backend, txOpts *bi
 		return errors.Wrap(err, "wait mined", "chain", backend.Name())
 	}
 
-	log.Info(ctx, "SolverNetInbox configured", "addr", inbox.Hex(), "chain", backend.Name(), "block", receipt.BlockNumber, "tx", maybeTxHash(receipt))
+	log.Info(ctx, "SolverNetInbox configured", "addr", inbox.Hex(), "chain", backend.Name(), "dest_chains", chainIDs(routes), "outboxes", outboxes(routes), "block", receipt.BlockNumber, "tx", maybeTxHash(receipt))
 
 	return nil
 }
 
 // configureOutbox configures the routes on a SolverNetOutbox contract for a given chain.
+//
+//nolint:dupl // Outbox contract and method are different from inbox contract and method
 func configureOutbox(ctx context.Context, backend *ethbackend.Backend, txOpts *bind.TransactOpts, outbox common.Address, routes []Route) error {
 	solverNetOutbox, err := bindings.NewSolverNetOutbox(outbox, backend)
 	if err != nil {
@@ -209,7 +225,7 @@ func configureOutbox(ctx context.Context, backend *ethbackend.Backend, txOpts *b
 		return errors.Wrap(err, "wait mined", "chain", backend.Name())
 	}
 
-	log.Info(ctx, "SolverNetOutbox configured", "addr", outbox.Hex(), "chain", backend.Name(), "block", receipt.BlockNumber, "tx", maybeTxHash(receipt))
+	log.Info(ctx, "SolverNetOutbox configured", "addr", outbox.Hex(), "chain", backend.Name(), "dest_chains", chainIDs(routes), "inbox_configs", inboxConfigs(routes), "block", receipt.BlockNumber, "tx", maybeTxHash(receipt))
 
 	return nil
 }
@@ -228,7 +244,7 @@ func chainIDs(routes []Route) []uint64 {
 func outboxes(routes []Route) []common.Address {
 	outboxes := make([]common.Address, 0, len(routes))
 	for _, route := range routes {
-		outboxes = append(outboxes, route.InboxConfig)
+		outboxes = append(outboxes, route.OutboxAddrOnInbox)
 	}
 
 	return outboxes
@@ -238,7 +254,7 @@ func outboxes(routes []Route) []common.Address {
 func inboxConfigs(routes []Route) []bindings.ISolverNetOutboxInboxConfig {
 	inboxConfigs := make([]bindings.ISolverNetOutboxInboxConfig, 0, len(routes))
 	for _, route := range routes {
-		inboxConfigs = append(inboxConfigs, route.OutboxConfig)
+		inboxConfigs = append(inboxConfigs, route.InboxConfigOnOutbox)
 	}
 
 	return inboxConfigs
