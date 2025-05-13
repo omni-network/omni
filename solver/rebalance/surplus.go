@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
+	"github.com/omni-network/omni/solver/fundthresh"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -26,7 +27,7 @@ func GetSurplus(
 		return nil, errors.Wrap(err, "get balance")
 	}
 
-	thresh := GetFundThreshold(token)
+	thresh := fundthresh.Get(token)
 
 	if bi.LTE(balance, thresh.Surplus()) {
 		return bi.Zero(), nil

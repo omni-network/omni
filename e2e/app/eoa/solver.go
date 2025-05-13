@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/solver/fundthresh"
 )
 
 type SolverNetThreshold struct {
@@ -23,18 +24,9 @@ func (t SolverNetThreshold) MinBalance() *big.Int {
 }
 
 var (
-	// solverThresholds defines the solvernet  thresholds RoleSolver: network -> chain -> token -> threshold.
-	solverThresholds = map[netconf.ID]map[uint64]map[tokens.Asset]SolverNetThreshold{
-		netconf.Mainnet: {
-			evmchain.IDEthereum: {
-				tokens.WSTETH: {minEther: 10},     // 10 wstETH
-				tokens.ETH:    {minEther: 70},     // 70 ETH
-				tokens.USDC:   {minDec6: 110_000}, // 110k USDC
-			},
-			evmchain.IDBase: {
-				tokens.USDC: {minDec6: 10_000}, // 10k USDC
-			},
-		},
+	// testnetThresholds defines the testnt solvernet thresholds RoleSolver: network -> chain -> token -> threshold.
+	testnetThresholds = map[netconf.ID]map[uint64]map[tokens.Asset]SolverNetThreshold{
+		// NOTE: mainnet thresholds are defined in solver/fundthresh
 		netconf.Omega: {
 			evmchain.IDHolesky: {
 				tokens.WSTETH: {minEther: 1}, // 1 wstETH
@@ -54,12 +46,31 @@ func SolverNetRoles() []Role {
 }
 
 // GetSolverNetThreshold returns the solvernet threshold for the given role, network, chain, and token.
-func GetSolverNetThreshold(role Role, network netconf.ID, chainID uint64, tkn tokens.Asset) (SolverNetThreshold, bool) {
-	m := map[Role]map[netconf.ID]map[uint64]map[tokens.Asset]SolverNetThreshold{
-		RoleSolver: solverThresholds,
+func GetSolverNetThreshold(role Role, network netconf.ID, chainID uint64, asset tokens.Asset) (SolverNetThreshold, bool) {
+	if network == netconf.Mainnet { // If mainnet, used thresholds defined in solver/fundthresh
+		if role != RoleSolver { // Only RoleSolver has solvernet thresholds
+			return SolverNetThreshold{}, false
+		}
+
+		tkn, ok := tokens.ByAsset(chainID, asset)
+		if !ok {
+			return SolverNetThreshold{}, false
+		}
+
+		minB := fundthresh.Get(tkn).Min()
+
+		if tkn.Decimals == 6 {
+			return SolverNetThreshold{minDec6: bi.ToF64(minB, 6)}, true
+		}
+
+		return SolverNetThreshold{minEther: bi.ToF64(minB, 18)}, true
 	}
 
-	resp, ok := m[role][network][chainID][tkn]
+	m := map[Role]map[netconf.ID]map[uint64]map[tokens.Asset]SolverNetThreshold{
+		RoleSolver: testnetThresholds,
+	}
+
+	resp, ok := m[role][network][chainID][asset]
 
 	return resp, ok
 }

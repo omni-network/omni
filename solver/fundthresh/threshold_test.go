@@ -1,4 +1,4 @@
-package rebalance_test
+package fundthresh_test
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/solver/fundthresh"
 	"github.com/omni-network/omni/solver/rebalance"
 )
 
@@ -17,7 +18,7 @@ func TestThresholdReference(t *testing.T) {
 	golden := make(map[string]map[string]string)
 
 	for _, token := range rebalance.Tokens() {
-		thresh := rebalance.GetFundThreshold(token)
+		thresh := fundthresh.Get(token)
 
 		key := fmt.Sprintf("%s:%s", evmchain.Name(token.ChainID), token.Symbol)
 

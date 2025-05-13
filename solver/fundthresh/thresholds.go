@@ -1,8 +1,4 @@
-// This file mirrors e2e/app/eoa/solver.go and extends
-// The two should be merged in the future, or reconciled in tests.
-//
-
-package rebalance
+package fundthresh
 
 import (
 	"math"
@@ -77,8 +73,8 @@ func (t FundThreshold) balance(f float64) *big.Int {
 	return bi.Ether(f)
 }
 
-// GetFundThreshold returns the fund thesholds for `token`.
-func GetFundThreshold(token tokens.Token) FundThreshold {
+// Get returns the fund thesholds for `token`.
+func Get(token tokens.Token) FundThreshold {
 	t, ok := thresholds[token]
 	if !ok {
 		// If threshold not explicitly set, return 0 target w/ inf surplus.
@@ -198,3 +194,12 @@ var (
 		},
 	}
 )
+
+func mustToken(chainID uint64, asset tokens.Asset) tokens.Token {
+	tkn, ok := tokens.ByAsset(chainID, asset)
+	if !ok {
+		panic("token not found")
+	}
+
+	return tkn
+}

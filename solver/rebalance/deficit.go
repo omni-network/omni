@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
+	"github.com/omni-network/omni/solver/fundthresh"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -30,7 +31,7 @@ func GetDeficit(
 		return nil, errors.Wrap(err, "get balance")
 	}
 
-	thresh := GetFundThreshold(token)
+	thresh := fundthresh.Get(token)
 
 	if bi.GTE(balance, thresh.Target()) {
 		// Balance > target, no deficit.
@@ -100,7 +101,7 @@ func GetUSDChainDeficit(
 			return nil, errors.Wrap(err, "get surplus")
 		}
 
-		if bi.LT(sTkn, GetFundThreshold(token).MinSwap()) {
+		if bi.LT(sTkn, fundthresh.Get(token).MinSwap()) {
 			// If surplus < min swap, don't deduct from deficit.
 			// We cannot use it to fill deficit.
 			continue

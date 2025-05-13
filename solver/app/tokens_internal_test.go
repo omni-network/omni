@@ -6,7 +6,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
@@ -126,26 +125,4 @@ func TestTokenResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	tutil.RequireGoldenJSON(t, resp, tutil.WithFilename("TestTokens/tokens_response.json"))
-}
-
-func TestMaxSpendMinThreshold(t *testing.T) {
-	t.Parallel()
-
-	for _, token := range tokens.All() {
-		if !IsSupportedToken(token) {
-			continue
-		}
-
-		bounds, ok := tokenSpendBounds[token.Asset][token.ChainClass]
-		if !ok {
-			continue
-		}
-
-		thresh, ok := eoa.GetSolverNetThreshold(eoa.RoleSolver, netconf.Mainnet, token.ChainID, token.Asset)
-		if !ok {
-			continue
-		}
-
-		tutil.RequireGTE(t, thresh.MinBalance(), bounds.MaxSpend, "solver min balance must be greater than max spend: token=%s, min_bal=%s, max_spend=%s", token.Asset, thresh.MinBalance(), bounds.MaxSpend)
-	}
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
+	"github.com/omni-network/omni/solver/fundthresh"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -64,7 +65,7 @@ func monitorChainOnce(
 	chainName := evmchain.Name(chainID)
 
 	for _, token := range tokens.ByChain(chainID) {
-		thresh := GetFundThreshold(token)
+		thresh := fundthresh.Get(token)
 
 		balance, err := tokenutil.BalanceOf(ctx, client, token, solver)
 		if err != nil {
