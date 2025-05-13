@@ -194,10 +194,17 @@ contract SolverNetPostUpgradeTest is Test {
 
     function _executeAndTransfer(uint64[] calldata chainIds) internal {
         bytes memory executeAndTransferParams = abi.encode(address(0), user, address(refunder), "");
-        _fillOrder(
-            address(0), ISolverNetExecutor.executeAndTransfer.selector, 1 ether, executeAndTransferParams, chainIds
-        );
-        assertEq(user.balance, 1 ether, "user should have 1 ETH after last order"); // `vm.deal` overwrites balance with each fill iteration
+        for (uint256 i; i < chainIds.length; ++i) {
+            uint64[] memory _chainIds = new uint64[](1);
+            _chainIds[0] = chainIds[i];
+
+            vm.deal(user, 0); // Wipe user balance before each fill
+            _fillOrder(
+                address(0), ISolverNetExecutor.executeAndTransfer.selector, 1 ether, executeAndTransferParams, _chainIds
+            );
+
+            assertEq(user.balance, 1 ether, "user should have 1 ETH after last order");
+        }
     }
 
     function _executeAndTransfer721(uint64[] calldata chainIds) internal {
