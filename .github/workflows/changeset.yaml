@@ -86,8 +86,8 @@ jobs:
       - name: Bump versions
         # if: steps.sdk_changes.outputs.any_changed == 'true'
         uses: changesets/action@v1
-        working-directory: sdk
         with:
+          cwd: ${{ github.workspace }}/sdk
           commit: "chore(sdk): bump versions"
           title: "chore(sdk): bump versions"
           version: "pnpm changeset:version"
