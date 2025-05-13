@@ -197,7 +197,7 @@ contract SolverNetPostUpgradeTest is Test {
         _fillOrder(
             address(0), ISolverNetExecutor.executeAndTransfer.selector, 1 ether, executeAndTransferParams, chainIds
         );
-        assertEq(user.balance, 1 ether * chainIds.length, "user should receive 1 ETH per origin chain order");
+        assertEq(user.balance, 1 ether, "user should have 1 ETH after last order"); // `vm.deal` overwrites balance with each fill iteration
     }
 
     function _executeAndTransfer721(uint64[] calldata chainIds) internal {
