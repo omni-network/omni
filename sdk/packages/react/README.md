@@ -6,7 +6,7 @@ The Omni SDK contains React hooks for interfacing with Omni SolverNet, your gate
 
 The SDK in its current form has peer dependencies on `viem`, `wagmi`, and `react-query`. In future, we plan to build additional setups that don't have the same dependencies.
 
-Note - given we're in alpha, we're still making improvements, particularly on e2e type safety, testing, and documentation. If you have any feedback or requests, please reach out to us (telegram below).
+Note - we're constantly making improvements, particularly on e2e type safety, testing, and documentation. If you have any feedback or requests, please reach out to us (telegram below).
 
 ## Documentation
 
