@@ -138,6 +138,7 @@ contract SolverNetPostUpgradeTest is Test {
         inbox.open{ value: 1 ether }(order);
     }
 
+    // `value` is shared between deposit and call to avoid stack too deep
     function _fillOrder(address target, bytes4 selector, uint256 value, bytes memory params, uint64[] memory chainIds)
         internal
     {
@@ -185,7 +186,7 @@ contract SolverNetPostUpgradeTest is Test {
 
             vm.deal(solver, value + fillFee);
             vm.prank(solver);
-            outbox.fill{ value: fillFee }(orderId, abi.encode(fillOriginData), abi.encode(solver));
+            outbox.fill{ value: value + fillFee }(orderId, abi.encode(fillOriginData), abi.encode(solver));
 
             assertTrue(outbox.didFill(orderId, abi.encode(fillOriginData)), "order should be filled");
         }
