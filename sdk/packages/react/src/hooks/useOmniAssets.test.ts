@@ -17,7 +17,7 @@ test('default: returns assets when API call succeeds', async () => {
   await waitFor(() => expect(result.current.isPending).toBe(false))
 
   expect(result.current.isSuccess).toBe(true)
-  expect(result.current.data).toEqual(testAssets) // 'assets' should be your mock asset data
+  expect(result.current.data).toEqual(testAssets)
 })
 
 test('behaviour: handles API error gracefully', async () => {
