@@ -493,6 +493,12 @@ func upgradeSolverNetExecutor(ctx context.Context, s shared, network netconf.Net
 
 	var chainIDs []uint64
 	for _, dest := range network.EVMChains() {
+		// Use solvernet.Provider to determine if the route is valid, chainIds are used in post-upgrade tests
+		_, ok := solvernet.Provider(c.ChainID, dest.ID)
+		if !ok {
+			continue
+		}
+
 		chainIDs = append(chainIDs, dest.ID)
 	}
 
