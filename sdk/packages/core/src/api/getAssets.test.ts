@@ -13,7 +13,9 @@ const expected = testAssets.map((asset) => ({
 
 test('default: returns assets with parsed hex values', async () => {
   const fetchJSONSpy = vi.spyOn(api, 'fetchJSON')
-  fetchJSONSpy.mockResolvedValueOnce(testAssets)
+  fetchJSONSpy.mockResolvedValueOnce({
+    tokens: testAssets,
+  })
 
   await expect(getAssets({ environment: 'http://localhost' })).resolves.toEqual(
     expected,

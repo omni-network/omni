@@ -4,7 +4,7 @@ import type { Asset } from '../types/asset.js'
 import type { Environment } from '../types/config.js'
 import { getApiUrl } from '../utils/getApiUrl.js'
 
-export function isAssets(json: unknown): json is Asset[] {
+export function isAssets(json: unknown): json is Record<string, Asset[]> {
   function _isAssetObj(item: unknown): boolean {
     if (typeof item !== 'object' || item === null) {
       return false
@@ -36,7 +36,13 @@ export function isAssets(json: unknown): json is Asset[] {
     return false
   }
 
-  return json !== null && Array.isArray(json) && json.every(_isAssetObj)
+  return (
+    json !== null &&
+    typeof json === 'object' &&
+    'tokens' in json &&
+    Array.isArray(json.tokens) &&
+    json.tokens.every(_isAssetObj)
+  )
 }
 
 export type GetAssetsParameters = {
@@ -51,5 +57,5 @@ export async function getAssets(
 
   if (!isAssets(json)) throw new Error('Unexpected /tokens response')
 
-  return json
+  return json.tokens
 }
