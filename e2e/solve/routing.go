@@ -76,10 +76,13 @@ func SetSolverNetRoutes(ctx context.Context, network netconf.Network, backends e
 				return errors.Wrap(err, "configure inbox", "chain", _chain.Name)
 			}
 
-			err = configureOutbox(childCtx, backend, txOpts, addrs.SolverNetOutbox, routes)
-			if err != nil {
-				return errors.Wrap(err, "configure outbox", "chain", _chain.Name)
-			}
+			// This is temporarily paused as we need to apply a config to the inbox only.
+			/*
+				err = configureOutbox(childCtx, backend, txOpts, addrs.SolverNetOutbox, routes)
+				if err != nil {
+					return errors.Wrap(err, "configure outbox", "chain", _chain.Name)
+				}
+			*/
 
 			return nil
 		})
@@ -183,8 +186,7 @@ func checkDeployed(ctx context.Context, backend *ethbackend.Backend, inbox commo
 }
 
 // configureInbox configures the routes on a SolverNetInbox contract for a given chain.
-//
-//nolint:dupl // Inbox contract and method are different from outbox contract and method
+// nolint:dupl // Inbox contract and method are different from outbox contract and method
 func configureInbox(ctx context.Context, backend *ethbackend.Backend, txOpts *bind.TransactOpts, inbox common.Address, routes []Route) error {
 	solverNetInbox, err := bindings.NewSolverNetInbox(inbox, backend)
 	if err != nil {
@@ -206,6 +208,7 @@ func configureInbox(ctx context.Context, backend *ethbackend.Backend, txOpts *bi
 	return nil
 }
 
+/*
 // configureOutbox configures the routes on a SolverNetOutbox contract for a given chain.
 //
 //nolint:dupl // Outbox contract and method are different from inbox contract and method
@@ -229,6 +232,7 @@ func configureOutbox(ctx context.Context, backend *ethbackend.Backend, txOpts *b
 
 	return nil
 }
+*/
 
 // chainIDs returns the chain IDs of the routes.
 func chainIDs(routes []Route) []uint64 {
@@ -250,6 +254,7 @@ func outboxes(routes []Route) []common.Address {
 	return outboxes
 }
 
+/*
 // inboxConfigs returns the inbox configs of the routes.
 func inboxConfigs(routes []Route) []bindings.ISolverNetOutboxInboxConfig {
 	inboxConfigs := make([]bindings.ISolverNetOutboxInboxConfig, 0, len(routes))
@@ -259,3 +264,4 @@ func inboxConfigs(routes []Route) []bindings.ISolverNetOutboxInboxConfig {
 
 	return inboxConfigs
 }
+*/
