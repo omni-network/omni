@@ -133,3 +133,37 @@ test('behaviour: sets the order value to zero when the deposit token address is 
     ],
   })
 })
+
+test('behaviour: supports viem transaction options', async () => {
+  writeContract.mockResolvedValueOnce('0xtxHash')
+  vi.spyOn(encode, 'encodeOrderData').mockReturnValueOnce('0xencodedOrder')
+
+  await expect(
+    sendOrder({
+      client: mockL1Client,
+      inboxAddress: '0xaddress',
+      order: { ...testOrder, deposit: { token: '0x123', amount: 4n } },
+      gas: 100000n,
+      maxFeePerGas: 100000n,
+      maxPriorityFeePerGas: 100000n,
+    }),
+  ).resolves.toEqual('0xtxHash')
+  expect(writeContract).toHaveBeenLastCalledWith(mockL1Client, {
+    abi: inboxABI,
+    address: '0xaddress',
+    functionName: 'open',
+    account: mockL1Client.account,
+    chain: mockL1Client.chain,
+    value: 0n,
+    args: [
+      {
+        fillDeadline: expect.any(Number),
+        orderDataType: typeHash,
+        orderData: '0xencodedOrder',
+      },
+    ],
+    gas: 100000n,
+    maxFeePerGas: 100000n,
+    maxPriorityFeePerGas: 100000n,
+  })
+})

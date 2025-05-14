@@ -14,6 +14,10 @@ export type SendOrderParameters<abis extends OptionalAbis> = {
   client: Client
   inboxAddress: Address
   order: Order<abis>
+  // Viem transaction options
+  gas?: bigint
+  maxFeePerGas?: bigint
+  maxPriorityFeePerGas?: bigint
 }
 
 export type SendOrderReturn = WriteContractReturnType
@@ -21,7 +25,7 @@ export type SendOrderReturn = WriteContractReturnType
 export async function sendOrder<abis extends OptionalAbis>(
   params: SendOrderParameters<abis>,
 ): Promise<SendOrderReturn> {
-  const { client, inboxAddress, order } = params
+  const { client, inboxAddress, order, ...transactionOptions } = params
 
   if (client.account == null) {
     throw new AccountRequiredError(
@@ -33,6 +37,7 @@ export async function sendOrder<abis extends OptionalAbis>(
     order.deposit.token == null || order.deposit.token === zeroAddress
 
   return await writeContract(client, {
+    ...transactionOptions,
     abi: inboxABI,
     address: inboxAddress,
     functionName: 'open',

@@ -27,7 +27,7 @@ const generator = await generateOrder({
 | `inboxAddress`       | `Address`                             | Yes      | The address of the inbox contract, retrieved using the [`getContracts` function](/sdk/core/getContracts).                                                                     |
 | `order`           | `Order`                         | Yes      | [Order parameters](/sdk/core/validateOrder#1-order-parameters-required) |
 | `pollinginterval`       | `number`                             | No      | Polling interval in milliseconds, defaults to the `client` polling interval.                                                                     |
-| `environment`           | `Environment | string`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
+| `environment`           | `Environment`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
 
 ## Return
 
