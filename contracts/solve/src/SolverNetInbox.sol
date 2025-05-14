@@ -152,15 +152,6 @@ contract SolverNetInbox is
     }
 
     /**
-     * @notice Returns the outbox address for the given chain ID.
-     * @param chainId ID of the chain.
-     * @return outbox Outbox address.
-     */
-    function getOutbox(uint64 chainId) external view returns (address) {
-        return _outboxes[chainId];
-    }
-
-    /**
      * @notice Initialize the contract's owner and solver.
      * @dev Used instead of constructor as we want to use the transparent upgradeable proxy pattern.
      * @param owner_  Address of the owner.
@@ -169,6 +160,15 @@ contract SolverNetInbox is
     function initialize(address owner_, address solver_) external initializer {
         _initializeOwner(owner_);
         _grantRoles(solver_, SOLVER);
+    }
+
+    /**
+     * @notice Returns the outbox address for the given chain ID.
+     * @param chainId ID of the chain.
+     * @return outbox Outbox address.
+     */
+    function getOutbox(uint64 chainId) external view returns (address) {
+        return _outboxes[chainId];
     }
 
     /**

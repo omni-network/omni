@@ -8,6 +8,7 @@
     "@omni-network/core": "workspace:*",
     "@omni-network/react": "workspace:*",
     "@tanstack/react-query": "catalog:",
+    "ethers": "^6.11.1",
     "react": "catalog:",
     "react-dom": "catalog:",
     "viem": "catalog:",

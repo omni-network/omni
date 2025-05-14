@@ -176,6 +176,7 @@ func (db *DB) getMsgUnsafe(ctx context.Context, txHash common.Hash) (*MsgSendUSD
 // MsgFilter contains optional filters for GetMsgsBy.
 type MsgFilter struct {
 	DestChainID uint64          // Filter by destination chain ID.
+	SrcChainID  uint64          // Filter by source chain ID.
 	Status      types.MsgStatus // Filter by message status.
 }
 
@@ -209,6 +210,11 @@ func (db *DB) GetMsgsBy(ctx context.Context, filter MsgFilter) ([]types.MsgSendU
 
 		// Filter by DestChainID
 		if filter.DestChainID != 0 && msg.DestChainID != filter.DestChainID {
+			continue
+		}
+
+		// Filter by SrcChainID
+		if filter.SrcChainID != 0 && msg.SrcChainID != filter.SrcChainID {
 			continue
 		}
 
