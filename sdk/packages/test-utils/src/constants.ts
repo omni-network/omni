@@ -29,7 +29,6 @@ export const tokenAddress =
 export const invalidTokenAddress =
   '0x1234000000000000000000000000000000000000' as const
 export const outbox = '0x29d9e8faa760841aacbe79a8632c1f42e0a858e6' as const
-export const middleman = '0x1b99E432d5F9e8110102b8d3DcE2d0b462a37942' as const
 export const executor = '0xe73fbea025982dcb008c689669a60468d23b1eab' as const
 export const vault = '0x81487c7b22a0babadC98D5cA1d7D21240beB14Cc' as const
 

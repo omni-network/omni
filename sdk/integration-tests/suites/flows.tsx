@@ -11,7 +11,6 @@ import {
   createClient,
   inbox,
   invalidTokenAddress,
-  middleman,
   mintOMNI,
   mockL1Chain,
   mockL1Id,
@@ -444,7 +443,7 @@ describe.concurrent('ETH transfer orders', () => {
   })
 
   describe.sequential(
-    'behaviour: successfully processes ETH deposit via middleman contract',
+    'behaviour: successfully processes ETH deposit via executor contract',
     () => {
       const account = getNextAccount()
       const amount = parseEther('1')
@@ -500,7 +499,6 @@ describe.concurrent('ETH transfer orders', () => {
             token: zeroAddress,
             to: account.address,
           },
-          middlemanAddress: middleman,
         })
 
         const order = {
@@ -576,7 +574,6 @@ describe.concurrent('ETH transfer orders', () => {
             token: zeroAddress,
             to: account.address,
           },
-          middlemanAddress: middleman,
         })
 
         const order = {

@@ -16,6 +16,5 @@ test('type: useOmniContracts', () => {
   if (result.data) {
     expectTypeOf(result.data.inbox).toBeString()
     expectTypeOf(result.data.outbox).toBeString()
-    expectTypeOf(result.data.middleman).toBeString()
   }
 })
