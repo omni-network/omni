@@ -35,6 +35,7 @@ contract SolverNetPostUpgradeTest is Test {
         require(mode == VmSafe.CallerMode.None, "no broadcast");
 
         _setupInbox(addr);
+        _checkInboxConfigs();
         _openOrder();
     }
 
@@ -45,7 +46,7 @@ contract SolverNetPostUpgradeTest is Test {
         require(mode == VmSafe.CallerMode.None, "no broadcast");
 
         _setupOutbox(addr);
-        _checkInboxConfigs(chainIds, configs);
+        _checkOutboxConfigs(chainIds, configs);
         _fillOrder(address(milady), MockERC721.mintTo.selector, 0, abi.encode(user), chainIds);
 
         assertEq(milady.balanceOf(user), chainIds.length, "user should receive 1 NFT per origin chain order");
@@ -93,7 +94,11 @@ contract SolverNetPostUpgradeTest is Test {
         _setupOutbox(executor.outbox());
     }
 
-    function _checkInboxConfigs(uint64[] calldata chainIds, ISolverNetOutbox.InboxConfig[] calldata configs)
+    function _checkInboxConfigs() internal view {
+        assertTrue(inbox.getOutbox(uint64(block.chainid)) != address(0), "outbox should be set");
+    }
+
+    function _checkOutboxConfigs(uint64[] calldata chainIds, ISolverNetOutbox.InboxConfig[] calldata configs)
         internal
         view
     {
