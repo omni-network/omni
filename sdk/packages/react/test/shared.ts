@@ -49,6 +49,7 @@ export const oneEth = parseEther('1')
 export const contracts: OmniContracts = {
   inbox: '0x123',
   outbox: '0x456',
+  middleman: '0x789',
 }
 export const orderId = toHex(toBytes(1n, { size: 32 }))
 export const originData = '0x123456' as const

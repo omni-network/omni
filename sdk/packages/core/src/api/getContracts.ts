@@ -8,7 +8,8 @@ function isContracts(json: unknown): json is OmniContracts {
   return (
     contracts != null &&
     typeof contracts.inbox === 'string' &&
-    typeof contracts.outbox === 'string'
+    typeof contracts.outbox === 'string' &&
+    typeof contracts.middleman === 'string'
   )
 }
 
