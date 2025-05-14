@@ -15,7 +15,7 @@ func pauseSolverNetAll(ctx context.Context, s shared, c chain, addr common.Addre
 
 	log.Info(ctx, action+" all on SolverNetInbox...", "chain", c.Name, "addr", addr)
 
-	calldata, err := adminABI.Pack("pauseSolverNetAll", s.manager, addr, pause)
+	calldata, err := solverNetAdminABI.Pack("pauseSolverNetAll", s.manager, addr, pause)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
@@ -36,7 +36,7 @@ func pauseSolverNetOpen(ctx context.Context, s shared, c chain, addr common.Addr
 
 	log.Info(ctx, action+" open on SolverNetInbox...", "chain", c.Name, "addr", addr)
 
-	calldata, err := adminABI.Pack("pauseSolverNetOpen", s.manager, addr, pause)
+	calldata, err := solverNetAdminABI.Pack("pauseSolverNetOpen", s.manager, addr, pause)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
@@ -57,7 +57,7 @@ func pauseSolverNetClose(ctx context.Context, s shared, c chain, addr common.Add
 
 	log.Info(ctx, action+" close on SolverNetInbox...", "chain", c.Name, "addr", addr)
 
-	calldata, err := adminABI.Pack("pauseSolverNetClose", s.manager, addr, pause)
+	calldata, err := solverNetAdminABI.Pack("pauseSolverNetClose", s.manager, addr, pause)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}

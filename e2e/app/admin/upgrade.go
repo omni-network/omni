@@ -397,7 +397,7 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c c
 		portal = common.Address{}
 	}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, portal, mailbox, initializer)
+	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, portal, mailbox, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
@@ -448,7 +448,7 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 		portal = common.Address{}
 	}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, addrs.SolverNetExecutor, portal, mailbox, initializer, chainIDs, inboxes)
+	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, addrs.SolverNetExecutor, portal, mailbox, initializer, chainIDs, inboxes)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
@@ -473,7 +473,7 @@ func upgradeSolverNetMiddleman(ctx context.Context, s shared, _ netconf.Network,
 		return errors.Wrap(err, "get addrs")
 	}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetMiddleman", s.upgrader, s.deployer, addrs.SolverNetMiddleman, initializer)
+	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetMiddleman", s.upgrader, s.deployer, addrs.SolverNetMiddleman, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
@@ -509,7 +509,7 @@ func upgradeSolverNetExecutor(ctx context.Context, s shared, network netconf.Net
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetExecutor", s.upgrader, s.deployer, addrs.SolverNetExecutor, addrs.SolverNetOutbox, initializer, chainIDs)
+	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetExecutor", s.upgrader, s.deployer, addrs.SolverNetExecutor, addrs.SolverNetOutbox, initializer, chainIDs)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
