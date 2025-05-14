@@ -69,4 +69,20 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Rejected);
         assertEq(token1.balanceOf(user), defaultAmount, "deposit should have been returned to the user");
     }
+
+    function test_reject_hyperlane() public {
+        address impl = address(new SolverNetInbox(address(0), address(mailboxes[uint32(srcChainId)])));
+        inbox = SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
+        inbox.initialize(address(this), solver);
+        setRoutes(ISolverNetOutbox.Provider.Hyperlane);
+
+        uint256 snapshot = vm.snapshot();
+        test_reject_reverts();
+        vm.revertTo(snapshot);
+
+        test_reject_nativeDeposit_succeeds();
+        vm.revertTo(snapshot);
+
+        test_reject_erc20Deposit_succeeds();
+    }
 }

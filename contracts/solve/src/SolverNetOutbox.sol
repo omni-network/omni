@@ -11,7 +11,7 @@ import { ISolverNetOutbox } from "./interfaces/ISolverNetOutbox.sol";
 import { SolverNetExecutor } from "./SolverNetExecutor.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { FixedPointMathLib } from "solady/src/utils/FixedPointMathLib.sol";
-import { TypeMax } from "core/src/libraries/TypeMax.sol";
+import { TypeMax } from "./lib/TypeMax.sol";
 import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";

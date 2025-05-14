@@ -12,7 +12,6 @@ import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
-import { IOmniPortalPausable } from "core/src/interfaces/IOmniPortalPausable.sol";
 
 /**
  * @title SolverNetInbox
@@ -334,7 +333,6 @@ contract SolverNetInbox is
         uint256 buffer = header.destChainId == block.chainid ? 0 : CLOSE_BUFFER;
         if (state.status != Status.Pending) revert OrderNotPending();
         if (header.owner != msg.sender) revert Unauthorized();
-        if (IOmniPortalPausable(address(omni)).isPaused(ACTION_XSUBMIT, header.destChainId)) revert PortalPaused();
         if (header.fillDeadline + buffer >= block.timestamp) revert OrderStillValid();
 
         _upsertOrder(id, Status.Closed, 0, msg.sender);
