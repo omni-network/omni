@@ -1,10 +1,9 @@
 import type { Abi, Address } from 'viem'
-import { encodeFunctionData } from 'viem'
-import { middlemanABI } from '../constants/abis.js'
+import { encodeFunctionData, zeroAddress } from 'viem'
+import { executorABI } from '../constants/abis.js'
 import type { Call } from '../types/order.js'
 
 type WithExecAndTransferParameters = {
-  readonly middlemanAddress: Address
   readonly call: Call<Abi>
   readonly transfer: {
     readonly to: Address
@@ -38,14 +37,14 @@ type WithExecAndTransferParameters = {
  */
 export function withExecAndTransfer(
   params: WithExecAndTransferParameters,
-): Call<typeof middlemanABI> {
+): Call<typeof executorABI> {
   const { call, transfer } = params
   const _callData = encodeFunctionData({ ...call })
 
   return {
     ...call,
-    abi: middlemanABI,
-    target: params.middlemanAddress,
+    abi: executorABI,
+    target: zeroAddress,
     functionName: 'executeAndTransfer',
     args: [transfer.token, transfer.to, call.target, _callData],
   }
