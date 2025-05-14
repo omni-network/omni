@@ -12,7 +12,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/stretchr/testify/require"
 )
@@ -151,10 +151,10 @@ func (k testBankKeeper) BurnCoins(ctx context.Context, moduleName string, amt sd
 
 type testAccountKeeper struct{}
 
-func (testAccountKeeper) GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI {
-	return &types.BaseAccount{}
+func (testAccountKeeper) GetAccount(context.Context, sdk.AccAddress) sdk.AccountI {
+	return &authtypes.BaseAccount{}
 }
 
-func (testAccountKeeper) GetModuleAccount(ctx context.Context, moduleName string) sdk.ModuleAccountI {
-	return types.NewModuleAccount(&types.BaseAccount{}, "fake", "staking")
+func (testAccountKeeper) GetModuleAccount(context.Context, string) sdk.ModuleAccountI {
+	return authtypes.NewModuleAccount(&authtypes.BaseAccount{}, "fake", authtypes.Staking, authtypes.Burner)
 }
