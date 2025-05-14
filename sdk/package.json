@@ -7,7 +7,7 @@
   "packageManager": "pnpm@9.12.1",
   "scripts": {
     "build": "pnpm run --r --filter \"./packages/**\" build",
-    "changeset:prepublish": "pnpm build",
+    "changeset:prepublish": "pnpm clean && pnpm build",
     "changeset:publish": "pnpm changeset:prepublish && changeset publish",
     "changeset:version": "changeset version && pnpm version:bump && pnpm check",
     "check": "biome check --write",
