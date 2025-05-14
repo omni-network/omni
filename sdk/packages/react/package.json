@@ -21,8 +21,6 @@
     "build:ts": "tsc -p tsconfig.build.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "coverage": "vitest run --coverage",
-    "prepublishOnly": "pnpm build",
-    "publish": "pnpm publish",
     "test": "vitest run"
   },
   "files": [

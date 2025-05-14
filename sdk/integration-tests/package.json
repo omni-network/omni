@@ -1,6 +1,7 @@
 {
   "name": "integration-tests",
   "type": "module",
+  "private": true,
   "scripts": {
     "test": "vitest run"
   },
