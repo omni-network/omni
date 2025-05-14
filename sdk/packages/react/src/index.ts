@@ -1,4 +1,5 @@
 ////// HOOKS //////
+export { useOmniAssets } from './hooks/useOmniAssets.js'
 export { useOmniContracts } from './hooks/useOmniContracts.js'
 export { useOrder } from './hooks/useOrder.js'
 export { useQuote } from './hooks/useQuote.js'
