@@ -11,6 +11,7 @@ import {
   createClient,
   inbox,
   invalidTokenAddress,
+  middleman,
   mintOMNI,
   mockL1Chain,
   mockL1Id,
@@ -499,6 +500,7 @@ describe.concurrent('ETH transfer orders', () => {
             token: zeroAddress,
             to: account.address,
           },
+          middlemanAddress: middleman,
         })
 
         const order = {
@@ -574,6 +576,7 @@ describe.concurrent('ETH transfer orders', () => {
             token: zeroAddress,
             to: account.address,
           },
+          middlemanAddress: middleman,
         })
 
         const order = {
