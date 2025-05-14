@@ -28,6 +28,10 @@ contract Distribution is OwnableUpgradeable {
      */
     uint256 public constant Fee = 0.1 ether;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @notice Initialize the contract, used for fresh deployment
      */
