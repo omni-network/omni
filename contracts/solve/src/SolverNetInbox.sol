@@ -154,12 +154,23 @@ contract SolverNetInbox is
     /**
      * @notice Initialize the contract's owner and solver.
      * @dev Used instead of constructor as we want to use the transparent upgradeable proxy pattern.
+     *      `reinitializer(2)` is set so fresh deployments lock out `initializeV2`, which is only needed to set state on existing deployments.
      * @param owner_  Address of the owner.
      * @param solver_ Address of the solver.
      */
-    function initialize(address owner_, address solver_) external initializer {
+    function initialize(address owner_, address solver_) external reinitializer(2) {
         _initializeOwner(owner_);
         _grantRoles(solver_, SOLVER);
+    }
+
+    /**
+     * @notice Set the outbox address for the local chain.
+     * @dev Necessary as a local assignment in _outboxes is required. Only needed on existing deployments.
+     * @param outbox Address of the outbox.
+     */
+    function initializeV2(address outbox) external reinitializer(2) {
+        _outboxes[uint64(block.chainid)] = outbox;
+        emit OutboxSet(uint64(block.chainid), outbox);
     }
 
     /**
