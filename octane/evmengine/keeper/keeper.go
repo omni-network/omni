@@ -286,8 +286,9 @@ func (k *Keeper) getOptimisticPayload() (engine.PayloadID, uint64, time.Time) {
 	return k.mutablePayload.ID, k.mutablePayload.Height, k.mutablePayload.UpdatedAt
 }
 
-// withdrawalsEqual returns true only if two non-nil slices contain identical
-// withdrawals in identical order.
+// withdrawalsEqual returns true if both slices have the same length and
+// contain identical withdrawals in identical order. Both nil and empty slices
+// are considered equal. Returns false if either slice contains nil element.
 func withdrawalsEqual(w1, w2 []*etypes.Withdrawal) bool {
 	if len(w1) != len(w2) {
 		return false

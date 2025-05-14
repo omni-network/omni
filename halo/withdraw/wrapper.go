@@ -51,12 +51,9 @@ func (w *BankWrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Conte
 func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
 	log.Debug(ctx, "Undelegating coins from module to account", "sender", senderModule, "recipient", recipientAddr, "coins", coins)
 
-	acc := w.ak.GetModuleAccount(ctx, senderModule)
-	if acc == nil {
+	if acc := w.ak.GetModuleAccount(ctx, senderModule); acc == nil {
 		return errors.New("module account does not exist [BUG]", "module_name", senderModule)
-	}
-
-	if !acc.HasPermission(authtypes.Staking) {
+	} else if !acc.HasPermission(authtypes.Staking) {
 		return errors.New("module account does not have permissions to undelegate coins", "module_name", senderModule)
 	}
 
@@ -66,6 +63,12 @@ func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, se
 // SendCoinsFromModuleToAccount intercepts all "normal" bank transfers from modules to users and
 // creates EVM withdrawal to the user account and burns the funds from the module.
 func (w *BankWrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
+	if acc := w.ak.GetModuleAccount(ctx, senderModule); acc == nil {
+		return errors.New("module account does not exist [BUG]", "module_name", senderModule)
+	} else if !acc.HasPermission(authtypes.Burner) {
+		return errors.New("module account does not have permissions to burn coins", "module_name", senderModule)
+	}
+
 	acc := w.ak.GetAccount(ctx, recipientAddr)
 	if acc == nil {
 		return errors.New("recipient account does not exist [BUG]", "recipient_addr", recipientAddr)
@@ -78,6 +81,8 @@ func (w *BankWrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderMo
 
 	if w.EVMEngineKeeper == nil {
 		return errors.New("nil EVMEngineKeeper [BUG]")
+	} else if anyAmountNil(coins) {
+		return errors.New("invalid nil amount [BUG]")
 	} else if !coins.IsValid() { // This ensures amounts are positive
 		return errors.New("invalid coins [BUG]")
 	} else if len(coins) != 1 {
@@ -121,4 +126,17 @@ func toGwei(amount math.Int) (gwei uint64, wei uint64, err error) { //nolint:non
 	}
 
 	return gweiInt.Uint64(), weiInt.Uint64(), nil
+}
+
+// anyAmountNil returns true if any coin has a nil amount.
+// This was raised during SigmaPrime audit that found that
+// coins.Valid will panic if any coin has nil amount.
+func anyAmountNil(coins sdk.Coins) bool {
+	for _, coin := range coins {
+		if coin.Amount.IsNil() {
+			return true
+		}
+	}
+
+	return false
 }

@@ -416,7 +416,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 		amountCoin,
 		stypes.Description{Moniker: createValidator.Validator.Hex()},
 		stypes.NewCommissionRates(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
-		math.NewInt(1)) // Stub out minimum self delegation for now, just use 1.
+		math.NewInt(1)) // Omni has trusted validator set, so use minimum valid minSelfDelegation.
 	if err != nil {
 		return errors.Wrap(err, "create validator message")
 	}
