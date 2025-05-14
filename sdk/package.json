@@ -11,6 +11,7 @@
     "changeset:publish": "pnpm changeset:prepublish && changeset publish",
     "changeset:version": "changeset version && pnpm version:bump && pnpm check",
     "check": "biome check --write",
+    "clean": "pnpm run --r --parallel clean && rm -rf packages/**/*.json.tmp",
     "dev:react": "pnpm --filter react-example dev",
     "postinstall": "pnpm run build",
     "test:unit": "pnpm run --filter '@omni-network/*' test",
