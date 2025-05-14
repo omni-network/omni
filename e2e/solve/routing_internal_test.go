@@ -27,21 +27,14 @@ var (
 	dummyOutboxAddr = common.HexToAddress("0x2222222222222222222222222222222222222222")
 
 	// Core Only.
-	omniStaging = netconf.Chain{
-		ID:   evmchain.IDOmniDevnet,
+	omniOmega = netconf.Chain{
+		ID:   evmchain.IDOmniOmega,
 		Name: "omni_evm",
 	}
 
-	// Core + Hyperlane.
-	opSepolia = netconf.Chain{
-		ID:   evmchain.IDOpSepolia,
-		Name: "op_sepolia",
-	}
-
-	// Core + Hyperlane.
-	arbSepolia = netconf.Chain{
-		ID:   evmchain.IDArbSepolia,
-		Name: "arb_sepolia",
+	omniStaging = netconf.Chain{
+		ID:   evmchain.IDOmniDevnet,
+		Name: "omni_evm",
 	}
 
 	// Hyperlane only.
@@ -50,13 +43,49 @@ var (
 		Name: "sepolia",
 	}
 
-	network = netconf.Network{
+	// Core + Hyperlane.
+	holesky = netconf.Chain{
+		ID:   evmchain.IDHolesky,
+		Name: "holesky",
+	}
+
+	baseSepolia = netconf.Chain{
+		ID:   evmchain.IDBaseSepolia,
+		Name: "base_sepolia",
+	}
+
+	arbSepolia = netconf.Chain{
+		ID:   evmchain.IDArbSepolia,
+		Name: "arb_sepolia",
+	}
+
+	opSepolia = netconf.Chain{
+		ID:   evmchain.IDOpSepolia,
+		Name: "op_sepolia",
+	}
+
+	// Networks.
+	stagingNetwork = netconf.Network{
 		ID: netconf.Staging,
 		Chains: []netconf.Chain{
 			omniStaging,
-			opSepolia,
+			holesky,
+			baseSepolia,
 			arbSepolia,
 			sepoliaChain,
+			opSepolia,
+		},
+	}
+
+	omegaNetwork = netconf.Network{
+		ID: netconf.Omega,
+		Chains: []netconf.Chain{
+			omniOmega,
+			holesky,
+			baseSepolia,
+			arbSepolia,
+			sepoliaChain,
+			opSepolia,
 		},
 	}
 )
@@ -64,10 +93,13 @@ var (
 func makeRoutes() []TestRoute {
 	var routes []TestRoute
 
+	// --- Staging Network Test Cases ---
+
+	// Source: Omni Staging (Core-only)
 	routes = append(routes, TestRoute{
-		name:        "Omni EVM (Core-only)",
+		name:        "Omni Staging (Core-only) to Staging Network",
 		sourceChain: omniStaging,
-		network:     network,
+		network:     stagingNetwork,
 		inboxAddr:   dummyInboxAddr,
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
@@ -80,7 +112,15 @@ func makeRoutes() []TestRoute {
 				},
 			},
 			{
-				ChainID:           opSepolia.ID,
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
@@ -95,19 +135,214 @@ func makeRoutes() []TestRoute {
 					Provider: solvernet.ProviderCore,
 				},
 			},
+			// No route to sepoliaChain (HL-only) from omniStaging (Core-only)
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
 		},
 	})
 
+	// Source: Holesky (Core+HL)
 	routes = append(routes, TestRoute{
-		name:        "Sepolia (Hyperlane-only)",
+		name:        "Holesky (Core+HL) to Staging Network",
+		sourceChain: holesky,
+		network:     stagingNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			{
+				ChainID:           omniStaging.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+		},
+	})
+
+	// Source: Base Sepolia (Core+HL)
+	routes = append(routes, TestRoute{
+		name:        "Base Sepolia (Core+HL) to Staging Network",
+		sourceChain: baseSepolia,
+		network:     stagingNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			{
+				ChainID:           omniStaging.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
+			{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+		},
+	})
+
+	// Source: Arbitrum Sepolia (Core+HL)
+	routes = append(routes, TestRoute{
+		name:        "Arbitrum Sepolia (Core+HL) to Staging Network",
+		sourceChain: arbSepolia,
+		network:     stagingNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			{
+				ChainID:           omniStaging.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
+			{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+		},
+	})
+
+	// Source: Sepolia (HL-only)
+	routes = append(routes, TestRoute{
+		name:        "Sepolia (HL-only) to Staging Network",
 		sourceChain: sepoliaChain,
-		network:     network,
+		network:     stagingNetwork,
 		inboxAddr:   dummyInboxAddr,
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
-			// Omni EVM (Core) should be skipped
+			// No route to omniStaging (Core-only) from sepoliaChain (HL-only)
 			{
-				ChainID:           opSepolia.ID,
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
@@ -130,13 +365,22 @@ func makeRoutes() []TestRoute {
 					Provider: solvernet.ProviderNone,
 				},
 			},
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
 		},
 	})
 
+	// Source: OP Sepolia (Core+HL)
 	routes = append(routes, TestRoute{
-		name:        "OP Sepolia (Core + Hyperlane)",
+		name:        "OP Sepolia (Core+HL) to Staging Network",
 		sourceChain: opSepolia,
-		network:     network,
+		network:     stagingNetwork,
 		inboxAddr:   dummyInboxAddr,
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
@@ -149,7 +393,187 @@ func makeRoutes() []TestRoute {
 				},
 			},
 			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
 				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
+		},
+	})
+
+	// --- Omega Network Test Cases ---
+
+	// Source: Omni Omega (Core-only)
+	routes = append(routes, TestRoute{
+		name:        "Omni Omega (Core-only) to Omega Network",
+		sourceChain: omniOmega,
+		network:     omegaNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			{
+				ChainID:           omniOmega.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
+			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			// No route to sepoliaChain (HL-only) from omniOmega (Core-only)
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+		},
+	})
+
+	// Source: Holesky (Core+HL) on Omega Network
+	routes = append(routes, TestRoute{
+		name:        "Holesky (Core+HL) to Omega Network",
+		sourceChain: holesky,
+		network:     omegaNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			{
+				ChainID:           omniOmega.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+		},
+	})
+
+	// Source: Base Sepolia (Core+HL) on Omega Network
+	routes = append(routes, TestRoute{
+		name:        "Base Sepolia (Core+HL) to Omega Network",
+		sourceChain: baseSepolia,
+		network:     omegaNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			{
+				ChainID:           omniOmega.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
@@ -170,6 +594,184 @@ func makeRoutes() []TestRoute {
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+		},
+	})
+
+	// Source: Arbitrum Sepolia (Core+HL) on Omega Network
+	routes = append(routes, TestRoute{
+		name:        "Arbitrum Sepolia (Core+HL) to Omega Network",
+		sourceChain: arbSepolia,
+		network:     omegaNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			{
+				ChainID:           omniOmega.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
+			{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+		},
+	})
+
+	// Source: Sepolia (HL-only) on Omega Network
+	routes = append(routes, TestRoute{
+		name:        "Sepolia (HL-only) to Omega Network",
+		sourceChain: sepoliaChain,
+		network:     omegaNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			// No route to omniOmega (Core-only) from sepoliaChain (HL-only)
+			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+		},
+	})
+
+	// Source: OP Sepolia (Core+HL) on Omega Network
+	routes = append(routes, TestRoute{
+		name:        "OP Sepolia (Core+HL) to Omega Network",
+		sourceChain: opSepolia,
+		network:     omegaNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			{
+				ChainID:           omniOmega.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           sepoliaChain.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
 				},
 			},
 		},
