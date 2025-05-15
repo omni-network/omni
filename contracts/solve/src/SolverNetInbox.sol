@@ -563,6 +563,7 @@ contract SolverNetInbox is
         } else {
             uint256 balance = deposit.token.balanceOf(address(this));
             deposit.token.safeTransferFrom(msg.sender, address(this), deposit.amount);
+            // If we received less tokens than expected (max transfer value override or fee on transfer), revert
             if (deposit.token.balanceOf(address(this)) < balance + deposit.amount) revert InvalidERC20Deposit();
         }
     }
