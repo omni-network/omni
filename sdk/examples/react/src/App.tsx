@@ -7,8 +7,8 @@ function App() {
   return (
     <>
       <Account />
-      <Order />
       <Quote />
+      <Order />
     </>
   )
 }
@@ -56,8 +56,10 @@ function Account() {
 function Quote() {
   const account = useAccount()
   const quote = useQuote({
-    srcChainId: baseSepolia.id,
-    destChainId: holesky.id,
+    srcChainId: holesky.id,
+    destChainId: baseSepolia.id,
+    // srcChainId: baseSepolia.id,
+    // destChainId: holesky.id,
     deposit: { amount: parseEther('0.1'), isNative: true },
     expense: { isNative: true },
     mode: 'expense',
@@ -66,7 +68,7 @@ function Quote() {
 
   return (
     <div>
-      <h2>Order</h2>
+      <h2>Quote</h2>
       {account?.address ? (
         <>
           <h4>Quote swap amount</h4>
@@ -90,13 +92,16 @@ function Quote() {
 }
 
 function Order() {
-  const expectedSrcChainId = baseSepolia.id
+  const expectedSrcChainId = holesky.id
+  // const expectedSrcChainId = baseSepolia.id
   const account = useAccount()
   const { switchChain } = useSwitchChain()
   const order = useOrder({
     owner: account?.address,
-    srcChainId: baseSepolia.id,
-    destChainId: holesky.id,
+    srcChainId: holesky.id,
+    destChainId: baseSepolia.id,
+    // srcChainId: baseSepolia.id,
+    // destChainId: holesky.id,
     deposit: { amount: parseEther('0.1') },
     expense: {
       amount: parseEther('0.099'),
@@ -133,6 +138,7 @@ function Order() {
           <div>isError: {order.isError}</div>
           <div>error: {order.error?.message}</div>
           <div>orderId: {order.orderId}</div>
+          <div>destTxHash: {order.destTxHash}</div>
           <button
             onClick={() => order.open()}
             disabled={

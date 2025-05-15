@@ -10,3 +10,7 @@ The example runs on testnet, using the baseSepolia and holesky chains, but feel 
 pnpm install
 pnpm dev
 ```
+
+## NOTE:
+
+Occasionally, watching the destination 'Fill' event will fail if using a public RPC provider. This is due to the event not being parsed correctly, but the order will still be filled and we'll set the status as such.

@@ -4,9 +4,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { renderHook } from '../../test/index.js'
 import { useWatchDidFill } from './useWatchDidFill.js'
 
-const mockOnError = vi.fn()
 const unwatch = vi.fn()
-let onError: ((error: Error) => void) | undefined
 const testLogs: Log[] = [
   {
     logIndex: 0,
@@ -18,8 +16,7 @@ const testLogs: Log[] = [
 
 const { watchDidFill } = vi.hoisted(() => {
   return {
-    watchDidFill: vi.fn().mockImplementation((params) => {
-      onError = params.onError
+    watchDidFill: vi.fn().mockImplementation(() => {
       return unwatch
     }),
   }
@@ -32,9 +29,7 @@ vi.mock('@omni-network/core', async () => {
 
 beforeEach(() => {
   watchDidFill.mockClear()
-  mockOnError.mockClear()
   unwatch.mockClear()
-  onError = undefined
 })
 
 test('default: returns destTxHash when core api triggers onLogs callback', async () => {
@@ -42,7 +37,6 @@ test('default: returns destTxHash when core api triggers onLogs callback', async
     (orderId?: Hex) =>
       useWatchDidFill({
         destChainId: 1,
-        onError: mockOnError,
         orderId,
       }),
     { mockContractsCall: true },
@@ -54,7 +48,6 @@ test('default: returns destTxHash when core api triggers onLogs callback', async
   expect(watchDidFill).not.toHaveBeenCalled()
 
   watchDidFill.mockImplementation((params) => {
-    onError = params.onError
     params.onLogs(testLogs)
     return unwatch
   })
@@ -63,8 +56,6 @@ test('default: returns destTxHash when core api triggers onLogs callback', async
 
   await waitFor(() => {
     expect(watchDidFill).toHaveBeenCalledTimes(1)
-    expect(onError).toBeDefined()
-    expect(onError).toBe(mockOnError)
     expect(result.current.destTxHash).toBe('0x123')
     expect(result.current.status).toBe('success')
   })
@@ -72,6 +63,27 @@ test('default: returns destTxHash when core api triggers onLogs callback', async
   result.current.unwatch()
 
   expect(unwatch).toHaveBeenCalledTimes(1)
+})
+
+test('behaviour: error and status are set when core api triggers onError callback', async () => {
+  const error = new Error('Test error')
+  watchDidFill.mockImplementation((params) => {
+    params.onError?.(error)
+    return unwatch
+  })
+
+  const { result } = renderHook(() =>
+    useWatchDidFill({
+      destChainId: 1,
+      orderId: '0xOrderId',
+    }),
+  )
+
+  await waitFor(() => {
+    expect(result.current.error).toBe(error)
+    expect(result.current.status).toBe('error')
+    expect(result.current.destTxHash).toBeUndefined()
+  })
 })
 
 test('params: watchDidFill is not called when orderId is undefined', async () => {

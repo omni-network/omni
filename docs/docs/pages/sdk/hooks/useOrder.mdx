@@ -3,9 +3,15 @@ sidebar_position: 2
 title: useOrder
 ---
 
+import { Callout } from 'vocs/components'
+
 # `useOrder`
 
 After obtaining a valid quote with [`useQuote`](/sdk/hooks/useQuote), the `useOrder` hook is used to execute the actual cross-chain transaction via Omni SolverNet. It takes the details confirmed in the quote, validates them, and provides a function (`open`) to initiate the process and monitor its status.
+
+<Callout type="warning" title="Note">
+Fetching the destination chain transaction hash may fail if you're using a public RPC provider. Internally, we use viems watchContractEvent to listen for the `Fill` event, but this isn't reliable when working with public RPCs. It's strongly recommended to use a private RPC provider anyway, to prevent instability or rate limiting issues.
+</Callout>
 
 ## Usage
 
@@ -105,6 +111,7 @@ The `useOrder` hook returns an object with the following properties:
 | `isTxSubmitted` | `boolean`                             | `true` once the source chain transaction has been submitted (part of `'opening'` status).                                              |
 | `txMutation`    | `UseMutationResult<...>`              | The raw mutation result object from `wagmi` for the opening transaction.                                                               |
 | `txHash`        | `Hex \| undefined`                   | The hash of the source chain transaction used to open the order.                                                                       |
+| `destTxHash`    | `Hex \| undefined`                   | The hash of the destination chain transaction that filled the order.                                                                       |
 | `waitForTx`     | `UseWaitForTransactionReceiptReturnType` | The result object from `wagmi`'s `useWaitForTransactionReceipt` for the opening transaction.                                           |
 | `isReady`       | `boolean`                             | `true` when the hook is initialized and ready to attempt opening the order (status is `'ready'`). Does *not* imply validation passed. |
 
