@@ -1,17 +1,16 @@
-import type {
-  DidFillError,
-  OptionalAbis,
-  Order,
-  OrderStatus,
-  ParseOpenEventError,
-  SendOrderReturn,
-} from '@omni-network/core'
 import {
+  type DidFillError,
   GetOrderError,
   LoadContractsError,
   OpenError,
+  type OptionalAbis,
+  type Order,
+  type OrderStatus,
+  type ParseOpenEventError,
+  type SendOrderReturn,
   TxReceiptError,
   ValidateOrderError,
+  type WatchDidFillError,
   sendOrder,
 } from '@omni-network/core'
 import {
@@ -57,6 +56,7 @@ type UseOrderError =
   | OpenError
   | TxReceiptError
   | GetOrderError
+  | WatchDidFillError
   | DidFillError
   | ValidateOrderError
   | ParseOpenEventError
@@ -68,6 +68,8 @@ type UseOrderReturnType = {
   orderId?: Hex
   validation?: UseValidateOrderResult
   txHash?: Hex
+  destTxHash?: Hex
+  unwatchDestTx?: () => void
   error?: UseOrderError
   status: UseOrderStatus
   isTxPending: boolean
@@ -127,7 +129,6 @@ export function useOrder<abis extends OptionalAbis>(
     srcChainId,
     destChainId: order.destChainId,
     orderId: resolvedOrder?.orderId,
-    resolvedOrder,
   })
 
   const status = deriveStatus(
@@ -154,6 +155,8 @@ export function useOrder<abis extends OptionalAbis>(
     orderId: resolvedOrder?.orderId,
     validation,
     txHash: txMutation.data,
+    destTxHash: orderStatus.destTxHash,
+    unwatchDestTx: orderStatus.unwatchDestTx,
     error,
     status,
     isError: !!error,
@@ -220,7 +223,7 @@ function deriveError(params: DeriveErrorParams): UseOrderError {
 // deriveStatus returns a status derived from open tx, inbox and outbox statuses
 function deriveStatus(
   contracts: UseOmniContractsResult,
-  orderStatus: OrderStatus, // TODO rename
+  orderStatus: OrderStatus,
   txStatus: UseWriteContractReturnType['status'],
   receiptStatus: UseWaitForTransactionReceiptReturnType['status'],
   receiptFetchStatus: UseWaitForTransactionReceiptReturnType['fetchStatus'],

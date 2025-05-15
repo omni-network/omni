@@ -110,7 +110,7 @@ Only available when `isError` is `true`.
 if (res.isError) res.error
 ```
 
-Use the `quote` return (specifically `quote.deposit.amount` and `quote.expense.amount`) to inform the parameters for [`useOrder`](/sdk/hooks/useOrder.md).
+Use the `quote` return (specifically `quote.deposit.amount` and `quote.expense.amount`) to inform the parameters for [`useOrder`](/sdk/hooks/useOrder.mdx).
 
 ## Examples
 

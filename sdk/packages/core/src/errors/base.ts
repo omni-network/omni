@@ -21,6 +21,10 @@ export class GetOrderError extends BaseError {
   override name = 'GetOrderError' as const
 }
 
+export class WatchDidFillError extends BaseError {
+  override name = 'WatchDidFillError' as const
+}
+
 export class DidFillError extends BaseError {
   override name = 'DidFillError' as const
 }

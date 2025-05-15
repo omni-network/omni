@@ -10,3 +10,7 @@ The example runs on testnet, using the baseSepolia and holesky chains, but feel 
 pnpm install
 pnpm dev
 ```
+
+## NOTE:
+
+Fetching the destination chain transaction hash may fail if you're using a public RPC provider. Internally, we use viems watchContractEvent to listen for the `Fill` event, but this isn't reliable when working with public RPCs. It's strongly recommended to use a private RPC provider anyway, to prevent instability or rate limiting issues.

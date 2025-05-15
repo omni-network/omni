@@ -8,30 +8,32 @@ export type UseWatchDidFillParams = {
   destChainId: number
   orderId?: Hex
   pollingInterval?: number
-  onError?: (error: Error) => void
 }
 
 export type UseWatchDidFillReturn = {
   unwatch: () => void
-  status: 'idle' | 'pending' | 'success'
+  status: 'idle' | 'pending' | 'success' | 'error'
   destTxHash?: Hex
+  error?: Error
 }
 
 export function useWatchDidFill({
   destChainId,
   orderId,
   pollingInterval,
-  onError,
 }: UseWatchDidFillParams): UseWatchDidFillReturn {
   const unwatchRef = useRef<(() => void) | undefined>()
   const [destTxHash, setDestTxHash] = useState<Hex | undefined>()
+  const [error, setError] = useState<Error | undefined>()
   const client = useClient({ chainId: destChainId })
   const outboxAddress = useOmniContracts().data?.outbox
   const status = destTxHash
     ? 'success'
-    : unwatchRef.current
-      ? 'pending'
-      : 'idle'
+    : error
+      ? 'error'
+      : unwatchRef.current
+        ? 'pending'
+        : 'idle'
 
   const unwatch = useCallback(() => {
     unwatchRef.current?.()
@@ -40,9 +42,10 @@ export function useWatchDidFill({
 
   useEffect(() => {
     unwatch()
+    setError(undefined)
+    setDestTxHash(undefined)
 
     if (!client || !orderId || !outboxAddress) return
-    setDestTxHash(undefined)
 
     unwatchRef.current = watchDidFill({
       client,
@@ -52,12 +55,15 @@ export function useWatchDidFill({
         setDestTxHash(logs[0].transactionHash ?? undefined)
         unwatch()
       },
+      onError: (error) => {
+        setError(error)
+        unwatch()
+      },
       pollingInterval,
-      onError,
     })
 
     return unwatch
-  }, [client, outboxAddress, orderId, pollingInterval, onError, unwatch])
+  }, [client, outboxAddress, orderId, pollingInterval, unwatch])
 
-  return { destTxHash, unwatch, status }
+  return { destTxHash, unwatch, status, error }
 }
