@@ -13,6 +13,7 @@ import { IOmniPortal } from "core/src/interfaces/IOmniPortal.sol";
 import { IMailbox } from "@hyperlane-xyz/core/contracts/interfaces/IMailbox.sol";
 import { MockERC20 } from "test/utils/MockERC20.sol";
 import { MaxTransferToken } from "test/utils/MaxTransferToken.sol";
+import { FeeOnTransferToken } from "test/utils/FeeOnTransferToken.sol";
 import { MockVault } from "test/utils/MockVault.sol";
 import { MockMultiTokenVault } from "test/utils/MockMultiTokenVault.sol";
 import { MockPortal } from "core/test/utils/MockPortal.sol";
@@ -43,6 +44,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     MockERC20 token1;
     MockERC20 token2;
     MaxTransferToken maxTransferToken;
+    FeeOnTransferToken feeOnTransferToken;
 
     MockVault nativeVault;
     MockVault erc20Vault;
@@ -78,6 +80,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
         token1 = new MockERC20("Token 1", "TKN1");
         token2 = new MockERC20("Token 2", "TKN2");
         maxTransferToken = new MaxTransferToken();
+        feeOnTransferToken = new FeeOnTransferToken();
 
         nativeVault = new MockVault(address(0));
         erc20Vault = new MockVault(address(token2));

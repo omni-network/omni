@@ -56,7 +56,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         vm.prank(user);
         inbox.open{ value: defaultAmount }(order);
 
-        // Should revert if less tokens are received than expected
+        // Should revert if less tokens are received than expected due to max transfer balance override
         orderData.expenses = originalExpenses;
         orderData.deposit = SolverNet.Deposit({ token: address(maxTransferToken), amount: type(uint96).max });
         order.orderData = abi.encode(orderData);
@@ -64,6 +64,17 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         maxTransferToken.mint(user, 1 ether);
         vm.startPrank(user);
         maxTransferToken.approve(address(inbox), type(uint256).max);
+        vm.expectRevert(ISolverNetInbox.InvalidERC20Deposit.selector);
+        inbox.open(order);
+        vm.stopPrank();
+
+        // Should revert if less tokens are received than expected due to fee on transfer
+        orderData.deposit = SolverNet.Deposit({ token: address(feeOnTransferToken), amount: 1 ether });
+        order.orderData = abi.encode(orderData);
+
+        feeOnTransferToken.mint(user, 1 ether);
+        vm.startPrank(user);
+        feeOnTransferToken.approve(address(inbox), type(uint256).max);
         vm.expectRevert(ISolverNetInbox.InvalidERC20Deposit.selector);
         inbox.open(order);
         vm.stopPrank();
