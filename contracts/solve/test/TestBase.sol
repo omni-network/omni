@@ -106,7 +106,8 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     }
 
     function fillHash(bytes32 orderId, bytes memory originData) internal pure returns (bytes32) {
-        return keccak256(abi.encode(orderId, originData));
+        SolverNet.FillOriginData memory fillOriginData = abi.decode(originData, (SolverNet.FillOriginData));
+        return keccak256(abi.encode(orderId, fillOriginData));
     }
 
     function fundUser(SolverNet.OrderData memory orderData) internal {
