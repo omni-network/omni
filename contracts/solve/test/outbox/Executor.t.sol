@@ -70,6 +70,12 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         SolverNetInbox(address(executor)).markFilled(bytes32(0), bytes32(0), address(0));
     }
 
+    function test_onERC721Received_succeeds() public {
+        milady.mint();
+        milady.safeTransferFrom(address(this), address(executor), 1);
+        assertEq(milady.ownerOf(1), address(executor), "executor should have received the Milady NFT");
+    }
+
     function test_approve_succeeds() public {
         vm.prank(address(outbox));
         executor.approve(address(token1), user, 1 ether);
