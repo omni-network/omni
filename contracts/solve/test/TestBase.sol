@@ -22,6 +22,7 @@ import { SolverNet } from "src/lib/SolverNet.sol";
 
 import { Test, console2 } from "forge-std/Test.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
+import { Receiver } from "solady/src/accounts/Receiver.sol";
 import { FixedPointMathLib } from "solady/src/utils/FixedPointMathLib.sol";
 import { AddrUtils } from "src/lib/AddrUtils.sol";
 import { Create3 } from "core/src/deploy/Create3.sol";

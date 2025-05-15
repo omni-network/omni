@@ -65,6 +65,11 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         executor.executeAndTransfer721{ value: 1 ether }(address(0), 0, user, address(reverter), "");
     }
 
+    function test_fallback_reverts() public {
+        vm.expectRevert(Receiver.FnSelectorNotRecognized.selector);
+        SolverNetInbox(address(executor)).markFilled(bytes32(0), bytes32(0), address(0));
+    }
+
     function test_approve_succeeds() public {
         vm.prank(address(outbox));
         executor.approve(address(token1), user, 1 ether);
