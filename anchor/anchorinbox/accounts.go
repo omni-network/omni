@@ -10,6 +10,7 @@ import (
 
 type InboxStateAccount struct {
 	Admin           ag_solanago.PublicKey
+	ChainId         uint64
 	DeployedAt      uint64
 	Bump            uint8
 	CloseBufferSecs int64
@@ -25,6 +26,11 @@ func (obj InboxStateAccount) MarshalWithEncoder(encoder *ag_binary.Encoder) (err
 	}
 	// Serialize `Admin` param:
 	err = encoder.Encode(obj.Admin)
+	if err != nil {
+		return err
+	}
+	// Serialize `ChainId` param:
+	err = encoder.Encode(obj.ChainId)
 	if err != nil {
 		return err
 	}
@@ -65,6 +71,11 @@ func (obj *InboxStateAccount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (
 	if err != nil {
 		return err
 	}
+	// Deserialize `ChainId`:
+	err = decoder.Decode(&obj.ChainId)
+	if err != nil {
+		return err
+	}
 	// Deserialize `DeployedAt`:
 	err = decoder.Decode(&obj.DeployedAt)
 	if err != nil {
@@ -84,15 +95,19 @@ func (obj *InboxStateAccount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (
 }
 
 type OrderStateAccount struct {
-	OrderId     ag_solanago.PublicKey
-	Status      Status
-	Owner       ag_solanago.PublicKey
-	CreatedAt   int64
-	ClosableAt  int64
-	ClaimableBy ag_solanago.PublicKey
-	Bump        uint8
-	Deposit     TokenAmount
-	Expense     TokenAmount
+	OrderId       ag_solanago.PublicKey
+	Status        Status
+	Owner         ag_solanago.PublicKey
+	CreatedAt     int64
+	ClosableAt    int64
+	ClaimableBy   ag_solanago.PublicKey
+	Bump          uint8
+	DepositAmount uint64
+	DepositMint   ag_solanago.PublicKey
+	DestChainId   uint64
+	DestCall      EVMCall
+	DestExpense   EVMTokenExpense
+	FillHash      ag_solanago.PublicKey
 }
 
 var OrderStateAccountDiscriminator = [8]byte{60, 123, 67, 162, 96, 43, 173, 225}
@@ -138,13 +153,33 @@ func (obj OrderStateAccount) MarshalWithEncoder(encoder *ag_binary.Encoder) (err
 	if err != nil {
 		return err
 	}
-	// Serialize `Deposit` param:
-	err = encoder.Encode(obj.Deposit)
+	// Serialize `DepositAmount` param:
+	err = encoder.Encode(obj.DepositAmount)
 	if err != nil {
 		return err
 	}
-	// Serialize `Expense` param:
-	err = encoder.Encode(obj.Expense)
+	// Serialize `DepositMint` param:
+	err = encoder.Encode(obj.DepositMint)
+	if err != nil {
+		return err
+	}
+	// Serialize `DestChainId` param:
+	err = encoder.Encode(obj.DestChainId)
+	if err != nil {
+		return err
+	}
+	// Serialize `DestCall` param:
+	err = encoder.Encode(obj.DestCall)
+	if err != nil {
+		return err
+	}
+	// Serialize `DestExpense` param:
+	err = encoder.Encode(obj.DestExpense)
+	if err != nil {
+		return err
+	}
+	// Serialize `FillHash` param:
+	err = encoder.Encode(obj.FillHash)
 	if err != nil {
 		return err
 	}
@@ -200,13 +235,33 @@ func (obj *OrderStateAccount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (
 	if err != nil {
 		return err
 	}
-	// Deserialize `Deposit`:
-	err = decoder.Decode(&obj.Deposit)
+	// Deserialize `DepositAmount`:
+	err = decoder.Decode(&obj.DepositAmount)
 	if err != nil {
 		return err
 	}
-	// Deserialize `Expense`:
-	err = decoder.Decode(&obj.Expense)
+	// Deserialize `DepositMint`:
+	err = decoder.Decode(&obj.DepositMint)
+	if err != nil {
+		return err
+	}
+	// Deserialize `DestChainId`:
+	err = decoder.Decode(&obj.DestChainId)
+	if err != nil {
+		return err
+	}
+	// Deserialize `DestCall`:
+	err = decoder.Decode(&obj.DestCall)
+	if err != nil {
+		return err
+	}
+	// Deserialize `DestExpense`:
+	err = decoder.Decode(&obj.DestExpense)
+	if err != nil {
+		return err
+	}
+	// Deserialize `FillHash`:
+	err = decoder.Decode(&obj.FillHash)
 	if err != nil {
 		return err
 	}

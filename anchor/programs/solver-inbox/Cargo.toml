@@ -21,4 +21,7 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 [dependencies]
 anchor-lang = "0.31.0"
 anchor-spl = "0.31.1"
+ethabi-solana = "1.0.0"
+hex = "0.4.3"
 sha2 = "0.10.9"
+uint = "0.10.0"

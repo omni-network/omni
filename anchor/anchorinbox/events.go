@@ -13,27 +13,21 @@ import (
 	"strings"
 )
 
-type EventClaimedEventData struct {
-	OrderId    ag_solanago.PublicKey
-	OrderState ag_solanago.PublicKey
-	Status     Status
+type EventUpdatedEventData struct {
+	OrderId ag_solanago.PublicKey
+	Status  Status
 }
 
-var EventClaimedEventDataDiscriminator = [8]byte{151, 103, 226, 237, 202, 18, 97, 190}
+var EventUpdatedEventDataDiscriminator = [8]byte{238, 86, 17, 103, 12, 182, 141, 61}
 
-func (obj EventClaimedEventData) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+func (obj EventUpdatedEventData) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
 	// Write account discriminator:
-	err = encoder.WriteBytes(EventClaimedEventDataDiscriminator[:], false)
+	err = encoder.WriteBytes(EventUpdatedEventDataDiscriminator[:], false)
 	if err != nil {
 		return err
 	}
 	// Serialize `OrderId` param:
 	err = encoder.Encode(obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Serialize `OrderState` param:
-	err = encoder.Encode(obj.OrderState)
 	if err != nil {
 		return err
 	}
@@ -45,27 +39,22 @@ func (obj EventClaimedEventData) MarshalWithEncoder(encoder *ag_binary.Encoder) 
 	return nil
 }
 
-func (obj *EventClaimedEventData) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+func (obj *EventUpdatedEventData) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
 	// Read and check account discriminator:
 	{
 		discriminator, err := decoder.ReadTypeID()
 		if err != nil {
 			return err
 		}
-		if !discriminator.Equal(EventClaimedEventDataDiscriminator[:]) {
+		if !discriminator.Equal(EventUpdatedEventDataDiscriminator[:]) {
 			return fmt.Errorf(
 				"wrong discriminator: wanted %s, got %s",
-				"[151 103 226 237 202 18 97 190]",
+				"[238 86 17 103 12 182 141 61]",
 				fmt.Sprint(discriminator[:]))
 		}
 	}
 	// Deserialize `OrderId`:
 	err = decoder.Decode(&obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Deserialize `OrderState`:
-	err = decoder.Decode(&obj.OrderState)
 	if err != nil {
 		return err
 	}
@@ -77,218 +66,10 @@ func (obj *EventClaimedEventData) UnmarshalWithDecoder(decoder *ag_binary.Decode
 	return nil
 }
 
-func (*EventClaimedEventData) isEventData() {}
+func (*EventUpdatedEventData) isEventData() {}
 
-type EventClosedEventData struct {
-	OrderId    ag_solanago.PublicKey
-	OrderState ag_solanago.PublicKey
-	Status     Status
-}
-
-var EventClosedEventDataDiscriminator = [8]byte{136, 138, 5, 113, 129, 202, 80, 85}
-
-func (obj EventClosedEventData) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
-	// Write account discriminator:
-	err = encoder.WriteBytes(EventClosedEventDataDiscriminator[:], false)
-	if err != nil {
-		return err
-	}
-	// Serialize `OrderId` param:
-	err = encoder.Encode(obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Serialize `OrderState` param:
-	err = encoder.Encode(obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Serialize `Status` param:
-	err = encoder.Encode(obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (obj *EventClosedEventData) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
-	// Read and check account discriminator:
-	{
-		discriminator, err := decoder.ReadTypeID()
-		if err != nil {
-			return err
-		}
-		if !discriminator.Equal(EventClosedEventDataDiscriminator[:]) {
-			return fmt.Errorf(
-				"wrong discriminator: wanted %s, got %s",
-				"[136 138 5 113 129 202 80 85]",
-				fmt.Sprint(discriminator[:]))
-		}
-	}
-	// Deserialize `OrderId`:
-	err = decoder.Decode(&obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Deserialize `OrderState`:
-	err = decoder.Decode(&obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Deserialize `Status`:
-	err = decoder.Decode(&obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (*EventClosedEventData) isEventData() {}
-
-type EventMarkFilledEventData struct {
-	OrderId    ag_solanago.PublicKey
-	OrderState ag_solanago.PublicKey
-	Status     Status
-}
-
-var EventMarkFilledEventDataDiscriminator = [8]byte{31, 79, 180, 35, 225, 64, 132, 162}
-
-func (obj EventMarkFilledEventData) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
-	// Write account discriminator:
-	err = encoder.WriteBytes(EventMarkFilledEventDataDiscriminator[:], false)
-	if err != nil {
-		return err
-	}
-	// Serialize `OrderId` param:
-	err = encoder.Encode(obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Serialize `OrderState` param:
-	err = encoder.Encode(obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Serialize `Status` param:
-	err = encoder.Encode(obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (obj *EventMarkFilledEventData) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
-	// Read and check account discriminator:
-	{
-		discriminator, err := decoder.ReadTypeID()
-		if err != nil {
-			return err
-		}
-		if !discriminator.Equal(EventMarkFilledEventDataDiscriminator[:]) {
-			return fmt.Errorf(
-				"wrong discriminator: wanted %s, got %s",
-				"[31 79 180 35 225 64 132 162]",
-				fmt.Sprint(discriminator[:]))
-		}
-	}
-	// Deserialize `OrderId`:
-	err = decoder.Decode(&obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Deserialize `OrderState`:
-	err = decoder.Decode(&obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Deserialize `Status`:
-	err = decoder.Decode(&obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (*EventMarkFilledEventData) isEventData() {}
-
-type EventOpenedEventData struct {
-	OrderId    ag_solanago.PublicKey
-	OrderState ag_solanago.PublicKey
-	Status     Status
-}
-
-var EventOpenedEventDataDiscriminator = [8]byte{178, 81, 199, 118, 203, 221, 6, 91}
-
-func (obj EventOpenedEventData) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
-	// Write account discriminator:
-	err = encoder.WriteBytes(EventOpenedEventDataDiscriminator[:], false)
-	if err != nil {
-		return err
-	}
-	// Serialize `OrderId` param:
-	err = encoder.Encode(obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Serialize `OrderState` param:
-	err = encoder.Encode(obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Serialize `Status` param:
-	err = encoder.Encode(obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (obj *EventOpenedEventData) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
-	// Read and check account discriminator:
-	{
-		discriminator, err := decoder.ReadTypeID()
-		if err != nil {
-			return err
-		}
-		if !discriminator.Equal(EventOpenedEventDataDiscriminator[:]) {
-			return fmt.Errorf(
-				"wrong discriminator: wanted %s, got %s",
-				"[178 81 199 118 203 221 6 91]",
-				fmt.Sprint(discriminator[:]))
-		}
-	}
-	// Deserialize `OrderId`:
-	err = decoder.Decode(&obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Deserialize `OrderState`:
-	err = decoder.Decode(&obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Deserialize `Status`:
-	err = decoder.Decode(&obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (*EventOpenedEventData) isEventData() {}
-
-var eventTypes = map[[8]byte]reflect.Type{
-	EventClaimedEventDataDiscriminator:    reflect.TypeOf(EventClaimedEventData{}),
-	EventClosedEventDataDiscriminator:     reflect.TypeOf(EventClosedEventData{}),
-	EventMarkFilledEventDataDiscriminator: reflect.TypeOf(EventMarkFilledEventData{}),
-	EventOpenedEventDataDiscriminator:     reflect.TypeOf(EventOpenedEventData{}),
-}
-var eventNames = map[[8]byte]string{
-	EventClaimedEventDataDiscriminator:    "EventClaimed",
-	EventClosedEventDataDiscriminator:     "EventClosed",
-	EventMarkFilledEventDataDiscriminator: "EventMarkFilled",
-	EventOpenedEventDataDiscriminator:     "EventOpened",
-}
+var eventTypes = map[[8]byte]reflect.Type{EventUpdatedEventDataDiscriminator: reflect.TypeOf(EventUpdatedEventData{})}
+var eventNames = map[[8]byte]string{EventUpdatedEventDataDiscriminator: "EventUpdated"}
 var (
 	_ *strings.Builder = nil
 )

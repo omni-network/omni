@@ -12,10 +12,7 @@ import (
 	"github.com/gagliardetto/solana-go/programs/token"
 )
 
-var (
-	EventNameOpened     = "EventOpened"
-	EventNameMarkFilled = "EventMarkFilled"
-)
+var EventNameUpdated = "EventUpdated"
 
 // NewOrderID returns the order ID (32 byte array Pubkey),
 // by hashing the account (pubkey) and nonce.
