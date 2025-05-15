@@ -63,10 +63,10 @@ contract SolverNetOutbox is
     SolverNetExecutor private _deprecatedExecutor;
 
     /**
-     * @notice Maps fillHash (hash of fill instruction origin data) to true, if filled.
-     * @dev Used to prevent duplicate fulfillment.
+     * @notice Maps fillHash (hash of fill instruction origin data) to settleHash (hash of fill data sent to inbox).
+     * @dev Used to prevent duplicate fulfillment and allow settlement retries.
      */
-    mapping(bytes32 fillHash => bool filled) private _filled;
+    mapping(bytes32 fillHash => bytes32 settleHash) private _filled;
 
     /**
      * @notice Constructor sets the SolverNetExecutor, OmniPortal, and Hyperlane Mailbox contract addresses.
@@ -159,7 +159,7 @@ contract SolverNetOutbox is
      */
     function didFill(bytes32 orderId, bytes calldata originData) external view returns (bool) {
         SolverNet.FillOriginData memory fillOriginData = abi.decode(originData, (SolverNet.FillOriginData));
-        return _filled[_fillHash(orderId, fillOriginData)];
+        return _filled[_fillHash(orderId, fillOriginData)] != bytes32(0);
     }
 
     /**
@@ -184,6 +184,30 @@ contract SolverNetOutbox is
 
         uint256 totalNativeValue = _executeCalls(fillData);
         _markFilled(orderId, fillData, creditTo, totalNativeValue);
+    }
+
+    /**
+     * @notice Retry marking an order as filled on the source inbox.
+     * @param orderId    ID of the order.
+     * @param originData Data emitted on the origin to parameterize the fill.
+     * @param fillerData ABI encoded address to mark as claimant for the order.
+     */
+    function retryMarkFilled(bytes32 orderId, bytes calldata originData, bytes calldata fillerData)
+        external
+        payable
+        nonReentrant
+    {
+        SolverNet.FillOriginData memory fillOriginData = abi.decode(originData, (SolverNet.FillOriginData));
+        address creditTo = msg.sender;
+        if (fillerData.length != 0 && fillerData.length != 32) revert BadFillerData();
+        if (fillerData.length == 32) creditTo = abi.decode(fillerData, (address));
+
+        bytes32 fillHash = _fillHash(orderId, fillOriginData);
+        bytes32 settleHash = _settleHash(orderId, fillHash, creditTo);
+        if (_filled[fillHash] == bytes32(0)) revert NotFilled();
+        if (_filled[fillHash] != settleHash) revert InvalidSettlement();
+
+        _retryMarkFilled(orderId, fillHash, creditTo, fillOriginData);
     }
 
     /**
@@ -257,22 +281,22 @@ contract SolverNetOutbox is
     /**
      * @notice Mark an order as filled. Require sufficient native payment, refund excess.
      * @param orderId          ID of the order.
-     * @param fillData         ABI decoded fill originData.
+     * @param fillOriginData   Order FillOriginData.
      * @param claimant         Address specified by the filler to claim the order (msg.sender if none specified).
      * @param totalNativeValue Total native value of the calls.
      */
     function _markFilled(
         bytes32 orderId,
-        SolverNet.FillOriginData memory fillData,
+        SolverNet.FillOriginData memory fillOriginData,
         address claimant,
         uint256 totalNativeValue
     ) private {
         // mark filled on outbox (here)
-        bytes32 fillHash = _fillHash(orderId, fillData);
-        if (_filled[fillHash]) revert AlreadyFilled();
-        _filled[fillHash] = true;
+        bytes32 fillHash = _fillHash(orderId, fillOriginData);
+        if (_filled[fillHash] != bytes32(0)) revert AlreadyFilled();
+        _filled[fillHash] = _settleHash(orderId, fillHash, claimant);
 
-        uint256 fee = _routeMsg(orderId, fillHash, claimant, fillData);
+        uint256 fee = _routeMsg(orderId, fillHash, claimant, fillOriginData);
         uint256 totalSpent = totalNativeValue + fee;
         if (msg.value < totalSpent) revert InsufficientFee();
 
@@ -281,6 +305,29 @@ contract SolverNetOutbox is
         if (refund > 0) msg.sender.safeTransferETH(refund);
 
         emit Filled(orderId, fillHash, msg.sender);
+    }
+
+    /**
+     * @notice Retry marking an order as filled on the source inbox.
+     * @param orderId  ID of the order.
+     * @param fillHash Hash of the fill instructions origin data.
+     * @param claimant Address specified by the filler to claim the order (msg.sender if none specified).
+     * @param fillOriginData Order FillOriginData.
+     */
+    function _retryMarkFilled(
+        bytes32 orderId,
+        bytes32 fillHash,
+        address claimant,
+        SolverNet.FillOriginData memory fillOriginData
+    ) private {
+        uint256 fee = _routeMsg(orderId, fillHash, claimant, fillOriginData);
+        if (msg.value < fee) revert InsufficientFee();
+
+        // refund any overpayment in native currency
+        uint256 refund = msg.value - fee;
+        if (refund > 0) msg.sender.safeTransferETH(refund);
+
+        emit MarkFilledRetry(orderId, fillHash, msg.sender);
     }
 
     /**
@@ -329,6 +376,13 @@ contract SolverNetOutbox is
         returns (bytes32)
     {
         return keccak256(abi.encode(srcReqId, fillOriginData));
+    }
+
+    /**
+     * @dev Returns settle hash. Allows for retrying settlement messages.
+     */
+    function _settleHash(bytes32 orderId, bytes32 fillHash, address claimant) private pure returns (bytes32) {
+        return keccak256(abi.encode(orderId, fillHash, claimant));
     }
 
     /**

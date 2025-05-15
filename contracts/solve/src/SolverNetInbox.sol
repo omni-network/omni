@@ -207,6 +207,8 @@ contract SolverNetInbox is
      */
     function pauseAll(bool pause) external onlyOwnerOrRoles(SOLVER) {
         pause ? pauseState = ALL_PAUSED : pauseState = NONE_PAUSED;
+        emit Paused(OPEN, pause, pauseState);
+        emit Paused(CLOSE, pause, pauseState);
     }
 
     /**
@@ -440,7 +442,7 @@ contract SolverNetInbox is
      * @dev Derive the maxSpent Output for the order.
      * @param orderData Order data to derive from.
      */
-    function _deriveMaxSpent(SolverNet.Order memory orderData) internal view returns (IERC7683.Output[] memory) {
+    function _deriveMaxSpent(SolverNet.Order memory orderData) internal pure returns (IERC7683.Output[] memory) {
         SolverNet.Header memory header = orderData.header;
         SolverNet.Call[] memory calls = orderData.calls;
         SolverNet.TokenExpense[] memory expenses = orderData.expenses;
@@ -450,13 +452,14 @@ contract SolverNetInbox is
             if (calls[i].value > 0) totalNativeValue += calls[i].value;
         }
 
+        // maxSpent recipient field is unused in SolverNet, was previously set to outbox as a placeholder
         IERC7683.Output[] memory maxSpent =
             new IERC7683.Output[](totalNativeValue > 0 ? expenses.length + 1 : expenses.length);
         for (uint256 i; i < expenses.length; ++i) {
             maxSpent[i] = IERC7683.Output({
                 token: expenses[i].token.toBytes32(),
                 amount: expenses[i].amount,
-                recipient: _outboxes[header.destChainId].toBytes32(),
+                recipient: bytes32(0),
                 chainId: header.destChainId
             });
         }
@@ -464,7 +467,7 @@ contract SolverNetInbox is
             maxSpent[expenses.length] = IERC7683.Output({
                 token: bytes32(0),
                 amount: totalNativeValue,
-                recipient: _outboxes[header.destChainId].toBytes32(),
+                recipient: bytes32(0),
                 chainId: header.destChainId
             });
         }
@@ -558,7 +561,10 @@ contract SolverNetInbox is
         if (deposit.token == address(0)) {
             if (msg.value != deposit.amount) revert InvalidNativeDeposit();
         } else {
+            uint256 balance = deposit.token.balanceOf(address(this));
             deposit.token.safeTransferFrom(msg.sender, address(this), deposit.amount);
+            // If we received less tokens than expected (max transfer value override or fee on transfer), revert
+            if (deposit.token.balanceOf(address(this)) < balance + deposit.amount) revert InvalidERC20Deposit();
         }
     }
 
@@ -727,5 +733,7 @@ contract SolverNetInbox is
         if (pause ? _pauseState == targetState : _pauseState != targetState) revert IsPaused();
 
         pauseState = pause ? targetState : NONE_PAUSED;
+
+        emit Paused(key, pause, pauseState);
     }
 }

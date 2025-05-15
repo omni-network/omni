@@ -120,7 +120,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 		maxSpent = append(maxSpent, bindings.IERC7683Output{
 			Amount:    e.Amount,
 			Token:     toBz32(e.Token),
-			Recipient: toBz32(outbox),
+			Recipient: toBz32(common.Address{}),
 			ChainId:   bi.N(tt.order.dstChainID),
 		})
 	}

@@ -32,7 +32,6 @@ func newFilledPnlFunc(
 	pricer tokenpricer.Pricer,
 	targetName targetFunc,
 	namer func(uint64) string,
-	outbox common.Address,
 	destFilledAge destFilledAge,
 ) filledPnLFunc {
 	return func(ctx context.Context, order Order, rec *ethclient.Receipt) error {
@@ -46,7 +45,7 @@ func newFilledPnlFunc(
 		dstChainName := namer(pendingData.DestinationChainID)
 		age := destFilledAge(ctx, pendingData.DestinationChainID, rec.BlockNumber.Uint64(), order)
 
-		maxSpent, err := parseMaxSpent(pendingData, outbox)
+		maxSpent, err := parseMaxSpent(pendingData)
 		if err != nil {
 			return errors.Wrap(err, "parse max spent [BUG]") // This should never fail here.
 		}

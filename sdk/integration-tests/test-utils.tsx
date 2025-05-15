@@ -339,7 +339,7 @@ export function assertResolvedOrder(
   expect(resolvedOrder.maxSpent[0].amount).toEqual(parseEther('1'))
   expect(resolvedOrder.maxSpent[0].chainId).toEqual(BigInt(mockL1Id))
   expect(resolvedOrder.maxSpent[0].recipient).toEqual(
-    pad(outbox, { size: 32, dir: 'left' }),
+    pad(zeroAddress, { size: 32, dir: 'left' }),
   )
 
   // minReceived
