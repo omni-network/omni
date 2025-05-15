@@ -63,6 +63,15 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         vm.prank(address(executor));
         vm.expectRevert(ISolverNetExecutor.CallFailed.selector);
         executor.executeAndTransfer721{ value: 1 ether }(address(0), 0, user, address(reverter), "");
+
+        vm.deal(address(outbox), 1 ether);
+        vm.prank(address(outbox));
+        vm.expectRevert(ISolverNetExecutor.CallFailed.selector);
+        executor.execute{ value: 1 ether }(address(0), 1 ether, "");
+
+        vm.prank(address(outbox));
+        vm.expectRevert(ISolverNetExecutor.CallFailed.selector);
+        executor.execute{ value: 1 ether }(address(executor), 1 ether, "");
     }
 
     function test_fallback_reverts() public {

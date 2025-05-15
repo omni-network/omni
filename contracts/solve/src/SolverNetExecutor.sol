@@ -132,4 +132,11 @@ contract SolverNetExecutor is Receiver, ISolverNetExecutor {
     function transferNative(address to, uint256 amount) external onlyOutbox {
         to.safeTransferETH(amount);
     }
+
+    /**
+     * @dev Do not allow self-transfers, as this indicates user error.
+     */
+    receive() external payable override {
+        if (msg.sender == address(this)) revert CallFailed();
+    }
 }
