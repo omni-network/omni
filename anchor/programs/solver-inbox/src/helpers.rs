@@ -24,7 +24,7 @@ pub fn hash_fill(
 ) -> Pubkey {
     // abi encode `[orderId, struct FillOriginData]` equivalent
     let encoded = encode(&[
-        Token::FixedBytes(order_id.to_bytes().to_vec()),
+        Token::FixedBytes(order_id.to_bytes().to_vec()), // bytes32 orderId
         Token::Tuple(vec![
             Token::Uint(src_chain_id.into()),  // uint64 srcChainId
             Token::Uint(dest_chain_id.into()), // uint64 destChainId
