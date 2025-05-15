@@ -235,15 +235,6 @@ func parseMaxSpent(pendingData PendingData) ([]TokenAmt, error) {
 			return nil, errors.New("max spent chain id mismatch [BUG]", "got", chainID, "expected", pendingData.DestinationChainID)
 		}
 
-		// The recipient field in maxSpent Outputs is unused in SolverNet.
-		// It's now intentionally set to bytes32(0) by SolverNetInbox and should no longer be validated against the outboxAddr.
-		zeroAddr := common.Address{}
-		if recipient, err := toEthAddr(output.Recipient); err != nil {
-			return nil, errors.Wrap(err, "recipient")
-		} else if recipient != zeroAddr {
-			return nil, errors.New("unexpected max spent recipient [BUG]", "got", output.Recipient, "expected", zeroAddr)
-		}
-
 		addr, err := toEthAddr(output.Token)
 		if err != nil {
 			return nil, newRejection(types.RejectUnsupportedExpense, errors.Wrap(err, "expense token"))
