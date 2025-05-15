@@ -20,7 +20,7 @@ func pauseSolverNetAll(ctx context.Context, s shared, c chain, addr common.Addre
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, solverNetAdminScriptName, solveContracts, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -41,7 +41,7 @@ func pauseSolverNetOpen(ctx context.Context, s shared, c chain, addr common.Addr
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, solverNetAdminScriptName, solveContracts, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -62,7 +62,7 @@ func pauseSolverNetClose(ctx context.Context, s shared, c chain, addr common.Add
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, solverNetAdminScriptName, solveContracts, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}

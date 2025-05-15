@@ -17,7 +17,7 @@ func pauseXSubmit(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -41,7 +41,7 @@ func pauseXSubmitFrom(ctx context.Context, s shared, c chain, fromID uint64) err
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -60,7 +60,7 @@ func unpauseXSubmit(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -84,7 +84,7 @@ func unpauseXSubmitFrom(ctx context.Context, s shared, c chain, fromID uint64) e
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
