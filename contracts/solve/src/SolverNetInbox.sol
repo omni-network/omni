@@ -450,13 +450,14 @@ contract SolverNetInbox is
             if (calls[i].value > 0) totalNativeValue += calls[i].value;
         }
 
+        // maxSpent recipient field is unused in SolverNet, was previously set to outbox as a placeholder
         IERC7683.Output[] memory maxSpent =
             new IERC7683.Output[](totalNativeValue > 0 ? expenses.length + 1 : expenses.length);
         for (uint256 i; i < expenses.length; ++i) {
             maxSpent[i] = IERC7683.Output({
                 token: expenses[i].token.toBytes32(),
                 amount: expenses[i].amount,
-                recipient: _outboxes[header.destChainId].toBytes32(),
+                recipient: bytes32(0),
                 chainId: header.destChainId
             });
         }
@@ -464,7 +465,7 @@ contract SolverNetInbox is
             maxSpent[expenses.length] = IERC7683.Output({
                 token: bytes32(0),
                 amount: totalNativeValue,
-                recipient: _outboxes[header.destChainId].toBytes32(),
+                recipient: bytes32(0),
                 chainId: header.destChainId
             });
         }

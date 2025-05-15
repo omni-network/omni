@@ -21,7 +21,7 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
         assertEq(resolved.maxSpent.length, 1, "maxSpent.length");
         assertEq(resolved.maxSpent[0].token, bytes32(0), "maxSpent[0].token");
         assertEq(resolved.maxSpent[0].amount, defaultAmount, "maxSpent[0].amount");
-        assertEq(resolved.maxSpent[0].recipient, address(outbox).toBytes32(), "maxSpent[0].recipient");
+        assertEq(resolved.maxSpent[0].recipient, bytes32(0), "maxSpent[0].recipient");
         assertEq(resolved.maxSpent[0].chainId, destChainId, "maxSpent[0].chainId");
         assertEq(resolved.minReceived.length, 1, "minReceived.length");
         assertEq(resolved.minReceived[0].token, bytes32(0), "minReceived[0].token");
@@ -65,7 +65,7 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
         assertEq(resolved.maxSpent.length, 1, "maxSpent.length");
         assertEq(resolved.maxSpent[0].token, address(token2).toBytes32(), "maxSpent[0].token");
         assertEq(resolved.maxSpent[0].amount, defaultAmount, "maxSpent[0].amount");
-        assertEq(resolved.maxSpent[0].recipient, address(outbox).toBytes32(), "maxSpent[0].recipient");
+        assertEq(resolved.maxSpent[0].recipient, bytes32(0), "maxSpent[0].recipient");
         assertEq(resolved.maxSpent[0].chainId, destChainId, "maxSpent[0].chainId");
         assertEq(resolved.minReceived.length, 1, "minReceived.length");
         assertEq(resolved.minReceived[0].token, address(token1).toBytes32(), "minReceived[0].token");
@@ -146,11 +146,11 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
         assertEq(resolved.maxSpent.length, 2, "maxSpent.length");
         assertEq(resolved.maxSpent[0].token, address(token2).toBytes32(), "maxSpent[0].token");
         assertEq(resolved.maxSpent[0].amount, defaultAmount, "maxSpent[0].amount");
-        assertEq(resolved.maxSpent[0].recipient, address(outbox).toBytes32(), "maxSpent[0].recipient");
+        assertEq(resolved.maxSpent[0].recipient, bytes32(0), "maxSpent[0].recipient");
         assertEq(resolved.maxSpent[0].chainId, destChainId, "maxSpent[0].chainId");
         assertEq(resolved.maxSpent[1].token, bytes32(0), "maxSpent[1].token");
         assertEq(resolved.maxSpent[1].amount, defaultAmount, "maxSpent[1].amount");
-        assertEq(resolved.maxSpent[1].recipient, address(outbox).toBytes32(), "maxSpent[1].recipient");
+        assertEq(resolved.maxSpent[1].recipient, bytes32(0), "maxSpent[1].recipient");
         assertEq(resolved.maxSpent[1].chainId, destChainId, "maxSpent[1].chainId");
         assertEq(resolved.minReceived.length, 1, "minReceived.length");
         assertEq(resolved.minReceived[0].token, address(token1).toBytes32(), "minReceived[0].token");
