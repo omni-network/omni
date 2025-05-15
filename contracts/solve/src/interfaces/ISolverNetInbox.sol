@@ -36,7 +36,6 @@ interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
     // Pause errors
     error IsPaused();
     error AllPaused();
-    error PortalPaused();
 
     /**
      * @notice Emitted when an outbox is set.

@@ -97,4 +97,20 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         assertStatus(orderId, ISolverNetInbox.Status.Pending);
         assertEq(token1.balanceOf(address(inbox)), defaultAmount, "inbox should have received the deposit");
     }
+
+    function test_open_hyperlane() public {
+        address impl = address(new SolverNetInbox(address(0), address(mailboxes[uint32(srcChainId)])));
+        inbox = SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
+        inbox.initialize(address(this), solver);
+        setRoutes(ISolverNetOutbox.Provider.Hyperlane);
+
+        uint256 snapshot = vm.snapshot();
+        test_open_reverts();
+        vm.revertTo(snapshot);
+
+        test_open_nativeDeposit_succeeds();
+        vm.revertTo(snapshot);
+
+        test_open_erc20Deposit_succeeds();
+    }
 }

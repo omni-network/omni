@@ -4,7 +4,12 @@ pragma solidity =0.8.24;
 import "../TestBase.sol";
 
 contract SolverNet_Inbox_Claim_Test is TestBase {
-    function test_claim_reverts() public {
+    using AddrUtils for address;
+
+    function test_claim_reverts(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
         // order must be filled
         vm.expectRevert(ISolverNetInbox.OrderNotFilled.selector);
         inbox.claim(bytes32(uint256(1)), address(0));
@@ -21,19 +26,36 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
         inbox.open(order);
 
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
-        portal.mockXCall(
-            destChainId,
-            address(outbox),
-            address(inbox),
-            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
-        );
+
+        if (provider == 1) {
+            portal.mockXCall(
+                destChainId,
+                address(outbox),
+                address(inbox),
+                abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
+            );
+        } else if (provider == 2) {
+            bytes memory message = mailboxes[destinationDomain].buildMessage(
+                originDomain,
+                address(outbox).toBytes32(),
+                address(inbox).toBytes32(),
+                abi.encode(resolvedOrder.orderId, fillhash, solver)
+            );
+            mailboxes[originDomain].addInboundMessage(message);
+            mailboxes[originDomain].processNextInboundMessage();
+        } else {
+            revert("invalid provider");
+        }
 
         // order must be claimed by the claimant
         vm.expectRevert(Ownable.Unauthorized.selector);
         inbox.claim(resolvedOrder.orderId, address(0));
     }
 
-    function test_claim_nativeDeposit_succeeds() public {
+    function test_claim_nativeDeposit_succeeds(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -45,12 +67,26 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
         inbox.open{ value: defaultAmount }(order);
 
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
-        portal.mockXCall(
-            destChainId,
-            address(outbox),
-            address(inbox),
-            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
-        );
+
+        if (provider == 1) {
+            portal.mockXCall(
+                destChainId,
+                address(outbox),
+                address(inbox),
+                abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
+            );
+        } else if (provider == 2) {
+            bytes memory message = mailboxes[destinationDomain].buildMessage(
+                originDomain,
+                address(outbox).toBytes32(),
+                address(inbox).toBytes32(),
+                abi.encode(resolvedOrder.orderId, fillhash, solver)
+            );
+            mailboxes[originDomain].addInboundMessage(message);
+            mailboxes[originDomain].processNextInboundMessage();
+        } else {
+            revert("invalid provider");
+        }
 
         vm.prank(solver);
         vm.expectEmit(true, true, true, true);
@@ -61,7 +97,10 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
         assertEq(solver.balance, defaultAmount, "deposit should have been claimed by the solver");
     }
 
-    function test_claim_erc20Deposit_succeeds() public {
+    function test_claim_erc20Deposit_succeeds(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -73,12 +112,26 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
         inbox.open(order);
 
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
-        portal.mockXCall(
-            destChainId,
-            address(outbox),
-            address(inbox),
-            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
-        );
+
+        if (provider == 1) {
+            portal.mockXCall(
+                destChainId,
+                address(outbox),
+                address(inbox),
+                abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
+            );
+        } else if (provider == 2) {
+            bytes memory message = mailboxes[destinationDomain].buildMessage(
+                originDomain,
+                address(outbox).toBytes32(),
+                address(inbox).toBytes32(),
+                abi.encode(resolvedOrder.orderId, fillhash, solver)
+            );
+            mailboxes[originDomain].addInboundMessage(message);
+            mailboxes[originDomain].processNextInboundMessage();
+        } else {
+            revert("invalid provider");
+        }
 
         vm.prank(solver);
         vm.expectEmit(true, true, true, true);

@@ -178,4 +178,20 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
             "fillInstructions[0].originData"
         );
     }
+
+    function test_resolve_hyperlane() public {
+        address impl = address(new SolverNetInbox(address(0), address(mailboxes[uint32(srcChainId)])));
+        inbox = SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
+        inbox.initialize(address(this), solver);
+        setRoutes(ISolverNetOutbox.Provider.Hyperlane);
+
+        uint256 snapshot = vm.snapshot();
+        test_resolve_nativeDeposit_nativeExpense_succeeds();
+        vm.revertTo(snapshot);
+
+        test_resolve_erc20Deposit_erc20Expense_succeeds();
+        vm.revertTo(snapshot);
+
+        test_resolve_erc20Deposit_mixedExpenses_multicall_succeeds();
+    }
 }
