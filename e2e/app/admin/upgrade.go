@@ -154,7 +154,7 @@ func upgradePortal(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -191,7 +191,7 @@ func upgradeFeeOracleV1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -215,7 +215,7 @@ func upgradeGasStation(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -239,7 +239,7 @@ func upgradeGasPump(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -258,7 +258,7 @@ func ugpradeSlashing(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -277,7 +277,7 @@ func ugpradeDistribution(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -305,7 +305,7 @@ func upgradeStaking(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -324,7 +324,7 @@ func upgradeBridgeNative(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -348,7 +348,7 @@ func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -367,7 +367,7 @@ func upgradePortalRegistry(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -405,7 +405,7 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c c
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, solveForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -459,7 +459,7 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, solveForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -484,7 +484,7 @@ func upgradeSolverNetMiddleman(ctx context.Context, s shared, _ netconf.Network,
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, solveForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -520,7 +520,7 @@ func upgradeSolverNetExecutor(ctx context.Context, s shared, network netconf.Net
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, solveForgeCfg(c.RPCEndpoint, s.upgrader, s.deployer), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -541,7 +541,7 @@ func setPortalFeeOracleV2(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.manager), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}

@@ -16,7 +16,7 @@ func pausePortal(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.manager), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -35,7 +35,7 @@ func unpausePortal(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, coreForgeCfg(c.RPCEndpoint, s.manager), calldata)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}

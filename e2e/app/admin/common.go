@@ -266,8 +266,52 @@ func maybeAll(chains []types.EVMChain, chain string, exclude []string) ([]string
 	return []string{chain}, nil
 }
 
-func (s shared) runForge(ctx context.Context, rpc string, input []byte, senders ...common.Address,
-) (string, error) {
+type forgeCfg struct {
+	rpc        string
+	senders    []common.Address
+	rootDir    string
+	scriptName string
+}
+
+func coreForgeCfg(rpc string, senders ...common.Address) forgeCfg {
+	return forgeCfg{
+		rpc:        rpc,
+		senders:    senders,
+		rootDir:    "./contracts/core",
+		scriptName: "Admin",
+	}
+}
+
+func solveForgeCfg(rpc string, senders ...common.Address) forgeCfg {
+	return forgeCfg{
+		rpc:        rpc,
+		senders:    senders,
+		rootDir:    "./contracts/solvernet",
+		scriptName: "SolverNetAdmin",
+	}
+}
+
+func (cfg forgeCfg) validate() error {
+	if cfg.rpc == "" {
+		return errors.New("no rpc")
+	}
+
+	if cfg.rootDir == "" {
+		return errors.New("no root dir")
+	}
+
+	if cfg.scriptName == "" {
+		return errors.New("no script name")
+	}
+
+	if len(cfg.senders) == 0 {
+		return errors.New("no senders")
+	}
+
+	return nil
+}
+
+func (s shared) runForge(ctx context.Context, cfg forgeCfg, input []byte) (string, error) {
 	resume := false
 	attempts := 0
 	const maxAttempts = 6
@@ -281,7 +325,7 @@ func (s shared) runForge(ctx context.Context, rpc string, input []byte, senders 
 			resume = true
 		}
 
-		out, err := runForgeOnce(ctx, rpc, input, s.cfg.Broadcast, resume, senders...)
+		out, err := runForgeOnce(ctx, cfg, input, s.cfg.Broadcast, resume)
 		if err == nil {
 			return out, nil
 		}
@@ -298,12 +342,16 @@ func (s shared) runForge(ctx context.Context, rpc string, input []byte, senders 
 // runForge runs an Admin forge script against an rpc, returning the ouptut.
 // if the senders are known anvil accounts, it will sign with private keys directly.
 // otherwise, it will use the unlocked flag.
-func runForgeOnce(ctx context.Context, rpc string, input []byte, broadcast, resume bool, senders ...common.Address,
-) (string, error) {
-	// name of admin forge script in contracts/core
-	const script = "Admin"
-	// assumes running from root
-	dir := "./contracts/core"
+func runForgeOnce(ctx context.Context, cfg forgeCfg, input []byte, broadcast, resume bool) (string, error) {
+	if err := cfg.validate(); err != nil {
+		return "", errors.Wrap(err, "validate forge cfg")
+	}
+
+	script := cfg.scriptName
+	rpc := cfg.rpc
+	dir := cfg.rootDir
+	senders := cfg.senders
+
 	pks := make([]string, 0, len(senders))
 	for _, sender := range senders {
 		pk, ok := eoa.DevPrivateKey(sender)
