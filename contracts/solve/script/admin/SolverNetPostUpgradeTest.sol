@@ -3,32 +3,30 @@ pragma solidity 0.8.24;
 
 import { Test } from "forge-std/Test.sol";
 import { VmSafe } from "forge-std/Vm.sol";
-import { MockERC721 } from "solve/test/utils/MockERC721.sol";
-import { Refunder } from "solve/test/utils/Refunder.sol";
+import { MockERC721 } from "test/utils/MockERC721.sol";
+import { Refunder } from "test/utils/Refunder.sol";
 
-import { SolverNetInbox, ISolverNetInbox } from "solve/src/SolverNetInbox.sol";
-import { SolverNetOutbox, ISolverNetOutbox } from "solve/src/SolverNetOutbox.sol";
-import { SolverNetMiddleman } from "solve/src/SolverNetMiddleman.sol"; // TODO(zodomo): Deprecate
-import { SolverNetExecutor, ISolverNetExecutor } from "solve/src/SolverNetExecutor.sol";
-import { IERC7683 } from "solve/src/erc7683/IERC7683.sol";
-import { SolverNet } from "solve/src/lib/SolverNet.sol";
+import { SolverNetInbox, ISolverNetInbox } from "src/SolverNetInbox.sol";
+import { SolverNetOutbox, ISolverNetOutbox } from "src/SolverNetOutbox.sol";
+import { SolverNetExecutor, ISolverNetExecutor } from "src/SolverNetExecutor.sol";
+import { IERC7683 } from "src/erc7683/IERC7683.sol";
+import { SolverNet } from "src/lib/SolverNet.sol";
 
 contract SolverNetPostUpgradeTest is Test {
-    SolverNetInbox inbox;
-    SolverNetOutbox outbox;
-    SolverNetMiddleman middleman; // TODO(zodomo): Deprecate
-    SolverNetExecutor executor;
+    SolverNetInbox internal inbox;
+    SolverNetOutbox internal outbox;
+    SolverNetExecutor internal executor;
 
-    Refunder refunder;
-    MockERC721 milady;
+    Refunder internal refunder;
+    MockERC721 internal milady;
 
     bytes32 constant ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
 
-    address owner;
-    address solver = makeAddr("solver");
-    address user = makeAddr("user");
+    address internal owner;
+    address internal solver = makeAddr("solver");
+    address internal user = makeAddr("user");
 
     function runInbox(address addr) public {
         (VmSafe.CallerMode mode,,) = vm.readCallers();
@@ -50,14 +48,6 @@ contract SolverNetPostUpgradeTest is Test {
         _fillOrder(address(milady), MockERC721.mintTo.selector, 0, abi.encode(user), chainIds);
 
         assertEq(milady.balanceOf(user), chainIds.length, "user should receive 1 NFT per origin chain order");
-    }
-
-    // TODO(zodomo): Deprecate
-    function runMiddleman(address addr) public {
-        (VmSafe.CallerMode mode,,) = vm.readCallers();
-        require(mode == VmSafe.CallerMode.None, "no broadcast");
-
-        _setupMiddleman(addr);
     }
 
     function runExecutor(address addr, uint64[] calldata chainIds) public {
@@ -82,11 +72,6 @@ contract SolverNetPostUpgradeTest is Test {
 
         refunder = new Refunder();
         milady = new MockERC721("Milady Maker", "MILADY", "https://www.miladymaker.net/milady/json/");
-    }
-
-    // TODO(zodomo): Deprecate
-    function _setupMiddleman(address addr) internal {
-        middleman = SolverNetMiddleman(payable(addr));
     }
 
     function _setupExecutor(address addr) internal {

@@ -26,6 +26,9 @@ import (
 // adminABI is the ABI for the Admin script contract.
 var adminABI = mustGetABI(bindings.AdminMetaData)
 
+// solverNetAdminABI is the ABI for the SolverNetAdmin script contract.
+var solverNetAdminABI = mustGetABI(bindings.SolverNetAdminMetaData)
+
 // omniEVMName is the name of the omni EVM chain.
 const omniEVMName = "omni_evm"
 
