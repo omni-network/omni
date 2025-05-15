@@ -47,6 +47,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
 
         // Should revert if order contains more than 32 expenses
         orderData.calls = originalCalls;
+        SolverNet.TokenExpense[] memory originalExpenses = orderData.expenses;
         SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](33);
         orderData.expenses = expenses;
         order.orderData = abi.encode(orderData);
@@ -54,6 +55,18 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         vm.expectRevert(ISolverNetInbox.InvalidArrayLength.selector);
         vm.prank(user);
         inbox.open{ value: defaultAmount }(order);
+
+        // Should revert if less tokens are received than expected
+        orderData.expenses = originalExpenses;
+        orderData.deposit = SolverNet.Deposit({ token: address(maxTransferToken), amount: type(uint96).max });
+        order.orderData = abi.encode(orderData);
+
+        maxTransferToken.mint(user, 1 ether);
+        vm.startPrank(user);
+        maxTransferToken.approve(address(inbox), type(uint256).max);
+        vm.expectRevert(ISolverNetInbox.InvalidERC20Deposit.selector);
+        inbox.open(order);
+        vm.stopPrank();
     }
 
     function test_open_nativeDeposit_succeeds() public {

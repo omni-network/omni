@@ -440,7 +440,7 @@ contract SolverNetInbox is
      * @dev Derive the maxSpent Output for the order.
      * @param orderData Order data to derive from.
      */
-    function _deriveMaxSpent(SolverNet.Order memory orderData) internal view returns (IERC7683.Output[] memory) {
+    function _deriveMaxSpent(SolverNet.Order memory orderData) internal pure returns (IERC7683.Output[] memory) {
         SolverNet.Header memory header = orderData.header;
         SolverNet.Call[] memory calls = orderData.calls;
         SolverNet.TokenExpense[] memory expenses = orderData.expenses;
@@ -559,7 +559,9 @@ contract SolverNetInbox is
         if (deposit.token == address(0)) {
             if (msg.value != deposit.amount) revert InvalidNativeDeposit();
         } else {
+            uint256 balance = deposit.token.balanceOf(address(this));
             deposit.token.safeTransferFrom(msg.sender, address(this), deposit.amount);
+            if (deposit.token.balanceOf(address(this)) < balance + deposit.amount) revert InvalidERC20Deposit();
         }
     }
 

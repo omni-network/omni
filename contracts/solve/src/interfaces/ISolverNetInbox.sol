@@ -17,6 +17,7 @@ interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
     error InvalidArrayLength();
 
     // Open order errors
+    error InvalidERC20Deposit();
     error InvalidNativeDeposit();
 
     // Reject order errors
