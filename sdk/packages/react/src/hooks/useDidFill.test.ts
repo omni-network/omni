@@ -1,13 +1,15 @@
+import type { useQuery } from '@tanstack/react-query'
 import { waitFor } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { renderHook, resolvedOrder } from '../../test/index.js'
 import { type UseDidFillParams, useDidFill } from './useDidFill.js'
 
-const { didFill } = vi.hoisted(() => {
+const { didFill, useQueryMock } = vi.hoisted(() => {
   return {
     didFill: vi.fn().mockImplementation(() => {
       return Promise.reject(new Error('No mock'))
     }),
+    useQueryMock: vi.fn(),
   }
 })
 
@@ -16,12 +18,24 @@ vi.mock('@omni-network/core', async () => {
   return { ...actual, didFill }
 })
 
-const renderDidFillHook = (withResolvedOrder = false) => {
+vi.mock('@tanstack/react-query', async () => {
+  const actual = await vi.importActual('@tanstack/react-query')
+  const actualUseQuery = actual.useQuery as typeof useQuery
+  return {
+    ...actual,
+    useQuery: useQueryMock.mockImplementation((params) => {
+      return actualUseQuery(params)
+    }),
+  }
+})
+
+const renderDidFillHook = (withResolvedOrder = false, queryOpts = {}) => {
   return renderHook(
     (props: Partial<UseDidFillParams>) =>
       useDidFill({
         destChainId: 1,
         resolvedOrder: withResolvedOrder ? resolvedOrder : undefined,
+        queryOpts,
         ...props,
       }),
     { mockContractsCall: true },
@@ -43,6 +57,15 @@ test('default: returns true when core api returns truthy', async () => {
 
   await waitFor(() => expect(result.current.data).toBe(true))
   expect(didFill).toHaveBeenCalled()
+})
+
+test('parameters: passes through queryOpts to useQuery', async () => {
+  const queryOpts = {
+    refetchInterval: 5000,
+    staleTime: 10000,
+  }
+  renderDidFillHook(true, queryOpts)
+  expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining(queryOpts))
 })
 
 test('behaviour: no exception if core api throws', async () => {
