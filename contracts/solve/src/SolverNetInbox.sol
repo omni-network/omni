@@ -207,6 +207,8 @@ contract SolverNetInbox is
      */
     function pauseAll(bool pause) external onlyOwnerOrRoles(SOLVER) {
         pause ? pauseState = ALL_PAUSED : pauseState = NONE_PAUSED;
+        emit Paused(OPEN, pause, pauseState);
+        emit Paused(CLOSE, pause, pauseState);
     }
 
     /**
@@ -730,5 +732,7 @@ contract SolverNetInbox is
         if (pause ? _pauseState == targetState : _pauseState != targetState) revert IsPaused();
 
         pauseState = pause ? targetState : NONE_PAUSED;
+
+        emit Paused(key, pause, pauseState);
     }
 }

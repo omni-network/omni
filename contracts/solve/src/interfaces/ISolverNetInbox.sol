@@ -46,6 +46,14 @@ interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
     event OutboxSet(uint64 indexed chainId, address indexed outbox);
 
     /**
+     * @notice Emitted when a pause state is set.
+     * @param key Pause key.
+     * @param pause True if paused, false if unpaused.
+     * @param pauseState Current pause state.
+     */
+    event Paused(bytes32 indexed key, bool indexed pause, uint8 indexed pauseState);
+
+    /**
      * @notice Emitted when an order is opened.
      * @dev This event emits the FillOriginData typed `originData`, rather than ABI-encoded as seen in `IERC7683.Open`.
      * @param id ID of the order.
