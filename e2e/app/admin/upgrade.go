@@ -383,12 +383,15 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c c
 		return errors.Wrap(err, "get addrs")
 	}
 
-	var inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
+	// var inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
 	// TODO: replace if re-initialization is required
-	initializer, err := inboxABI.Pack("initializeV2", addrs.SolverNetOutbox)
-	if err != nil {
-		return errors.Wrap(err, "pack initializer")
-	}
+	/*
+		initializer, err := inboxABI.Pack("initializeV2", addrs.SolverNetOutbox)
+		if err != nil {
+			return errors.Wrap(err, "pack initializer")
+		}
+	*/
+	initializer := []byte{}
 
 	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
 
@@ -434,12 +437,15 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 		})
 	}
 
-	var outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
+	// var outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
 	// TODO: replace if re-initialization is required
-	initializer, err := outboxABI.Pack("initializeV2", chainIDs, inboxes)
-	if err != nil {
-		return errors.Wrap(err, "pack initializer")
-	}
+	/*
+		initializer, err := outboxABI.Pack("initializeV2", chainIDs, inboxes)
+		if err != nil {
+			return errors.Wrap(err, "pack initializer")
+		}
+	*/
+	initializer := []byte{}
 
 	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
 
