@@ -1,13 +1,10 @@
 import { type Asset, getAssets } from '@omni-network/core'
-import {
-  type UseQueryOptions,
-  type UseQueryResult,
-  useQuery,
-} from '@tanstack/react-query'
+import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useOmniContext } from '../context/omni.js'
+import type { QueryOpts } from './types.js'
 
 export type UseOmniAssetsParameters = {
-  queryOpts?: Omit<UseQueryOptions<Asset[]>, 'queryKey' | 'queryFn' | 'enabled'>
+  queryOpts?: QueryOpts<Asset[]>
 }
 
 export type UseOmniAssetsResult = UseQueryResult<Asset[]>

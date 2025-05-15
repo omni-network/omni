@@ -4,21 +4,15 @@ import type {
   Quote,
 } from '@omni-network/core'
 import { getQuote } from '@omni-network/core'
-import {
-  type UseQueryOptions,
-  type UseQueryResult,
-  useQuery,
-} from '@tanstack/react-query'
+import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useOmniContext } from '../context/omni.js'
 import { hashFn } from '../utils/query.js'
+import type { QueryOpts } from './types.js'
 
 type UseQuoteParams = GetQuoteParameters & {
   enabled: boolean
-  queryOpts?: Omit<
-    UseQueryOptions<Quote, QuoteError>,
-    'queryKey' | 'queryFn' | 'enabled'
-  >
+  queryOpts?: QueryOpts<Quote, QuoteError>
 }
 
 type UseQuoteSuccess = Quote & {

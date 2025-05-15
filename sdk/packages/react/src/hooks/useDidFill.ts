@@ -1,17 +1,14 @@
 import { type ResolvedOrder, didFill } from '@omni-network/core'
-import {
-  type UseQueryOptions,
-  type UseQueryResult,
-  useQuery,
-} from '@tanstack/react-query'
+import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useClient } from 'wagmi'
 import { invariant } from '../utils/invariant.js'
+import type { QueryOpts } from './types.js'
 import { useOmniContracts } from './useOmniContracts.js'
 
 export type UseDidFillParams = {
   destChainId: number
   resolvedOrder?: ResolvedOrder
-  queryOpts?: Omit<UseQueryOptions<boolean>, 'queryKey' | 'queryFn' | 'enabled'>
+  queryOpts?: QueryOpts<boolean>
 }
 
 export type UseDidFillReturn = UseQueryResult<boolean>
