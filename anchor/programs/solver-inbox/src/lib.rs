@@ -83,8 +83,6 @@ pub mod solver_inbox {
         claimable_by: Pubkey,
     ) -> Result<()> {
         let state = &mut ctx.accounts.order_state;
-        msg!("state.fill_hash: {:?}", state.fill_hash);
-        msg!("tx_fill_hash: {:?}", fill_hash);
         require_eq!(state.fill_hash, fill_hash, InboxError::InvalidFillHash);
 
         state.status = Status::Filled;

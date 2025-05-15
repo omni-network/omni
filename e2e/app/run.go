@@ -212,7 +212,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	}
 
 	// Start unit tests.
-	if err := Test(ctx, def, TestConfig{Verbose: true}); err != nil {
+	if err := Test(ctx, def, TestConfig{}); err != nil {
 		return err
 	}
 
