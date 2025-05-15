@@ -158,7 +158,8 @@ contract SolverNetOutbox is
      * @param originData Data emitted on the origin to parameterize the fill
      */
     function didFill(bytes32 orderId, bytes calldata originData) external view returns (bool) {
-        return _filled[_fillHash(orderId, originData)];
+        SolverNet.FillOriginData memory fillOriginData = abi.decode(originData, (SolverNet.FillOriginData));
+        return _filled[_fillHash(orderId, fillOriginData)];
     }
 
     /**
@@ -267,7 +268,7 @@ contract SolverNetOutbox is
         uint256 totalNativeValue
     ) private {
         // mark filled on outbox (here)
-        bytes32 fillHash = _fillHash(orderId, abi.encode(fillData));
+        bytes32 fillHash = _fillHash(orderId, fillData);
         if (_filled[fillHash]) revert AlreadyFilled();
         _filled[fillHash] = true;
 
@@ -322,8 +323,12 @@ contract SolverNetOutbox is
     /**
      * @dev Returns call hash. Used to discern fulfillment.
      */
-    function _fillHash(bytes32 srcReqId, bytes memory originData) private pure returns (bytes32) {
-        return keccak256(abi.encode(srcReqId, originData));
+    function _fillHash(bytes32 srcReqId, SolverNet.FillOriginData memory fillOriginData)
+        private
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encode(srcReqId, fillOriginData));
     }
 
     /**

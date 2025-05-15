@@ -603,8 +603,12 @@ contract SolverNetInbox is
         if (sender != _outboxes[origin]) revert Unauthorized();
 
         // Ensure reported fill hash matches origin data
-        if (fillHash != _fillHash(id)) {
-            revert WrongFillHash();
+        // We are temporarily supporting both so no in-flight order settlements are rejected during the transition
+        (bytes32 fillhash, SolverNet.FillOriginData memory fillOriginData) = _fillHash(id);
+        if (fillHash != fillhash) {
+            if (fillHash != _simpleFillHash(id, fillOriginData)) {
+                revert WrongFillHash();
+            }
         }
 
         _upsertOrder(id, Status.Filled, 0, creditedTo);
@@ -679,7 +683,7 @@ contract SolverNetInbox is
      * @dev Returns call hash. Used to discern fulfillment.
      * @param orderId ID of the order.
      */
-    function _fillHash(bytes32 orderId) internal view returns (bytes32) {
+    function _fillHash(bytes32 orderId) internal view returns (bytes32, SolverNet.FillOriginData memory) {
         SolverNet.Header memory header = _orderHeader[orderId];
         SolverNet.Call[] memory calls = _orderCalls[orderId];
         SolverNet.TokenExpense[] memory expenses = _orderExpenses[orderId];
@@ -692,7 +696,21 @@ contract SolverNetInbox is
             expenses: expenses
         });
 
-        return keccak256(abi.encode(orderId, abi.encode(fillOriginData)));
+        return (keccak256(abi.encode(orderId, abi.encode(fillOriginData))), fillOriginData);
+    }
+
+    /**
+     * @dev Return fill hash without unnecessary double encoding.
+     *      We will transition to this hash method, where this will eventually become _fillHash and be removed.
+     * @param orderId ID of the order.
+     * @param fillOriginData Fill origin data to hash. (prevents having to derive it again)
+     */
+    function _simpleFillHash(bytes32 orderId, SolverNet.FillOriginData memory fillOriginData)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encode(orderId, fillOriginData));
     }
 
     /**
