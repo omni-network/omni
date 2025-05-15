@@ -1,19 +1,32 @@
+import type { useQuery } from '@tanstack/react-query'
 import { waitFor } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { orderId, renderHook, resolvedOrder } from '../../test/index.js'
 import { type UseGetOrderParameters, useGetOrder } from './useGetOrder.js'
 
-const { getOrder } = vi.hoisted(() => {
+const { getOrder, useQueryMock } = vi.hoisted(() => {
   return {
     getOrder: vi.fn().mockImplementation(() => {
       return Promise.reject(new Error('No mock'))
     }),
+    useQueryMock: vi.fn(),
   }
 })
 
 vi.mock('@omni-network/core', async () => {
   const actual = await vi.importActual('@omni-network/core')
   return { ...actual, getOrder }
+})
+
+vi.mock('@tanstack/react-query', async () => {
+  const actual = await vi.importActual('@tanstack/react-query')
+  const actualUseQuery = actual.useQuery as typeof useQuery
+  return {
+    ...actual,
+    useQuery: useQueryMock.mockImplementation((params) => {
+      return actualUseQuery(params)
+    }),
+  }
 })
 
 test('default: returns order when core api returns an order', async () => {
@@ -39,6 +52,17 @@ test('default: returns order when core api returns an order', async () => {
   rerender({ chainId: 1, orderId })
   await waitFor(() => expect(result.current.data?.[0].orderId).toBe(orderId))
   await waitFor(() => expect(result.current.data?.[1].status).toBe(1))
+})
+
+test('parameters: passes through queryOpts to useQuery', () => {
+  const queryOpts = {
+    refetchInterval: 5000,
+    staleTime: 10000,
+  }
+  renderHook(() => useGetOrder({ chainId: 1, queryOpts }), {
+    mockContractsCall: true,
+  })
+  expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining(queryOpts))
 })
 
 test('behaviour: no core api call when orderId is undefined', () => {
