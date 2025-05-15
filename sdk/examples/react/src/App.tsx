@@ -56,10 +56,8 @@ function Account() {
 function Quote() {
   const account = useAccount()
   const quote = useQuote({
-    srcChainId: holesky.id,
-    destChainId: baseSepolia.id,
-    // srcChainId: baseSepolia.id,
-    // destChainId: holesky.id,
+    srcChainId: baseSepolia.id,
+    destChainId: holesky.id,
     deposit: { amount: parseEther('0.1'), isNative: true },
     expense: { isNative: true },
     mode: 'expense',
@@ -92,16 +90,13 @@ function Quote() {
 }
 
 function Order() {
-  const expectedSrcChainId = holesky.id
-  // const expectedSrcChainId = baseSepolia.id
+  const expectedSrcChainId = baseSepolia.id
   const account = useAccount()
   const { switchChain } = useSwitchChain()
   const order = useOrder({
     owner: account?.address,
-    srcChainId: holesky.id,
-    destChainId: baseSepolia.id,
-    // srcChainId: baseSepolia.id,
-    // destChainId: holesky.id,
+    srcChainId: baseSepolia.id,
+    destChainId: holesky.id,
     deposit: { amount: parseEther('0.1') },
     expense: {
       amount: parseEther('0.099'),
