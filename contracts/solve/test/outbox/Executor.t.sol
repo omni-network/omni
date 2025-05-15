@@ -89,7 +89,7 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         executor.tryRevokeApproval(address(approvalReverter), user);
         vm.stopPrank();
 
-        assertEq(approvalReverter.allowance(address(executor), user), 1 ether, "allowance should be 1 ether");
+        assertEq(approvalReverter.allowance(address(executor), user), 1, "allowance should be 1 wei");
     }
 
     function test_execute_succeeds() public {

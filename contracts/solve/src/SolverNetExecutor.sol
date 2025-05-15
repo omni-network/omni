@@ -52,7 +52,11 @@ contract SolverNetExecutor is Receiver, ISolverNetExecutor {
      * @dev If the token reverts when setting approval to zero, this will not revert.
      */
     function tryRevokeApproval(address token, address spender) external onlyOutbox {
-        try IERC20(token).approve(spender, 0) { } catch { }
+        try IERC20(token).approve(spender, 0) { }
+        // If the token reverts when setting approval to zero, try setting it to 1
+        catch {
+            try IERC20(token).approve(spender, 1) { } catch { }
+        }
     }
 
     /**
