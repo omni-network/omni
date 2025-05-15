@@ -13,4 +13,4 @@ pnpm dev
 
 ## NOTE:
 
-Occasionally, watching the destination 'Fill' event will fail if using a public RPC provider. This is due to the event not being parsed correctly, but the order will still be filled and we'll set the status as such.
+Fetching the destination chain transaction hash may fail if you're using a public RPC provider. Internally, we use viems watchContractEvent to listen for the `Fill` event, but this isn't reliable when working with public RPCs. It's strongly recommended to use a private RPC provider anyway, to prevent instability or rate limiting issues.
