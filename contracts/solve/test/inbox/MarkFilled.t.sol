@@ -105,4 +105,28 @@ contract SolverNet_Inbox_MarkFilled_Test is TestBase {
 
         assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Filled);
     }
+
+    function test_markFilled_oldFillHash_succeeds() public {
+        (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
+            getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
+        assertTrue(inbox.validate(order), "order should be valid");
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        fundUser(orderData);
+        vm.prank(user);
+        inbox.open(order);
+
+        bytes32 fillhash = keccak256(abi.encode(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData));
+        vm.expectEmit(true, true, true, true);
+        emit ISolverNetInbox.Filled(resolvedOrder.orderId, fillhash, solver);
+        portal.mockXCall(
+            destChainId,
+            address(outbox),
+            address(inbox),
+            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
+        );
+
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Filled);
+    }
 }
