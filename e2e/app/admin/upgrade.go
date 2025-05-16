@@ -388,9 +388,7 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c c
 		return errors.Wrap(err, "get addrs")
 	}
 
-	var inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
-	// TODO: replace if re-initialization is required
-	initializer, err := inboxABI.Pack("initializeV2", addrs.SolverNetOutbox)
+	initializer, err := solverNetInboxInitializer(addrs.SolverNetOutbox)
 	if err != nil {
 		return errors.Wrap(err, "pack initializer")
 	}
@@ -439,9 +437,7 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 		})
 	}
 
-	var outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
-	// TODO: replace if re-initialization is required
-	initializer, err := outboxABI.Pack("initializeV2", chainIDs, inboxes)
+	initializer, err := solverNetOutboxInitializer(chainIDs, inboxes)
 	if err != nil {
 		return errors.Wrap(err, "pack initializer")
 	}
@@ -510,9 +506,10 @@ func upgradeSolverNetExecutor(ctx context.Context, s shared, network netconf.Net
 		chainIDs = append(chainIDs, dest.ID)
 	}
 
-	// var executorABI = mustGetABI(bindings.SolverNetExecutorMetaData)
-	// TODO: replace if re-initialization is required
-	initializer := []byte{}
+	initializer, err := solverNetExecutorInitializer()
+	if err != nil {
+		return errors.Wrap(err, "pack initializer")
+	}
 
 	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetExecutor", s.upgrader, s.deployer, addrs.SolverNetExecutor, addrs.SolverNetOutbox, initializer, chainIDs)
 	if err != nil {
@@ -530,20 +527,75 @@ func upgradeSolverNetExecutor(ctx context.Context, s shared, network netconf.Net
 }
 
 func upgradeSolverNetAll(ctx context.Context, s shared, network netconf.Network, c chain) error {
-	err := upgradeSolverNetInbox(ctx, s, network, c)
+	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
 	if err != nil {
-		return errors.Wrap(err, "upgradeSolverNetInbox")
+		return errors.Wrap(err, "get addrs")
 	}
 
-	err = upgradeSolverNetOutbox(ctx, s, network, c)
-	if err != nil {
-		return errors.Wrap(err, "upgradeSolverNetOutbox")
+	var chainIDs []uint64
+	var inboxes []bindings.ISolverNetOutboxInboxConfig
+	for _, dest := range network.EVMChains() {
+		provider, ok := solvernet.Provider(c.ChainID, dest.ID)
+		if !ok {
+			continue
+		}
+
+		chainIDs = append(chainIDs, dest.ID)
+		inboxes = append(inboxes, bindings.ISolverNetOutboxInboxConfig{
+			Inbox:    addrs.SolverNetInbox,
+			Provider: provider,
+		})
 	}
 
-	err = upgradeSolverNetExecutor(ctx, s, network, c)
-	if err != nil {
-		return errors.Wrap(err, "upgradeSolverNetExecutor")
+	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
+
+	portal := addrs.Portal
+	if solvernet.IsHLOnly(c.ChainID) {
+		portal = common.Address{}
 	}
+
+	inboxInitializer, err := solverNetInboxInitializer(addrs.SolverNetOutbox)
+	if err != nil {
+		return errors.Wrap(err, "pack inbox initializer")
+	}
+
+	outboxInitializer, err := solverNetOutboxInitializer(chainIDs, inboxes)
+	if err != nil {
+		return errors.Wrap(err, "pack outbox initializer")
+	}
+
+	executorInitializer, err := solverNetExecutorInitializer()
+	if err != nil {
+		return errors.Wrap(err, "pack executor initializer")
+	}
+
+	config := bindings.SolverNetAdminUpgradeAllConfig{
+		Admin:    s.upgrader,
+		Deployer: s.deployer,
+		Inbox:    addrs.SolverNetInbox,
+		Outbox:   addrs.SolverNetOutbox,
+		Executor: addrs.SolverNetExecutor,
+		Omni:     portal,
+		Mailbox:  mailbox,
+	}
+
+	data := [][]byte{
+		inboxInitializer,
+		outboxInitializer,
+		executorInitializer,
+	}
+
+	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetAll", config, data, chainIDs, inboxes)
+	if err != nil {
+		return errors.Wrap(err, "pack calldata")
+	}
+
+	out, err := s.runForge(ctx, c.RPCEndpoint, solverNetAdminScriptName, solveContracts, calldata, s.upgrader, s.deployer)
+	if err != nil {
+		return errors.Wrap(err, "run forge", "out", out)
+	}
+
+	log.Info(ctx, "All SolverNet contracts upgraded ✅", "chain", c.Name, "out", out)
 
 	return nil
 }
