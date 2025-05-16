@@ -1,17 +1,11 @@
 import type { OmniContracts } from '@omni-network/core'
-import {
-  type UseQueryOptions,
-  type UseQueryResult,
-  useQuery,
-} from '@tanstack/react-query'
+import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useOmniContext } from '../context/omni.js'
 import { getOmniContractsQueryOptions } from '../utils/getContracts.js'
+import type { QueryOpts } from './types.js'
 
 export type UseOmniContractsParameters = {
-  queryOpts?: Omit<
-    UseQueryOptions<OmniContracts>,
-    'queryKey' | 'queryFn' | 'enabled'
-  >
+  queryOpts?: QueryOpts<OmniContracts>
 }
 
 export type UseOmniContractsResult = UseQueryResult<OmniContracts>
