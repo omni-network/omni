@@ -22,7 +22,7 @@ func TestThresholdReference(t *testing.T) {
 	resp := make(map[netconf.ID]map[string]map[eoa.Role]map[string]string)
 	for _, network := range []netconf.ID{netconf.Staging, netconf.Omega, netconf.Mainnet} {
 		resp[network] = make(map[string]map[eoa.Role]map[string]string)
-		for _, token := range []tokens.Asset{tokens.ETH, tokens.OMNI} {
+		for _, token := range []tokens.Asset{tokens.ETH, tokens.OMNI, tokens.MNT} {
 			resp[network][token.Symbol] = make(map[eoa.Role]map[string]string)
 			for _, role := range eoa.AllRoles() {
 				resp[network][token.Symbol][role] = make(map[string]string)
