@@ -76,12 +76,12 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
-        uint256 snapshot = vm.snapshot();
+        uint256 snapshot = vm.snapshotState();
         test_reject_reverts();
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
 
         test_reject_nativeDeposit_succeeds();
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
 
         test_reject_erc20Deposit_succeeds();
     }

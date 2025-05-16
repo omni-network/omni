@@ -72,9 +72,9 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
-        uint256 snapshot = vm.snapshot();
+        uint256 snapshot = vm.snapshotState();
         test_validate_reverts();
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
 
         test_validate_succeeds();
     }

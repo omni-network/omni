@@ -127,15 +127,15 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
-        uint256 snapshot = vm.snapshot();
+        uint256 snapshot = vm.snapshotState();
         test_close_reverts();
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
 
         test_close_nativeDeposit_succeeds();
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
 
         test_close_erc20Deposit_succeeds();
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
 
         test_close_localOrder_succeeds();
     }
