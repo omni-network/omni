@@ -68,12 +68,21 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         outbox.fill{ value: fillFee }(orderId, fillDataBytes, fillerData);
 
         // `fill` cannot be called twice for the same order
+        uint256 snapshot = vm.snapshotState();
         fillData.srcChainId = srcChainId;
         fillDataBytes = abi.encode(fillData);
         outbox.fill{ value: fillFee }(orderId, fillDataBytes, fillerData);
         vm.expectRevert(ISolverNetOutbox.AlreadyFilled.selector);
         outbox.fill{ value: fillFee }(orderId, fillDataBytes, fillerData);
+        vm.revertToState(snapshot);
 
+        // `fill` cannot be called twice if it had been filled using the old fill hash
+        bytes32 oldFillHash = keccak256(abi.encode(orderId, fillDataBytes));
+        bytes32 value = bytes32(type(uint256).max);
+        bytes32 slot = keccak256(abi.encode(oldFillHash, uint256(4)));
+        vm.store(address(outbox), slot, value);
+        vm.expectRevert(ISolverNetOutbox.AlreadyFilled.selector);
+        outbox.fill{ value: fillFee }(orderId, fillDataBytes, fillerData);
         vm.stopPrank();
     }
 

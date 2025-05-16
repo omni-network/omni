@@ -128,12 +128,12 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
-        uint256 snapshot = vm.snapshot();
+        uint256 snapshot = vm.snapshotState();
         test_open_reverts();
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
 
         test_open_nativeDeposit_succeeds();
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
 
         test_open_erc20Deposit_succeeds();
     }

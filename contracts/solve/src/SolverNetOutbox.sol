@@ -158,8 +158,7 @@ contract SolverNetOutbox is
      * @param originData Data emitted on the origin to parameterize the fill
      */
     function didFill(bytes32 orderId, bytes calldata originData) external view returns (bool) {
-        SolverNet.FillOriginData memory fillOriginData = abi.decode(originData, (SolverNet.FillOriginData));
-        return _filled[_fillHash(orderId, fillOriginData)] != bytes32(0);
+        return _didFill(orderId, originData);
     }
 
     /**
@@ -291,10 +290,9 @@ contract SolverNetOutbox is
         address claimant,
         uint256 totalNativeValue
     ) private {
-        // mark filled on outbox (here)
+        if (_didFill(orderId, fillOriginData)) revert AlreadyFilled();
         bytes32 fillHash = _fillHash(orderId, fillOriginData);
-        if (_filled[fillHash] != bytes32(0)) revert AlreadyFilled();
-        _filled[fillHash] = _settleHash(orderId, fillHash, claimant);
+        _filled[fillHash] = _settleHash(orderId, fillHash, claimant); // mark filled on outbox (here)
 
         uint256 fee = _routeMsg(orderId, fillHash, claimant, fillOriginData);
         uint256 totalSpent = totalNativeValue + fee;
@@ -368,7 +366,16 @@ contract SolverNetOutbox is
     }
 
     /**
-     * @dev Returns call hash. Used to discern fulfillment.
+     * @dev Returns old fill hash. Used to discern fulfillment.
+     *      Will be removed after inbox and outbox are migrated to new fill hash.
+     */
+    function _deprecatedFillHash(bytes32 srcReqId, bytes calldata originData) private pure returns (bytes32) {
+        return keccak256(abi.encode(srcReqId, originData));
+    }
+
+    /**
+     * @dev Return fill hash without unnecessary double encoding.
+     *      This is the new method used to generate fill hashes.
      */
     function _fillHash(bytes32 srcReqId, SolverNet.FillOriginData memory fillOriginData)
         private
@@ -429,5 +436,28 @@ contract SolverNetOutbox is
             _inboxes[chainIds[i]] = configs[i];
             emit InboxSet(chainIds[i], configs[i].inbox, configs[i].provider);
         }
+    }
+
+    /**
+     * @notice Returns true if the order has been filled.
+     * @param orderId    ID of the order the source inbox.
+     * @param originData Data emitted on the origin to parameterize the fill
+     */
+    function _didFill(bytes32 orderId, bytes calldata originData) private view returns (bool) {
+        SolverNet.FillOriginData memory fillOriginData = abi.decode(originData, (SolverNet.FillOriginData));
+        if (_filled[_fillHash(orderId, fillOriginData)] != bytes32(0)) return true;
+        return _filled[_deprecatedFillHash(orderId, originData)] != bytes32(0);
+    }
+
+    /**
+     * @notice Returns true if the order has been filled.
+     * @dev This method is used in `_markFilled` so we don't sacrifice calldata optimizations.
+     * @param orderId        ID of the order the source inbox.
+     * @param fillOriginData ABI-decoded data emitted on the origin to parameterize the fill
+     */
+    function _didFill(bytes32 orderId, SolverNet.FillOriginData memory fillOriginData) private view returns (bool) {
+        if (_filled[_fillHash(orderId, fillOriginData)] != bytes32(0)) return true;
+        // `_deprecatedFillHash` is unfurled below as we cannot pass in bytes calldata here.
+        return _filled[keccak256(abi.encode(orderId, abi.encode(fillOriginData)))] != bytes32(0);
     }
 }

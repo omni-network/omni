@@ -185,12 +185,12 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
-        uint256 snapshot = vm.snapshot();
+        uint256 snapshot = vm.snapshotState();
         test_resolve_nativeDeposit_nativeExpense_succeeds();
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
 
         test_resolve_erc20Deposit_erc20Expense_succeeds();
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
 
         test_resolve_erc20Deposit_mixedExpenses_multicall_succeeds();
     }
