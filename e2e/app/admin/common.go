@@ -32,6 +32,18 @@ var solverNetAdminABI = mustGetABI(bindings.SolverNetAdminMetaData)
 // omniEVMName is the name of the omni EVM chain.
 const omniEVMName = "omni_evm"
 
+// adminScriptName is the name of the admin script contract.
+const adminScriptName = "Admin"
+
+// solverNetAdminScriptName is the name of the SolverNetAdmin script contract.
+const solverNetAdminScriptName = "SolverNetAdmin"
+
+// coreContracts is the path to the core contracts.
+const coreContracts = "./contracts/core"
+
+// solveContracts is the path to the SolverNet contracts.
+const solveContracts = "./contracts/solve"
+
 // shared contains common resources for all admin operations.
 type shared struct {
 	manager     common.Address
@@ -266,7 +278,7 @@ func maybeAll(chains []types.EVMChain, chain string, exclude []string) ([]string
 	return []string{chain}, nil
 }
 
-func (s shared) runForge(ctx context.Context, rpc string, input []byte, senders ...common.Address,
+func (s shared) runForge(ctx context.Context, rpc string, script string, dir string, input []byte, senders ...common.Address,
 ) (string, error) {
 	resume := false
 	attempts := 0
@@ -281,7 +293,7 @@ func (s shared) runForge(ctx context.Context, rpc string, input []byte, senders 
 			resume = true
 		}
 
-		out, err := runForgeOnce(ctx, rpc, input, s.cfg.Broadcast, resume, senders...)
+		out, err := runForgeOnce(ctx, rpc, script, dir, input, s.cfg.Broadcast, resume, senders...)
 		if err == nil {
 			return out, nil
 		}
@@ -298,12 +310,8 @@ func (s shared) runForge(ctx context.Context, rpc string, input []byte, senders 
 // runForge runs an Admin forge script against an rpc, returning the ouptut.
 // if the senders are known anvil accounts, it will sign with private keys directly.
 // otherwise, it will use the unlocked flag.
-func runForgeOnce(ctx context.Context, rpc string, input []byte, broadcast, resume bool, senders ...common.Address,
+func runForgeOnce(ctx context.Context, rpc string, script string, dir string, input []byte, broadcast, resume bool, senders ...common.Address,
 ) (string, error) {
-	// name of admin forge script in contracts/core
-	const script = "Admin"
-	// assumes running from root
-	dir := "./contracts/core"
 	pks := make([]string, 0, len(senders))
 	for _, sender := range senders {
 		pk, ok := eoa.DevPrivateKey(sender)
