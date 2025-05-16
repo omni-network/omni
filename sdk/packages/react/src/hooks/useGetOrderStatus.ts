@@ -1,10 +1,12 @@
 import {
   DidFillError,
+  type GetOrderReturn,
   type InboxStatus,
   type OrderStatus,
   WatchDidFillError,
 } from '@omni-network/core'
 import type { Hex } from 'viem'
+import type { QueryOpts } from './types.js'
 import { useDidFill } from './useDidFill.js'
 import { useGetOrder } from './useGetOrder.js'
 import { useInboxStatus } from './useInboxStatus.js'
@@ -16,6 +18,8 @@ type UseGetOrderStatusParams = {
   destChainId: number
   orderId?: Hex
   resolvedOrder?: ReturnType<typeof useParseOpenEvent>['resolvedOrder']
+  getOrderQueryOpts?: QueryOpts<GetOrderReturn>
+  didFillQueryOpts?: QueryOpts<boolean>
 }
 
 export function useGetOrderStatus({
@@ -23,12 +27,15 @@ export function useGetOrderStatus({
   destChainId,
   orderId,
   resolvedOrder,
+  getOrderQueryOpts,
+  didFillQueryOpts,
 }: UseGetOrderStatusParams) {
   // if resolved order is passed, we don't need to fetch the order
   const getOrder = useGetOrder({
     chainId: srcChainId,
     orderId,
     enabled: !resolvedOrder,
+    queryOpts: getOrderQueryOpts,
   })
 
   const resolved = resolvedOrder ?? getOrder.data?.[0]
@@ -40,6 +47,7 @@ export function useGetOrderStatus({
   const didFill = useDidFill({
     destChainId,
     resolvedOrder: resolved,
+    queryOpts: didFillQueryOpts,
   })
 
   const watchDidFill = useWatchDidFill({
