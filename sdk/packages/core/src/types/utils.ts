@@ -1,14 +1,11 @@
 /**
- * @description Create partial of T, but w/ required keys K
+ * @description combine members of intersections into readable types
  *
+ * @see {@link https://twitter.com/mattpocockuk/status/1622730173446557697?s=20&t=NdpAcmEFXY01xkqU3KO0Mg}
  * @example
- * PartialBy<{ foo: string, bar: number }, 'foo'>
- * => { foo?: string, bar: number }
- *
+ * Prettify<{ a: string } & { b: string } & { c: number, d: bigint }>
+ * => { a: string, b: string, c: number, d: bigint }
  */
-export type PartialBy<T, K extends keyof T> = Omit<T, K> &
-  ExactPartial<Pick<T, K>>
-
-export type ExactPartial<type> = {
-  [key in keyof type]?: type[key] | undefined
-}
+export type Prettify<T> = {
+  [K in keyof T]: T[K]
+} & {}
