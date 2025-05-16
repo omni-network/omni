@@ -20,6 +20,17 @@ import { Script } from "forge-std/Script.sol";
  * @notice A colleciton of SolverNet admin scripts.
  */
 contract SolverNetAdmin is Script {
+    /// @dev Config struct for upgrading all SolverNet contracts.
+    struct UpgradeAllConfig {
+        address admin;
+        address deployer;
+        address inbox;
+        address outbox;
+        address executor;
+        address omni;
+        address mailbox;
+    }
+
     /// @dev Start broadcating from `sender`
     modifier withBroadcast(address sender) {
         vm.startBroadcast(sender);
@@ -176,6 +187,38 @@ contract SolverNetAdmin is Script {
         require(executor.outbox() == _outbox, "outbox changed");
 
         new SolverNetPostUpgradeTest().runExecutor(proxy, chainIds);
+    }
+
+    /**
+     * @notice Upgrade all SolverNet contracts.
+     * @param config       Config struct containing all relevant addresses.
+     * @param data         The (re)initializer calldata to execute while upgrading the contracts.
+     * @param chainIds     All chain IDs connected to these contracts (used for testing outbox and executor)
+     * @param inboxConfigs The inbox configs to use for the SolverNetOutbox.
+     */
+    function upgradeAll(
+        UpgradeAllConfig calldata config,
+        bytes[] calldata data,
+        uint64[] calldata chainIds,
+        ISolverNetOutbox.InboxConfig[] calldata inboxConfigs
+    ) public {
+        require(data.length == 3, "data array length must be 3");
+
+        upgradeSolverNetInbox(config.admin, config.deployer, config.inbox, config.omni, config.mailbox, data[0]);
+
+        upgradeSolverNetOutbox(
+            config.admin,
+            config.deployer,
+            config.outbox,
+            config.executor,
+            config.omni,
+            config.mailbox,
+            data[1],
+            chainIds,
+            inboxConfigs
+        );
+
+        upgradeSolverNetExecutor(config.admin, config.deployer, config.executor, config.outbox, data[2], chainIds);
     }
 
     /**
