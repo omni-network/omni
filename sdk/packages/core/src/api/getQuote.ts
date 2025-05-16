@@ -8,11 +8,19 @@ import { toJSON } from '../utils/toJSON.js'
 export type GetQuoteParameters = {
   srcChainId?: number
   destChainId: number
-  mode: 'expense' | 'deposit'
-  deposit: Quoteable
-  expense: Quoteable
   environment?: Environment | string
-}
+} & (
+  | {
+      mode: 'deposit'
+      deposit: Omit<Quoteable, 'amount'>
+      expense: Omit<Quoteable, 'amount'> & { amount: bigint }
+    }
+  | {
+      mode: 'expense'
+      deposit: Omit<Quoteable, 'amount'> & { amount: bigint }
+      expense: Omit<Quoteable, 'amount'>
+    }
+)
 
 // the response from /quote endpoint (amounts are hex encoded bigints)
 type QuoteResponse = {
@@ -57,7 +65,7 @@ export async function getQuote(quote: GetQuoteParameters): Promise<Quote> {
 // trim params to create obj expected by /quote endpoint
 export const toQuoteUnit = (q: Quoteable, omitAmount: boolean) => ({
   amount: omitAmount ? undefined : q.amount,
-  token: q.isNative ? zeroAddress : q.token,
+  token: q.token ?? zeroAddress,
 })
 
 // asserts a json response is QuoteResponse
