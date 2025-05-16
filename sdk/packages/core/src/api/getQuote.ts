@@ -14,13 +14,13 @@ export type GetQuoteParameters = Prettify<
   } & (
     | {
         mode: 'deposit'
-        deposit: Omit<Quoteable, 'amount'>
-        expense: Omit<Quoteable, 'amount'> & { amount: bigint }
+        deposit: Prettify<Omit<Quoteable, 'amount'>>
+        expense: Prettify<Omit<Quoteable, 'amount'> & { amount: bigint }>
       }
     | {
         mode: 'expense'
-        deposit: Omit<Quoteable, 'amount'> & { amount: bigint }
-        expense: Omit<Quoteable, 'amount'>
+        deposit: Prettify<Omit<Quoteable, 'amount'> & { amount: bigint }>
+        expense: Prettify<Omit<Quoteable, 'amount'>>
       }
   )
 >
