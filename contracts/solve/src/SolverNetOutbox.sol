@@ -159,6 +159,7 @@ contract SolverNetOutbox is
      */
     function didFill(bytes32 orderId, bytes calldata originData) external view returns (bool) {
         SolverNet.FillOriginData memory fillOriginData = abi.decode(originData, (SolverNet.FillOriginData));
+        if (_filled[_deprecatedFillHash(orderId, originData)] != bytes32(0)) return true;
         return _filled[_fillHash(orderId, fillOriginData)] != bytes32(0);
     }
 
@@ -368,7 +369,16 @@ contract SolverNetOutbox is
     }
 
     /**
-     * @dev Returns call hash. Used to discern fulfillment.
+     * @dev Returns old fill hash. Used to discern fulfillment.
+     *      Will be removed after inbox and outbox are migrated to new fill hash.
+     */
+    function _deprecatedFillHash(bytes32 srcReqId, bytes calldata originData) private view returns (bytes32) {
+        return keccak256(abi.encode(srcReqId, originData));
+    }
+
+    /**
+     * @dev Return fill hash without unnecessary double encoding.
+     *      This is the new method used to generate fill hashes.
      */
     function _fillHash(bytes32 srcReqId, SolverNet.FillOriginData memory fillOriginData)
         private
