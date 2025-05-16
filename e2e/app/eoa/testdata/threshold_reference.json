@@ -2,24 +2,24 @@
  "mainnet": {
   "ETH": {
    "cold": {
-    "min": "4.106 ETH",
-    "target": "16.86 ETH"
+    "min": "4.144 ETH",
+    "target": "17.239999998 ETH"
    },
    "create3-deployer": {
     "min": "0.001 ETH",
     "target": "0.01 ETH"
    },
    "deployer": {
-    "min": "0.001 ETH",
-    "target": "0.01 ETH"
+    "min": "0.02 ETH",
+    "target": "0.2 ETH"
    },
    "flowgen": {
     "min": "0.01 ETH",
     "target": "1 ETH"
    },
    "hot": {
-    "min": "4.106 ETH",
-    "target": "16.86 ETH"
+    "min": "4.144 ETH",
+    "target": "17.239999999 ETH"
    },
    "manager": {
     "min": "0.02 ETH",
@@ -50,26 +50,76 @@
     "target": "0.2 ETH"
    }
   },
+  "MNT": {
+   "cold": {
+    "min": "4.144 MNT",
+    "target": "17.239999998 MNT"
+   },
+   "create3-deployer": {
+    "min": "0.001 MNT",
+    "target": "0.01 MNT"
+   },
+   "deployer": {
+    "min": "0.02 MNT",
+    "target": "0.2 MNT"
+   },
+   "flowgen": {
+    "min": "0.01 MNT",
+    "target": "1 MNT"
+   },
+   "hot": {
+    "min": "4.144 MNT",
+    "target": "17.239999999 MNT"
+   },
+   "manager": {
+    "min": "0.02 MNT",
+    "target": "0.2 MNT"
+   },
+   "monitor": {
+    "min": "0.5 MNT",
+    "target": "2 MNT"
+   },
+   "relayer": {
+    "min": "0.5 MNT",
+    "target": "2 MNT"
+   },
+   "solver": {
+    "min": "1 MNT",
+    "target": "3 MNT"
+   },
+   "tester": {
+    "min": "0 MNT",
+    "target": "0 MNT"
+   },
+   "upgrader": {
+    "min": "0.001 MNT",
+    "target": "0.01 MNT"
+   },
+   "xcaller": {
+    "min": "0.02 MNT",
+    "target": "0.2 MNT"
+   }
+  },
   "OMNI": {
    "cold": {
-    "min": "2053 OMNI",
-    "target": "8430 OMNI"
+    "min": "2072 OMNI",
+    "target": "8619.9999995 OMNI"
    },
    "create3-deployer": {
     "min": "0.5 OMNI",
     "target": "5 OMNI"
    },
    "deployer": {
-    "min": "0.5 OMNI",
-    "target": "5 OMNI"
+    "min": "10 OMNI",
+    "target": "100 OMNI"
    },
    "flowgen": {
     "min": "5 OMNI",
     "target": "500 OMNI"
    },
    "hot": {
-    "min": "2053 OMNI",
-    "target": "8430 OMNI"
+    "min": "2072 OMNI",
+    "target": "8620 OMNI"
    },
    "manager": {
     "min": "10 OMNI",
@@ -104,24 +154,24 @@
  "omega": {
   "ETH": {
    "cold": {
-    "min": "24.106 ETH",
-    "target": "116.86 ETH"
+    "min": "24.144 ETH",
+    "target": "117.24 ETH"
    },
    "create3-deployer": {
     "min": "0.001 ETH",
     "target": "0.01 ETH"
    },
    "deployer": {
-    "min": "0.001 ETH",
-    "target": "0.01 ETH"
+    "min": "0.02 ETH",
+    "target": "0.2 ETH"
    },
    "flowgen": {
     "min": "0.01 ETH",
     "target": "1 ETH"
    },
    "hot": {
-    "min": "24.106 ETH",
-    "target": "116.86 ETH"
+    "min": "24.144 ETH",
+    "target": "117.24 ETH"
    },
    "manager": {
     "min": "0.02 ETH",
@@ -152,26 +202,76 @@
     "target": "0.2 ETH"
    }
   },
+  "MNT": {
+   "cold": {
+    "min": "24.144 MNT",
+    "target": "117.24 MNT"
+   },
+   "create3-deployer": {
+    "min": "0.001 MNT",
+    "target": "0.01 MNT"
+   },
+   "deployer": {
+    "min": "0.02 MNT",
+    "target": "0.2 MNT"
+   },
+   "flowgen": {
+    "min": "0.01 MNT",
+    "target": "1 MNT"
+   },
+   "hot": {
+    "min": "24.144 MNT",
+    "target": "117.24 MNT"
+   },
+   "manager": {
+    "min": "0.02 MNT",
+    "target": "0.2 MNT"
+   },
+   "monitor": {
+    "min": "0.5 MNT",
+    "target": "2 MNT"
+   },
+   "relayer": {
+    "min": "0.5 MNT",
+    "target": "2 MNT"
+   },
+   "solver": {
+    "min": "1 MNT",
+    "target": "3 MNT"
+   },
+   "tester": {
+    "min": "10 MNT",
+    "target": "50 MNT"
+   },
+   "upgrader": {
+    "min": "0.001 MNT",
+    "target": "0.01 MNT"
+   },
+   "xcaller": {
+    "min": "0.02 MNT",
+    "target": "0.2 MNT"
+   }
+  },
   "OMNI": {
    "cold": {
-    "min": "12053 OMNI",
-    "target": "58430 OMNI"
+    "min": "12072 OMNI",
+    "target": "58620 OMNI"
    },
    "create3-deployer": {
     "min": "0.5 OMNI",
     "target": "5 OMNI"
    },
    "deployer": {
-    "min": "0.5 OMNI",
-    "target": "5 OMNI"
+    "min": "10 OMNI",
+    "target": "100 OMNI"
    },
    "flowgen": {
     "min": "5 OMNI",
     "target": "500 OMNI"
    },
    "hot": {
-    "min": "12053 OMNI",
-    "target": "58430 OMNI"
+    "min": "12072 OMNI",
+    "target": "58620 OMNI"
    },
    "manager": {
     "min": "10 OMNI",
@@ -252,6 +352,56 @@
    "xcaller": {
     "min": "0.02 ETH",
     "target": "0.2 ETH"
+   }
+  },
+  "MNT": {
+   "cold": {
+    "min": "25.104 MNT",
+    "target": "120.84 MNT"
+   },
+   "create3-deployer": {
+    "min": "0.001 MNT",
+    "target": "0.01 MNT"
+   },
+   "deployer": {
+    "min": "0.5 MNT",
+    "target": "2 MNT"
+   },
+   "flowgen": {
+    "min": "0.01 MNT",
+    "target": "1 MNT"
+   },
+   "hot": {
+    "min": "25.104 MNT",
+    "target": "120.84 MNT"
+   },
+   "manager": {
+    "min": "0.02 MNT",
+    "target": "0.2 MNT"
+   },
+   "monitor": {
+    "min": "0.5 MNT",
+    "target": "2 MNT"
+   },
+   "relayer": {
+    "min": "0.5 MNT",
+    "target": "2 MNT"
+   },
+   "solver": {
+    "min": "1 MNT",
+    "target": "3 MNT"
+   },
+   "tester": {
+    "min": "10 MNT",
+    "target": "50 MNT"
+   },
+   "upgrader": {
+    "min": "0.001 MNT",
+    "target": "0.01 MNT"
+   },
+   "xcaller": {
+    "min": "0.02 MNT",
+    "target": "0.2 MNT"
    }
   },
   "OMNI": {

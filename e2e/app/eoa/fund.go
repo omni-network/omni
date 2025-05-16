@@ -26,6 +26,7 @@ var (
 	tokenConversion = map[tokens.Asset]float64{
 		tokens.OMNI: 500,
 		tokens.ETH:  1,
+		tokens.MNT:  1,
 	}
 
 	// thresholdTiny is used for EOAs which are rarely used, mostly to deploy a handful of contracts per network.
@@ -60,7 +61,7 @@ var (
 		RoleCreate3Deployer: thresholdTiny,   // Only 1 contract per chain
 		RoleManager:         thresholdSmall,  // Rarely used
 		RoleUpgrader:        thresholdTiny,   // Rarely used
-		RoleDeployer:        thresholdTiny,   // Protected chains are only deployed once
+		RoleDeployer:        thresholdSmall,  // Protected chains are only deployed once but contract upgrades are more frequent
 		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc, on non-mainnet.
 		RoleXCaller:         thresholdSmall,  // XCaller funds used for sending xmsgs across networks.
 
@@ -95,6 +96,7 @@ var (
 	nativeTokens = map[tokens.Asset]bool{
 		tokens.ETH:  true,
 		tokens.OMNI: true,
+		tokens.MNT:  true,
 	}
 )
 
