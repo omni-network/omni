@@ -585,7 +585,7 @@ func upgradeSolverNetAll(ctx context.Context, s shared, network netconf.Network,
 		executorInitializer,
 	}
 
-	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetAll", config, data, chainIDs, inboxes)
+	calldata, err := solverNetAdminABI.Pack("upgradeAll", config, data, chainIDs, inboxes)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
