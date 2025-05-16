@@ -237,6 +237,11 @@ func (s shared) runHL(ctx context.Context, def app.Definition, fn func(context.C
 	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, _s.endpoints))
 
 	for _, _chain := range network.EVMChains() {
+		if s.cfg.Chain != "" && s.cfg.Chain != _chain.Name {
+			// If set, skip all but the specified chain.
+			continue
+		}
+
 		c, err := setupChainHL(ctx, _s, _chain)
 		if err != nil {
 			return errors.Wrap(err, "setup chain hl", "chain", _chain.Name)
