@@ -331,8 +331,9 @@ func runForgeOnce(ctx context.Context, rpc string, script string, dir string, in
 
 	args := []string{
 		"script", script,
-		"--slow",         // wait for each tx to succed before sending the next
-		"--rpc-url", rpc, // rpc endpoint, fb proxy for non-devnet
+		"--slow",                    // wait for each tx to succed before sending the next
+		"--disable-block-gas-limit", // disable block gas limit
+		"--rpc-url", rpc,            // rpc endpoint, fb proxy for non-devnet
 		"--sig", hexutil.Encode(input), // Admin.sol calldata
 	}
 
