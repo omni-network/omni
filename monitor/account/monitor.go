@@ -126,7 +126,7 @@ func monitorAccountOnce(
 	}
 
 	var isLow float64
-	if bi.LTE(balance, thresholds.MinBalance()) {
+	if bi.LT(balance, thresholds.MinBalance()) {
 		isLow = 1
 	}
 
@@ -203,7 +203,7 @@ func monitorSolverNetRoleTokenOnce(
 	}
 
 	var isLow float64
-	if bi.LTE(balance, thresh.MinBalance()) {
+	if bi.LT(balance, thresh.MinBalance()) {
 		isLow = 1
 	}
 
@@ -281,7 +281,7 @@ func monitorSponsorOnce(
 	thresholds := sponsor.FundThresholds
 
 	var isLow float64
-	if bi.LTE(balance, thresholds.MinBalance()) {
+	if bi.LT(balance, thresholds.MinBalance()) {
 		isLow = 1
 	}
 
