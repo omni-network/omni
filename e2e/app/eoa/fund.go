@@ -98,6 +98,22 @@ var (
 		tokens.OMNI: true,
 		tokens.MNT:  true,
 	}
+
+	// coreOnlyRoles are roles that are only used (and funded) on omni core chains.
+	coreOnlyRoles = []Role{RoleRelayer, RoleMonitor, RoleTester, RoleXCaller}
+
+	// nonMainnetNetworks are networks that are not mainnet and are used for testing.
+	nonMainnetNetworks = []netconf.ID{netconf.Omega, netconf.Staging, netconf.Devnet}
+
+	// excludeRoles maps asset to a set of roles to exclude from funding.
+	excludeRoles = map[tokens.Asset]map[Role]bool{
+		tokens.MNT: set(coreOnlyRoles...),
+	}
+
+	// excludeNetworks maps asset to a set of networks to exclude from funding.
+	excludeNetworks = map[tokens.Asset]map[netconf.ID]bool{
+		tokens.MNT: set(nonMainnetNetworks...),
+	}
 )
 
 func GetFundThresholds(token tokens.Asset, network netconf.ID, role Role) (FundThresholds, bool) {
@@ -160,6 +176,11 @@ func multipleSum(token tokens.Asset, network netconf.ID, multiplier uint64, role
 }
 
 func getThreshold(token tokens.Asset, network netconf.ID, role Role) (FundThresholds, bool) {
+	if shouldExclude(token, network, role) {
+		// Skip roles that are not supported by the token.
+		return FundThresholds{}, false
+	}
+
 	if !nativeTokens[token] {
 		// Only native tokenmeta are supported by default.
 		return FundThresholds{}, false
@@ -185,4 +206,17 @@ func getThreshold(token tokens.Asset, network netconf.ID, role Role) (FundThresh
 	thresh, ok := staticThresholdsByRole[role]
 
 	return thresh, ok
+}
+
+func shouldExclude(token tokens.Asset, network netconf.ID, role Role) bool {
+	return excludeRoles[token][role] || excludeNetworks[token][network]
+}
+
+func set[T comparable](ts ...T) map[T]bool {
+	m := make(map[T]bool)
+	for _, t := range ts {
+		m[t] = true
+	}
+
+	return m
 }

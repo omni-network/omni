@@ -52,8 +52,8 @@
   },
   "MNT": {
    "cold": {
-    "min": "4.144 MNT",
-    "target": "17.239999998 MNT"
+    "min": "2.104 MNT",
+    "target": "8.84 MNT"
    },
    "create3-deployer": {
     "min": "0.001 MNT",
@@ -68,20 +68,20 @@
     "target": "1 MNT"
    },
    "hot": {
-    "min": "4.144 MNT",
-    "target": "17.239999999 MNT"
+    "min": "2.104 MNT",
+    "target": "8.84 MNT"
    },
    "manager": {
     "min": "0.02 MNT",
     "target": "0.2 MNT"
    },
    "monitor": {
-    "min": "0.5 MNT",
-    "target": "2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "relayer": {
-    "min": "0.5 MNT",
-    "target": "2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "solver": {
     "min": "1 MNT",
@@ -96,8 +96,8 @@
     "target": "0.01 MNT"
    },
    "xcaller": {
-    "min": "0.02 MNT",
-    "target": "0.2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    }
   },
   "OMNI": {
@@ -204,52 +204,52 @@
   },
   "MNT": {
    "cold": {
-    "min": "24.144 MNT",
-    "target": "117.24 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "create3-deployer": {
-    "min": "0.001 MNT",
-    "target": "0.01 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "deployer": {
-    "min": "0.02 MNT",
-    "target": "0.2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "flowgen": {
-    "min": "0.01 MNT",
-    "target": "1 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "hot": {
-    "min": "24.144 MNT",
-    "target": "117.24 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "manager": {
-    "min": "0.02 MNT",
-    "target": "0.2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "monitor": {
-    "min": "0.5 MNT",
-    "target": "2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "relayer": {
-    "min": "0.5 MNT",
-    "target": "2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "solver": {
-    "min": "1 MNT",
-    "target": "3 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "tester": {
-    "min": "10 MNT",
-    "target": "50 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "upgrader": {
-    "min": "0.001 MNT",
-    "target": "0.01 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "xcaller": {
-    "min": "0.02 MNT",
-    "target": "0.2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    }
   },
   "OMNI": {
@@ -356,52 +356,52 @@
   },
   "MNT": {
    "cold": {
-    "min": "25.104 MNT",
-    "target": "120.84 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "create3-deployer": {
-    "min": "0.001 MNT",
-    "target": "0.01 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "deployer": {
-    "min": "0.5 MNT",
-    "target": "2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "flowgen": {
-    "min": "0.01 MNT",
-    "target": "1 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "hot": {
-    "min": "25.104 MNT",
-    "target": "120.84 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "manager": {
-    "min": "0.02 MNT",
-    "target": "0.2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "monitor": {
-    "min": "0.5 MNT",
-    "target": "2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "relayer": {
-    "min": "0.5 MNT",
-    "target": "2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "solver": {
-    "min": "1 MNT",
-    "target": "3 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "tester": {
-    "min": "10 MNT",
-    "target": "50 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "upgrader": {
-    "min": "0.001 MNT",
-    "target": "0.01 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    },
    "xcaller": {
-    "min": "0.02 MNT",
-    "target": "0.2 MNT"
+    "min": "0 MNT",
+    "target": "0 MNT"
    }
   },
   "OMNI": {
