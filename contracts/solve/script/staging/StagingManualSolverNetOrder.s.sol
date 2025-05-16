@@ -18,7 +18,7 @@ contract StagingManualSolverNetOrderScript is SolverNetStagingFixtures {
     uint96 internal depositAmount = uint96(msgValue);
     address internal owner = 0xA779fC675Db318dab004Ab8D538CB320D0013F42;
     address internal target = owner;
-    uint64 internal destChainId = 11_155_111;
+    uint64 internal destChainId = 17_000;
 
     function run() public {
         IERC7683.OnchainCrossChainOrder memory order = _getOrder();
