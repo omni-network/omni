@@ -25,42 +25,38 @@ For example:
 
 ## How it Works
 
-This utility wraps your intended destination contract call (`call`) within another call targeting the `SolverNetMiddleman` contract. When the solver fulfills the intent:
+This utility wraps your intended destination contract call (`call`) within another call targeting the `SolverNetExecutor` contract. When the solver fulfills the intent:
 
-1.  The `SolverNetMiddleman` contract is called on the destination chain.
-2.  The `SolverNetMiddleman` executes the target `call` specified (e.g., `Vault.deposit()` which credits vault shares to `msg.sender`).
-3.  After the original `call` completes, the `SolverNetMiddleman` (which *was* the `msg.sender` and received the assets) checks its own balance of a specified `token`.
+1.  The `SolverNetExecutor` contract is called on the destination chain.
+2.  The `SolverNetExecutor` executes the target `call` specified (e.g., `Vault.deposit()` which credits vault shares to `msg.sender`).
+3.  After the original `call` completes, the `SolverNetExecutor` (which *was* the `msg.sender` and received the assets) checks its own balance of a specified `token`.
 4.  It transfers the *entire balance* of that `token` it holds to the specified final recipient address (`to`).
 
-Here's the relevant part of the `SolverNetMiddleman` contract:
+Here's the relevant part of the `SolverNetExecutor` contract:
 
 ```solidity
-contract SolverNetMiddleman {
+contract SolverNetExecutor {
     // ...
 
     /**
-     * @notice Execute a call and transfer any received tokens back to the recipient
+     * @notice Execute a call and transfer any received ERC20 tokens back to the recipient
      * @dev Intended to be used when interacting with contracts that don't allow us to specify a recipient
-     * @param token  Token to transfer (address(0) for ETH)
+     *      This should be triggered by `execute` by executing an external call against this Executor contract
+     * @param token  Token to transfer
      * @param to     Recipient address
      * @param target Call target address
      * @param data   Calldata for the call
      */
-    function executeAndTransfer(
-        address token,
-        address to,
-        address target,
-        bytes calldata data
-    ) external payable nonReentrant {
-        (bool success, ) = target.call{value: msg.value}(data); // Executes the original call
+    function executeAndTransfer(address token, address to, address target, bytes calldata data)
+        external
+        payable
+        onlySelf
+    {
+        (bool success,) = target.call{ value: msg.value }(data);
         if (!success) revert CallFailed();
 
-        // Transfer received assets to the intended recipient
-        if (token == address(0)) {
-            SafeTransferLib.safeTransferAllETH(to);
-        } else {
-            IERC20(token).safeTransferAll(to); // safeTransferAll checks balance and transfers if > 0
-        }
+        if (token == address(0)) SafeTransferLib.safeTransferAllETH(to);
+        else token.safeTransferAll(to);
     }
 
     // ...
@@ -69,12 +65,12 @@ contract SolverNetMiddleman {
 
 **Key Points:**
 
-*   The `token` in the `transfer` configuration of `withExecAndTransfer` is the address of the asset you expect the *middleman* to receive *as a result of* executing your `call`. This is the asset the middleman will forward to the final `to` address. Use `zeroAddress` if the `call` results in native ETH being sent to the middleman.
+*   The `token` in the `transfer` configuration of `withExecAndTransfer` is the address of the asset you expect the *executor* to receive *as a result of* executing your `call`. This is the asset the executor will forward to the final `to` address. Use `zeroAddress` if the `call` results in native ETH being sent to the executor.
 
 ## Usage
 
 1.  **Define your target call:** This is the call to the target contract function (e.g., `vault.deposit{ value: amount }()`) that sends assets to `msg.sender`.
-2.  **Wrap it:** Use `withExecAndTransfer`, providing the Omni `middlemanAddress`, your original call, the `token` you expect the middleman to receive, and the final recipient (`to`).
+2.  **Wrap it:** Use `withExecAndTransfer`, providing your original call, the `token` you expect the executor to receive, and the final recipient (`to`).
 3.  **Use the wrapped call:** Pass the result of `withExecAndTransfer` (which is a `Call` object itself) into the `calls` array for `useOrder`.
 
 ```typescript
@@ -92,7 +88,6 @@ const vaultABI = [
     },
 ] as const;
 
-const middlemanAddress = "0x..." as const;  // Omni contract address
 const vaultAddress = "0x..." as const;      // Your tokenized vault address
 const vaultTokenAddress = "0x..." as const; // The ERC20 token minted by the vault to msg.sender
 const vaultDepositAmt = parseEther('1');    // Amount to deposit into the vault
@@ -108,10 +103,9 @@ const targetCall = {
 
 // 2. Wrap the call
 const wrappedCall = withExecAndTransfer({
-    middlemanAddress: middlemanAddress,
     call: targetCall,
     transfer: {
-        token: vaultTokenAddress, // Token the middleman should forward
+        token: vaultTokenAddress, // Token the executor should forward
         to: userAddress,          // Final recipient
     }
 });
