@@ -31,6 +31,7 @@ var (
 		eigen,
 		staking,
 		morpho,
+		cygnus,
 	}
 
 	// dynamic is the list of dynamic targets, see RefreshForever.
