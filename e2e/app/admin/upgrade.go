@@ -140,6 +140,11 @@ func UpgradeSolverNetExecutor(ctx context.Context, def app.Definition, cfg Confi
 	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetExecutor)
 }
 
+// UpgradeSolverNetAll upgrades all of the SolverNet contracts.
+func UpgradeSolverNetAll(ctx context.Context, def app.Definition, cfg Config) error {
+	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetAll)
+}
+
 // SetPortalFeeOracleV2 upgrades the OmniPortal's FeeOracle to the FeeOracleV2 contract.
 func SetPortalFeeOracleV2(ctx context.Context, def app.Definition, cfg Config) error {
 	return setup(def, cfg).run(ctx, setPortalFeeOracleV2)
@@ -526,6 +531,25 @@ func upgradeSolverNetExecutor(ctx context.Context, s shared, network netconf.Net
 	}
 
 	log.Info(ctx, "SolverNetExecutor upgraded ✅", "chain", c.Name, "addr", addrs.SolverNetExecutor, "out", out)
+
+	return nil
+}
+
+func upgradeSolverNetAll(ctx context.Context, s shared, network netconf.Network, c chain) error {
+	err := upgradeSolverNetInbox(ctx, s, network, c)
+	if err != nil {
+		return errors.Wrap(err, "upgradeSolverNetInbox")
+	}
+
+	err = upgradeSolverNetOutbox(ctx, s, network, c)
+	if err != nil {
+		return errors.Wrap(err, "upgradeSolverNetOutbox")
+	}
+
+	err = upgradeSolverNetExecutor(ctx, s, network, c)
+	if err != nil {
+		return errors.Wrap(err, "upgradeSolverNetExecutor")
+	}
 
 	return nil
 }
