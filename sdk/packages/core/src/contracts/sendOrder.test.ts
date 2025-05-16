@@ -1,5 +1,5 @@
 import { mockL1Client, testOrder } from '@omni-network/test-utils'
-import { type Client, zeroAddress } from 'viem'
+import type { Client } from 'viem'
 import { expect, test, vi } from 'vitest'
 import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
@@ -86,7 +86,7 @@ test('behaviour: sets the order value when the deposit token address is zero', a
     sendOrder({
       client: mockL1Client,
       inboxAddress: '0xaddress',
-      order: { ...testOrder, deposit: { token: zeroAddress, amount: 3n } },
+      order: { ...testOrder, deposit: { amount: 3n } },
     }),
   ).resolves.toEqual('0xtxHash')
   expect(writeContract).toHaveBeenLastCalledWith(mockL1Client, {

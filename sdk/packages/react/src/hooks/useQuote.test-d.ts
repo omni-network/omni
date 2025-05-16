@@ -7,8 +7,8 @@ test('type: useQuote', () => {
   const result = useQuote({
     destChainId: 2,
     mode: 'expense',
-    deposit: { isNative: true },
-    expense: { isNative: true },
+    deposit: { amount: 0n, token: '0x00' },
+    expense: { token: '0x00' },
     enabled: true,
   })
 

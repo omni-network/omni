@@ -1,22 +1,20 @@
-import type { Quoteable } from '@omni-network/core'
 import * as core from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
+import { zeroAddress } from 'viem'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { quote, renderHook } from '../../test/index.js'
 import { useQuote } from './useQuote.js'
-
-const token = '0x123'
 
 beforeEach(() => {
   vi.spyOn(core, 'getQuote').mockResolvedValue(quote)
 })
 
-const params = {
+const params: Parameters<typeof useQuote>[0] = {
   srcChainId: 1,
   destChainId: 2,
   mode: 'expense',
-  deposit: { token, isNative: false } satisfies Quoteable,
-  expense: { isNative: true } satisfies Quoteable,
+  deposit: { amount: 100n },
+  expense: {},
   enabled: true,
 } as const
 
@@ -48,12 +46,17 @@ test('default: fetches a quote once enabled', async () => {
 test('parameters: expense', () => {
   const { result, rerender } = renderQuoteHook({
     ...params,
-    expense: { token, isNative: false },
+    mode: 'deposit',
+    expense: { amount: 100n },
   })
 
   expect(result.current).toBeDefined()
 
-  rerender({ ...params, expense: { token, isNative: true } })
+  rerender({ ...params, expense: { token: '0x123', amount: 100n } })
+
+  expect(result.current).toBeDefined()
+
+  rerender({ ...params, expense: { token: zeroAddress, amount: 100n } })
 
   expect(result.current).toBeDefined()
 })
@@ -61,12 +64,17 @@ test('parameters: expense', () => {
 test('parameters: deposit', () => {
   const { result, rerender } = renderQuoteHook({
     ...params,
-    deposit: { token, isNative: false },
+    mode: 'expense',
+    deposit: { amount: 100n },
   })
 
   expect(result.current).toBeDefined()
 
-  rerender({ ...params, expense: { token, isNative: true } })
+  rerender({ ...params, deposit: { token: '0x123', amount: 100n } })
+
+  expect(result.current).toBeDefined()
+
+  rerender({ ...params, deposit: { token: zeroAddress, amount: 100n } })
 
   expect(result.current).toBeDefined()
 })
@@ -75,9 +83,7 @@ test('parameters: mode', () => {
   const { result, rerender } = renderQuoteHook({
     ...params,
     mode: 'expense',
-    deposit: { isNative: true, amount: 100n },
-    // TODO expense amount shouldn't be allowed if mode === 'expense'
-    expense: { isNative: true, amount: 100n },
+    deposit: { amount: 100n },
   })
 
   expect(result.current).toBeDefined()
@@ -85,8 +91,8 @@ test('parameters: mode', () => {
   rerender({
     ...params,
     mode: 'deposit',
-    deposit: { isNative: true, amount: 100n },
-    expense: { isNative: true, amount: 100n },
+    deposit: {},
+    expense: { token: zeroAddress, amount: 100n },
   })
 
   expect(result.current).toBeDefined()
@@ -94,6 +100,19 @@ test('parameters: mode', () => {
 
 test('behaviour: quote does not fire when enabled is false', () => {
   const { result } = renderQuoteHook({ ...params, enabled: false })
+
+  expect(result.current.isPending).toBe(true)
+  expect(result.current.query.data).toBeUndefined()
+  expect(result.current.query.isFetched).toBe(false)
+})
+
+test('behaviour: quote does not fire when both deposit and expense are zero', () => {
+  const { result } = renderQuoteHook({
+    ...params,
+    enabled: true,
+    deposit: { token: zeroAddress, amount: 0n },
+    expense: { token: zeroAddress },
+  })
 
   expect(result.current.isPending).toBe(true)
   expect(result.current.query.data).toBeUndefined()

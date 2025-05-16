@@ -75,11 +75,10 @@ describe.concurrent('useQuote()', () => {
           destChainId: mockL2Id,
           deposit: {
             amount: 1n,
-            isNative: true,
+            token: zeroAddress,
           },
           expense: {
-            amount: 1n,
-            isNative: true,
+            token: zeroAddress,
           },
         })
       },
@@ -106,12 +105,11 @@ describe.concurrent('useQuote()', () => {
           srcChainId: mockL1Id,
           destChainId: mockL2Id,
           deposit: {
-            amount: 1n,
-            isNative: true,
+            token: zeroAddress,
           },
           expense: {
             amount: 1n,
-            isNative: true,
+            token: zeroAddress,
           },
         })
       },
@@ -138,8 +136,8 @@ describe.concurrent('useQuote()', () => {
           mode: 'expense',
           srcChainId: 1,
           destChainId: 17000,
-          deposit: { isNative: true, amount: parseEther('1') },
-          expense: { isNative: true },
+          deposit: { token: zeroAddress, amount: parseEther('1') },
+          expense: { token: zeroAddress },
         })
       },
       { wrapper: ContextProvider },
@@ -166,8 +164,8 @@ describe.concurrent('useQuote()', () => {
           mode: 'expense',
           srcChainId: 1,
           destChainId: 42161,
-          deposit: { isNative: true },
-          expense: { isNative: true },
+          deposit: { token: zeroAddress, amount: 0n },
+          expense: { token: zeroAddress },
         })
       },
       { wrapper: ContextProvider },
