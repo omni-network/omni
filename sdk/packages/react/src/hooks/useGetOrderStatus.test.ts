@@ -3,11 +3,21 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { renderHook } from '../../test/index.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 
-const { useInboxStatus, useWatchDidFill, useDidFill } = vi.hoisted(() => {
+const { useGetOrder, useInboxStatus, useWatchDidFill, useDidFill } = vi.hoisted(
+  () => {
+    return {
+      useGetOrder: vi.fn(),
+      useInboxStatus: vi.fn(),
+      useWatchDidFill: vi.fn(),
+      useDidFill: vi.fn(),
+    }
+  },
+)
+
+vi.mock('./useGetOrder.js', async () => {
+  const actual = await vi.importActual('./useGetOrder.js')
   return {
-    useInboxStatus: vi.fn(),
-    useWatchDidFill: vi.fn(),
-    useDidFill: vi.fn(),
+    useGetOrder: useGetOrder.mockReturnValue(actual.useGetOrder),
   }
 })
 
@@ -87,6 +97,32 @@ test('default: transitions status through order lifecycle', async () => {
   expect(result.current.status).toBe('filled')
   expect(result.current.error).toBeUndefined()
   expect(result.current.destTxHash).toBe('0x123')
+})
+
+test('parameters: getOrderQueryOpts and didFillQueryOpts are passed to useGetOrder and useDidFill', async () => {
+  const getOrderQueryOpts = { staleTime: 1000 }
+  const didFillQueryOpts = { staleTime: 2000 }
+
+  renderHook(
+    () =>
+      useGetOrderStatus({
+        destChainId: 1,
+        srcChainId: 2,
+        orderId: '0x123',
+        getOrderQueryOpts,
+        didFillQueryOpts,
+      }),
+    {
+      mockContractsCall: true,
+    },
+  )
+
+  expect(useGetOrder).toHaveBeenCalledWith(
+    expect.objectContaining({ queryOpts: getOrderQueryOpts }),
+  )
+  expect(useDidFill).toHaveBeenCalledWith(
+    expect.objectContaining({ queryOpts: didFillQueryOpts }),
+  )
 })
 
 test('behaviour: error defined if watchDidFill error', async () => {
