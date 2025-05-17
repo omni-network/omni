@@ -14,4 +14,6 @@ pub enum InboxError {
     InvalidMint,
     #[msg("Order not closable yet")]
     NotClosable,
+    #[msg("Invalid fill hash")]
+    InvalidFillHash,
 }

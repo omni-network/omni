@@ -19,20 +19,22 @@ type Claim struct {
 	//
 	// [1] = [WRITE] order_token_account
 	//
-	// [2] = [WRITE, SIGNER] claimer
+	// [2] = [WRITE] owner_token_account
 	//
-	// [3] = [WRITE] claimer_token_account
+	// [3] = [WRITE, SIGNER] claimer
 	//
-	// [4] = [] token_program
+	// [4] = [WRITE] claimer_token_account
+	//
+	// [5] = [] token_program
 	ag_solanago.AccountMetaSlice `bin:"-"`
 }
 
 // NewClaimInstructionBuilder creates a new `Claim` instruction builder.
 func NewClaimInstructionBuilder() *Claim {
 	nd := &Claim{
-		AccountMetaSlice: make(ag_solanago.AccountMetaSlice, 5),
+		AccountMetaSlice: make(ag_solanago.AccountMetaSlice, 6),
 	}
-	nd.AccountMetaSlice[4] = ag_solanago.Meta(Addresses["TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"])
+	nd.AccountMetaSlice[5] = ag_solanago.Meta(Addresses["TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"])
 	return nd
 }
 
@@ -160,37 +162,48 @@ func (inst *Claim) GetOrderTokenAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(1)
 }
 
+// SetOwnerTokenAccount sets the "owner_token_account" account.
+func (inst *Claim) SetOwnerTokenAccount(ownerTokenAccount ag_solanago.PublicKey) *Claim {
+	inst.AccountMetaSlice[2] = ag_solanago.Meta(ownerTokenAccount).WRITE()
+	return inst
+}
+
+// GetOwnerTokenAccount gets the "owner_token_account" account.
+func (inst *Claim) GetOwnerTokenAccount() *ag_solanago.AccountMeta {
+	return inst.AccountMetaSlice.Get(2)
+}
+
 // SetClaimerAccount sets the "claimer" account.
 func (inst *Claim) SetClaimerAccount(claimer ag_solanago.PublicKey) *Claim {
-	inst.AccountMetaSlice[2] = ag_solanago.Meta(claimer).WRITE().SIGNER()
+	inst.AccountMetaSlice[3] = ag_solanago.Meta(claimer).WRITE().SIGNER()
 	return inst
 }
 
 // GetClaimerAccount gets the "claimer" account.
 func (inst *Claim) GetClaimerAccount() *ag_solanago.AccountMeta {
-	return inst.AccountMetaSlice.Get(2)
+	return inst.AccountMetaSlice.Get(3)
 }
 
 // SetClaimerTokenAccount sets the "claimer_token_account" account.
 func (inst *Claim) SetClaimerTokenAccount(claimerTokenAccount ag_solanago.PublicKey) *Claim {
-	inst.AccountMetaSlice[3] = ag_solanago.Meta(claimerTokenAccount).WRITE()
+	inst.AccountMetaSlice[4] = ag_solanago.Meta(claimerTokenAccount).WRITE()
 	return inst
 }
 
 // GetClaimerTokenAccount gets the "claimer_token_account" account.
 func (inst *Claim) GetClaimerTokenAccount() *ag_solanago.AccountMeta {
-	return inst.AccountMetaSlice.Get(3)
+	return inst.AccountMetaSlice.Get(4)
 }
 
 // SetTokenProgramAccount sets the "token_program" account.
 func (inst *Claim) SetTokenProgramAccount(tokenProgram ag_solanago.PublicKey) *Claim {
-	inst.AccountMetaSlice[4] = ag_solanago.Meta(tokenProgram)
+	inst.AccountMetaSlice[5] = ag_solanago.Meta(tokenProgram)
 	return inst
 }
 
 // GetTokenProgramAccount gets the "token_program" account.
 func (inst *Claim) GetTokenProgramAccount() *ag_solanago.AccountMeta {
-	return inst.AccountMetaSlice.Get(4)
+	return inst.AccountMetaSlice.Get(5)
 }
 
 func (inst Claim) Build() *Instruction {
@@ -227,12 +240,15 @@ func (inst *Claim) Validate() error {
 			return errors.New("accounts.OrderTokenAccount is not set")
 		}
 		if inst.AccountMetaSlice[2] == nil {
-			return errors.New("accounts.Claimer is not set")
+			return errors.New("accounts.OwnerTokenAccount is not set")
 		}
 		if inst.AccountMetaSlice[3] == nil {
-			return errors.New("accounts.ClaimerTokenAccount is not set")
+			return errors.New("accounts.Claimer is not set")
 		}
 		if inst.AccountMetaSlice[4] == nil {
+			return errors.New("accounts.ClaimerTokenAccount is not set")
+		}
+		if inst.AccountMetaSlice[5] == nil {
 			return errors.New("accounts.TokenProgram is not set")
 		}
 	}
@@ -253,12 +269,13 @@ func (inst *Claim) EncodeToTree(parent ag_treeout.Branches) {
 					})
 
 					// Accounts of the instruction:
-					instructionBranch.Child("Accounts[len=5]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
+					instructionBranch.Child("Accounts[len=6]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
 						accountsBranch.Child(ag_format.Meta("   order_state", inst.AccountMetaSlice.Get(0)))
 						accountsBranch.Child(ag_format.Meta("  order_token_", inst.AccountMetaSlice.Get(1)))
-						accountsBranch.Child(ag_format.Meta("       claimer", inst.AccountMetaSlice.Get(2)))
-						accountsBranch.Child(ag_format.Meta("claimer_token_", inst.AccountMetaSlice.Get(3)))
-						accountsBranch.Child(ag_format.Meta(" token_program", inst.AccountMetaSlice.Get(4)))
+						accountsBranch.Child(ag_format.Meta("  owner_token_", inst.AccountMetaSlice.Get(2)))
+						accountsBranch.Child(ag_format.Meta("       claimer", inst.AccountMetaSlice.Get(3)))
+						accountsBranch.Child(ag_format.Meta("claimer_token_", inst.AccountMetaSlice.Get(4)))
+						accountsBranch.Child(ag_format.Meta(" token_program", inst.AccountMetaSlice.Get(5)))
 					})
 				})
 		})
@@ -288,6 +305,7 @@ func NewClaimInstruction(
 	// Accounts:
 	orderState ag_solanago.PublicKey,
 	orderTokenAccount ag_solanago.PublicKey,
+	ownerTokenAccount ag_solanago.PublicKey,
 	claimer ag_solanago.PublicKey,
 	claimerTokenAccount ag_solanago.PublicKey,
 	tokenProgram ag_solanago.PublicKey) *Claim {
@@ -295,6 +313,7 @@ func NewClaimInstruction(
 		SetOrderId(order_id).
 		SetOrderStateAccount(orderState).
 		SetOrderTokenAccount(orderTokenAccount).
+		SetOwnerTokenAccount(ownerTokenAccount).
 		SetClaimerAccount(claimer).
 		SetClaimerTokenAccount(claimerTokenAccount).
 		SetTokenProgramAccount(tokenProgram)

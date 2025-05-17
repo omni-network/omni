@@ -36,11 +36,17 @@ var (
 		msg:  "Order not closable yet",
 		name: "NotClosable",
 	}
+	ErrInvalidFillHash = &customErrorDef{
+		code: 6004,
+		msg:  "Invalid fill hash",
+		name: "InvalidFillHash",
+	}
 	Errors = map[int]CustomError{
 		6000: ErrInvalidID,
 		6001: ErrInvalidStatus,
 		6002: ErrInvalidMint,
 		6003: ErrNotClosable,
+		6004: ErrInvalidFillHash,
 	}
 )
 
