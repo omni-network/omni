@@ -7,20 +7,118 @@ import (
 	ag_solanago "github.com/gagliardetto/solana-go"
 )
 
-type EventClaimed struct {
-	OrderId    ag_solanago.PublicKey
-	OrderState ag_solanago.PublicKey
-	Status     Status
+type EVMCall struct {
+	Target   [20]uint8
+	Selector [4]uint8
+	Value    ag_binary.Uint128
+	Params   []byte
 }
 
-func (obj EventClaimed) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
-	// Serialize `OrderId` param:
-	err = encoder.Encode(obj.OrderId)
+func (obj EVMCall) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+	// Serialize `Target` param:
+	err = encoder.Encode(obj.Target)
 	if err != nil {
 		return err
 	}
-	// Serialize `OrderState` param:
-	err = encoder.Encode(obj.OrderState)
+	// Serialize `Selector` param:
+	err = encoder.Encode(obj.Selector)
+	if err != nil {
+		return err
+	}
+	// Serialize `Value` param:
+	err = encoder.Encode(obj.Value)
+	if err != nil {
+		return err
+	}
+	// Serialize `Params` param:
+	err = encoder.Encode(obj.Params)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *EVMCall) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+	// Deserialize `Target`:
+	err = decoder.Decode(&obj.Target)
+	if err != nil {
+		return err
+	}
+	// Deserialize `Selector`:
+	err = decoder.Decode(&obj.Selector)
+	if err != nil {
+		return err
+	}
+	// Deserialize `Value`:
+	err = decoder.Decode(&obj.Value)
+	if err != nil {
+		return err
+	}
+	// Deserialize `Params`:
+	err = decoder.Decode(&obj.Params)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type EVMTokenExpense struct {
+	// The address that will do token.transferFrom(...) on fill. Required to set allowance
+	Spender [20]uint8
+
+	// The address of the token on the destination chain
+	Token [20]uint8
+
+	// The amount of the token to spend (max == uint96)
+	Amount ag_binary.Uint128
+}
+
+func (obj EVMTokenExpense) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+	// Serialize `Spender` param:
+	err = encoder.Encode(obj.Spender)
+	if err != nil {
+		return err
+	}
+	// Serialize `Token` param:
+	err = encoder.Encode(obj.Token)
+	if err != nil {
+		return err
+	}
+	// Serialize `Amount` param:
+	err = encoder.Encode(obj.Amount)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *EVMTokenExpense) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+	// Deserialize `Spender`:
+	err = decoder.Decode(&obj.Spender)
+	if err != nil {
+		return err
+	}
+	// Deserialize `Token`:
+	err = decoder.Decode(&obj.Token)
+	if err != nil {
+		return err
+	}
+	// Deserialize `Amount`:
+	err = decoder.Decode(&obj.Amount)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type EventUpdated struct {
+	OrderId ag_solanago.PublicKey
+	Status  Status
+}
+
+func (obj EventUpdated) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+	// Serialize `OrderId` param:
+	err = encoder.Encode(obj.OrderId)
 	if err != nil {
 		return err
 	}
@@ -32,146 +130,9 @@ func (obj EventClaimed) MarshalWithEncoder(encoder *ag_binary.Encoder) (err erro
 	return nil
 }
 
-func (obj *EventClaimed) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+func (obj *EventUpdated) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
 	// Deserialize `OrderId`:
 	err = decoder.Decode(&obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Deserialize `OrderState`:
-	err = decoder.Decode(&obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Deserialize `Status`:
-	err = decoder.Decode(&obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type EventClosed struct {
-	OrderId    ag_solanago.PublicKey
-	OrderState ag_solanago.PublicKey
-	Status     Status
-}
-
-func (obj EventClosed) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
-	// Serialize `OrderId` param:
-	err = encoder.Encode(obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Serialize `OrderState` param:
-	err = encoder.Encode(obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Serialize `Status` param:
-	err = encoder.Encode(obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (obj *EventClosed) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
-	// Deserialize `OrderId`:
-	err = decoder.Decode(&obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Deserialize `OrderState`:
-	err = decoder.Decode(&obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Deserialize `Status`:
-	err = decoder.Decode(&obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type EventMarkFilled struct {
-	OrderId    ag_solanago.PublicKey
-	OrderState ag_solanago.PublicKey
-	Status     Status
-}
-
-func (obj EventMarkFilled) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
-	// Serialize `OrderId` param:
-	err = encoder.Encode(obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Serialize `OrderState` param:
-	err = encoder.Encode(obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Serialize `Status` param:
-	err = encoder.Encode(obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (obj *EventMarkFilled) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
-	// Deserialize `OrderId`:
-	err = decoder.Decode(&obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Deserialize `OrderState`:
-	err = decoder.Decode(&obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Deserialize `Status`:
-	err = decoder.Decode(&obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type EventOpened struct {
-	OrderId    ag_solanago.PublicKey
-	OrderState ag_solanago.PublicKey
-	Status     Status
-}
-
-func (obj EventOpened) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
-	// Serialize `OrderId` param:
-	err = encoder.Encode(obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Serialize `OrderState` param:
-	err = encoder.Encode(obj.OrderState)
-	if err != nil {
-		return err
-	}
-	// Serialize `Status` param:
-	err = encoder.Encode(obj.Status)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (obj *EventOpened) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
-	// Deserialize `OrderId`:
-	err = decoder.Decode(&obj.OrderId)
-	if err != nil {
-		return err
-	}
-	// Deserialize `OrderState`:
-	err = decoder.Decode(&obj.OrderState)
 	if err != nil {
 		return err
 	}
@@ -185,6 +146,7 @@ func (obj *EventOpened) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err er
 
 type InboxState struct {
 	Admin           ag_solanago.PublicKey
+	ChainId         uint64
 	DeployedAt      uint64
 	Bump            uint8
 	CloseBufferSecs int64
@@ -193,6 +155,11 @@ type InboxState struct {
 func (obj InboxState) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
 	// Serialize `Admin` param:
 	err = encoder.Encode(obj.Admin)
+	if err != nil {
+		return err
+	}
+	// Serialize `ChainId` param:
+	err = encoder.Encode(obj.ChainId)
 	if err != nil {
 		return err
 	}
@@ -220,6 +187,11 @@ func (obj *InboxState) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 	if err != nil {
 		return err
 	}
+	// Deserialize `ChainId`:
+	err = decoder.Decode(&obj.ChainId)
+	if err != nil {
+		return err
+	}
 	// Deserialize `DeployedAt`:
 	err = decoder.Decode(&obj.DeployedAt)
 	if err != nil {
@@ -242,8 +214,9 @@ type OpenParams struct {
 	OrderId       ag_solanago.PublicKey
 	Nonce         uint64
 	DepositAmount uint64
-	ExpenseMint   ag_solanago.PublicKey
-	ExpenseAmount uint64
+	DestChainId   uint64
+	Call          EVMCall
+	Expense       EVMTokenExpense
 }
 
 func (obj OpenParams) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
@@ -262,13 +235,18 @@ func (obj OpenParams) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error)
 	if err != nil {
 		return err
 	}
-	// Serialize `ExpenseMint` param:
-	err = encoder.Encode(obj.ExpenseMint)
+	// Serialize `DestChainId` param:
+	err = encoder.Encode(obj.DestChainId)
 	if err != nil {
 		return err
 	}
-	// Serialize `ExpenseAmount` param:
-	err = encoder.Encode(obj.ExpenseAmount)
+	// Serialize `Call` param:
+	err = encoder.Encode(obj.Call)
+	if err != nil {
+		return err
+	}
+	// Serialize `Expense` param:
+	err = encoder.Encode(obj.Expense)
 	if err != nil {
 		return err
 	}
@@ -291,13 +269,18 @@ func (obj *OpenParams) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 	if err != nil {
 		return err
 	}
-	// Deserialize `ExpenseMint`:
-	err = decoder.Decode(&obj.ExpenseMint)
+	// Deserialize `DestChainId`:
+	err = decoder.Decode(&obj.DestChainId)
 	if err != nil {
 		return err
 	}
-	// Deserialize `ExpenseAmount`:
-	err = decoder.Decode(&obj.ExpenseAmount)
+	// Deserialize `Call`:
+	err = decoder.Decode(&obj.Call)
+	if err != nil {
+		return err
+	}
+	// Deserialize `Expense`:
+	err = decoder.Decode(&obj.Expense)
 	if err != nil {
 		return err
 	}
@@ -305,15 +288,19 @@ func (obj *OpenParams) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 }
 
 type OrderState struct {
-	OrderId     ag_solanago.PublicKey
-	Status      Status
-	Owner       ag_solanago.PublicKey
-	CreatedAt   int64
-	ClosableAt  int64
-	ClaimableBy ag_solanago.PublicKey
-	Bump        uint8
-	Deposit     TokenAmount
-	Expense     TokenAmount
+	OrderId       ag_solanago.PublicKey
+	Status        Status
+	Owner         ag_solanago.PublicKey
+	CreatedAt     int64
+	ClosableAt    int64
+	ClaimableBy   ag_solanago.PublicKey
+	Bump          uint8
+	DepositAmount uint64
+	DepositMint   ag_solanago.PublicKey
+	DestChainId   uint64
+	DestCall      EVMCall
+	DestExpense   EVMTokenExpense
+	FillHash      ag_solanago.PublicKey
 }
 
 func (obj OrderState) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
@@ -352,13 +339,33 @@ func (obj OrderState) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error)
 	if err != nil {
 		return err
 	}
-	// Serialize `Deposit` param:
-	err = encoder.Encode(obj.Deposit)
+	// Serialize `DepositAmount` param:
+	err = encoder.Encode(obj.DepositAmount)
 	if err != nil {
 		return err
 	}
-	// Serialize `Expense` param:
-	err = encoder.Encode(obj.Expense)
+	// Serialize `DepositMint` param:
+	err = encoder.Encode(obj.DepositMint)
+	if err != nil {
+		return err
+	}
+	// Serialize `DestChainId` param:
+	err = encoder.Encode(obj.DestChainId)
+	if err != nil {
+		return err
+	}
+	// Serialize `DestCall` param:
+	err = encoder.Encode(obj.DestCall)
+	if err != nil {
+		return err
+	}
+	// Serialize `DestExpense` param:
+	err = encoder.Encode(obj.DestExpense)
+	if err != nil {
+		return err
+	}
+	// Serialize `FillHash` param:
+	err = encoder.Encode(obj.FillHash)
 	if err != nil {
 		return err
 	}
@@ -401,13 +408,33 @@ func (obj *OrderState) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 	if err != nil {
 		return err
 	}
-	// Deserialize `Deposit`:
-	err = decoder.Decode(&obj.Deposit)
+	// Deserialize `DepositAmount`:
+	err = decoder.Decode(&obj.DepositAmount)
 	if err != nil {
 		return err
 	}
-	// Deserialize `Expense`:
-	err = decoder.Decode(&obj.Expense)
+	// Deserialize `DepositMint`:
+	err = decoder.Decode(&obj.DepositMint)
+	if err != nil {
+		return err
+	}
+	// Deserialize `DestChainId`:
+	err = decoder.Decode(&obj.DestChainId)
+	if err != nil {
+		return err
+	}
+	// Deserialize `DestCall`:
+	err = decoder.Decode(&obj.DestCall)
+	if err != nil {
+		return err
+	}
+	// Deserialize `DestExpense`:
+	err = decoder.Decode(&obj.DestExpense)
+	if err != nil {
+		return err
+	}
+	// Deserialize `FillHash`:
+	err = decoder.Decode(&obj.FillHash)
 	if err != nil {
 		return err
 	}
@@ -442,37 +469,4 @@ func (value Status) String() string {
 	default:
 		return ""
 	}
-}
-
-type TokenAmount struct {
-	Mint   ag_solanago.PublicKey
-	Amount uint64
-}
-
-func (obj TokenAmount) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
-	// Serialize `Mint` param:
-	err = encoder.Encode(obj.Mint)
-	if err != nil {
-		return err
-	}
-	// Serialize `Amount` param:
-	err = encoder.Encode(obj.Amount)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (obj *TokenAmount) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
-	// Deserialize `Mint`:
-	err = decoder.Decode(&obj.Mint)
-	if err != nil {
-		return err
-	}
-	// Deserialize `Amount`:
-	err = decoder.Decode(&obj.Amount)
-	if err != nil {
-		return err
-	}
-	return nil
 }

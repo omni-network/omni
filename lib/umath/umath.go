@@ -24,6 +24,26 @@ var MaxUint256 = func() *big.Int {
 	return maxUint256
 }()
 
+var MaxUint128 = func() *big.Int {
+	const twoPow128Sub1 = "340282366920938463463374607431768211455"
+	maxUint128, ok := new(big.Int).SetString(twoPow128Sub1, 10)
+	if !ok {
+		panic("invalid max uint128")
+	}
+
+	return maxUint128
+}()
+
+var MaxUint96 = func() *big.Int {
+	const twoPow96Sub1 = "79228162514264337593543950335"
+	maxUint96, ok := new(big.Int).SetString(twoPow96Sub1, 10)
+	if !ok {
+		panic("invalid max uint96")
+	}
+
+	return maxUint96
+}()
+
 // Subtract returns a - b and true if a >= b, otherwise 0 and false.
 func Subtract(a, b uint64) (uint64, bool) {
 	if a < b {

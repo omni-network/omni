@@ -39,12 +39,13 @@ func AwaitConfirmedTransaction(ctx context.Context, cl *rpc.Client, txSig solana
 func GetAccountDataInto(ctx context.Context, cl *rpc.Client, address solana.PublicKey, val any) (*rpc.GetAccountInfoResult, error) {
 	info, err := cl.GetAccountInfoWithOpts(ctx, address, &rpc.GetAccountInfoOpts{
 		Commitment: rpc.CommitmentConfirmed,
+		Encoding:   solana.EncodingBase64,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "get account info")
 	}
 
-	err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(val)
+	err = bin.NewBorshDecoder(info.Value.Data.GetBinary()).Decode(val)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode account data")
 	}
