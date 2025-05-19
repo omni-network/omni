@@ -1,8 +1,24 @@
 import * as core from '@omni-network/core'
+import type { useQuery } from '@tanstack/react-query'
 import { waitFor } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { order, renderHook } from '../../test/index.js'
 import { useValidateOrder } from './useValidateOrder.js'
+
+const { useQueryMock } = vi.hoisted(() => {
+  return { useQueryMock: vi.fn() }
+})
+
+vi.mock('@tanstack/react-query', async () => {
+  const actual = await vi.importActual('@tanstack/react-query')
+  const actualUseQuery = actual.useQuery as typeof useQuery
+  return {
+    ...actual,
+    useQuery: useQueryMock.mockImplementation((params) => {
+      return actualUseQuery(params)
+    }),
+  }
+})
 
 const renderValidateOrderHook = (
   params: Parameters<typeof useValidateOrder>[0],
@@ -37,6 +53,15 @@ test('default: native transfer order', async () => {
   })
 
   await waitFor(() => expect(result.current.status).toBe('accepted'))
+})
+
+test('parameters: passes through queryOpts to useQuery', async () => {
+  const queryOpts = {
+    refetchInterval: 5000,
+    staleTime: 10000,
+  }
+  renderValidateOrderHook({ order, enabled: true, queryOpts })
+  expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining(queryOpts))
 })
 
 test('behaviour: pending if query not fired', async () => {
