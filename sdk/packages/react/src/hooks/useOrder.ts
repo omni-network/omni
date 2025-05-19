@@ -1,7 +1,9 @@
 import {
   type DidFillError,
   GetOrderError,
+  type GetOrderReturn,
   LoadContractsError,
+  type OmniContracts,
   OpenError,
   type OptionalAbis,
   type Order,
@@ -29,6 +31,7 @@ import {
 } from 'wagmi'
 import { getConnectorClient } from 'wagmi/actions'
 import type { NoClientError } from '../errors/index.js'
+import type { QueryOpts } from './types.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 import {
   type UseOmniContractsResult,
@@ -42,6 +45,9 @@ import {
 
 type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
   validateEnabled: boolean
+  omniContractsQueryOpts?: QueryOpts<OmniContracts>
+  getOrderQueryOpts?: QueryOpts<GetOrderReturn>
+  didFillQueryOpts?: QueryOpts<boolean>
 }
 
 type MutationError = LoadContractsError | NoClientError | WriteContractErrorType
@@ -95,10 +101,18 @@ type UseOrderStatus =
 export function useOrder<abis extends OptionalAbis>(
   params: UseOrderParams<abis>,
 ): UseOrderReturnType {
-  const { validateEnabled, ...order } = params
+  const {
+    validateEnabled,
+    omniContractsQueryOpts,
+    getOrderQueryOpts,
+    didFillQueryOpts,
+    ...order
+  } = params
   const srcChainId = order.srcChainId ?? useChainId()
   const config = useConfig()
-  const contractsResult = useOmniContracts()
+  const contractsResult = useOmniContracts({
+    queryOpts: omniContractsQueryOpts,
+  })
   const inboxAddress = contractsResult.data?.inbox
 
   const txMutation = useMutation<SendOrderReturn, MutationError>({
@@ -129,6 +143,8 @@ export function useOrder<abis extends OptionalAbis>(
     srcChainId,
     destChainId: order.destChainId,
     orderId: resolvedOrder?.orderId,
+    getOrderQueryOpts,
+    didFillQueryOpts,
   })
 
   const status = deriveStatus(
