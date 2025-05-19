@@ -21,7 +21,6 @@ const params: GetQuoteParameters = {
   destChainId: 2,
   mode: 'expense',
   deposit: { amount: 100n },
-  expense: {},
 }
 
 test('default: fetches a quote', async () => {

@@ -14,13 +14,13 @@ export type GetQuoteParameters = Prettify<
   } & (
     | {
         mode: 'deposit'
-        deposit: Prettify<Omit<Quoteable, 'amount'>>
+        deposit?: Prettify<Omit<Quoteable, 'amount'>>
         expense: Prettify<Omit<Quoteable, 'amount'> & { amount: bigint }>
       }
     | {
         mode: 'expense'
         deposit: Prettify<Omit<Quoteable, 'amount'> & { amount: bigint }>
-        expense: Prettify<Omit<Quoteable, 'amount'>>
+        expense?: Prettify<Omit<Quoteable, 'amount'>>
       }
   )
 >
@@ -48,8 +48,12 @@ export async function getQuote(quote: GetQuoteParameters): Promise<Quote> {
     body: toJSON({
       sourceChainId: srcChainId,
       destChainId: destChainId,
-      deposit: toQuoteUnit(depositInput, mode === 'deposit'),
-      expense: toQuoteUnit(expenseInput, mode === 'expense'),
+      deposit: depositInput
+        ? toQuoteUnit(depositInput, mode === 'deposit')
+        : {},
+      expense: expenseInput
+        ? toQuoteUnit(expenseInput, mode === 'expense')
+        : {},
     }),
   })
 

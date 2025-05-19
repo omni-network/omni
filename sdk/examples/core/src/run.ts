@@ -82,7 +82,6 @@ const quote = await getQuote({
   srcChainId: baseSepolia.id,
   destChainId: holesky.id,
   deposit: { amount: depositAmount },
-  expense: {},
   mode: 'expense',
   environment,
 })

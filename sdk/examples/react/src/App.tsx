@@ -59,7 +59,6 @@ function Quote() {
     srcChainId: baseSepolia.id,
     destChainId: holesky.id,
     deposit: { amount: parseEther('0.1') },
-    expense: {},
     mode: 'expense',
     enabled: true,
   })

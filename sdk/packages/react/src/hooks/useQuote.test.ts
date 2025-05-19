@@ -3,18 +3,17 @@ import { waitFor } from '@testing-library/react'
 import { zeroAddress } from 'viem'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { quote, renderHook } from '../../test/index.js'
-import { useQuote } from './useQuote.js'
+import { type UseQuoteParams, useQuote } from './useQuote.js'
 
 beforeEach(() => {
   vi.spyOn(core, 'getQuote').mockResolvedValue(quote)
 })
 
-const params: Parameters<typeof useQuote>[0] = {
+const params: UseQuoteParams = {
   srcChainId: 1,
   destChainId: 2,
   mode: 'expense',
   deposit: { amount: 100n },
-  expense: {},
   enabled: true,
 } as const
 
@@ -91,7 +90,6 @@ test('parameters: mode', () => {
   rerender({
     ...params,
     mode: 'deposit',
-    deposit: {},
     expense: { token: zeroAddress, amount: 100n },
   })
 
