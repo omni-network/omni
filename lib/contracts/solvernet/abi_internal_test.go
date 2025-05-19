@@ -38,7 +38,7 @@ func TestFillHash(t *testing.T) {
 	err = json.Unmarshal([]byte(data), &fill)
 	require.NoError(t, err)
 
-	encoded, err := encodeFillData(OrderID(orderID), fill)
+	encoded, err := encodeFillHash(OrderID(orderID), fill)
 	require.NoError(t, err)
 	require.Equal(t, expectedEncoding, hex.EncodeToString(encoded))
 

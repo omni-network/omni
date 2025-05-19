@@ -10,6 +10,8 @@ import (
 
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/solutil"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/umath"
@@ -45,6 +47,10 @@ func TestIntegration(t *testing.T) {
 	}
 	defer stop()
 	t.Logf("Pubkey: %s", privKey0.PublicKey())
+
+	id, err := solutil.ChainID(ctx, cl)
+	require.NoError(t, err)
+	require.Equal(t, evmchain.IDSolanaLocal, id)
 
 	t.Run("prefunded 500M SOL", func(t *testing.T) {
 		bal0, err := cl.GetBalance(ctx, privKey0.PublicKey(), rpc.CommitmentConfirmed)
@@ -426,10 +432,12 @@ func TestInbox(t *testing.T) {
 	})
 
 	t.Run("open and reject", func(t *testing.T) {
+		const reason uint8 = 99
 		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount, mintResp.TokenAccount)
 		require.NoError(t, err)
 		rejectOrder := anchorinbox.NewRejectInstruction(
 			openOrder.ID,
+			reason,
 			openOrder.StateAddress,
 			openOrder.TokenAddress,
 			mintResp.TokenAccount,
@@ -454,6 +462,26 @@ func TestInbox(t *testing.T) {
 		bal, err := cl.GetTokenAccountBalance(ctx, mintResp.TokenAccount, rpc.CommitmentConfirmed)
 		require.NoError(t, err)
 		require.Equal(t, 1e9-int64(depositAmount), int64(*bal.Value.UiAmount))
+
+		// Get OrderState account
+		var orderState anchorinbox.OrderStateAccount
+		_, err = solutil.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
+		require.NoError(t, err)
+
+		// Ensure OrderState account is correct
+		expOrderState := anchorinbox.OrderStateAccount{
+			OrderId:       openOrder.ID,
+			Status:        anchorinbox.StatusRejected,
+			Owner:         privKey0.PublicKey(),
+			Bump:          openOrder.StateBump,
+			CreatedAt:     orderState.CreatedAt,
+			ClosableAt:    orderState.ClosableAt,
+			DepositAmount: depositAmount,
+			DepositMint:   mintResp.MintAccount,
+			FillHash:      fillHash(t, openOrder.Params, orderState.ClosableAt),
+			RejectReason:  reason,
+		}
+		require.Equal(t, expOrderState, orderState)
 	})
 
 	t.Run("init fail", func(t *testing.T) {
@@ -522,6 +550,26 @@ func TestCreateMint(t *testing.T) {
 	defer stop()
 
 	_ = createMint(ctx, t, cl, privKey0)
+}
+
+func TestChainIDs(t *testing.T) {
+	ctx := t.Context()
+
+	cl := rpc.New("https://api.mainnet-beta.solana.com")
+	id, err := solutil.ChainID(ctx, cl)
+	if err != nil {
+		log.Error(ctx, "get chain ID", err)
+		t.Skip("Skip 3rd party network issues")
+	}
+	require.Equal(t, evmchain.IDSolana, id)
+
+	cl = rpc.New("https://api.testnet.solana.com")
+	id, err = solutil.ChainID(ctx, cl)
+	if err != nil {
+		log.Error(ctx, "get chain ID", err)
+		t.Skip("Skip 3rd party network issues")
+	}
+	require.Equal(t, evmchain.IDSolanaTest, id)
 }
 
 type createMintResp struct {

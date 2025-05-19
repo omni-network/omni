@@ -76,9 +76,10 @@ pub mod solver_inbox {
 
     /// Reject an order, refunding owner closing accounts.
     /// Only admin can reject orders.
-    pub fn reject(ctx: Context<Reject>, order_id: Pubkey) -> Result<()> {
+    pub fn reject(ctx: Context<Reject>, order_id: Pubkey, reason: u8) -> Result<()> {
         let state = &mut ctx.accounts.order_state;
         state.status = Status::Rejected;
+        state.reject_reason = reason;
 
         // Sign transfer and close_account with order token PDA
         let order_token_seeds: &[&[&[u8]]] = &[&[

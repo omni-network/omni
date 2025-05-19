@@ -30,7 +30,7 @@ func FillHash(
 	orderID OrderID,
 	fillData bindings.SolverNetFillOriginData,
 ) (common.Hash, error) {
-	encoded, err := encodeFillData(orderID, fillData)
+	encoded, err := encodeFillHash(orderID, fillData)
 	if err != nil {
 		return common.Hash{}, errors.Wrap(err, "encode fill data")
 	}
@@ -38,8 +38,26 @@ func FillHash(
 	return sha256.Sum256(encoded), nil
 }
 
+// EncodeFillData returns the abi encoded fill origin data.
+func EncodeFillData(
+	fillData bindings.SolverNetFillOriginData,
+) ([]byte, error) {
+	for _, expense := range fillData.Expenses {
+		if bi.GT(expense.Amount, umath.MaxUint96) {
+			return nil, errors.New("expense amount too large")
+		}
+	}
+
+	encoded, err := abi.Arguments{fillHashArgs[1]}.Pack(fillData)
+	if err != nil {
+		return nil, errors.Wrap(err, "pack fill data")
+	}
+
+	return encoded, nil
+}
+
 // This is equivalent to: abi.encode(orderId, fillOriginData);.
-func encodeFillData(orderID OrderID, fillData bindings.SolverNetFillOriginData) ([]byte, error) {
+func encodeFillHash(orderID OrderID, fillData bindings.SolverNetFillOriginData) ([]byte, error) {
 	for _, expense := range fillData.Expenses {
 		if bi.GT(expense.Amount, umath.MaxUint96) {
 			return nil, errors.New("expense amount too large")

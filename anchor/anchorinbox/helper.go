@@ -1,15 +1,20 @@
 package anchorinbox
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/solutil"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/programs/system"
 	"github.com/gagliardetto/solana-go/programs/token"
+	"github.com/gagliardetto/solana-go/rpc"
 )
 
 var EventNameUpdated = "EventUpdated"
@@ -133,4 +138,93 @@ func randU64() uint64 {
 	_, _ = rand.Read(b[:])
 
 	return binary.LittleEndian.Uint64(b[:])
+}
+
+// GetOrderState retrieves the order state account data for a given order ID.
+func GetOrderState(ctx context.Context, cl *rpc.Client, orderID solana.PublicKey) (OrderState, bool, error) {
+	// Find the PDA address for the order state account.
+	orderState, _, err := FindOrderStateAddress(orderID)
+	if err != nil {
+		return OrderState{}, false, errors.Wrap(err, "find order state address")
+	}
+
+	// Decode the account data into an OrderState struct.
+	var orderStateData OrderState
+	_, err = solutil.GetAccountDataInto(ctx, cl, orderState, &orderStateData)
+	if errors.Is(err, rpc.ErrNotFound) {
+		return OrderState{}, false, nil
+	} else if err != nil {
+		return OrderState{}, false, errors.Wrap(err, "get order state account data")
+	}
+
+	return orderStateData, true, nil
+}
+
+func FillData(chainID uint64, state OrderState) (bindings.SolverNetFillOriginData, error) {
+	deadline, err := umath.ToUint32(state.ClosableAt)
+	if err != nil {
+		return bindings.SolverNetFillOriginData{}, err
+	}
+
+	return bindings.SolverNetFillOriginData{
+		SrcChainId:   chainID,
+		DestChainId:  state.DestChainId,
+		FillDeadline: deadline,
+		Calls: []bindings.SolverNetCall{
+			{
+				Target:   state.DestCall.Target,
+				Selector: state.DestCall.Selector,
+				Value:    state.DestCall.Value.BigInt(),
+				Params:   state.DestCall.Params,
+			},
+		},
+		Expenses: []bindings.SolverNetTokenExpense{
+			{
+				Spender: state.DestExpense.Spender,
+				Token:   state.DestExpense.Token,
+				Amount:  state.DestExpense.Amount.BigInt(),
+			},
+		},
+	}, nil
+}
+
+// NewRejectOrder returns a new order rejection instruction.
+func NewRejectOrder(ctx context.Context, cl *rpc.Client, admin, orderID solana.PublicKey, reason uint8) (*Reject, error) {
+	state, ok, err := GetOrderState(ctx, cl, orderID)
+	if err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, errors.New("order not found")
+	}
+
+	ownerToken, _, err := solana.FindAssociatedTokenAddress(state.Owner, state.DepositMint)
+	if err != nil {
+		return nil, errors.Wrap(err, "find ata")
+	}
+
+	orderState, _, err := FindOrderStateAddress(orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	orderToken, _, err := FindOrderTokenAddress(orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	inboxState, _, err := FindInboxStateAddress()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewRejectInstruction(
+		orderID,
+		reason,
+		orderState,
+		orderToken,
+		ownerToken,
+		inboxState,
+		admin,
+		token.ProgramID,
+	), nil
 }

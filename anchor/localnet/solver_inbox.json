@@ -584,6 +584,10 @@
         {
           "name": "order_id",
           "type": "pubkey"
+        },
+        {
+          "name": "reason",
+          "type": "u8"
         }
       ]
     }
@@ -899,6 +903,10 @@
           {
             "name": "fill_hash",
             "type": "pubkey"
+          },
+          {
+            "name": "reject_reason",
+            "type": "u8"
           }
         ]
       }

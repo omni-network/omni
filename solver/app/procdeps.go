@@ -29,7 +29,6 @@ type procDeps struct {
 	ShouldReject func(ctx context.Context, order Order) (stypes.RejectReason, bool, error)
 	DidFill      func(ctx context.Context, order Order) (bool, error) // Note DidFill return false/nil on invalid orders, it only returns temporary RPC errors, so it is safe to retry always.
 
-	Accept func(ctx context.Context, order Order) error
 	Reject func(ctx context.Context, order Order, reason stypes.RejectReason) error
 	Fill   func(ctx context.Context, order Order) error
 	Claim  func(ctx context.Context, order Order) error

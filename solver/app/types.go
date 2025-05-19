@@ -65,10 +65,8 @@ type PendingData struct {
 	MinReceived        []bindings.IERC7683Output
 	DestinationSettler common.Address
 	DestinationChainID uint64
-
-	FillInstruction bindings.IERC7683FillInstruction
-	FillOriginData  []byte
-	MaxSpent        []bindings.IERC7683Output
+	FillOriginData     []byte
+	MaxSpent           []bindings.IERC7683Output
 }
 
 // FilledData contains order data that is only available for filled orders.
@@ -97,7 +95,6 @@ func newOrder(resolved OrderResolved, state OrderState, offset *big.Int) (Order,
 		},
 		pendingData: PendingData{
 			MinReceived:        resolved.MinReceived,
-			FillInstruction:    resolved.FillInstructions[0],
 			FillOriginData:     resolved.FillInstructions[0].OriginData,
 			DestinationChainID: resolved.FillInstructions[0].DestinationChainId,
 			DestinationSettler: settler,

@@ -301,6 +301,7 @@ type OrderState struct {
 	DestCall      EVMCall
 	DestExpense   EVMTokenExpense
 	FillHash      ag_solanago.PublicKey
+	RejectReason  uint8
 }
 
 func (obj OrderState) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
@@ -366,6 +367,11 @@ func (obj OrderState) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error)
 	}
 	// Serialize `FillHash` param:
 	err = encoder.Encode(obj.FillHash)
+	if err != nil {
+		return err
+	}
+	// Serialize `RejectReason` param:
+	err = encoder.Encode(obj.RejectReason)
 	if err != nil {
 		return err
 	}
@@ -435,6 +441,11 @@ func (obj *OrderState) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 	}
 	// Deserialize `FillHash`:
 	err = decoder.Decode(&obj.FillHash)
+	if err != nil {
+		return err
+	}
+	// Deserialize `RejectReason`:
+	err = decoder.Decode(&obj.RejectReason)
 	if err != nil {
 		return err
 	}
