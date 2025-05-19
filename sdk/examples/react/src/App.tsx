@@ -58,8 +58,7 @@ function Quote() {
   const quote = useQuote({
     srcChainId: baseSepolia.id,
     destChainId: holesky.id,
-    deposit: { amount: parseEther('0.1'), isNative: true },
-    expense: { isNative: true },
+    deposit: { amount: parseEther('0.1') },
     mode: 'expense',
     enabled: true,
   })
