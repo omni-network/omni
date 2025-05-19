@@ -21,6 +21,7 @@ const (
 	IDBSC         uint64 = 56
 	IDPolygon     uint64 = 137
 	IDOmniMainnet uint64 = 166
+	IDSolana      uint64 = 350
 	IDHyperEVM    uint64 = 999
 	IDMantle      uint64 = 5000
 	IDBase        uint64 = 8453
@@ -29,8 +30,9 @@ const (
 	IDPlume       uint64 = 98866
 
 	// Testnets.
-	IDBSCTestnet      uint64 = 97
-	IDOmniOmega       uint64 = 164
+	IDBSCTestnet uint64 = 97
+	IDOmniOmega  uint64 = 164
+
 	IDHyperEVMTestnet uint64 = 998
 	IDHolesky         uint64 = 17000
 	IDPolygonAmoy     uint64 = 80002
@@ -39,6 +41,7 @@ const (
 	IDArbSepolia      uint64 = 421614
 	IDSepolia         uint64 = 11155111
 	IDOpSepolia       uint64 = 11155420
+	IDSolanaTest      uint64 = 351
 
 	// Ephemeral.
 	IDOmniStaging uint64 = 1650
@@ -47,6 +50,7 @@ const (
 	IDMockL2      uint64 = 1654
 	IDMockOp      uint64 = 1655
 	IDMockArb     uint64 = 1656
+	IDSolanaLocal uint64 = 352
 
 	omniEVMName        = "omni_evm"
 	omniEVMBlockPeriod = time.Second * 2
@@ -117,6 +121,13 @@ var static = map[uint64]Metadata{
 		PrettyName:  "Omni Mainnet",
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,
+	},
+	IDSolana: {
+		ChainID:     IDSolana,
+		Name:        "solana",
+		PrettyName:  "Solana Mainnet Beta",
+		BlockPeriod: 400 * time.Millisecond,
+		NativeToken: tokens.SOL,
 	},
 	IDHyperEVM: {
 		ChainID:     IDHyperEVM,
@@ -245,6 +256,13 @@ var static = map[uint64]Metadata{
 		NativeToken: tokens.ETH,
 		PostsTo:     IDSepolia,
 	},
+	IDSolanaTest: {
+		ChainID:     IDSolanaTest,
+		Name:        "solana_testnet",
+		PrettyName:  "Solana Testnet",
+		BlockPeriod: 400 * time.Millisecond,
+		NativeToken: tokens.SOL,
+	},
 
 	// Ephemeral.
 	IDOmniStaging: {
@@ -289,6 +307,13 @@ var static = map[uint64]Metadata{
 		PrettyName:  "Mock ARB",
 		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
+	},
+	IDSolanaLocal: {
+		ChainID:     IDSolanaLocal,
+		Name:        "solana_localnet",
+		PrettyName:  "Solana Localnet",
+		BlockPeriod: 400 * time.Millisecond,
+		NativeToken: tokens.SOL,
 	},
 }
 

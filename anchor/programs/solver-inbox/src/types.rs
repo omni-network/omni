@@ -40,6 +40,7 @@ pub struct OrderState {
     pub dest_call: EVMCall,            // EVM call to execute on destination chain
     pub dest_expense: EVMTokenExpense, // Description of EVM token expense (encoded in EVMCall)
     pub fill_hash: Pubkey,             // Hash of the order fill data
+    pub reject_reason: u8,             // Reject reason enum
 }
 
 impl OrderState {
