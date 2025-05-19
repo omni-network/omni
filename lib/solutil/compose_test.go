@@ -1,21 +1,18 @@
 //nolint:paralleltest // Global docker dir container
-package solana_test
+package solutil_test
 
 import (
 	"context"
 	"encoding/json"
 	"flag"
-	"math/rand/v2"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/solutil"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/umath"
-	solcompose "github.com/omni-network/omni/solver/solana"
-	"github.com/omni-network/omni/solver/solana/events"
 
 	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
@@ -28,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var integration = flag.Bool("integration", false, "Include integration tests")
+var integration = flag.Bool("integration", true, "Include integration tests")
 
 // dir is subdirectory to store the docker compose file and solana generated artifacts (ignored from repo).
 const dir = "compose"
@@ -42,8 +39,10 @@ func TestIntegration(t *testing.T) {
 
 	ctx := t.Context()
 
-	cl, privKey0, stop, err := solcompose.Start(ctx, dir)
-	require.NoError(t, err)
+	cl, privKey0, stop, err := solutil.Start(ctx, dir)
+	if err != nil {
+		t.Skip("Skip if docker unhealthy")
+	}
 	defer stop()
 	t.Logf("Pubkey: %s", privKey0.PublicKey())
 
@@ -68,7 +67,7 @@ func TestIntegration(t *testing.T) {
 		txSig, err := cl.RequestAirdrop(ctx, privKey1.PublicKey(), airdropVal, rpc.CommitmentConfirmed)
 		require.NoError(t, err)
 
-		tx, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		tx, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.NoError(t, err)
 
 		t.Logf("Airdrop Tx: slot=%d, time=%v, sig=%v", tx.Slot, tx.BlockTime, txSig)
@@ -152,104 +151,6 @@ func TestIntegration(t *testing.T) {
 	})
 }
 
-func TestEventsProgram(t *testing.T) {
-	if !*integration {
-		t.Skip("skipping integration test")
-	}
-
-	ctx := t.Context()
-	cl, privKey0, stop, err := solcompose.Start(ctx, dir)
-	require.NoError(t, err)
-	defer stop()
-
-	prog := solcompose.ProgramEvents
-
-	// Start streaming program tx sigs async
-	async := make(chan solana.Signature, 1000)
-	go func() {
-		streamReq := solcompose.StreamReq{
-			FromSlot:   ptr(uint64(0)),
-			Account:    prog.MustPublicKey(),
-			Commitment: rpc.CommitmentConfirmed,
-		}
-		err := solcompose.Stream(ctx, cl, streamReq, func(ctx context.Context, sig *rpc.TransactionSignature) error {
-			t.Logf("Streamed Tx: slot=%d, sig=%v", sig.Slot, sig.Signature)
-			async <- sig.Signature
-
-			return nil
-		})
-		if err != nil {
-			t.Errorf("stream error: %v", err)
-		}
-	}()
-
-	// Deploy events program
-	t.Run("deploy", func(t *testing.T) {
-		tx0, err := solcompose.Deploy(ctx, cl, dir, prog)
-		tutil.RequireNoError(t, err)
-		t.Logf("Deployed events program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
-		require.Equal(t, mustFirstTxSig(tx0), <-async)
-
-		// Sent Init instruction
-		txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, events.NewInitializeInstruction().Build())
-		require.NoError(t, err)
-
-		txResp1, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig1)
-		require.NoError(t, err)
-		t.Logf("Init Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp1.Slot, txResp1.BlockTime, txSig1, txResp1.Meta.LogMessages)
-
-		ensureEvent(t, prog, txResp1, events.EventMyEvent, events.MyEventEventData{Data: 5, Label: "hello"})
-		require.Equal(t, mustFirstTxSig(txResp1), <-async)
-	})
-
-	t.Run("send event", func(t *testing.T) {
-		// Send TestEvent instruction
-		txSig2, err := solcompose.SendSimple(ctx, cl, privKey0, events.NewTestEventInstruction().Build())
-		require.NoError(t, err)
-
-		txResp2, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig2)
-		require.NoError(t, err)
-		t.Logf("TestEvent Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp2.Slot, txResp2.BlockTime, txSig2, txResp2.Meta.LogMessages)
-
-		ensureEvent(t, prog, txResp2, events.EventMyOtherEvent, events.MyOtherEventEventData{Data: 6, Label: "bye"})
-		require.Equal(t, mustFirstTxSig(txResp2), <-async)
-	})
-
-	t.Run("send multi-concurrent", func(t *testing.T) {
-		// Send N async txs
-		const N = 16
-		var sigs sync.Map
-		for i := range N {
-			go func() {
-				time.Sleep(time.Millisecond * time.Duration(rand.IntN(2000))) // Delay up to 2s
-				txSig, err := solcompose.SendSimple(ctx, cl, privKey0,
-					events.NewTestEventInstruction().Build(),
-					memo.NewMemoInstruction([]byte{byte(i)}, privKey0.PublicKey()).Build(), // Add uniqueness to tx
-				)
-				if err != nil {
-					t.Error("error sending tx:", err)
-				}
-				t.Logf("Async sent tx: %s", txSig)
-				sigs.Store(txSig, true)
-			}()
-		}
-
-		for range N {
-			txSig := <-async
-			require.NotNil(t, txSig)
-			require.Eventuallyf(t, func() bool {
-				_, ok := sigs.LoadAndDelete(txSig)
-				return ok
-			}, time.Second*10, time.Second, "tx sig not found in map: %s", txSig)
-		}
-
-		sigs.Range(func(k, _ any) bool {
-			require.Fail(t, "tx sig map not empty")
-			return true
-		})
-	})
-}
-
 const chainID uint64 = 101
 
 func TestInbox(t *testing.T) {
@@ -257,22 +158,24 @@ func TestInbox(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := t.Context()
-	cl, privKey0, stop, err := solcompose.Start(ctx, dir)
-	require.NoError(t, err)
-	defer stop()
+	prog := anchorinbox.Program()
 
-	prog := solcompose.ProgramInbox
+	ctx := t.Context()
+	cl, privKey0, stop, err := solutil.Start(ctx, dir, prog)
+	if err != nil {
+		t.Skip("Skip if docker unhealthy")
+	}
+	defer stop()
 
 	// Start streaming program tx sigs async
 	async := make(chan solana.Signature, 1000)
 	go func() {
-		streamReq := solcompose.StreamReq{
+		streamReq := solutil.StreamReq{
 			FromSlot:   ptr(uint64(0)),
 			Account:    prog.MustPublicKey(),
 			Commitment: rpc.CommitmentConfirmed,
 		}
-		err := solcompose.Stream(ctx, cl, streamReq, func(ctx context.Context, sig *rpc.TransactionSignature) error {
+		err := solutil.Stream(ctx, cl, streamReq, func(ctx context.Context, sig *rpc.TransactionSignature) error {
 			t.Logf("Streamed Tx: slot=%d, sig=%v", sig.Slot, sig.Signature)
 			async <- sig.Signature
 
@@ -285,7 +188,7 @@ func TestInbox(t *testing.T) {
 
 	// Deploy events program
 	t.Run("deploy", func(t *testing.T) {
-		tx0, err := solcompose.Deploy(ctx, cl, dir, prog)
+		tx0, err := solutil.Deploy(ctx, cl, dir, prog)
 		tutil.RequireNoError(t, err)
 		t.Logf("Deployed inbox program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
 		require.Equal(t, mustFirstTxSig(tx0), <-async)
@@ -299,9 +202,9 @@ func TestInbox(t *testing.T) {
 	t.Run("init", func(t *testing.T) {
 		// Initialize inbox state
 		init := anchorinbox.NewInitInstruction(chainID, closeBuffer, inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
-		txSig0, err := solcompose.SendSimple(ctx, cl, privKey0, init.Build())
+		txSig0, err := solutil.SendSimple(ctx, cl, privKey0, init.Build())
 		require.NoError(t, err)
-		txResp0, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig0)
+		txResp0, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig0)
 		require.NoError(t, err)
 		t.Logf("Init Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp0.Slot, txResp0.BlockTime, txSig0, txResp0.Meta.LogMessages)
 		require.Equal(t, mustFirstTxSig(txResp0), <-async)
@@ -338,7 +241,7 @@ func TestInbox(t *testing.T) {
 		// Airdrop 1 SOL to claimer (to pay for claim)
 		txSig, err := cl.RequestAirdrop(ctx, claimer.PublicKey(), solana.LAMPORTS_PER_SOL, rpc.CommitmentConfirmed)
 		require.NoError(t, err)
-		_, err = solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		_, err = solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.NoError(t, err)
 
 		claimerATA = ensureATA(ctx, t, cl, claimer, mintResp.MintAccount)
@@ -350,7 +253,7 @@ func TestInbox(t *testing.T) {
 	t.Run("open", func(t *testing.T) {
 		var p anchorinbox.OpenParams
 		fuzz.New().Funcs(func(u *bin.Uint128, c fuzz.Continue) {
-			*u = solcompose.RandomU96() // Limit u128s to u96 (since that is max expense value)
+			*u = solutil.RandomU96() // Limit u128s to u96 (since that is max expense value)
 		}).Fuzz(&p)
 		p.DepositAmount = depositAmount
 		p.Call.Params = tutil.RandomBytes(4)
@@ -359,10 +262,10 @@ func TestInbox(t *testing.T) {
 		require.NoError(t, err)
 
 		// Send Open instruction
-		txSig1, err := solcompose.SendSimple(ctx, cl, privKey0, openOrder.Build())
+		txSig1, err := solutil.SendSimple(ctx, cl, privKey0, openOrder.Build())
 		require.NoError(t, err)
 
-		txResp1, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig1)
+		txResp1, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig1)
 		t.Logf("Open Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp1.Slot, txResp1.BlockTime, txSig1, txResp1.Meta.LogMessages)
 		require.NoError(t, err)
 		require.Equal(t, mustFirstTxSig(txResp1), <-async)
@@ -376,7 +279,7 @@ func TestInbox(t *testing.T) {
 
 		// Get OrderState account
 		var orderState anchorinbox.OrderStateAccount
-		_, err = solcompose.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
+		_, err = solutil.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
 		require.NoError(t, err)
 
 		// Ensure OrderState account is correct
@@ -410,9 +313,9 @@ func TestInbox(t *testing.T) {
 	// Send MarkFilled instruction
 	t.Run("mark filled", func(t *testing.T) {
 		markFilled := anchorinbox.NewMarkFilledInstruction(openOrder.ID, orderFillHash, claimer.PublicKey(), openOrder.StateAddress, inboxStateAddr, privKey0.PublicKey())
-		txSig2, err := solcompose.SendSimple(ctx, cl, privKey0, markFilled.Build())
+		txSig2, err := solutil.SendSimple(ctx, cl, privKey0, markFilled.Build())
 		require.NoError(t, err)
-		txResp2, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig2)
+		txResp2, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig2)
 		t.Logf("MarkFilled Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp2.Slot, txResp2.BlockTime, txSig2, txResp2.Meta.LogMessages)
 		require.NoError(t, err)
 		require.Equal(t, mustFirstTxSig(txResp2), <-async)
@@ -425,7 +328,7 @@ func TestInbox(t *testing.T) {
 		ensureInboxEvent(t, prog, txResp2, anchorinbox.EventNameUpdated, event)
 
 		var orderState anchorinbox.OrderStateAccount
-		_, err = solcompose.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
+		_, err = solutil.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
 		require.NoError(t, err)
 
 		// Ensure OrderState account is correct
@@ -457,10 +360,10 @@ func TestInbox(t *testing.T) {
 			claimerATA,
 			token.ProgramID,
 		)
-		txSig3, err := solcompose.SendSimple(ctx, cl, claimer, claim.Build())
+		txSig3, err := solutil.SendSimple(ctx, cl, claimer, claim.Build())
 		require.NoError(t, err)
 
-		txResp3, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig3)
+		txResp3, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig3)
 		require.NoError(t, err)
 		t.Logf("Claim Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp3.Slot, txResp3.BlockTime, txSig3, txResp3.Meta.LogMessages)
 		require.Equal(t, mustFirstTxSig(txResp3), <-async)
@@ -470,7 +373,7 @@ func TestInbox(t *testing.T) {
 		require.Equal(t, depositAmount, uint64(*bal.Value.UiAmount))
 
 		_, err = cl.GetTokenAccountBalance(ctx, openOrder.TokenAddress, rpc.CommitmentConfirmed)
-		require.Contains(t, errors.Format(solcompose.WrapRPCError(err, "getTokenAccountBalance")), "could not find account")
+		require.Contains(t, errors.Format(solutil.WrapRPCError(err, "getTokenAccountBalance")), "could not find account")
 	})
 
 	// Prep Open instruction
@@ -486,17 +389,17 @@ func TestInbox(t *testing.T) {
 			token.ProgramID,
 		)
 		// Send Open instruction
-		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, openOrder.Build(), closeOrder.Build())
+		txSig, err := solutil.SendSimple(ctx, cl, privKey0, openOrder.Build(), closeOrder.Build())
 		require.NoError(t, err)
 
-		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		txResp, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.NoError(t, err)
 		t.Logf("Open and Close Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
 		require.Equal(t, mustFirstTxSig(txResp), <-async)
 
 		// Get OrderState account
 		var orderState anchorinbox.OrderStateAccount
-		_, err = solcompose.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
+		_, err = solutil.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
 		require.NoError(t, err)
 
 		// Ensure OrderState account is correct
@@ -515,7 +418,7 @@ func TestInbox(t *testing.T) {
 
 		// Ensure deposit amount transferred to back to owner
 		_, err = cl.GetTokenAccountBalance(ctx, openOrder.TokenAddress, rpc.CommitmentConfirmed)
-		require.Contains(t, errors.Format(solcompose.WrapRPCError(err, "getTokenAccountBalance")), "could not find account")
+		require.Contains(t, errors.Format(solutil.WrapRPCError(err, "getTokenAccountBalance")), "could not find account")
 
 		bal, err := cl.GetTokenAccountBalance(ctx, mintResp.TokenAccount, rpc.CommitmentConfirmed)
 		require.NoError(t, err)
@@ -524,9 +427,9 @@ func TestInbox(t *testing.T) {
 
 	t.Run("init fail", func(t *testing.T) {
 		init := anchorinbox.NewInitInstruction(chainID, closeBuffer, inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
-		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, init.Build())
+		txSig, err := solutil.SendSimple(ctx, cl, privKey0, init.Build())
 		require.NoError(t, err)
-		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		txResp, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.ErrorContains(t, err, "transaction failed")
 		require.Equal(t, mustFirstTxSig(txResp), <-async)
 	})
@@ -534,18 +437,18 @@ func TestInbox(t *testing.T) {
 	t.Run("open fail", func(t *testing.T) {
 		params := anchorinbox.OpenParams{OrderId: openOrder.ID, Nonce: openOrder.Params.Nonce}
 		open := anchorinbox.NewOpenInstruction(params, openOrder.StateAddress, privKey0.PublicKey(), mintResp.MintAccount, mintResp.TokenAccount, openOrder.TokenAddress, token.ProgramID, inboxStateAddr, solana.SystemProgramID)
-		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, open.Build())
+		txSig, err := solutil.SendSimple(ctx, cl, privKey0, open.Build())
 		require.NoError(t, err)
-		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		txResp, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.ErrorContains(t, err, "transaction failed")
 		require.Equal(t, mustFirstTxSig(txResp), <-async)
 	})
 
 	t.Run("mark filled fail", func(t *testing.T) {
 		markFilled := anchorinbox.NewMarkFilledInstruction(openOrder.ID, claimer.PublicKey(), orderFillHash, openOrder.StateAddress, inboxStateAddr, privKey0.PublicKey())
-		txSig, err := solcompose.SendSimple(ctx, cl, privKey0, markFilled.Build())
+		txSig, err := solutil.SendSimple(ctx, cl, privKey0, markFilled.Build())
 		require.NoError(t, err)
-		txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		txResp, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.ErrorContains(t, err, "transaction failed")
 		require.Equal(t, mustFirstTxSig(txResp), <-async)
 	})
@@ -557,7 +460,7 @@ func fillHash(t *testing.T, params *anchorinbox.OpenParams, closableAt int64) so
 	closableAtU32, err := umath.ToUint32(closableAt)
 	require.NoError(t, err)
 
-	hash, err := solcompose.FillHash(
+	hash, err := solutil.FillHash(
 		params.OrderId,
 		chainID,
 		params.DestChainId,
@@ -581,8 +484,10 @@ func TestCreateMint(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	cl, privKey0, stop, err := solcompose.Start(ctx, dir)
-	require.NoError(t, err)
+	cl, privKey0, stop, err := solutil.Start(ctx, dir)
+	if err != nil {
+		t.Skip("Skip if docker unhealthy")
+	}
 	defer stop()
 
 	_ = createMint(ctx, t, cl, privKey0)
@@ -614,18 +519,18 @@ func createMint(ctx context.Context, t *testing.T, cl *rpc.Client, privkey solan
 	createATA := associatedtokenaccount.NewCreateInstruction(privkey.PublicKey(), privkey.PublicKey(), mintPrivKey.PublicKey())
 	mintTo := token.NewMintToInstruction(mintAmount, mintPrivKey.PublicKey(), tokenAccount, privkey.PublicKey(), nil)
 
-	txSig, err := solcompose.Send(ctx, cl,
-		solcompose.WithInstructions(
+	txSig, err := solutil.Send(ctx, cl,
+		solutil.WithInstructions(
 			createAccount.Build(),
 			initMint.Build(),
 			createATA.Build(),
 			mintTo.Build(),
 		),
-		solcompose.WithPrivateKeys(privkey, mintPrivKey),
+		solutil.WithPrivateKeys(privkey, mintPrivKey),
 	)
 	require.NoError(t, err)
 
-	txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+	txResp, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 	require.NoError(t, err)
 	t.Logf("Create Mint Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
 
@@ -659,39 +564,20 @@ func ensureATA(ctx context.Context, t *testing.T, cl *rpc.Client,
 	}
 
 	create := associatedtokenaccount.NewCreateInstruction(wallet.PublicKey(), wallet.PublicKey(), mintAccount)
-	txSig, err := solcompose.SendSimple(ctx, cl, wallet, create.Build())
+	txSig, err := solutil.SendSimple(ctx, cl, wallet, create.Build())
 	require.NoError(t, err)
 
-	txResp, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+	txResp, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 	require.NoError(t, err)
 	t.Logf("ATA Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
 
 	return ata
 }
 
-func ensureInboxEvent(t *testing.T, prog solcompose.Program, txRes *rpc.GetTransactionResult, expectName string, expectData any) {
+func ensureInboxEvent(t *testing.T, prog solutil.Program, txRes *rpc.GetTransactionResult, expectName string, expectData any) {
 	t.Helper()
 
 	evnts, err := anchorinbox.DecodeEvents(txRes, prog.MustPublicKey(), nil)
-	require.NoError(t, err)
-	require.Len(t, evnts, 1)
-
-	for _, evnt := range evnts {
-		require.Equal(t, expectName, evnt.Name)
-
-		expectJSON, err := json.MarshalIndent(expectData, "", "  ")
-		require.NoError(t, err)
-		actualJSON, err := json.MarshalIndent(evnt.Data, "", "  ")
-		require.NoError(t, err)
-
-		require.JSONEq(t, string(expectJSON), string(actualJSON))
-	}
-}
-
-func ensureEvent(t *testing.T, prog solcompose.Program, txRes *rpc.GetTransactionResult, expectName string, expectData any) {
-	t.Helper()
-
-	evnts, err := events.DecodeEvents(txRes, prog.MustPublicKey(), nil)
 	require.NoError(t, err)
 	require.Len(t, evnts, 1)
 

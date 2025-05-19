@@ -1,13 +1,13 @@
-package solana_test
+package solutil_test
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/solutil"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/umath"
-	"github.com/omni-network/omni/solver/solana"
 
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func TestU128(t *testing.T) {
 	ensure := func(t *testing.T, i *big.Int) {
 		t.Helper()
 
-		u, err := solana.U128(i)
+		u, err := solutil.U128(i)
 		require.NoError(t, err)
 		require.Equal(t, i.String(), u.String())
 		tutil.RequireEQ(t, i, u.BigInt())
@@ -30,6 +30,6 @@ func TestU128(t *testing.T) {
 	ensure(t, bi.N(123_456_789_123))
 	ensure(t, umath.MaxUint128)
 
-	_, err := solana.U128(umath.MaxUint256)
+	_, err := solutil.U128(umath.MaxUint256)
 	require.Error(t, err)
 }
