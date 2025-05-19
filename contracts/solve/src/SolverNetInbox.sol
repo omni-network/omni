@@ -12,7 +12,6 @@ import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
-import { IOmniPortalPausable } from "core/src/interfaces/IOmniPortalPausable.sol";
 
 /**
  * @title SolverNetInbox
@@ -208,6 +207,8 @@ contract SolverNetInbox is
      */
     function pauseAll(bool pause) external onlyOwnerOrRoles(SOLVER) {
         pause ? pauseState = ALL_PAUSED : pauseState = NONE_PAUSED;
+        emit Paused(OPEN, pause, pauseState);
+        emit Paused(CLOSE, pause, pauseState);
     }
 
     /**
@@ -334,7 +335,6 @@ contract SolverNetInbox is
         uint256 buffer = header.destChainId == block.chainid ? 0 : CLOSE_BUFFER;
         if (state.status != Status.Pending) revert OrderNotPending();
         if (header.owner != msg.sender) revert Unauthorized();
-        if (IOmniPortalPausable(address(omni)).isPaused(ACTION_XSUBMIT, header.destChainId)) revert PortalPaused();
         if (header.fillDeadline + buffer >= block.timestamp) revert OrderStillValid();
 
         _upsertOrder(id, Status.Closed, 0, msg.sender);
@@ -442,7 +442,7 @@ contract SolverNetInbox is
      * @dev Derive the maxSpent Output for the order.
      * @param orderData Order data to derive from.
      */
-    function _deriveMaxSpent(SolverNet.Order memory orderData) internal view returns (IERC7683.Output[] memory) {
+    function _deriveMaxSpent(SolverNet.Order memory orderData) internal pure returns (IERC7683.Output[] memory) {
         SolverNet.Header memory header = orderData.header;
         SolverNet.Call[] memory calls = orderData.calls;
         SolverNet.TokenExpense[] memory expenses = orderData.expenses;
@@ -452,13 +452,14 @@ contract SolverNetInbox is
             if (calls[i].value > 0) totalNativeValue += calls[i].value;
         }
 
+        // maxSpent recipient field is unused in SolverNet, was previously set to outbox as a placeholder
         IERC7683.Output[] memory maxSpent =
             new IERC7683.Output[](totalNativeValue > 0 ? expenses.length + 1 : expenses.length);
         for (uint256 i; i < expenses.length; ++i) {
             maxSpent[i] = IERC7683.Output({
                 token: expenses[i].token.toBytes32(),
                 amount: expenses[i].amount,
-                recipient: _outboxes[header.destChainId].toBytes32(),
+                recipient: bytes32(0),
                 chainId: header.destChainId
             });
         }
@@ -466,7 +467,7 @@ contract SolverNetInbox is
             maxSpent[expenses.length] = IERC7683.Output({
                 token: bytes32(0),
                 amount: totalNativeValue,
-                recipient: _outboxes[header.destChainId].toBytes32(),
+                recipient: bytes32(0),
                 chainId: header.destChainId
             });
         }
@@ -560,7 +561,10 @@ contract SolverNetInbox is
         if (deposit.token == address(0)) {
             if (msg.value != deposit.amount) revert InvalidNativeDeposit();
         } else {
+            uint256 balance = deposit.token.balanceOf(address(this));
             deposit.token.safeTransferFrom(msg.sender, address(this), deposit.amount);
+            // If we received less tokens than expected (max transfer value override or fee on transfer), revert
+            if (deposit.token.balanceOf(address(this)) < balance + deposit.amount) revert InvalidERC20Deposit();
         }
     }
 
@@ -605,8 +609,12 @@ contract SolverNetInbox is
         if (sender != _outboxes[origin]) revert Unauthorized();
 
         // Ensure reported fill hash matches origin data
-        if (fillHash != _fillHash(id)) {
-            revert WrongFillHash();
+        // We are temporarily supporting both so no in-flight order settlements are rejected during the transition
+        (bytes32 fillhash, SolverNet.FillOriginData memory fillOriginData) = _deprecatedFillHash(id);
+        if (fillHash != fillhash) {
+            if (fillHash != _fillHash(id, fillOriginData)) {
+                revert WrongFillHash();
+            }
         }
 
         _upsertOrder(id, Status.Filled, 0, creditedTo);
@@ -678,10 +686,10 @@ contract SolverNetInbox is
     }
 
     /**
-     * @dev Returns call hash. Used to discern fulfillment.
+     * @dev Returns old fill hash. Used to discern fulfillment.
      * @param orderId ID of the order.
      */
-    function _fillHash(bytes32 orderId) internal view returns (bytes32) {
+    function _deprecatedFillHash(bytes32 orderId) internal view returns (bytes32, SolverNet.FillOriginData memory) {
         SolverNet.Header memory header = _orderHeader[orderId];
         SolverNet.Call[] memory calls = _orderCalls[orderId];
         SolverNet.TokenExpense[] memory expenses = _orderExpenses[orderId];
@@ -694,7 +702,21 @@ contract SolverNetInbox is
             expenses: expenses
         });
 
-        return keccak256(abi.encode(orderId, abi.encode(fillOriginData)));
+        return (keccak256(abi.encode(orderId, abi.encode(fillOriginData))), fillOriginData);
+    }
+
+    /**
+     * @dev Return fill hash without unnecessary double encoding.
+     *      We will transition to this hash method, where this will eventually incorporate state logic from _deprecatedFillHash.
+     * @param orderId ID of the order.
+     * @param fillOriginData Fill origin data to hash. (prevents having to derive it again)
+     */
+    function _fillHash(bytes32 orderId, SolverNet.FillOriginData memory fillOriginData)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encode(orderId, fillOriginData));
     }
 
     /**
@@ -711,5 +733,7 @@ contract SolverNetInbox is
         if (pause ? _pauseState == targetState : _pauseState != targetState) revert IsPaused();
 
         pauseState = pause ? targetState : NONE_PAUSED;
+
+        emit Paused(key, pause, pauseState);
     }
 }

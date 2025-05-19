@@ -85,7 +85,7 @@ func newShouldRejector(
 				return err
 			}
 
-			expenses, err := parseMaxSpent(pendingData, outboxAddr)
+			expenses, err := parseMaxSpent(pendingData)
 			if err != nil {
 				return err
 			}
@@ -224,7 +224,7 @@ func checkFill(
 }
 
 // parseMaxSpent parses order.MaxSpent, checks all tokens are supported, returns the list of expenses.
-func parseMaxSpent(pendingData PendingData, outboxAddr common.Address) ([]TokenAmt, error) {
+func parseMaxSpent(pendingData PendingData) ([]TokenAmt, error) {
 	var expenses []TokenAmt
 	var hasNative bool
 	for _, output := range pendingData.MaxSpent {
@@ -233,13 +233,6 @@ func parseMaxSpent(pendingData PendingData, outboxAddr common.Address) ([]TokenA
 		// order resolution ensures maxSpent[].output.chainId matches order.DestinationChainID
 		if chainID != pendingData.DestinationChainID {
 			return nil, errors.New("max spent chain id mismatch [BUG]", "got", chainID, "expected", pendingData.DestinationChainID)
-		}
-
-		// order resolve ensures maxSpent[].output.recipient is outboxAddr
-		if recipient, err := toEthAddr(output.Recipient); err != nil {
-			return nil, errors.Wrap(err, "recipient")
-		} else if recipient != outboxAddr {
-			return nil, errors.New("unexpected max spent recipient [BUG]", "got", output.Recipient, "expected", outboxAddr)
 		}
 
 		addr, err := toEthAddr(output.Token)

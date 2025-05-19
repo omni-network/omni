@@ -132,6 +132,15 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
+	chainID, err := backend.ChainID(ctx)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get chain id")
+	}
+
+	if solvernet.IsHLOnly(chainID.Uint64()) {
+		cfg.Portal = common.Address{}
+	}
+
 	impl, tx, _, err := bindings.DeploySolverNetOutbox(txOpts, backend, cfg.Executor, cfg.Portal, cfg.Mailbox)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
@@ -157,17 +166,11 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
 	}
 
-	chainID, err := backend.ChainID(ctx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get chain id")
-	}
-	srcChainID := chainID.Uint64()
-
 	// setInboxes
 	var chainIDs []uint64
 	var inboxes []bindings.ISolverNetOutboxInboxConfig
 	for _, dest := range network.EVMChains() {
-		provider, ok := solvernet.Provider(srcChainID, dest.ID)
+		provider, ok := solvernet.Provider(chainID.Uint64(), dest.ID)
 		if !ok {
 			continue
 		}

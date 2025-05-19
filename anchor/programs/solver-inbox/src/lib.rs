@@ -1,13 +1,11 @@
 #![allow(unexpected_cfgs)]
 mod error;
-mod event;
 mod helpers;
 mod types;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::*;
 use error::*;
-use event::*;
 use helpers::*;
 use types::*;
 
@@ -19,12 +17,13 @@ pub mod solver_inbox {
 
     /// Initialize the inbox state
     /// This should be called only once, preferably by the upgrade authority.
-    pub fn init(ctx: Context<Init>, close_buffer: i64) -> Result<()> {
+    pub fn init(ctx: Context<Init>, chain_id: u64, close_buffer: i64) -> Result<()> {
         let state = &mut ctx.accounts.inbox_state;
         state.admin = ctx.accounts.admin.key();
         state.deployed_at = Clock::get()?.slot;
         state.bump = ctx.bumps.inbox_state;
         state.close_buffer_secs = close_buffer;
+        state.chain_id = chain_id;
 
         Ok(())
     }
@@ -53,19 +52,72 @@ pub mod solver_inbox {
         state.created_at = Clock::get()?.unix_timestamp;
         state.closable_at = state.created_at + ctx.accounts.inbox_state.close_buffer_secs;
         state.bump = ctx.bumps.order_state;
-        state.deposit = TokenAmount {
-            mint: ctx.accounts.mint_account.key(),
-            amount: params.deposit_amount,
-        };
-        state.expense = TokenAmount {
-            mint: params.expense_mint,
-            amount: params.expense_amount,
-        };
+        state.deposit_amount = params.deposit_amount;
+        state.deposit_mint = ctx.accounts.mint_account.key();
+        state.dest_chain_id = params.dest_chain_id;
+        state.dest_call = params.call.clone();
+        state.dest_expense = params.expense.clone();
+        state.fill_hash = hash_fill(
+            order_id,
+            ctx.accounts.inbox_state.chain_id,
+            state.dest_chain_id,
+            state.closable_at,
+            state.dest_call.clone(),
+            state.dest_expense.clone(),
+        );
 
-        emit!(EventOpened {
+        emit!(EventUpdated {
             order_id: state.order_id,
             status: state.status.clone(),
-            order_state: state.key(),
+        });
+
+        Ok(())
+    }
+
+    /// Reject an order, refunding owner closing accounts.
+    /// Only admin can reject orders.
+    pub fn reject(ctx: Context<Reject>, order_id: Pubkey, reason: u8) -> Result<()> {
+        let state = &mut ctx.accounts.order_state;
+        state.status = Status::Rejected;
+        state.reject_reason = reason;
+
+        // Sign transfer and close_account with order token PDA
+        let order_token_seeds: &[&[&[u8]]] = &[&[
+            ORDER_TOKEN_SEED_PREFIX,
+            order_id.as_ref(),
+            &[ctx.bumps.order_token_account],
+        ]];
+
+        // Transfer the deposit to the owner account
+        transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.order_token_account.to_account_info(),
+                    to: ctx.accounts.owner_token_account.to_account_info(),
+                    authority: ctx.accounts.order_token_account.to_account_info(),
+                },
+            )
+            .with_signer(order_token_seeds),
+            state.deposit_amount,
+        )?;
+
+        // Close the order token account, returning rent to owner
+        close_account(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                CloseAccount {
+                    account: ctx.accounts.order_token_account.to_account_info(),
+                    destination: ctx.accounts.owner_token_account.to_account_info(),
+                    authority: ctx.accounts.order_token_account.to_account_info(),
+                },
+            )
+            .with_signer(order_token_seeds),
+        )?;
+
+        emit!(EventUpdated {
+            order_id: state.order_id,
+            status: state.status.clone(),
         });
 
         Ok(())
@@ -76,16 +128,18 @@ pub mod solver_inbox {
     pub fn mark_filled(
         ctx: Context<MarkFilled>,
         _order_id: Pubkey,
+        fill_hash: Pubkey,
         claimable_by: Pubkey,
     ) -> Result<()> {
         let state = &mut ctx.accounts.order_state;
+        require_eq!(state.fill_hash, fill_hash, InboxError::InvalidFillHash);
+
         state.status = Status::Filled;
         state.claimable_by = claimable_by;
 
-        emit!(EventMarkFilled {
+        emit!(EventUpdated {
             order_id: state.order_id,
             status: state.status.clone(),
-            order_state: state.key(),
         });
 
         Ok(())
@@ -114,15 +168,25 @@ pub mod solver_inbox {
                 },
             )
             .with_signer(order_token_seeds),
-            state.deposit.amount,
+            state.deposit_amount,
         )?;
 
-        // TODO(corver): Close the order state and token accounts, returning rent to owner.
+        // Close the order token account and rent to owner
+        close_account(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                CloseAccount {
+                    account: ctx.accounts.order_token_account.to_account_info(),
+                    destination: ctx.accounts.owner_token_account.to_account_info(),
+                    authority: ctx.accounts.order_token_account.to_account_info(),
+                },
+            )
+            .with_signer(order_token_seeds),
+        )?;
 
-        emit!(EventClaimed {
+        emit!(EventUpdated {
             order_id: state.order_id,
             status: state.status.clone(),
-            order_state: state.key(),
         });
 
         Ok(())
@@ -157,10 +221,10 @@ pub mod solver_inbox {
                 },
             )
             .with_signer(order_token_seeds),
-            state.deposit.amount,
+            state.deposit_amount,
         )?;
 
-        // Close the order token account andrent to owner
+        // Close the order token account, returning rent to owner
         close_account(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
@@ -173,10 +237,9 @@ pub mod solver_inbox {
             .with_signer(order_token_seeds),
         )?;
 
-        emit!(EventClosed {
+        emit!(EventUpdated {
             order_id: state.order_id,
             status: state.status.clone(),
-            order_state: state.key(),
         });
 
         Ok(())
@@ -247,6 +310,41 @@ pub struct Open<'info> {
 
 #[derive(Accounts)]
 #[instruction(order_id: Pubkey)]
+pub struct Reject<'info> {
+    #[account(
+        mut,
+        seeds = [OrderState::SEED_PREFIX, order_id.as_ref()],
+        bump,
+        constraint = order_state.status == Status::Pending,
+    )]
+    pub order_state: Account<'info, OrderState>,
+    #[account(
+        mut,
+        seeds = [ORDER_TOKEN_SEED_PREFIX, order_id.as_ref()],
+        bump,
+        token::mint = order_state.deposit_mint,
+        token::authority = order_token_account,
+    )]
+    pub order_token_account: Account<'info, TokenAccount>,
+    #[account(
+        mut,
+        token::mint = order_state.deposit_mint,
+        token::authority = order_state.owner,
+    )]
+    pub owner_token_account: Account<'info, TokenAccount>,
+    #[account(
+        seeds = [InboxState::SEED_PREFIX],
+        bump,
+        constraint = inbox_state.admin == admin.key(),
+    )]
+    pub inbox_state: Account<'info, InboxState>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+#[instruction(order_id: Pubkey)]
 pub struct MarkFilled<'info> {
     #[account(
         mut,
@@ -280,15 +378,21 @@ pub struct Claim<'info> {
         mut,
         seeds = [ORDER_TOKEN_SEED_PREFIX, order_id.as_ref()],
         bump,
-        token::mint = order_state.deposit.mint,
+        token::mint = order_state.deposit_mint,
         token::authority = order_token_account,
     )]
     pub order_token_account: Account<'info, TokenAccount>,
+    #[account(
+        mut,
+        token::mint = order_state.deposit_mint,
+        token::authority = order_state.owner,
+    )]
+    pub owner_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub claimer: Signer<'info>,
     #[account(
         mut,
-        token::mint = order_state.deposit.mint,
+        token::mint = order_state.deposit_mint,
         token::authority = claimer,
     )]
     pub claimer_token_account: Account<'info, TokenAccount>,
@@ -310,13 +414,13 @@ pub struct Close<'info> {
         mut,
         seeds = [ORDER_TOKEN_SEED_PREFIX, order_id.as_ref()],
         bump,
-        token::mint = order_state.deposit.mint,
+        token::mint = order_state.deposit_mint,
         token::authority = order_token_account,
     )]
     pub order_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
-        token::mint = order_state.deposit.mint,
+        token::mint = order_state.deposit_mint,
         token::authority = owner,
     )]
     pub owner_token_account: Account<'info, TokenAccount>,

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
+import { Receiver } from "solady/src/accounts/Receiver.sol";
 import { ISolverNetExecutor } from "./interfaces/ISolverNetExecutor.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
 import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/interfaces/IERC721.sol";
 
-contract SolverNetExecutor is ISolverNetExecutor {
+contract SolverNetExecutor is Receiver, ISolverNetExecutor {
     using SafeTransferLib for address;
     using AddrUtils for bytes32;
 
@@ -51,7 +52,11 @@ contract SolverNetExecutor is ISolverNetExecutor {
      * @dev If the token reverts when setting approval to zero, this will not revert.
      */
     function tryRevokeApproval(address token, address spender) external onlyOutbox {
-        try IERC20(token).approve(spender, 0) { } catch { }
+        try IERC20(token).approve(spender, 0) { }
+        // If the token reverts when setting approval to zero, try setting it to 1
+        catch {
+            try IERC20(token).approve(spender, 1) { } catch { }
+        }
     }
 
     /**
@@ -64,6 +69,7 @@ contract SolverNetExecutor is ISolverNetExecutor {
      */
     function execute(address target, uint256 value, bytes calldata data) external payable onlyOutbox {
         if (target == address(0)) target = address(this);
+        // If fallback is later enabled, we need to validate that self-calls are for existing function selectors
         (bool success,) = payable(target).call{ value: value }(data);
         if (!success) revert CallFailed();
     }
@@ -128,12 +134,9 @@ contract SolverNetExecutor is ISolverNetExecutor {
     }
 
     /**
-     * @dev Allows target contracts to arbitrarily return native tokens to the executor.
+     * @dev Do not allow self-transfers, as this indicates user error.
      */
-    receive() external payable { }
-
-    /**
-     * @dev Allows target contracts to arbitrarily return native tokens to the executor.
-     */
-    fallback() external payable { }
+    receive() external payable override {
+        if (msg.sender == address(this)) revert CallFailed();
+    }
 }

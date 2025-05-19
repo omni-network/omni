@@ -1,4 +1,4 @@
-package solana
+package solutil
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ var Version = "stable"
 
 // Start starts a genesis solana node and returns a client, a funded private key and a stop function or an error.
 // The dir parameter is the location of the docker compose.
-func Start(ctx context.Context, composeDir string) (*rpc.Client, solana.PrivateKey, func(), error) {
+func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Client, solana.PrivateKey, func(), error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Allow 1 minute for edge case of pulling images.
 	defer cancel()
 
@@ -44,7 +44,7 @@ func Start(ctx context.Context, composeDir string) (*rpc.Client, solana.PrivateK
 		return nil, nil, nil, errors.Wrap(err, "write compose file")
 	}
 
-	for _, program := range Programs {
+	for _, program := range programs {
 		if err := copyProgram(composeDir, program); err != nil {
 			return nil, nil, nil, errors.Wrap(err, "copy program")
 		}
@@ -86,6 +86,7 @@ func Start(ctx context.Context, composeDir string) (*rpc.Client, solana.PrivateK
 		if err == nil {
 			break
 		}
+		err = WrapRPCError(err, "health")
 
 		if i > retry/2 {
 			log.Warn(ctx, "Solana: waiting for RPC to be available", err)

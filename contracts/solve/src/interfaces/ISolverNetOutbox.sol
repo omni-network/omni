@@ -4,11 +4,13 @@ pragma solidity ^0.8.24;
 import { IDestinationSettler } from "../erc7683/IDestinationSettler.sol";
 
 interface ISolverNetOutbox is IDestinationSettler {
+    error NotFilled();
     error BadFillerData();
     error AlreadyFilled();
     error InvalidConfig();
     error WrongDestChain();
     error InsufficientFee();
+    error InvalidSettlement();
     error FillDeadlinePassed();
     error InvalidArrayLength();
 
@@ -27,6 +29,14 @@ interface ISolverNetOutbox is IDestinationSettler {
      * @param filledBy Address of the solver that filled the oder
      */
     event Filled(bytes32 indexed orderId, bytes32 indexed fillHash, address indexed filledBy);
+
+    /**
+     * @notice Emitted when a markFilled settlement is retried.
+     * @param orderId   ID of the order on the source chain
+     * @param fillHash  Hash of the fill origin data
+     * @param retriedBy Address that retried the markFilled settlement
+     */
+    event MarkFilledRetry(bytes32 indexed orderId, bytes32 indexed fillHash, address indexed retriedBy);
 
     /**
      * @notice The messaging provider used to reach the inbox.
@@ -80,4 +90,12 @@ interface ISolverNetOutbox is IDestinationSettler {
      * @return           Whether the call has been filled.
      */
     function didFill(bytes32 srcReqId, bytes calldata originData) external view returns (bool);
+
+    /**
+     * @notice Retry marking an order as filled on the source inbox.
+     * @param orderId    ID of the order.
+     * @param originData Data emitted on the origin to parameterize the fill.
+     * @param fillerData ABI encoded address to mark as claimant for the order.
+     */
+    function retryMarkFilled(bytes32 orderId, bytes calldata originData, bytes calldata fillerData) external payable;
 }

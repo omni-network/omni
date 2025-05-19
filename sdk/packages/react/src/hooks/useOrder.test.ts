@@ -194,11 +194,15 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
 
   useGetOrderStatus.mockReturnValue({
     status: 'filled',
+    destTxHash: '0x123',
   })
 
   rerender({ validateEnabled: true })
 
-  await waitFor(() => expect(result.current.status).toBe('filled'))
+  await waitFor(() => {
+    expect(result.current.status).toBe('filled')
+    expect(result.current.destTxHash).toBe('0x123')
+  })
 })
 
 test('behaviour: handles order rejection', async () => {
@@ -348,6 +352,30 @@ test('behaviour: handles parse open event error', async () => {
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
     expect(result.current.error).toBeInstanceOf(core.ParseOpenEventError)
+  })
+})
+
+test('behaviour: handles order status error', async () => {
+  useGetOrderStatus.mockReturnValue({
+    status: 'error',
+    error: new core.WatchDidFillError('Failed to get order status'),
+  })
+
+  useWaitForTransactionReceipt.mockImplementation(() =>
+    createMockWaitForTransactionReceiptResult({
+      isSuccess: true,
+      status: 'success',
+    }),
+  )
+
+  const { result } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: false,
+  })
+
+  await waitFor(() => {
+    expect(result.current.isError).toBe(true)
+    expect(result.current.error).toBeInstanceOf(core.WatchDidFillError)
   })
 })
 

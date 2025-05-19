@@ -1,25 +1,22 @@
-import type { FetchJSONError, Quote, Quoteable } from '@omni-network/core'
+import type { FetchJSONError, Quote } from '@omni-network/core'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { expectTypeOf, test } from 'vitest'
-import { useQuote } from './useQuote.js'
+import { type UseQuoteParams, useQuote } from './useQuote.js'
 
 test('type: useQuote', () => {
   const result = useQuote({
     destChainId: 2,
     mode: 'expense',
-    deposit: { isNative: true },
-    expense: { isNative: true },
+    deposit: { amount: 0n, token: '0x00' },
+    expense: { token: '0x00' },
     enabled: true,
+    environment: 'devnet',
+    queryOpts: {
+      refetchInterval: 100,
+    },
   })
 
-  expectTypeOf(useQuote).parameter(0).toMatchTypeOf<{
-    srcChainId?: number
-    destChainId: number
-    mode: 'expense' | 'deposit'
-    deposit: Quoteable
-    expense: Quoteable
-    enabled: boolean
-  }>()
+  expectTypeOf(useQuote).parameter(0).toMatchTypeOf<UseQuoteParams>()
 
   expectTypeOf(result.isError).toBeBoolean()
   expectTypeOf(result.isPending).toBeBoolean()

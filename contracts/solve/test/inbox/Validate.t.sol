@@ -65,4 +65,17 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         (, IERC7683.OnchainCrossChainOrder memory order) = getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         inbox.validate(order);
     }
+
+    function test_validate_hyperlane() public {
+        address impl = address(new SolverNetInbox(address(0), address(mailboxes[uint32(srcChainId)])));
+        inbox = SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
+        inbox.initialize(address(this), solver);
+        setRoutes(ISolverNetOutbox.Provider.Hyperlane);
+
+        uint256 snapshot = vm.snapshotState();
+        test_validate_reverts();
+        vm.revertToState(snapshot);
+
+        test_validate_succeeds();
+    }
 }

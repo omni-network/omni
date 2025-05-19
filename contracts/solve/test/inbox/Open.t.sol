@@ -47,6 +47,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
 
         // Should revert if order contains more than 32 expenses
         orderData.calls = originalCalls;
+        SolverNet.TokenExpense[] memory originalExpenses = orderData.expenses;
         SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](33);
         orderData.expenses = expenses;
         order.orderData = abi.encode(orderData);
@@ -54,6 +55,29 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         vm.expectRevert(ISolverNetInbox.InvalidArrayLength.selector);
         vm.prank(user);
         inbox.open{ value: defaultAmount }(order);
+
+        // Should revert if less tokens are received than expected due to max transfer balance override
+        orderData.expenses = originalExpenses;
+        orderData.deposit = SolverNet.Deposit({ token: address(maxTransferToken), amount: type(uint96).max });
+        order.orderData = abi.encode(orderData);
+
+        maxTransferToken.mint(user, 1 ether);
+        vm.startPrank(user);
+        maxTransferToken.approve(address(inbox), type(uint256).max);
+        vm.expectRevert(ISolverNetInbox.InvalidERC20Deposit.selector);
+        inbox.open(order);
+        vm.stopPrank();
+
+        // Should revert if less tokens are received than expected due to fee on transfer
+        orderData.deposit = SolverNet.Deposit({ token: address(feeOnTransferToken), amount: 1 ether });
+        order.orderData = abi.encode(orderData);
+
+        feeOnTransferToken.mint(user, 1 ether);
+        vm.startPrank(user);
+        feeOnTransferToken.approve(address(inbox), type(uint256).max);
+        vm.expectRevert(ISolverNetInbox.InvalidERC20Deposit.selector);
+        inbox.open(order);
+        vm.stopPrank();
     }
 
     function test_open_nativeDeposit_succeeds() public {
@@ -96,5 +120,21 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         assertEq(orderOffset, inbox.getLatestOrderOffset(), "order offset should match contract state");
         assertStatus(orderId, ISolverNetInbox.Status.Pending);
         assertEq(token1.balanceOf(address(inbox)), defaultAmount, "inbox should have received the deposit");
+    }
+
+    function test_open_hyperlane() public {
+        address impl = address(new SolverNetInbox(address(0), address(mailboxes[uint32(srcChainId)])));
+        inbox = SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
+        inbox.initialize(address(this), solver);
+        setRoutes(ISolverNetOutbox.Provider.Hyperlane);
+
+        uint256 snapshot = vm.snapshotState();
+        test_open_reverts();
+        vm.revertToState(snapshot);
+
+        test_open_nativeDeposit_succeeds();
+        vm.revertToState(snapshot);
+
+        test_open_erc20Deposit_succeeds();
     }
 }

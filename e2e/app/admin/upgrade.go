@@ -140,6 +140,11 @@ func UpgradeSolverNetExecutor(ctx context.Context, def app.Definition, cfg Confi
 	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetExecutor)
 }
 
+// UpgradeSolverNetAll upgrades all of the SolverNet contracts.
+func UpgradeSolverNetAll(ctx context.Context, def app.Definition, cfg Config) error {
+	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetAll)
+}
+
 // SetPortalFeeOracleV2 upgrades the OmniPortal's FeeOracle to the FeeOracleV2 contract.
 func SetPortalFeeOracleV2(ctx context.Context, def app.Definition, cfg Config) error {
 	return setup(def, cfg).run(ctx, setPortalFeeOracleV2)
@@ -154,7 +159,7 @@ func upgradePortal(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -191,7 +196,7 @@ func upgradeFeeOracleV1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -215,7 +220,7 @@ func upgradeGasStation(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -239,7 +244,7 @@ func upgradeGasPump(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -258,7 +263,7 @@ func ugpradeSlashing(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -277,7 +282,7 @@ func ugpradeDistribution(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -305,7 +310,7 @@ func upgradeStaking(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -324,7 +329,7 @@ func upgradeBridgeNative(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -348,7 +353,7 @@ func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -367,7 +372,7 @@ func upgradePortalRegistry(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -383,9 +388,7 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c c
 		return errors.Wrap(err, "get addrs")
 	}
 
-	var inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
-	// TODO: replace if re-initialization is required
-	initializer, err := inboxABI.Pack("initializeV2", addrs.SolverNetOutbox)
+	initializer, err := solverNetInboxInitializer(addrs.SolverNetOutbox)
 	if err != nil {
 		return errors.Wrap(err, "pack initializer")
 	}
@@ -397,12 +400,12 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c c
 		portal = common.Address{}
 	}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, portal, mailbox, initializer)
+	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, portal, mailbox, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, solverNetAdminScriptName, solveContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -434,9 +437,7 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 		})
 	}
 
-	var outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
-	// TODO: replace if re-initialization is required
-	initializer, err := outboxABI.Pack("initializeV2", chainIDs, inboxes)
+	initializer, err := solverNetOutboxInitializer(chainIDs, inboxes)
 	if err != nil {
 		return errors.Wrap(err, "pack initializer")
 	}
@@ -448,12 +449,12 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 		portal = common.Address{}
 	}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, addrs.SolverNetExecutor, portal, mailbox, initializer, chainIDs, inboxes)
+	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, addrs.SolverNetExecutor, portal, mailbox, initializer, chainIDs, inboxes)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, solverNetAdminScriptName, solveContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -473,12 +474,12 @@ func upgradeSolverNetMiddleman(ctx context.Context, s shared, _ netconf.Network,
 		return errors.Wrap(err, "get addrs")
 	}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetMiddleman", s.upgrader, s.deployer, addrs.SolverNetMiddleman, initializer)
+	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetMiddleman", s.upgrader, s.deployer, addrs.SolverNetMiddleman, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, solverNetAdminScriptName, solveContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -505,21 +506,96 @@ func upgradeSolverNetExecutor(ctx context.Context, s shared, network netconf.Net
 		chainIDs = append(chainIDs, dest.ID)
 	}
 
-	// var executorABI = mustGetABI(bindings.SolverNetExecutorMetaData)
-	// TODO: replace if re-initialization is required
-	initializer := []byte{}
+	initializer, err := solverNetExecutorInitializer()
+	if err != nil {
+		return errors.Wrap(err, "pack initializer")
+	}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetExecutor", s.upgrader, s.deployer, addrs.SolverNetExecutor, addrs.SolverNetOutbox, initializer, chainIDs)
+	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetExecutor", s.upgrader, s.deployer, addrs.SolverNetExecutor, addrs.SolverNetOutbox, initializer, chainIDs)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, solverNetAdminScriptName, solveContracts, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
 
 	log.Info(ctx, "SolverNetExecutor upgraded ✅", "chain", c.Name, "addr", addrs.SolverNetExecutor, "out", out)
+
+	return nil
+}
+
+func upgradeSolverNetAll(ctx context.Context, s shared, network netconf.Network, c chain) error {
+	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
+	if err != nil {
+		return errors.Wrap(err, "get addrs")
+	}
+
+	var chainIDs []uint64
+	var inboxes []bindings.ISolverNetOutboxInboxConfig
+	for _, dest := range network.EVMChains() {
+		provider, ok := solvernet.Provider(c.ChainID, dest.ID)
+		if !ok {
+			continue
+		}
+
+		chainIDs = append(chainIDs, dest.ID)
+		inboxes = append(inboxes, bindings.ISolverNetOutboxInboxConfig{
+			Inbox:    addrs.SolverNetInbox,
+			Provider: provider,
+		})
+	}
+
+	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
+
+	portal := addrs.Portal
+	if solvernet.IsHLOnly(c.ChainID) {
+		portal = common.Address{}
+	}
+
+	inboxInitializer, err := solverNetInboxInitializer(addrs.SolverNetOutbox)
+	if err != nil {
+		return errors.Wrap(err, "pack inbox initializer")
+	}
+
+	outboxInitializer, err := solverNetOutboxInitializer(chainIDs, inboxes)
+	if err != nil {
+		return errors.Wrap(err, "pack outbox initializer")
+	}
+
+	executorInitializer, err := solverNetExecutorInitializer()
+	if err != nil {
+		return errors.Wrap(err, "pack executor initializer")
+	}
+
+	config := bindings.SolverNetAdminUpgradeAllConfig{
+		Admin:    s.upgrader,
+		Deployer: s.deployer,
+		Inbox:    addrs.SolverNetInbox,
+		Outbox:   addrs.SolverNetOutbox,
+		Executor: addrs.SolverNetExecutor,
+		Omni:     portal,
+		Mailbox:  mailbox,
+	}
+
+	data := [][]byte{
+		inboxInitializer,
+		outboxInitializer,
+		executorInitializer,
+	}
+
+	calldata, err := solverNetAdminABI.Pack("upgradeAll", config, data, chainIDs, inboxes)
+	if err != nil {
+		return errors.Wrap(err, "pack calldata")
+	}
+
+	out, err := s.runForge(ctx, c.RPCEndpoint, solverNetAdminScriptName, solveContracts, calldata, s.upgrader, s.deployer)
+	if err != nil {
+		return errors.Wrap(err, "run forge", "out", out)
+	}
+
+	log.Info(ctx, "All SolverNet contracts upgraded ✅", "chain", c.Name, "out", out)
 
 	return nil
 }
@@ -535,7 +611,7 @@ func setPortalFeeOracleV2(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, adminScriptName, coreContracts, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}

@@ -63,6 +63,26 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         vm.prank(address(executor));
         vm.expectRevert(ISolverNetExecutor.CallFailed.selector);
         executor.executeAndTransfer721{ value: 1 ether }(address(0), 0, user, address(reverter), "");
+
+        vm.deal(address(outbox), 1 ether);
+        vm.prank(address(outbox));
+        vm.expectRevert(ISolverNetExecutor.CallFailed.selector);
+        executor.execute{ value: 1 ether }(address(0), 1 ether, "");
+
+        vm.prank(address(outbox));
+        vm.expectRevert(ISolverNetExecutor.CallFailed.selector);
+        executor.execute{ value: 1 ether }(address(executor), 1 ether, "");
+    }
+
+    function test_fallback_reverts() public {
+        vm.expectRevert(Receiver.FnSelectorNotRecognized.selector);
+        SolverNetInbox(address(executor)).markFilled(bytes32(0), bytes32(0), address(0));
+    }
+
+    function test_onERC721Received_succeeds() public {
+        milady.mint();
+        milady.safeTransferFrom(address(this), address(executor), 1);
+        assertEq(milady.ownerOf(1), address(executor), "executor should have received the Milady NFT");
     }
 
     function test_approve_succeeds() public {
@@ -78,7 +98,7 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         executor.tryRevokeApproval(address(approvalReverter), user);
         vm.stopPrank();
 
-        assertEq(approvalReverter.allowance(address(executor), user), 1 ether, "allowance should be 1 ether");
+        assertEq(approvalReverter.allowance(address(executor), user), 1, "allowance should be 1 wei");
     }
 
     function test_execute_succeeds() public {

@@ -1,43 +1,55 @@
+import { WatchDidFillError } from '@omni-network/core'
 import { beforeEach, expect, test, vi } from 'vitest'
-import {
-  createMockQueryResult,
-  renderHook,
-  resolvedOrder,
-} from '../../test/index.js'
+import { renderHook } from '../../test/index.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 
-const { useGetOrder, useInboxStatus, useDidFill } = vi.hoisted(() => {
-  return {
-    useGetOrder: vi.fn(),
-    useInboxStatus: vi.fn(),
-    useDidFill: vi.fn(),
-  }
-})
+const { useGetOrder, useInboxStatus, useWatchDidFill, useDidFill } = vi.hoisted(
+  () => {
+    return {
+      useGetOrder: vi.fn(),
+      useInboxStatus: vi.fn(),
+      useWatchDidFill: vi.fn(),
+      useDidFill: vi.fn(),
+    }
+  },
+)
 
 vi.mock('./useGetOrder.js', async () => {
+  const actual = await vi.importActual('./useGetOrder.js')
   return {
-    useGetOrder: useGetOrder,
+    useGetOrder: useGetOrder.mockReturnValue(actual.useGetOrder),
   }
 })
 
 vi.mock('./useInboxStatus.js', async () => {
   return {
-    useInboxStatus: useInboxStatus,
+    useInboxStatus,
+  }
+})
+
+vi.mock('./useWatchDidFill.js', async () => {
+  return {
+    useWatchDidFill,
   }
 })
 
 vi.mock('./useDidFill.js', async () => {
   return {
-    useDidFill: useDidFill,
+    useDidFill,
   }
 })
 
 beforeEach(() => {
-  useGetOrder.mockReturnValue(createMockQueryResult())
   useInboxStatus.mockRestore()
   useDidFill.mockImplementation(() => ({
     data: false,
     error: null,
+  }))
+  useWatchDidFill.mockImplementation(() => ({
+    status: 'idle',
+    error: undefined,
+    destTxHash: undefined,
+    unwatchDestTx: vi.fn(),
   }))
 })
 
@@ -48,7 +60,6 @@ const renderGetOrderStatusHook = () => {
         destChainId: 1,
         srcChainId: 2,
         orderId: '0x123',
-        resolvedOrder,
       }),
     {
       mockContractsCall: true,
@@ -56,51 +67,101 @@ const renderGetOrderStatusHook = () => {
   )
 }
 
-test('default: if inbox status is open, returned status is open', async () => {
-  useInboxStatus.mockReturnValue('open')
+test('default: transitions status through order lifecycle', async () => {
+  useInboxStatus.mockReturnValue('unknown')
 
-  const { result } = renderGetOrderStatusHook()
+  const { result, rerender } = renderGetOrderStatusHook()
 
-  // once on mount only
   expect(useInboxStatus).toHaveBeenCalledOnce()
-  expect(useDidFill).toHaveBeenCalledOnce()
+  expect(useWatchDidFill).toHaveBeenCalledOnce()
+  expect(result.current.status).toBe('not-found')
+  expect(result.current.error).toBeUndefined()
+  expect(result.current.destTxHash).toBeUndefined()
+
+  useInboxStatus.mockReturnValue('open')
+  rerender()
+
   expect(result.current.status).toBe('open')
   expect(result.current.error).toBeUndefined()
+  expect(result.current.destTxHash).toBeUndefined()
+
+  useWatchDidFill.mockReturnValue({
+    status: 'success',
+    destTxHash: '0x123',
+    error: undefined,
+    unwatchDestTx: vi.fn(),
+  })
+
+  rerender()
+
+  expect(result.current.status).toBe('filled')
+  expect(result.current.error).toBeUndefined()
+  expect(result.current.destTxHash).toBe('0x123')
 })
 
-test('behaviour: error defined if didFill error', async () => {
-  useDidFill.mockReturnValue(
-    createMockQueryResult({
-      error: new Error('test error'),
-    }),
+test('parameters: getOrderQueryOpts and didFillQueryOpts are passed to useGetOrder and useDidFill', async () => {
+  const getOrderQueryOpts = { staleTime: 1000 }
+  const didFillQueryOpts = { staleTime: 2000 }
+
+  renderHook(
+    () =>
+      useGetOrderStatus({
+        destChainId: 1,
+        srcChainId: 2,
+        orderId: '0x123',
+        getOrderQueryOpts,
+        didFillQueryOpts,
+      }),
+    {
+      mockContractsCall: true,
+    },
   )
+
+  expect(useGetOrder).toHaveBeenCalledWith(
+    expect.objectContaining({ queryOpts: getOrderQueryOpts }),
+  )
+  expect(useDidFill).toHaveBeenCalledWith(
+    expect.objectContaining({ queryOpts: didFillQueryOpts }),
+  )
+})
+
+test('behaviour: error defined if watchDidFill error', async () => {
+  useWatchDidFill.mockReturnValue({
+    status: 'error',
+    error: new Error('test error'),
+    destTxHash: undefined,
+    unwatchDestTx: vi.fn(),
+  })
 
   const { result } = renderGetOrderStatusHook()
 
-  expect(result.current.status).toBe('error')
   expect(result.current.error).toBeDefined()
 })
 
-test('behaviour: error defined if getOrder error', async () => {
-  useGetOrder.mockReturnValue(
-    createMockQueryResult({
-      error: new Error('test error'),
-    }),
-  )
-
-  const { result } = renderGetOrderStatusHook()
-
-  expect(result.current.status).toBe('not-found')
-  expect(result.current.error).toBeDefined()
-})
-
-test('behaviour: status filled if didFill is true', async () => {
-  useDidFill.mockReturnValue({ data: true })
+test('behaviour: status filled if watchDidFill is true', async () => {
+  useWatchDidFill.mockReturnValue({ status: 'success', destTxHash: '0x123' })
 
   const { result } = renderGetOrderStatusHook()
 
   expect(result.current.status).toBe('filled')
+  expect(result.current.destTxHash).toBe('0x123')
   expect(result.current.error).toBeUndefined()
+})
+
+test('behaviour: status filled if didFill is true, and watchDidFill fails', async () => {
+  useDidFill.mockReturnValue({ status: 'success', data: true })
+  useWatchDidFill.mockReturnValue({
+    status: 'error',
+    error: new Error('test error'),
+    destTxHash: undefined,
+    unwatchDestTx: vi.fn(),
+  })
+
+  const { result } = renderGetOrderStatusHook()
+
+  expect(result.current.status).toBe('filled')
+  expect(result.current.destTxHash).toBeUndefined()
+  expect(result.current.error).toBeInstanceOf(WatchDidFillError)
 })
 
 test.each(['filled', 'rejected', 'closed', 'unknown'])(

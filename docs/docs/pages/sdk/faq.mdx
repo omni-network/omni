@@ -18,9 +18,7 @@ Additionally, solvers have the ability to `reject` an order for various reasons 
 
 ### Are any changes necessary to my contracts?
 
-**No changes are required to your existing smart contracts.** The Omni system interacts *with* your contracts as they are deployed. Solvers simply call the functions you've already exposed on the destination chain, facilitated by the `SolverNetOutbox` and / or `SolverNetMiddleman`.
-
-Even smart contracts that don't expose `onBehalfOf` methods (which would enable the solver to deposit "on behalf of" a user) are compatible, because you can configure the `SolverNetMiddleman` to receive tokens and transfer them to the user afterwards. See the `withExecAndTransfer` hook for details.
+**No changes are required to your existing smart contracts.** The Omni system interacts *with* your contracts as they are deployed. Solvers simply call the functions you've already exposed on the destination chain, facilitated by the `SolverNetOutbox` and `SolverNetExecutor`.
 
 ### What is the flow at a smart contract level?
 

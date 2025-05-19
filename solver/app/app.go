@@ -312,7 +312,7 @@ func startProcessingEvents(
 	ageCache := newAgeCache(backends)
 	go monitorAgeCacheForever(ctx, network, ageCache)
 
-	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, addrs.SolverNetOutbox, ageCache.InstrumentDestFilled)
+	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, ageCache.InstrumentDestFilled)
 	updatePnL := newUpdatePnLFunc(pricer, network.ChainName)
 
 	// Create all event processing functions per chain

@@ -17,6 +17,7 @@ interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
     error InvalidArrayLength();
 
     // Open order errors
+    error InvalidERC20Deposit();
     error InvalidNativeDeposit();
 
     // Reject order errors
@@ -36,7 +37,6 @@ interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
     // Pause errors
     error IsPaused();
     error AllPaused();
-    error PortalPaused();
 
     /**
      * @notice Emitted when an outbox is set.
@@ -44,6 +44,14 @@ interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
      * @param outbox  Address of the outbox.
      */
     event OutboxSet(uint64 indexed chainId, address indexed outbox);
+
+    /**
+     * @notice Emitted when a pause state is set.
+     * @param key Pause key.
+     * @param pause True if paused, false if unpaused.
+     * @param pauseState Current pause state.
+     */
+    event Paused(bytes32 indexed key, bool indexed pause, uint8 indexed pauseState);
 
     /**
      * @notice Emitted when an order is opened.

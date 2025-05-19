@@ -12,6 +12,8 @@ import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { IOmniPortal } from "core/src/interfaces/IOmniPortal.sol";
 import { IMailbox } from "@hyperlane-xyz/core/contracts/interfaces/IMailbox.sol";
 import { MockERC20 } from "test/utils/MockERC20.sol";
+import { MaxTransferToken } from "test/utils/MaxTransferToken.sol";
+import { FeeOnTransferToken } from "test/utils/FeeOnTransferToken.sol";
 import { MockVault } from "test/utils/MockVault.sol";
 import { MockMultiTokenVault } from "test/utils/MockMultiTokenVault.sol";
 import { MockPortal } from "core/test/utils/MockPortal.sol";
@@ -22,6 +24,7 @@ import { SolverNet } from "src/lib/SolverNet.sol";
 
 import { Test, console2 } from "forge-std/Test.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
+import { Receiver } from "solady/src/accounts/Receiver.sol";
 import { FixedPointMathLib } from "solady/src/utils/FixedPointMathLib.sol";
 import { AddrUtils } from "src/lib/AddrUtils.sol";
 import { Create3 } from "core/src/deploy/Create3.sol";
@@ -40,6 +43,8 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
     MockERC20 token1;
     MockERC20 token2;
+    MaxTransferToken maxTransferToken;
+    FeeOnTransferToken feeOnTransferToken;
 
     MockVault nativeVault;
     MockVault erc20Vault;
@@ -74,6 +79,8 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     function setUp() public virtual {
         token1 = new MockERC20("Token 1", "TKN1");
         token2 = new MockERC20("Token 2", "TKN2");
+        maxTransferToken = new MaxTransferToken();
+        feeOnTransferToken = new FeeOnTransferToken();
 
         nativeVault = new MockVault(address(0));
         erc20Vault = new MockVault(address(token2));
@@ -106,7 +113,8 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     }
 
     function fillHash(bytes32 orderId, bytes memory originData) internal pure returns (bytes32) {
-        return keccak256(abi.encode(orderId, originData));
+        SolverNet.FillOriginData memory fillOriginData = abi.decode(originData, (SolverNet.FillOriginData));
+        return keccak256(abi.encode(orderId, fillOriginData));
     }
 
     function fundUser(SolverNet.OrderData memory orderData) internal {

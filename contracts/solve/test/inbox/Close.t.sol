@@ -39,13 +39,6 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         vm.expectRevert(Ownable.Unauthorized.selector);
         inbox.close(resolvedOrder.orderId);
 
-        // order cannot be closed if portal is paused
-        portal.pause(true);
-        vm.expectRevert(ISolverNetInbox.PortalPaused.selector);
-        vm.prank(user);
-        inbox.close(resolvedOrder.orderId);
-        portal.pause(false);
-
         // order can only be closed after fill deadline has elapsed
         vm.prank(user);
         vm.expectRevert(ISolverNetInbox.OrderStillValid.selector);
@@ -126,5 +119,24 @@ contract SolverNet_Inbox_Close_Test is TestBase {
 
         assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Closed);
         assertEq(user.balance, defaultAmount, "deposit should have been returned to the user");
+    }
+
+    function test_close_hyperlane() public {
+        address impl = address(new SolverNetInbox(address(0), address(mailboxes[uint32(srcChainId)])));
+        inbox = SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
+        inbox.initialize(address(this), solver);
+        setRoutes(ISolverNetOutbox.Provider.Hyperlane);
+
+        uint256 snapshot = vm.snapshotState();
+        test_close_reverts();
+        vm.revertToState(snapshot);
+
+        test_close_nativeDeposit_succeeds();
+        vm.revertToState(snapshot);
+
+        test_close_erc20Deposit_succeeds();
+        vm.revertToState(snapshot);
+
+        test_close_localOrder_succeeds();
     }
 }

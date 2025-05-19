@@ -110,6 +110,13 @@ var (
 		Decimals:    18,
 		CoingeckoID: "plume",
 	}
+
+	SOL = Asset{
+		Symbol:      "SOL",
+		Name:        "Solana",
+		Decimals:    9,
+		CoingeckoID: "solana",
+	}
 )
 
 func AssetBySymbol(symbol string) (Asset, error) {

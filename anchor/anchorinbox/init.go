@@ -13,6 +13,7 @@ import (
 // Initialize the inbox state
 // This should be called only once, preferably by the upgrade authority.
 type Init struct {
+	ChainId     *uint64
 	CloseBuffer *int64
 
 	// [0] = [WRITE] inbox_state
@@ -30,6 +31,12 @@ func NewInitInstructionBuilder() *Init {
 	}
 	nd.AccountMetaSlice[2] = ag_solanago.Meta(Addresses["11111111111111111111111111111111"])
 	return nd
+}
+
+// SetChainId sets the "chain_id" parameter.
+func (inst *Init) SetChainId(chain_id uint64) *Init {
+	inst.ChainId = &chain_id
+	return inst
 }
 
 // SetCloseBuffer sets the "close_buffer" parameter.
@@ -133,6 +140,9 @@ func (inst Init) ValidateAndBuild() (*Instruction, error) {
 func (inst *Init) Validate() error {
 	// Check whether all (required) parameters are set:
 	{
+		if inst.ChainId == nil {
+			return errors.New("ChainId parameter is not set")
+		}
 		if inst.CloseBuffer == nil {
 			return errors.New("CloseBuffer parameter is not set")
 		}
@@ -162,7 +172,8 @@ func (inst *Init) EncodeToTree(parent ag_treeout.Branches) {
 				ParentFunc(func(instructionBranch ag_treeout.Branches) {
 
 					// Parameters of the instruction:
-					instructionBranch.Child("Params[len=1]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
+					instructionBranch.Child("Params[len=2]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
+						paramsBranch.Child(ag_format.Param("     ChainId", *inst.ChainId))
 						paramsBranch.Child(ag_format.Param(" CloseBuffer", *inst.CloseBuffer))
 					})
 
@@ -177,6 +188,11 @@ func (inst *Init) EncodeToTree(parent ag_treeout.Branches) {
 }
 
 func (obj Init) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+	// Serialize `ChainId` param:
+	err = encoder.Encode(obj.ChainId)
+	if err != nil {
+		return err
+	}
 	// Serialize `CloseBuffer` param:
 	err = encoder.Encode(obj.CloseBuffer)
 	if err != nil {
@@ -185,6 +201,11 @@ func (obj Init) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
 	return nil
 }
 func (obj *Init) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+	// Deserialize `ChainId`:
+	err = decoder.Decode(&obj.ChainId)
+	if err != nil {
+		return err
+	}
 	// Deserialize `CloseBuffer`:
 	err = decoder.Decode(&obj.CloseBuffer)
 	if err != nil {
@@ -196,12 +217,14 @@ func (obj *Init) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
 // NewInitInstruction declares a new Init instruction with the provided parameters and accounts.
 func NewInitInstruction(
 	// Parameters:
+	chain_id uint64,
 	close_buffer int64,
 	// Accounts:
 	inboxState ag_solanago.PublicKey,
 	admin ag_solanago.PublicKey,
 	systemProgram ag_solanago.PublicKey) *Init {
 	return NewInitInstructionBuilder().
+		SetChainId(chain_id).
 		SetCloseBuffer(close_buffer).
 		SetInboxStateAccount(inboxState).
 		SetAdminAccount(admin).

@@ -9,10 +9,12 @@ import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useOmniContext } from '../context/omni.js'
 import { hashFn } from '../utils/query.js'
+import type { QueryOpts } from './types.js'
 
 type UseValidateOrderParams<abis extends OptionalAbis> = {
   order: Order<abis>
   enabled: boolean
+  queryOpts?: QueryOpts<ValidationResponse, FetchJSONError>
 }
 
 type Validation = {
@@ -52,10 +54,12 @@ export type UseValidateOrderResult =
 export function useValidateOrder<abis extends OptionalAbis>({
   order,
   enabled,
+  queryOpts,
 }: UseValidateOrderParams<abis>): UseValidateOrderResult {
   const { apiBaseUrl } = useOmniContext()
 
   const query = useQuery<ValidationResponse, FetchJSONError>({
+    ...queryOpts,
     queryKey: ['check', order],
     queryFn: async () => validateOrder({ ...order, environment: apiBaseUrl }),
     queryKeyHashFn: hashFn,

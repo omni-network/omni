@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -37,6 +38,11 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 		}
 
 		for _, account := range accounts {
+			if !solvernet.IsHLRole(account.Role) && solvernet.IsHLOnly(chain.ID) {
+				// Do not monitor non-HL roles on HL-only chains
+				continue
+			}
+
 			go monitorAccountForever(ctx, network.ID, account, chain.Name, rpcClients[chain.ID])
 
 			if isSolverNetRole(account.Role) {
@@ -126,7 +132,7 @@ func monitorAccountOnce(
 	}
 
 	var isLow float64
-	if bi.LTE(balance, thresholds.MinBalance()) {
+	if bi.LT(balance, thresholds.MinBalance()) {
 		isLow = 1
 	}
 
@@ -203,7 +209,7 @@ func monitorSolverNetRoleTokenOnce(
 	}
 
 	var isLow float64
-	if bi.LTE(balance, thresh.MinBalance()) {
+	if bi.LT(balance, thresh.MinBalance()) {
 		isLow = 1
 	}
 
@@ -281,7 +287,7 @@ func monitorSponsorOnce(
 	thresholds := sponsor.FundThresholds
 
 	var isLow float64
-	if bi.LTE(balance, thresholds.MinBalance()) {
+	if bi.LT(balance, thresholds.MinBalance()) {
 		isLow = 1
 	}
 

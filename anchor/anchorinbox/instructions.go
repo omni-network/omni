@@ -42,6 +42,10 @@ var (
 
 	// Open a new order
 	Instruction_Open = ag_binary.TypeID([8]byte{228, 220, 155, 71, 199, 189, 60, 45})
+
+	// Reject an order, refunding owner closing accounts.
+	// Only admin can reject orders.
+	Instruction_Reject = ag_binary.TypeID([8]byte{135, 7, 63, 85, 131, 114, 111, 224})
 )
 
 // InstructionIDToName returns the name of the instruction given its ID.
@@ -57,6 +61,8 @@ func InstructionIDToName(id ag_binary.TypeID) string {
 		return "MarkFilled"
 	case Instruction_Open:
 		return "Open"
+	case Instruction_Reject:
+		return "Reject"
 	default:
 		return ""
 	}
@@ -91,6 +97,9 @@ var InstructionImplDef = ag_binary.NewVariantDefinition(
 		},
 		{
 			Name: "open", Type: (*Open)(nil),
+		},
+		{
+			Name: "reject", Type: (*Reject)(nil),
 		},
 	},
 )

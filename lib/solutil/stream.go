@@ -1,4 +1,4 @@
-package solana
+package solutil
 
 import (
 	"context"
