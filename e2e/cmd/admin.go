@@ -36,7 +36,6 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newUpgradePortalRegistryCmd(def, &cfg),
 		newUpgradeSolverNetInboxCmd(def, &cfg),
 		newUpgradeSolverNetOutboxCmd(def, &cfg),
-		newUpgradeSolverNetMiddlemanCmd(def, &cfg), // TODO(zodomo): Deprecate
 		newUpgradeSolverNetExecutorCmd(def, &cfg),
 		newUpgradeSolverNetAllCmd(def, &cfg),
 		newSetPortalFeeOracleV2Cmd(def, &cfg),
@@ -259,19 +258,6 @@ func newUpgradeSolverNetOutboxCmd(def *app.Definition, cfg *admin.Config) *cobra
 		Short: "Upgrade the SolverNetOutbox contract.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return admin.UpgradeSolverNetOutbox(cmd.Context(), *def, *cfg)
-		},
-	}
-
-	return cmd
-}
-
-// TODO(zodomo): Deprecate.
-func newUpgradeSolverNetMiddlemanCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "upgrade-solvernet-middleman",
-		Short: "Upgrade the SolverNetMiddleman contract.",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return admin.UpgradeSolverNetMiddleman(cmd.Context(), *def, *cfg)
 		},
 	}
 

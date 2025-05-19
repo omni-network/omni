@@ -16,14 +16,14 @@ import (
 )
 
 var (
-	middlemanABI          = mustGetABI(bindings.SolverNetMiddlemanMetaData)
-	execAndTransferMethod = mustMethod(middlemanABI, "executeAndTransfer")
+	executorABI           = mustGetABI(bindings.SolverNetExecutorMetaData)
+	execAndTransferMethod = mustMethod(executorABI, "executeAndTransfer")
 	zodomoEOA             = common.HexToAddress("0xA779fC675Db318dab004Ab8D538CB320D0013F42")
 )
 
 type callAllowFunc func(chainID uint64, target common.Address, calldata []byte) bool
 
-func newCallAllower(network netconf.ID, middlemanAddr common.Address) callAllowFunc {
+func newCallAllower(network netconf.ID, executorAddr common.Address) callAllowFunc {
 	return func(chainID uint64, target common.Address, calldata []byte) bool {
 		if !targets.IsRestricted(network) {
 			return true
@@ -39,8 +39,8 @@ func newCallAllower(network netconf.ID, middlemanAddr common.Address) callAllowF
 			return true
 		}
 
-		if target == middlemanAddr {
-			proxiedTarget, _, err := parseMiddlemanCall(calldata)
+		if target == executorAddr {
+			proxiedTarget, _, err := parseExecutorCall(calldata)
 			if err != nil {
 				return false
 			}
@@ -54,8 +54,8 @@ func newCallAllower(network netconf.ID, middlemanAddr common.Address) callAllowF
 	}
 }
 
-// parseMiddlemanCall parses a call to the middleman contract, and returns proxied target and call data.
-func parseMiddlemanCall(data []byte) (common.Address, []byte, error) {
+// parseExecutorCall parses a call to the executor contract, and returns proxied target and call data.
+func parseExecutorCall(data []byte) (common.Address, []byte, error) {
 	methodID := data[:4]
 
 	// executeAndTransfer is only supported method

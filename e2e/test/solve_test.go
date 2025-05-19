@@ -65,7 +65,7 @@ func testContractsAPI(ctx context.Context, t *testing.T, solverAddr string) {
 	addrEqual(addrs.Portal, "portal")
 	addrEqual(addrs.SolverNetInbox, "inbox")
 	addrEqual(addrs.SolverNetOutbox, "outbox")
-	addrEqual(addrs.SolverNetMiddleman, "middleman")
+	addrEqual(addrs.SolverNetExecutor, "middleman")
 	addrEqual(addrs.SolverNetExecutor, "executor")
 }
 

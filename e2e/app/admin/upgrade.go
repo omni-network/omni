@@ -130,11 +130,6 @@ func UpgradeSolverNetOutbox(ctx context.Context, def app.Definition, cfg Config)
 	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetOutbox)
 }
 
-// TODO(zodomo): Deprecate.
-func UpgradeSolverNetMiddleman(ctx context.Context, def app.Definition, cfg Config) error {
-	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetMiddleman)
-}
-
 // UpgradeSolverNetExecutor upgrades the SolverNetExecutor contract.
 func UpgradeSolverNetExecutor(ctx context.Context, def app.Definition, cfg Config) error {
 	return setup(def, cfg).runHL(ctx, def, upgradeSolverNetExecutor)
@@ -460,31 +455,6 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 	}
 
 	log.Info(ctx, "SolverNetOutbox upgraded ✅", "chain", c.Name, "addr", addrs.SolverNetOutbox, "out", out)
-
-	return nil
-}
-
-// TODO(zodomo): Deprecate.
-func upgradeSolverNetMiddleman(ctx context.Context, s shared, _ netconf.Network, c chain) error {
-	// TODO: replace if re-initialization is required
-	initializer := []byte{}
-
-	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
-	if err != nil {
-		return errors.Wrap(err, "get addrs")
-	}
-
-	calldata, err := solverNetAdminABI.Pack("upgradeSolverNetMiddleman", s.upgrader, s.deployer, addrs.SolverNetMiddleman, initializer)
-	if err != nil {
-		return errors.Wrap(err, "pack calldata")
-	}
-
-	out, err := s.runForge(ctx, c.RPCEndpoint, solverNetAdminScriptName, solveContracts, calldata, s.upgrader, s.deployer)
-	if err != nil {
-		return errors.Wrap(err, "run forge", "out", out)
-	}
-
-	log.Info(ctx, "SolverNetMiddleman upgraded ✅", "chain", c.Name, "addr", addrs.SolverNetMiddleman, "out", out)
 
 	return nil
 }
