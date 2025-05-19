@@ -70,20 +70,26 @@ function Quote() {
       {account?.address ? (
         <>
           <h4>Quote swap amount</h4>
-          <div>isSuccess: {quote.isSuccess}</div>
-          <div>isPending: {quote.isPending}</div>
-          <div>isError: {quote.isError}</div>
+          <div>
+            isSuccess: <code>{JSON.stringify(quote.isSuccess)}</code>
+          </div>
+          <div>
+            isPending: <code>{JSON.stringify(quote.isPending)}</code>
+          </div>
+          <div>
+            isError: <code>{JSON.stringify(quote.isError)}</code>
+          </div>
           <div>
             quote.deposit.amount:{' '}
-            {quote.isSuccess ? formatEther(quote.deposit.amount) : ''}
+            {quote.isSuccess ? `${formatEther(quote.deposit.amount)} ETH` : ""}
           </div>
           <div>
             quote.expense.amount:{' '}
-            {quote.isSuccess ? formatEther(quote.expense.amount) : ''}
+            {quote.isSuccess ? `${formatEther(quote.expense.amount)} ETH` : ""}
           </div>
         </>
       ) : (
-        <div>connect...</div>
+        <div>Please connect wallet...</div>
       )}
     </div>
   )
@@ -129,11 +135,34 @@ function Order() {
           )}
           <div>validation: {order.validation?.status}</div>
           <div>status: {order.status}</div>
-          <div>src chain tx hash: {order.txHash}</div>
-          <div>isError: {order.isError}</div>
-          <div>error: {order.error?.message}</div>
-          <div>orderId: {order.orderId}</div>
-          <div>destTxHash: {order.destTxHash}</div>
+          <div>
+            src chain tx hash:{''}
+            {order.txHash && (
+              <a
+                target="_blank"
+                rel="noopener noreferrer"
+                href={`https://sepolia.basescan.org/tx/${encodeURIComponent(
+                  order.txHash
+                )}`}
+              >
+                <code>{order.txHash}</code>
+              </a>
+            )}
+          </div>
+          <div>isError: <code>{JSON.stringify(order.isError)}</code></div>
+          <div>error: <pre>{order.error?.message}</pre></div>
+          <div>orderId: <code>{order.orderId}</code></div>
+          <div>destTxHash: {order.destTxHash && (
+              <a
+                target="_blank"
+                rel="noopener noreferrer"
+                href={`https://holesky.etherscan.io/tx/${encodeURIComponent(
+                  order.destTxHash
+                )}`}
+              >
+                <code>{order.destTxHash}</code>
+              </a>
+            )}</div>
           <button
             onClick={() => order.open()}
             disabled={
@@ -146,7 +175,7 @@ function Order() {
           </button>
         </>
       ) : (
-        <div>connect...</div>
+        <div>Please connect wallet...</div>
       )}
     </div>
   )
