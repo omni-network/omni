@@ -74,6 +74,54 @@ pub mod solver_inbox {
         Ok(())
     }
 
+    /// Reject an order, refunding owner closing accounts.
+    /// Only admin can reject orders.
+    pub fn reject(ctx: Context<Reject>, order_id: Pubkey) -> Result<()> {
+        let state = &mut ctx.accounts.order_state;
+        state.status = Status::Rejected;
+
+        // Sign transfer and close_account with order token PDA
+        let order_token_seeds: &[&[&[u8]]] = &[&[
+            ORDER_TOKEN_SEED_PREFIX,
+            order_id.as_ref(),
+            &[ctx.bumps.order_token_account],
+        ]];
+
+        // Transfer the deposit to the owner account
+        transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.order_token_account.to_account_info(),
+                    to: ctx.accounts.owner_token_account.to_account_info(),
+                    authority: ctx.accounts.order_token_account.to_account_info(),
+                },
+            )
+            .with_signer(order_token_seeds),
+            state.deposit_amount,
+        )?;
+
+        // Close the order token account, returning rent to owner
+        close_account(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                CloseAccount {
+                    account: ctx.accounts.order_token_account.to_account_info(),
+                    destination: ctx.accounts.owner_token_account.to_account_info(),
+                    authority: ctx.accounts.order_token_account.to_account_info(),
+                },
+            )
+            .with_signer(order_token_seeds),
+        )?;
+
+        emit!(EventUpdated {
+            order_id: state.order_id,
+            status: state.status.clone(),
+        });
+
+        Ok(())
+    }
+
     /// Mark an order as filled, and set the claimable_by account.
     /// This may only be called by the inbox admin.
     pub fn mark_filled(
@@ -257,6 +305,41 @@ pub struct Open<'info> {
     )]
     pub inbox_state: Account<'info, InboxState>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(order_id: Pubkey)]
+pub struct Reject<'info> {
+    #[account(
+        mut,
+        seeds = [OrderState::SEED_PREFIX, order_id.as_ref()],
+        bump,
+        constraint = order_state.status == Status::Pending,
+    )]
+    pub order_state: Account<'info, OrderState>,
+    #[account(
+        mut,
+        seeds = [ORDER_TOKEN_SEED_PREFIX, order_id.as_ref()],
+        bump,
+        token::mint = order_state.deposit_mint,
+        token::authority = order_token_account,
+    )]
+    pub order_token_account: Account<'info, TokenAccount>,
+    #[account(
+        mut,
+        token::mint = order_state.deposit_mint,
+        token::authority = order_state.owner,
+    )]
+    pub owner_token_account: Account<'info, TokenAccount>,
+    #[account(
+        seeds = [InboxState::SEED_PREFIX],
+        bump,
+        constraint = inbox_state.admin == admin.key(),
+    )]
+    pub inbox_state: Account<'info, InboxState>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]

@@ -425,6 +425,37 @@ func TestInbox(t *testing.T) {
 		require.Equal(t, 1e9-int64(depositAmount), int64(*bal.Value.UiAmount))
 	})
 
+	t.Run("open and reject", func(t *testing.T) {
+		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount, mintResp.TokenAccount)
+		require.NoError(t, err)
+		rejectOrder := anchorinbox.NewRejectInstruction(
+			openOrder.ID,
+			openOrder.StateAddress,
+			openOrder.TokenAddress,
+			mintResp.TokenAccount,
+			inboxStateAddr,
+			privKey0.PublicKey(),
+			token.ProgramID,
+		)
+		// Send Open instruction
+		txSig, err := solutil.SendSimple(ctx, cl, privKey0, openOrder.Build(), rejectOrder.Build())
+		require.NoError(t, err)
+
+		txResp, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
+		require.NoError(t, err)
+		t.Logf("Open and Reject Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
+		require.Equal(t, mustFirstTxSig(txResp), <-async)
+
+		// Ensure token account closed
+		_, err = cl.GetTokenAccountBalance(ctx, openOrder.TokenAddress, rpc.CommitmentConfirmed)
+		require.Contains(t, errors.Format(solutil.WrapRPCError(err, "getTokenAccountBalance")), "could not find account")
+
+		// Ensure deposit amount transferred back to owner
+		bal, err := cl.GetTokenAccountBalance(ctx, mintResp.TokenAccount, rpc.CommitmentConfirmed)
+		require.NoError(t, err)
+		require.Equal(t, 1e9-int64(depositAmount), int64(*bal.Value.UiAmount))
+	})
+
 	t.Run("init fail", func(t *testing.T) {
 		init := anchorinbox.NewInitInstruction(chainID, closeBuffer, inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
 		txSig, err := solutil.SendSimple(ctx, cl, privKey0, init.Build())
