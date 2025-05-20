@@ -37,7 +37,7 @@ func AwaitConfirmedTransaction(ctx context.Context, cl *rpc.Client, txSig solana
 
 // GetAccountDataInto retrieves account data and decodes it into the provided value.
 // It uses commitment level of "confirmed".
-func GetAccountDataInto(ctx context.Context, cl *rpc.Client, address solana.PublicKey, val any) (*rpc.GetAccountInfoResult, error) {
+func GetAccountDataInto[T any](ctx context.Context, cl *rpc.Client, address solana.PublicKey, val T) (*rpc.GetAccountInfoResult, error) {
 	info, err := cl.GetAccountInfoWithOpts(ctx, address, &rpc.GetAccountInfoOpts{
 		Commitment: rpc.CommitmentConfirmed,
 		Encoding:   solana.EncodingBase64,
