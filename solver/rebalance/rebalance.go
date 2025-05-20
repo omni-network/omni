@@ -28,8 +28,9 @@ var (
 	maxSend = bi.Dec6(10000) // 10k USDC
 )
 
-// rebalanceForever starts rebalancing loops for each chain in the network.
-func rebalanceForever(
+// rebalanceCCTPForever starts rebalancing loops for each chain in the cctp network.
+// Full CCTP rebalancing also requires Uniswap V3 liquidity.
+func rebalanceCCTPForever(
 	ctx context.Context,
 	interval time.Duration,
 	db *cctpdb.DB,
@@ -38,22 +39,20 @@ func rebalanceForever(
 	backends ethbackend.Backends,
 	solver common.Address,
 ) {
-	go func() {
-		for {
-			start := time.Now()
-			rebalanceOnce(ctx, db, network, pricer, backends, solver)
-			elapsed := time.Since(start)
+	for {
+		start := time.Now()
+		rebalanceCCTPOnce(ctx, db, network, pricer, backends, solver)
+		elapsed := time.Since(start)
 
-			// Sleep for the remaining time in the interval, if any.
-			if elapsed < interval {
-				time.Sleep(interval - elapsed)
-			}
+		// Sleep for the remaining time in the interval, if any.
+		if elapsed < interval {
+			time.Sleep(interval - elapsed)
 		}
-	}()
+	}
 }
 
-// rebalanceOnce rebalances all chains once.
-func rebalanceOnce(
+// rebalanceCCTPOnce rebalances all chains once.
+func rebalanceCCTPOnce(
 	ctx context.Context,
 	db *cctpdb.DB,
 	network netconf.Network,
