@@ -51,9 +51,10 @@ func newContractsHandler(addrs contracts.Addresses) Handler {
 		ZeroReq:        func() any { return nil },
 		HandleFunc: func(context.Context, any) (any, error) {
 			return types.ContractsResponse{
-				Portal:    addrs.Portal,
-				Inbox:     addrs.SolverNetInbox,
-				Outbox:    addrs.SolverNetOutbox,
+				Portal: addrs.Portal,
+				Inbox:  addrs.SolverNetInbox,
+				Outbox: addrs.SolverNetOutbox,
+				// Middleman deprecated and logic moved to executor, temporarily retained for backwards compatibility.
 				Middleman: addrs.SolverNetExecutor,
 				Executor:  addrs.SolverNetExecutor,
 			}, nil

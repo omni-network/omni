@@ -65,6 +65,7 @@ func testContractsAPI(ctx context.Context, t *testing.T, solverAddr string) {
 	addrEqual(addrs.Portal, "portal")
 	addrEqual(addrs.SolverNetInbox, "inbox")
 	addrEqual(addrs.SolverNetOutbox, "outbox")
+	// Middleman deprecated and logic moved to executor, temporarily retained for backwards compatibility.
 	addrEqual(addrs.SolverNetExecutor, "middleman")
 	addrEqual(addrs.SolverNetExecutor, "executor")
 }
