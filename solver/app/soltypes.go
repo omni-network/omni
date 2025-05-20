@@ -13,6 +13,8 @@ import (
 	"github.com/omni-network/omni/lib/solutil"
 	"github.com/omni-network/omni/solver/types"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
 )
@@ -83,6 +85,8 @@ func GetSolOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderI
 		ID:            orderID,
 		SourceChainID: chainID,
 		Status:        status,
+		Offset:        0,                // N/A
+		UpdatedBy:     common.Address{}, // N/A
 		pendingData: PendingData{
 			MinReceived:        minReceived,
 			DestinationSettler: addrs.SolverNetOutbox,
@@ -96,7 +100,30 @@ func GetSolOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderI
 	}, true, nil
 }
 
-// RejectOrder.
+func ClaimSolOrder(
+	ctx context.Context,
+	cl *rpc.Client,
+	claimer solana.PrivateKey,
+	orderID OrderID,
+) error {
+	claim, err := anchorinbox.NewClaimOrder(ctx, cl, claimer.PublicKey(), solana.PublicKey(orderID))
+	if err != nil {
+		return err
+	}
+
+	sig, err := solutil.SendSimple(ctx, cl, claimer, claim.Build())
+	if err != nil {
+		return err
+	}
+
+	_, err = solutil.AwaitConfirmedTransaction(ctx, cl, sig)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func RejectSolOrder(
 	ctx context.Context,
 	cl *rpc.Client,
@@ -110,6 +137,31 @@ func RejectSolOrder(
 	}
 
 	sig, err := solutil.SendSimple(ctx, cl, admin, reject.Build())
+	if err != nil {
+		return err
+	}
+
+	_, err = solutil.AwaitConfirmedTransaction(ctx, cl, sig)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func MarkFilledSolOrder(
+	ctx context.Context,
+	cl *rpc.Client,
+	admin solana.PrivateKey,
+	claimableBy solana.PublicKey,
+	orderID OrderID,
+) error {
+	mark, err := anchorinbox.NewMarkFilledOrder(ctx, cl, claimableBy, admin.PublicKey(), solana.PublicKey(orderID))
+	if err != nil {
+		return err
+	}
+
+	sig, err := solutil.SendSimple(ctx, cl, admin, mark.Build())
 	if err != nil {
 		return err
 	}
