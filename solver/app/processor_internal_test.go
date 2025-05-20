@@ -96,11 +96,6 @@ func TestEventProcessor(t *testing.T) {
 						ID:     id,
 						Status: test.getStatus,
 						pendingData: PendingData{
-							FillInstruction: bindings.IERC7683FillInstruction{
-								DestinationSettler: [32]byte{},
-								DestinationChainId: 0,
-								OriginData:         []byte{},
-							},
 							MaxSpent: []bindings.IERC7683Output{},
 						},
 					}, true, nil

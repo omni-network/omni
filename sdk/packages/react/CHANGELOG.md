@@ -1,5 +1,24 @@
 # @omni-network/react
 
+## 0.2.0
+
+### Minor Changes
+
+- 1be3019: Introduce getAssets core API and useOmniAssets react hook
+- 736f1ae: Removed isNative flag from the quote inputs, deposit.token and expense.token are always optional now. By default we assume native when token is not provided, but we also support tokens in which case you need to provide the address.
+
+  This cleans up the interface for consumers as the isNative flag was proving awkward.
+
+### Patch Changes
+
+- b0a2600: Use the new useWatchDidFill hook in useOrder to propagate the destTxHash, but fallback to didFill in case consumers rely on public RPCs
+- Updated dependencies [b0a2600]
+- Updated dependencies [90f880a]
+- Updated dependencies [1be3019]
+- Updated dependencies [736f1ae]
+- Updated dependencies [b48a06c]
+  - @omni-network/core@0.2.0
+
 ## 0.1.3
 
 ### Patch Changes

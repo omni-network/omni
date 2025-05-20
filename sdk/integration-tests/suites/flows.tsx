@@ -151,11 +151,6 @@ describe.concurrent('ETH transfer orders', () => {
         destChainId: mockL2Id,
         deposit: {
           amount: parseEther('2'),
-          isNative: true,
-        },
-        expense: {
-          amount: parseEther('1'),
-          isNative: true,
         },
       } as const
 
@@ -453,10 +448,10 @@ describe.concurrent('ETH transfer orders', () => {
         destChainId: mockL2Id,
         deposit: {
           amount,
-          isNative: true,
+          token: zeroAddress,
         },
         expense: {
-          isNative: true,
+          token: zeroAddress,
         },
       } as const
 

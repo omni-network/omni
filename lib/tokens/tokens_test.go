@@ -62,6 +62,7 @@ func TestGenTokens(t *testing.T) {
 		usdc(evmchain.IDArbitrumOne, addr("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")),
 		usdc(evmchain.IDOptimism, addr("0x0b2c639c533813f4aa9d7837caf62653d097ff85")),
 		usdc(evmchain.IDBase, addr("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913")),
+		usdc(evmchain.IDMantle, addr("0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9")),
 
 		// USDC (testnet)
 		usdc(evmchain.IDSepolia, addr("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238")),
@@ -241,7 +242,8 @@ func chainClass(chainID uint64) (tokens.ChainClass, error) {
 		evmchain.IDEthereum,
 		evmchain.IDArbitrumOne,
 		evmchain.IDBase,
-		evmchain.IDOptimism:
+		evmchain.IDOptimism,
+		evmchain.IDMantle:
 		return tokens.ClassMainnet, nil
 	case
 		evmchain.IDOmniOmega,

@@ -10,7 +10,7 @@ import { useOmniContext } from '../context/omni.js'
 import { hashFn } from '../utils/query.js'
 import type { QueryOpts } from './types.js'
 
-type UseQuoteParams = GetQuoteParameters & {
+export type UseQuoteParams = GetQuoteParameters & {
   enabled: boolean
   queryOpts?: QueryOpts<Quote, QuoteError>
 }

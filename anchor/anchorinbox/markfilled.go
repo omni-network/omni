@@ -15,6 +15,7 @@ import (
 // This may only be called by the inbox admin.
 type MarkFilled struct {
 	OrderId     *ag_solanago.PublicKey
+	FillHash    *ag_solanago.PublicKey
 	ClaimableBy *ag_solanago.PublicKey
 
 	// [0] = [WRITE] order_state
@@ -36,6 +37,12 @@ func NewMarkFilledInstructionBuilder() *MarkFilled {
 // SetOrderId sets the "_order_id" parameter.
 func (inst *MarkFilled) SetOrderId(_order_id ag_solanago.PublicKey) *MarkFilled {
 	inst.OrderId = &_order_id
+	return inst
+}
+
+// SetFillHash sets the "fill_hash" parameter.
+func (inst *MarkFilled) SetFillHash(fill_hash ag_solanago.PublicKey) *MarkFilled {
+	inst.FillHash = &fill_hash
 	return inst
 }
 
@@ -191,6 +198,9 @@ func (inst *MarkFilled) Validate() error {
 		if inst.OrderId == nil {
 			return errors.New("OrderId parameter is not set")
 		}
+		if inst.FillHash == nil {
+			return errors.New("FillHash parameter is not set")
+		}
 		if inst.ClaimableBy == nil {
 			return errors.New("ClaimableBy parameter is not set")
 		}
@@ -220,8 +230,9 @@ func (inst *MarkFilled) EncodeToTree(parent ag_treeout.Branches) {
 				ParentFunc(func(instructionBranch ag_treeout.Branches) {
 
 					// Parameters of the instruction:
-					instructionBranch.Child("Params[len=2]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
+					instructionBranch.Child("Params[len=3]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
 						paramsBranch.Child(ag_format.Param("     OrderId", *inst.OrderId))
+						paramsBranch.Child(ag_format.Param("    FillHash", *inst.FillHash))
 						paramsBranch.Child(ag_format.Param(" ClaimableBy", *inst.ClaimableBy))
 					})
 
@@ -241,6 +252,11 @@ func (obj MarkFilled) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error)
 	if err != nil {
 		return err
 	}
+	// Serialize `FillHash` param:
+	err = encoder.Encode(obj.FillHash)
+	if err != nil {
+		return err
+	}
 	// Serialize `ClaimableBy` param:
 	err = encoder.Encode(obj.ClaimableBy)
 	if err != nil {
@@ -251,6 +267,11 @@ func (obj MarkFilled) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error)
 func (obj *MarkFilled) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
 	// Deserialize `OrderId`:
 	err = decoder.Decode(&obj.OrderId)
+	if err != nil {
+		return err
+	}
+	// Deserialize `FillHash`:
+	err = decoder.Decode(&obj.FillHash)
 	if err != nil {
 		return err
 	}
@@ -266,6 +287,7 @@ func (obj *MarkFilled) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err err
 func NewMarkFilledInstruction(
 	// Parameters:
 	_order_id ag_solanago.PublicKey,
+	fill_hash ag_solanago.PublicKey,
 	claimable_by ag_solanago.PublicKey,
 	// Accounts:
 	orderState ag_solanago.PublicKey,
@@ -273,6 +295,7 @@ func NewMarkFilledInstruction(
 	admin ag_solanago.PublicKey) *MarkFilled {
 	return NewMarkFilledInstructionBuilder().
 		SetOrderId(_order_id).
+		SetFillHash(fill_hash).
 		SetClaimableBy(claimable_by).
 		SetOrderStateAccount(orderState).
 		SetInboxStateAccount(inboxState).

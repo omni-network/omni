@@ -1,10 +1,11 @@
-package solana
+package solutil
 
 import (
 	"context"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 
 	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
@@ -39,15 +40,34 @@ func AwaitConfirmedTransaction(ctx context.Context, cl *rpc.Client, txSig solana
 func GetAccountDataInto(ctx context.Context, cl *rpc.Client, address solana.PublicKey, val any) (*rpc.GetAccountInfoResult, error) {
 	info, err := cl.GetAccountInfoWithOpts(ctx, address, &rpc.GetAccountInfoOpts{
 		Commitment: rpc.CommitmentConfirmed,
+		Encoding:   solana.EncodingBase64,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "get account info")
+		return nil, errors.Wrap(WrapRPCError(err, "GetAccountDataInto"), "get account info")
 	}
 
-	err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(val)
+	err = bin.NewBorshDecoder(info.Value.Data.GetBinary()).Decode(val)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode account data")
 	}
 
 	return info, nil
+}
+
+var chainIDsByHash = map[solana.Hash]uint64{
+	solana.MustHashFromBase58("5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"): evmchain.IDSolana,
+	solana.MustHashFromBase58("4uhcVJyU9pJkvQyS88uRDiswHXSCkY3zQawwpjk2NsNY"): evmchain.IDSolanaTest,
+}
+
+func ChainID(ctx context.Context, cl *rpc.Client) (uint64, error) {
+	hash, err := cl.GetGenesisHash(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "get chain ID")
+	}
+
+	if chainID, ok := chainIDsByHash[hash]; ok {
+		return chainID, nil
+	}
+
+	return evmchain.IDSolanaLocal, nil
 }

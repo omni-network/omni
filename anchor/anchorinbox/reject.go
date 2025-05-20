@@ -11,9 +11,11 @@ import (
 	ag_v5 "github.com/vmihailenco/msgpack/v5"
 )
 
-// Claim is the `claim` instruction.
-type Claim struct {
+// Reject an order, refunding owner closing accounts.
+// Only admin can reject orders.
+type Reject struct {
 	OrderId *ag_solanago.PublicKey
+	Reason  *uint8
 
 	// [0] = [WRITE] order_state
 	//
@@ -21,17 +23,17 @@ type Claim struct {
 	//
 	// [2] = [WRITE] owner_token_account
 	//
-	// [3] = [WRITE, SIGNER] claimer
+	// [3] = [] inbox_state
 	//
-	// [4] = [WRITE] claimer_token_account
+	// [4] = [WRITE, SIGNER] admin
 	//
 	// [5] = [] token_program
 	ag_solanago.AccountMetaSlice `bin:"-"`
 }
 
-// NewClaimInstructionBuilder creates a new `Claim` instruction builder.
-func NewClaimInstructionBuilder() *Claim {
-	nd := &Claim{
+// NewRejectInstructionBuilder creates a new `Reject` instruction builder.
+func NewRejectInstructionBuilder() *Reject {
+	nd := &Reject{
 		AccountMetaSlice: make(ag_solanago.AccountMetaSlice, 6),
 	}
 	nd.AccountMetaSlice[5] = ag_solanago.Meta(Addresses["TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"])
@@ -39,18 +41,24 @@ func NewClaimInstructionBuilder() *Claim {
 }
 
 // SetOrderId sets the "order_id" parameter.
-func (inst *Claim) SetOrderId(order_id ag_solanago.PublicKey) *Claim {
+func (inst *Reject) SetOrderId(order_id ag_solanago.PublicKey) *Reject {
 	inst.OrderId = &order_id
 	return inst
 }
 
+// SetReason sets the "reason" parameter.
+func (inst *Reject) SetReason(reason uint8) *Reject {
+	inst.Reason = &reason
+	return inst
+}
+
 // SetOrderStateAccount sets the "order_state" account.
-func (inst *Claim) SetOrderStateAccount(orderState ag_solanago.PublicKey) *Claim {
+func (inst *Reject) SetOrderStateAccount(orderState ag_solanago.PublicKey) *Reject {
 	inst.AccountMetaSlice[0] = ag_solanago.Meta(orderState).WRITE()
 	return inst
 }
 
-func (inst *Claim) findFindOrderStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+func (inst *Reject) findFindOrderStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	var seeds [][]byte
 	// const: order_state
 	seeds = append(seeds, []byte{byte(0x6f), byte(0x72), byte(0x64), byte(0x65), byte(0x72), byte(0x5f), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
@@ -71,12 +79,12 @@ func (inst *Claim) findFindOrderStateAddress(knownBumpSeed uint8) (pda ag_solana
 }
 
 // FindOrderStateAddressWithBumpSeed calculates OrderState account address with given seeds and a known bump seed.
-func (inst *Claim) FindOrderStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
+func (inst *Reject) FindOrderStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
 	pda, _, err = inst.findFindOrderStateAddress(bumpSeed)
 	return
 }
 
-func (inst *Claim) MustFindOrderStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
+func (inst *Reject) MustFindOrderStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
 	pda, _, err := inst.findFindOrderStateAddress(bumpSeed)
 	if err != nil {
 		panic(err)
@@ -85,12 +93,12 @@ func (inst *Claim) MustFindOrderStateAddressWithBumpSeed(bumpSeed uint8) (pda ag
 }
 
 // FindOrderStateAddress finds OrderState account address with given seeds.
-func (inst *Claim) FindOrderStateAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+func (inst *Reject) FindOrderStateAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	pda, bumpSeed, err = inst.findFindOrderStateAddress(0)
 	return
 }
 
-func (inst *Claim) MustFindOrderStateAddress() (pda ag_solanago.PublicKey) {
+func (inst *Reject) MustFindOrderStateAddress() (pda ag_solanago.PublicKey) {
 	pda, _, err := inst.findFindOrderStateAddress(0)
 	if err != nil {
 		panic(err)
@@ -99,17 +107,17 @@ func (inst *Claim) MustFindOrderStateAddress() (pda ag_solanago.PublicKey) {
 }
 
 // GetOrderStateAccount gets the "order_state" account.
-func (inst *Claim) GetOrderStateAccount() *ag_solanago.AccountMeta {
+func (inst *Reject) GetOrderStateAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(0)
 }
 
 // SetOrderTokenAccount sets the "order_token_account" account.
-func (inst *Claim) SetOrderTokenAccount(orderTokenAccount ag_solanago.PublicKey) *Claim {
+func (inst *Reject) SetOrderTokenAccount(orderTokenAccount ag_solanago.PublicKey) *Reject {
 	inst.AccountMetaSlice[1] = ag_solanago.Meta(orderTokenAccount).WRITE()
 	return inst
 }
 
-func (inst *Claim) findFindOrderTokenAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+func (inst *Reject) findFindOrderTokenAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	var seeds [][]byte
 	// const: order_token
 	seeds = append(seeds, []byte{byte(0x6f), byte(0x72), byte(0x64), byte(0x65), byte(0x72), byte(0x5f), byte(0x74), byte(0x6f), byte(0x6b), byte(0x65), byte(0x6e)})
@@ -130,12 +138,12 @@ func (inst *Claim) findFindOrderTokenAddress(knownBumpSeed uint8) (pda ag_solana
 }
 
 // FindOrderTokenAddressWithBumpSeed calculates OrderTokenAccount account address with given seeds and a known bump seed.
-func (inst *Claim) FindOrderTokenAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
+func (inst *Reject) FindOrderTokenAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
 	pda, _, err = inst.findFindOrderTokenAddress(bumpSeed)
 	return
 }
 
-func (inst *Claim) MustFindOrderTokenAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
+func (inst *Reject) MustFindOrderTokenAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
 	pda, _, err := inst.findFindOrderTokenAddress(bumpSeed)
 	if err != nil {
 		panic(err)
@@ -144,12 +152,12 @@ func (inst *Claim) MustFindOrderTokenAddressWithBumpSeed(bumpSeed uint8) (pda ag
 }
 
 // FindOrderTokenAddress finds OrderTokenAccount account address with given seeds.
-func (inst *Claim) FindOrderTokenAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+func (inst *Reject) FindOrderTokenAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	pda, bumpSeed, err = inst.findFindOrderTokenAddress(0)
 	return
 }
 
-func (inst *Claim) MustFindOrderTokenAddress() (pda ag_solanago.PublicKey) {
+func (inst *Reject) MustFindOrderTokenAddress() (pda ag_solanago.PublicKey) {
 	pda, _, err := inst.findFindOrderTokenAddress(0)
 	if err != nil {
 		panic(err)
@@ -158,76 +166,121 @@ func (inst *Claim) MustFindOrderTokenAddress() (pda ag_solanago.PublicKey) {
 }
 
 // GetOrderTokenAccount gets the "order_token_account" account.
-func (inst *Claim) GetOrderTokenAccount() *ag_solanago.AccountMeta {
+func (inst *Reject) GetOrderTokenAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(1)
 }
 
 // SetOwnerTokenAccount sets the "owner_token_account" account.
-func (inst *Claim) SetOwnerTokenAccount(ownerTokenAccount ag_solanago.PublicKey) *Claim {
+func (inst *Reject) SetOwnerTokenAccount(ownerTokenAccount ag_solanago.PublicKey) *Reject {
 	inst.AccountMetaSlice[2] = ag_solanago.Meta(ownerTokenAccount).WRITE()
 	return inst
 }
 
 // GetOwnerTokenAccount gets the "owner_token_account" account.
-func (inst *Claim) GetOwnerTokenAccount() *ag_solanago.AccountMeta {
+func (inst *Reject) GetOwnerTokenAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(2)
 }
 
-// SetClaimerAccount sets the "claimer" account.
-func (inst *Claim) SetClaimerAccount(claimer ag_solanago.PublicKey) *Claim {
-	inst.AccountMetaSlice[3] = ag_solanago.Meta(claimer).WRITE().SIGNER()
+// SetInboxStateAccount sets the "inbox_state" account.
+func (inst *Reject) SetInboxStateAccount(inboxState ag_solanago.PublicKey) *Reject {
+	inst.AccountMetaSlice[3] = ag_solanago.Meta(inboxState)
 	return inst
 }
 
-// GetClaimerAccount gets the "claimer" account.
-func (inst *Claim) GetClaimerAccount() *ag_solanago.AccountMeta {
+func (inst *Reject) findFindInboxStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+	var seeds [][]byte
+	// const: inbox_state
+	seeds = append(seeds, []byte{byte(0x69), byte(0x6e), byte(0x62), byte(0x6f), byte(0x78), byte(0x5f), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
+
+	if knownBumpSeed != 0 {
+		seeds = append(seeds, []byte{byte(bumpSeed)})
+		pda, err = ag_solanago.CreateProgramAddress(seeds, ProgramID)
+	} else {
+		pda, bumpSeed, err = ag_solanago.FindProgramAddress(seeds, ProgramID)
+	}
+	return
+}
+
+// FindInboxStateAddressWithBumpSeed calculates InboxState account address with given seeds and a known bump seed.
+func (inst *Reject) FindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
+	pda, _, err = inst.findFindInboxStateAddress(bumpSeed)
+	return
+}
+
+func (inst *Reject) MustFindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
+	pda, _, err := inst.findFindInboxStateAddress(bumpSeed)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+// FindInboxStateAddress finds InboxState account address with given seeds.
+func (inst *Reject) FindInboxStateAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+	pda, bumpSeed, err = inst.findFindInboxStateAddress(0)
+	return
+}
+
+func (inst *Reject) MustFindInboxStateAddress() (pda ag_solanago.PublicKey) {
+	pda, _, err := inst.findFindInboxStateAddress(0)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+// GetInboxStateAccount gets the "inbox_state" account.
+func (inst *Reject) GetInboxStateAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(3)
 }
 
-// SetClaimerTokenAccount sets the "claimer_token_account" account.
-func (inst *Claim) SetClaimerTokenAccount(claimerTokenAccount ag_solanago.PublicKey) *Claim {
-	inst.AccountMetaSlice[4] = ag_solanago.Meta(claimerTokenAccount).WRITE()
+// SetAdminAccount sets the "admin" account.
+func (inst *Reject) SetAdminAccount(admin ag_solanago.PublicKey) *Reject {
+	inst.AccountMetaSlice[4] = ag_solanago.Meta(admin).WRITE().SIGNER()
 	return inst
 }
 
-// GetClaimerTokenAccount gets the "claimer_token_account" account.
-func (inst *Claim) GetClaimerTokenAccount() *ag_solanago.AccountMeta {
+// GetAdminAccount gets the "admin" account.
+func (inst *Reject) GetAdminAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(4)
 }
 
 // SetTokenProgramAccount sets the "token_program" account.
-func (inst *Claim) SetTokenProgramAccount(tokenProgram ag_solanago.PublicKey) *Claim {
+func (inst *Reject) SetTokenProgramAccount(tokenProgram ag_solanago.PublicKey) *Reject {
 	inst.AccountMetaSlice[5] = ag_solanago.Meta(tokenProgram)
 	return inst
 }
 
 // GetTokenProgramAccount gets the "token_program" account.
-func (inst *Claim) GetTokenProgramAccount() *ag_solanago.AccountMeta {
+func (inst *Reject) GetTokenProgramAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(5)
 }
 
-func (inst Claim) Build() *Instruction {
+func (inst Reject) Build() *Instruction {
 	return &Instruction{BaseVariant: ag_binary.BaseVariant{
 		Impl:   inst,
-		TypeID: Instruction_Claim,
+		TypeID: Instruction_Reject,
 	}}
 }
 
 // ValidateAndBuild validates the instruction parameters and accounts;
 // if there is a validation error, it returns the error.
 // Otherwise, it builds and returns the instruction.
-func (inst Claim) ValidateAndBuild() (*Instruction, error) {
+func (inst Reject) ValidateAndBuild() (*Instruction, error) {
 	if err := inst.Validate(); err != nil {
 		return nil, err
 	}
 	return inst.Build(), nil
 }
 
-func (inst *Claim) Validate() error {
+func (inst *Reject) Validate() error {
 	// Check whether all (required) parameters are set:
 	{
 		if inst.OrderId == nil {
 			return errors.New("OrderId parameter is not set")
+		}
+		if inst.Reason == nil {
+			return errors.New("Reason parameter is not set")
 		}
 	}
 
@@ -243,10 +296,10 @@ func (inst *Claim) Validate() error {
 			return errors.New("accounts.OwnerTokenAccount is not set")
 		}
 		if inst.AccountMetaSlice[3] == nil {
-			return errors.New("accounts.Claimer is not set")
+			return errors.New("accounts.InboxState is not set")
 		}
 		if inst.AccountMetaSlice[4] == nil {
-			return errors.New("accounts.ClaimerTokenAccount is not set")
+			return errors.New("accounts.Admin is not set")
 		}
 		if inst.AccountMetaSlice[5] == nil {
 			return errors.New("accounts.TokenProgram is not set")
@@ -255,66 +308,79 @@ func (inst *Claim) Validate() error {
 	return nil
 }
 
-func (inst *Claim) EncodeToTree(parent ag_treeout.Branches) {
+func (inst *Reject) EncodeToTree(parent ag_treeout.Branches) {
 	parent.Child(ag_format.Program(ProgramName, ProgramID)).
 		//
 		ParentFunc(func(programBranch ag_treeout.Branches) {
-			programBranch.Child(ag_format.Instruction("Claim")).
+			programBranch.Child(ag_format.Instruction("Reject")).
 				//
 				ParentFunc(func(instructionBranch ag_treeout.Branches) {
 
 					// Parameters of the instruction:
-					instructionBranch.Child("Params[len=1]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
+					instructionBranch.Child("Params[len=2]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
 						paramsBranch.Child(ag_format.Param(" OrderId", *inst.OrderId))
+						paramsBranch.Child(ag_format.Param("  Reason", *inst.Reason))
 					})
 
 					// Accounts of the instruction:
 					instructionBranch.Child("Accounts[len=6]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
-						accountsBranch.Child(ag_format.Meta("   order_state", inst.AccountMetaSlice.Get(0)))
-						accountsBranch.Child(ag_format.Meta("  order_token_", inst.AccountMetaSlice.Get(1)))
-						accountsBranch.Child(ag_format.Meta("  owner_token_", inst.AccountMetaSlice.Get(2)))
-						accountsBranch.Child(ag_format.Meta("       claimer", inst.AccountMetaSlice.Get(3)))
-						accountsBranch.Child(ag_format.Meta("claimer_token_", inst.AccountMetaSlice.Get(4)))
-						accountsBranch.Child(ag_format.Meta(" token_program", inst.AccountMetaSlice.Get(5)))
+						accountsBranch.Child(ag_format.Meta("  order_state", inst.AccountMetaSlice.Get(0)))
+						accountsBranch.Child(ag_format.Meta(" order_token_", inst.AccountMetaSlice.Get(1)))
+						accountsBranch.Child(ag_format.Meta(" owner_token_", inst.AccountMetaSlice.Get(2)))
+						accountsBranch.Child(ag_format.Meta("  inbox_state", inst.AccountMetaSlice.Get(3)))
+						accountsBranch.Child(ag_format.Meta("        admin", inst.AccountMetaSlice.Get(4)))
+						accountsBranch.Child(ag_format.Meta("token_program", inst.AccountMetaSlice.Get(5)))
 					})
 				})
 		})
 }
 
-func (obj Claim) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+func (obj Reject) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
 	// Serialize `OrderId` param:
 	err = encoder.Encode(obj.OrderId)
 	if err != nil {
 		return err
 	}
+	// Serialize `Reason` param:
+	err = encoder.Encode(obj.Reason)
+	if err != nil {
+		return err
+	}
 	return nil
 }
-func (obj *Claim) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+func (obj *Reject) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
 	// Deserialize `OrderId`:
 	err = decoder.Decode(&obj.OrderId)
+	if err != nil {
+		return err
+	}
+	// Deserialize `Reason`:
+	err = decoder.Decode(&obj.Reason)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// NewClaimInstruction declares a new Claim instruction with the provided parameters and accounts.
-func NewClaimInstruction(
+// NewRejectInstruction declares a new Reject instruction with the provided parameters and accounts.
+func NewRejectInstruction(
 	// Parameters:
 	order_id ag_solanago.PublicKey,
+	reason uint8,
 	// Accounts:
 	orderState ag_solanago.PublicKey,
 	orderTokenAccount ag_solanago.PublicKey,
 	ownerTokenAccount ag_solanago.PublicKey,
-	claimer ag_solanago.PublicKey,
-	claimerTokenAccount ag_solanago.PublicKey,
-	tokenProgram ag_solanago.PublicKey) *Claim {
-	return NewClaimInstructionBuilder().
+	inboxState ag_solanago.PublicKey,
+	admin ag_solanago.PublicKey,
+	tokenProgram ag_solanago.PublicKey) *Reject {
+	return NewRejectInstructionBuilder().
 		SetOrderId(order_id).
+		SetReason(reason).
 		SetOrderStateAccount(orderState).
 		SetOrderTokenAccount(orderTokenAccount).
 		SetOwnerTokenAccount(ownerTokenAccount).
-		SetClaimerAccount(claimer).
-		SetClaimerTokenAccount(claimerTokenAccount).
+		SetInboxStateAccount(inboxState).
+		SetAdminAccount(admin).
 		SetTokenProgramAccount(tokenProgram)
 }
