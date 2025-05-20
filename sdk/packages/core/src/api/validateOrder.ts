@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { encodeFunctionData, zeroAddress } from 'viem'
 import { ValidateOrderError } from '../errors/base.js'
 import { fetchJSON } from '../internal/api.js'
@@ -7,20 +8,24 @@ import { type Order, isContractCall } from '../types/order.js'
 import { getApiUrl } from '../utils/getApiUrl.js'
 import { toJSON } from '../utils/toJSON.js'
 
+const validationResponseSchema = z.object({
+  accepted: z.boolean().optional(),
+  rejected: z.boolean().optional(),
+  error: z
+    .object({
+      code: z.number(),
+      message: z.string(),
+    })
+    .optional(),
+  rejectReason: z.string().optional(),
+  rejectDescription: z.string().optional(),
+})
+
 export type ValidateOrderParameters<abis extends OptionalAbis> = Order<abis> & {
   environment?: Environment | string
 }
 
-export type ValidationResponse = {
-  accepted?: boolean
-  rejected?: boolean
-  error?: {
-    code: number
-    message: string
-  }
-  rejectReason?: string
-  rejectDescription?: string
-}
+export type ValidationResponse = z.infer<typeof validationResponseSchema>
 
 // validateOrder calls /check - checking if an order is valid
 export async function validateOrder<abis extends OptionalAbis>(
@@ -94,16 +99,7 @@ const serialize = <abis extends OptionalAbis>(order: Order<abis>) => {
 
 // asserts a json response is ValidationResponse
 const isValidateRes = (json: unknown): json is ValidationResponse => {
-  // TODO schema validation
-  const res = json as ValidationResponse
-  return (
-    json != null &&
-    (res.accepted != null ||
-      (res.rejected != null &&
-        res.rejectReason != null &&
-        res.rejectDescription != null) ||
-      res.error != null)
-  )
+  return validationResponseSchema.safeParse(json).success
 }
 
 export type AcceptedResult = {
