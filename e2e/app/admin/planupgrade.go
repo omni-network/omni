@@ -6,7 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/eoa"
-	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
+	drake3 "github.com/omni-network/omni/halo/app/upgrades/drake"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/cchain/queryutil"
@@ -18,13 +18,13 @@ import (
 )
 
 var upgradePlans = map[netconf.ID]bindings.UpgradePlan{
-	// netconf.Omega: {
-	// Name:   magellan2.UpgradeName,
-	// Height: 8_720_000, // Mon 27 Feb 1pm UTC
-	// },
+	netconf.Omega: {
+		Name:   drake3.UpgradeName,
+		Height: 13_926_000, // Tue 20 May 12pm UTC
+	},
 	netconf.Mainnet: {
-		Name:   magellan2.UpgradeName,
-		Height: 6_964_000, // Mon 03 Mar 1pm UTC
+		Name:   drake3.UpgradeName,
+		Height: 12_046_000, // Wed 21 May 12pm UTC
 	},
 }
 

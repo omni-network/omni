@@ -12,6 +12,7 @@ var rebalanceTokens = []tokens.Token{
 	mustToken(evmchain.IDBase, tokens.USDC),
 	mustToken(evmchain.IDArbitrumOne, tokens.USDC),
 	mustToken(evmchain.IDOptimism, tokens.USDC),
+	mustToken(evmchain.IDMantle, tokens.USDC),
 
 	// USDT
 	mustToken(evmchain.IDEthereum, tokens.USDT),

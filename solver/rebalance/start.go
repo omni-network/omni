@@ -34,11 +34,11 @@ func Start(
 
 	ctx = log.WithCtx(ctx, "process", "rebalance")
 
-	network = newRebalanceNetwork(network)
-
 	if err := monitorForever(ctx, network, backends.Clients(), solver); err != nil {
 		return errors.Wrap(err, "monitor forever")
 	}
+
+	network = newCCTPNetwork(network)
 
 	db, err := newCCTPDB(dbDir)
 	if err != nil {
@@ -54,7 +54,8 @@ func Start(
 		opt(&o)
 	}
 
-	go rebalanceForever(ctx, o.interval, db, network, pricer, backends, solver)
+	go rebalanceCCTPForever(ctx, o.interval, db, network, pricer, backends, solver)
+	go rebalanceMantleForever(ctx, o.interval, backends, solver)
 
 	return nil
 }
@@ -75,12 +76,12 @@ func newCCTPDB(dbDir string) (*cctpdb.DB, error) {
 	return cctpdb.New(lvlDB)
 }
 
-// newRebalanceNetwork returns the subset of `network` that can be rebalanced, along with list of in-network chains.
-func newRebalanceNetwork(network netconf.Network) netconf.Network {
+// newCCTPNetwork returns the subset of `network` that can be rebalanced via CCTP.
+func newCCTPNetwork(network netconf.Network) netconf.Network {
 	out := netconf.Network{ID: network.ID}
 
 	for _, chain := range network.EVMChains() {
-		if !CanRebalance(chain.ID) {
+		if !cctp.IsSupportedChain(chain.ID) {
 			continue
 		}
 
@@ -88,9 +89,4 @@ func newRebalanceNetwork(network netconf.Network) netconf.Network {
 	}
 
 	return out
-}
-
-// CanRebalance returns true if the chain can be rebalanced.
-func CanRebalance(chainID uint64) bool {
-	return cctp.IsSupportedChain(chainID)
 }

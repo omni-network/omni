@@ -157,8 +157,6 @@ func TestIntegration(t *testing.T) {
 	})
 }
 
-const chainID uint64 = 101
-
 func TestInbox(t *testing.T) {
 	if !*integration {
 		t.Skip("skipping integration test")
@@ -201,6 +199,8 @@ func TestInbox(t *testing.T) {
 	})
 
 	inboxStateAddr, bump, err := anchorinbox.FindInboxStateAddress()
+	require.NoError(t, err)
+	chainID, err := solutil.ChainID(ctx, cl)
 	require.NoError(t, err)
 
 	const closeBuffer = 0
@@ -284,9 +284,13 @@ func TestInbox(t *testing.T) {
 		ensureInboxEvent(t, prog, txResp1, anchorinbox.EventNameUpdated, event)
 
 		// Get OrderState account
-		var orderState anchorinbox.OrderStateAccount
-		_, err = solutil.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
+		var orderState2 anchorinbox.OrderStateAccount
+		_, err = solutil.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState2)
 		require.NoError(t, err)
+
+		orderState, ok, err := anchorinbox.GetOrderState(ctx, cl, openOrder.ID)
+		require.NoError(t, err)
+		require.True(t, ok)
 
 		// Ensure OrderState account is correct
 		expOrderState := anchorinbox.OrderStateAccount{
@@ -301,7 +305,7 @@ func TestInbox(t *testing.T) {
 			DestChainId:   openOrder.Params.DestChainId,
 			DestCall:      openOrder.Params.Call,
 			DestExpense:   openOrder.Params.Expense,
-			FillHash:      fillHash(t, openOrder.Params, txResp1.BlockTime.Time().Unix()+closeBuffer),
+			FillHash:      fillHash(t, chainID, openOrder.Params, txResp1.BlockTime.Time().Unix()+closeBuffer),
 		}
 		require.Equal(t, expOrderState, orderState)
 		orderFillHash = orderState.FillHash
@@ -318,11 +322,14 @@ func TestInbox(t *testing.T) {
 
 	// Send MarkFilled instruction
 	t.Run("mark filled", func(t *testing.T) {
-		markFilled := anchorinbox.NewMarkFilledInstruction(openOrder.ID, orderFillHash, claimer.PublicKey(), openOrder.StateAddress, inboxStateAddr, privKey0.PublicKey())
+		markFilled, err := anchorinbox.NewMarkFilledOrder(ctx, cl, claimer.PublicKey(), privKey0.PublicKey(), openOrder.ID)
+		require.NoError(t, err)
 		txSig2, err := solutil.SendSimple(ctx, cl, privKey0, markFilled.Build())
 		require.NoError(t, err)
 		txResp2, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig2)
 		t.Logf("MarkFilled Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp2.Slot, txResp2.BlockTime, txSig2, txResp2.Meta.LogMessages)
+		customErr := anchorinbox.DecodeMetaError(txResp2)
+		require.NoError(t, customErr)
 		require.NoError(t, err)
 		require.Equal(t, mustFirstTxSig(txResp2), <-async)
 
@@ -333,9 +340,9 @@ func TestInbox(t *testing.T) {
 		}
 		ensureInboxEvent(t, prog, txResp2, anchorinbox.EventNameUpdated, event)
 
-		var orderState anchorinbox.OrderStateAccount
-		_, err = solutil.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
+		orderState, ok, err := anchorinbox.GetOrderState(ctx, cl, openOrder.ID)
 		require.NoError(t, err)
+		require.True(t, ok)
 
 		// Ensure OrderState account is correct
 		expOrderState := anchorinbox.OrderStateAccount{
@@ -357,15 +364,8 @@ func TestInbox(t *testing.T) {
 	})
 
 	t.Run("claim", func(t *testing.T) {
-		claim := anchorinbox.NewClaimInstruction(
-			openOrder.ID,
-			openOrder.StateAddress,
-			openOrder.TokenAddress,
-			mintResp.TokenAccount,
-			claimer.PublicKey(),
-			claimerATA,
-			token.ProgramID,
-		)
+		claim, err := anchorinbox.NewClaimOrder(ctx, cl, claimer.PublicKey(), openOrder.ID)
+		require.NoError(t, err)
 		txSig3, err := solutil.SendSimple(ctx, cl, claimer, claim.Build())
 		require.NoError(t, err)
 
@@ -403,10 +403,9 @@ func TestInbox(t *testing.T) {
 		t.Logf("Open and Close Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
 		require.Equal(t, mustFirstTxSig(txResp), <-async)
 
-		// Get OrderState account
-		var orderState anchorinbox.OrderStateAccount
-		_, err = solutil.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
+		orderState, ok, err := anchorinbox.GetOrderState(ctx, cl, openOrder.ID)
 		require.NoError(t, err)
+		require.True(t, ok)
 
 		// Ensure OrderState account is correct
 		expOrderState := anchorinbox.OrderStateAccount{
@@ -418,7 +417,7 @@ func TestInbox(t *testing.T) {
 			ClosableAt:    orderState.ClosableAt,
 			DepositAmount: depositAmount,
 			DepositMint:   mintResp.MintAccount,
-			FillHash:      fillHash(t, openOrder.Params, orderState.ClosableAt),
+			FillHash:      fillHash(t, chainID, openOrder.Params, orderState.ClosableAt),
 		}
 		require.Equal(t, expOrderState, orderState)
 
@@ -435,23 +434,25 @@ func TestInbox(t *testing.T) {
 		const reason uint8 = 99
 		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount, mintResp.TokenAccount)
 		require.NoError(t, err)
-		rejectOrder := anchorinbox.NewRejectInstruction(
-			openOrder.ID,
-			reason,
-			openOrder.StateAddress,
-			openOrder.TokenAddress,
-			mintResp.TokenAccount,
-			inboxStateAddr,
-			privKey0.PublicKey(),
-			token.ProgramID,
-		)
-		// Send Open instruction
-		txSig, err := solutil.SendSimple(ctx, cl, privKey0, openOrder.Build(), rejectOrder.Build())
+
+		// Send open instructions
+		txSig, err := solutil.SendSimple(ctx, cl, privKey0, openOrder.Build())
 		require.NoError(t, err)
 
 		txResp, err := solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.NoError(t, err)
-		t.Logf("Open and Reject Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
+		t.Logf("Open Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
+		require.Equal(t, mustFirstTxSig(txResp), <-async)
+
+		rejectOrder, err := anchorinbox.NewRejectOrder(ctx, cl, privKey0.PublicKey(), openOrder.ID, reason)
+		require.NoError(t, err)
+
+		// Send Reject instruction
+		txSig, err = solutil.SendSimple(ctx, cl, privKey0, rejectOrder.Build())
+		require.NoError(t, err)
+		txResp, err = solutil.AwaitConfirmedTransaction(ctx, cl, txSig)
+		require.NoError(t, err)
+		t.Logf("Reject Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
 		require.Equal(t, mustFirstTxSig(txResp), <-async)
 
 		// Ensure token account closed
@@ -464,9 +465,9 @@ func TestInbox(t *testing.T) {
 		require.Equal(t, 1e9-int64(depositAmount), int64(*bal.Value.UiAmount))
 
 		// Get OrderState account
-		var orderState anchorinbox.OrderStateAccount
-		_, err = solutil.GetAccountDataInto(ctx, cl, openOrder.StateAddress, &orderState)
+		orderState, ok, err := anchorinbox.GetOrderState(ctx, cl, openOrder.ID)
 		require.NoError(t, err)
+		require.True(t, ok)
 
 		// Ensure OrderState account is correct
 		expOrderState := anchorinbox.OrderStateAccount{
@@ -478,7 +479,7 @@ func TestInbox(t *testing.T) {
 			ClosableAt:    orderState.ClosableAt,
 			DepositAmount: depositAmount,
 			DepositMint:   mintResp.MintAccount,
-			FillHash:      fillHash(t, openOrder.Params, orderState.ClosableAt),
+			FillHash:      fillHash(t, chainID, openOrder.Params, orderState.ClosableAt),
 			RejectReason:  reason,
 		}
 		require.Equal(t, expOrderState, orderState)
@@ -513,7 +514,7 @@ func TestInbox(t *testing.T) {
 	})
 }
 
-func fillHash(t *testing.T, params *anchorinbox.OpenParams, closableAt int64) solana.PublicKey {
+func fillHash(t *testing.T, chainID uint64, params *anchorinbox.OpenParams, closableAt int64) solana.PublicKey {
 	t.Helper()
 
 	closableAtU32, err := umath.ToUint32(closableAt)

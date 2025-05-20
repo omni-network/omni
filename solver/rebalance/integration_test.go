@@ -94,7 +94,14 @@ func TestIntegration(t *testing.T) {
 
 		// Log deficits
 		for _, tkn := range rebalance.Tokens() {
-			d, err := rebalance.GetUSDDeficit(ctx, clients[tkn.ChainID], pricer, tkn, solver)
+			if !cctp.IsSupportedChain(tkn.ChainID) {
+				continue
+			}
+
+			client, ok := clients[tkn.ChainID]
+			require.True(t, ok)
+
+			d, err := rebalance.GetUSDDeficit(ctx, client, pricer, tkn, solver)
 			tutil.RequireNoError(t, err)
 
 			sum = bi.Add(sum, d)
@@ -105,13 +112,20 @@ func TestIntegration(t *testing.T) {
 
 	logSnapshot := func() {
 		for _, tkn := range rebalance.Tokens() {
-			d, err := rebalance.GetDeficit(ctx, clients[tkn.ChainID], tkn, solver)
+			if !cctp.IsSupportedChain(tkn.ChainID) {
+				continue
+			}
+
+			client, ok := clients[tkn.ChainID]
+			require.True(t, ok)
+
+			d, err := rebalance.GetDeficit(ctx, client, tkn, solver)
 			tutil.RequireNoError(t, err)
 
 			dUSD, err := rebalance.AmtToUSD(ctx, pricer, tkn, d)
 			tutil.RequireNoError(t, err)
 
-			s, err := rebalance.GetSurplus(ctx, clients[tkn.ChainID], tkn, solver)
+			s, err := rebalance.GetSurplus(ctx, client, tkn, solver)
 			tutil.RequireNoError(t, err)
 
 			sUSD, err := rebalance.AmtToUSD(ctx, pricer, tkn, s)
@@ -174,6 +188,10 @@ func fundUnbalanced(t *testing.T, ctx context.Context, pricer tokenpricer.Pricer
 			var toSurplus []tokens.Token
 
 			for i, token := range shuffle(rebalance.Tokens()) {
+				if !cctp.IsSupportedChain(token.ChainID) {
+					continue
+				}
+
 				if i%2 == 0 {
 					toDeficit = append(toDeficit, token)
 				}

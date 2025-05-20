@@ -205,6 +205,32 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
   })
 })
 
+test('parameters: omniContractsQueryOpts, getOrderQueryOpts and didFillQueryOpts are passed to the relevant hooks', async () => {
+  const omniContractsQueryOpts = { staleTime: 5000 }
+  const getOrderQueryOpts = { staleTime: 1000 }
+  const didFillQueryOpts = { staleTime: 2000 }
+
+  const { result } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: false,
+    omniContractsQueryOpts,
+    getOrderQueryOpts,
+    didFillQueryOpts,
+  })
+
+  await waitFor(() => {
+    expect(result.current.isReady).toBe(true)
+  })
+  result.current.open()
+
+  expect(useOmniContracts).toHaveBeenCalledWith(
+    expect.objectContaining({ queryOpts: omniContractsQueryOpts }),
+  )
+  expect(useGetOrderStatus).toHaveBeenCalledWith(
+    expect.objectContaining({ getOrderQueryOpts, didFillQueryOpts }),
+  )
+})
+
 test('behaviour: handles order rejection', async () => {
   const { result, rerender } = renderOrderHook({
     ...orderRequest,
