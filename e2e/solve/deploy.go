@@ -15,7 +15,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Deploy deploys solve inbox / outbox / middleman contracts, and devnet app (if devnet).
+// Deploy deploys solve inbox / outbox / executor contracts, and devnet app (if devnet).
 func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	log.Debug(ctx, "Deploying SolverNet", "network", network.ID)
 

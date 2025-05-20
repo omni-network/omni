@@ -16,7 +16,7 @@ import (
 func TestCallAllower(t *testing.T) {
 	t.Parallel()
 
-	middlemanAddr := tutil.RandomAddress()
+	executorAddr := tutil.RandomAddress()
 
 	tests := []struct {
 		name     string
@@ -63,7 +63,7 @@ func TestCallAllower(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			allow := newCallAllower(tt.network, middlemanAddr)
+			allow := newCallAllower(tt.network, executorAddr)
 			allowed := allow(tt.chainID, tt.target, tt.calldata)
 
 			require.Equal(t, tt.allowed, allowed)
@@ -71,19 +71,19 @@ func TestCallAllower(t *testing.T) {
 	}
 }
 
-func TestParseMiddlemanCall(t *testing.T) {
+func TestParseExecutorCall(t *testing.T) {
 	t.Parallel()
 
 	// executeAndTransfer call to allowed target (0x6415D3B5fc615D4a00C71f4044dEc24C141EBFf8 - sepolia symbiotic wstETH vault)
 	calldata := hexutil.MustDecode("0xfebe2c2c000000000000000000000000b82381a3fbd3fafa77b3a7be693342618240067b000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000006415d3b5fc615d4a00c71f4044dec24c141ebff80000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000004447e7ef24000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000")
-	target, proxiedData, err := parseMiddlemanCall(calldata)
+	target, proxiedData, err := parseExecutorCall(calldata)
 	require.NoError(t, err)
 	require.Equal(t, common.HexToAddress("0x6415D3B5fc615D4a00C71f4044dEc24C141EBFf8"), target)
 	require.Equal(t, "0x47e7ef24000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000000000000000000000000000008ac7230489e80000", hexutil.Encode(proxiedData))
 
 	// executeAndTransfer call to disallowed target (0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7)
 	calldata = hexutil.MustDecode("0xfebe2c2c000000000000000000000000b82381a3fbd3fafa77b3a7be693342618240067b0000000000000000000000006415d3b5fc615d4a00c71f4044dec24c141ebff8000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000004447e7ef240000000000000000000000006415d3b5fc615d4a00c71f4044dec24c141ebff80000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000")
-	target, proxiedData, err = parseMiddlemanCall(calldata)
+	target, proxiedData, err = parseExecutorCall(calldata)
 	require.NoError(t, err)
 	require.Equal(t, common.HexToAddress("0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7"), target)
 	require.Equal(t, "0x47e7ef240000000000000000000000006415d3b5fc615d4a00c71f4044dec24c141ebff80000000000000000000000000000000000000000000000008ac7230489e80000", hexutil.Encode(proxiedData))

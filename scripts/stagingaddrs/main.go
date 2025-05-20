@@ -32,17 +32,16 @@ func run(ctx context.Context) error {
 	}
 
 	addrsJSON := map[string]common.Address{
-		"create3":            addrs.Create3Factory,
-		"avs":                addrs.AVS,
-		"portal":             addrs.Portal,
-		"l1bridge":           addrs.L1Bridge,
-		"token":              addrs.Token,
-		"gaspump":            addrs.GasPump,
-		"gasstation":         addrs.GasStation,
-		"solvernetinbox":     addrs.SolverNetInbox,
-		"solvernetoutbox":    addrs.SolverNetOutbox,
-		"solvernetmiddleman": addrs.SolverNetMiddleman,
-		"feeoraclev2":        addrs.FeeOracleV2,
+		"create3":         addrs.Create3Factory,
+		"avs":             addrs.AVS,
+		"portal":          addrs.Portal,
+		"l1bridge":        addrs.L1Bridge,
+		"token":           addrs.Token,
+		"gaspump":         addrs.GasPump,
+		"gasstation":      addrs.GasStation,
+		"solvernetinbox":  addrs.SolverNetInbox,
+		"solvernetoutbox": addrs.SolverNetOutbox,
+		"feeoraclev2":     addrs.FeeOracleV2,
 	}
 
 	prettyJSON, err := json.Marshal(addrsJSON)

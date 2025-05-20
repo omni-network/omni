@@ -24,18 +24,17 @@ const (
 	solvernetOmegaVersion   = "v0.1.2"
 	solvernetMainnetVersion = "v1.0.0"
 
-	NameAVS                = "avs"
-	NameCreate3Factory     = "create3-factory"
-	NameGasPump            = "gas-pump"
-	NameGasStation         = "gas-station"
-	NameL1Bridge           = "l1-bridge"
-	NamePortal             = "portal"
-	NameToken              = "token"
-	NameSolverNetInbox     = "solvernet-inbox"
-	NameSolverNetOutbox    = "solvernet-outbox"
-	NameSolverNetMiddleman = "solvernet-middleman"
-	NameSovlerNetExecutor  = "solvernet-executor"
-	NameFeeOracleV2        = "fee-oracle-v2"
+	NameAVS               = "avs"
+	NameCreate3Factory    = "create3-factory"
+	NameGasPump           = "gas-pump"
+	NameGasStation        = "gas-station"
+	NameL1Bridge          = "l1-bridge"
+	NamePortal            = "portal"
+	NameToken             = "token"
+	NameSolverNetInbox    = "solvernet-inbox"
+	NameSolverNetOutbox   = "solvernet-outbox"
+	NameSovlerNetExecutor = "solvernet-executor"
+	NameFeeOracleV2       = "fee-oracle-v2"
 )
 
 type Versions struct {
@@ -106,32 +105,30 @@ func StagingID(ctx context.Context) (string, error) {
 }
 
 type Addresses struct {
-	AVS                common.Address
-	Create3Factory     common.Address
-	GasPump            common.Address
-	GasStation         common.Address
-	L1Bridge           common.Address
-	Portal             common.Address
-	Token              common.Address
-	SolverNetInbox     common.Address
-	SolverNetOutbox    common.Address
-	SolverNetMiddleman common.Address
-	SolverNetExecutor  common.Address
-	FeeOracleV2        common.Address
+	AVS               common.Address
+	Create3Factory    common.Address
+	GasPump           common.Address
+	GasStation        common.Address
+	L1Bridge          common.Address
+	Portal            common.Address
+	Token             common.Address
+	SolverNetInbox    common.Address
+	SolverNetOutbox   common.Address
+	SolverNetExecutor common.Address
+	FeeOracleV2       common.Address
 }
 
 type Salts struct {
-	AVS                string
-	GasPump            string
-	GasStation         string
-	L1Bridge           string
-	Portal             string
-	Token              string
-	SolverNetInbox     string
-	SolverNetOutbox    string
-	SolverNetMiddleman string
-	SolverNetExecutor  string
-	FeeOracleV2        string
+	AVS               string
+	GasPump           string
+	GasStation        string
+	L1Bridge          string
+	Portal            string
+	Token             string
+	SolverNetInbox    string
+	SolverNetOutbox   string
+	SolverNetExecutor string
+	FeeOracleV2       string
 }
 
 type cache[T any] struct {
@@ -169,18 +166,17 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 	s := func(name string) string { return salt(network, name, v) }
 
 	addrs = Addresses{
-		Create3Factory:     Create3Factory(network),
-		AVS:                Avs(network),
-		Token:              TokenAddr(network),
-		Portal:             addr(network, s(NamePortal)),
-		L1Bridge:           addr(network, s(NameL1Bridge)),
-		GasPump:            addr(network, s(NameGasPump)),
-		GasStation:         addr(network, s(NameGasStation)),
-		SolverNetInbox:     addr(network, s(NameSolverNetInbox)),
-		SolverNetOutbox:    addr(network, s(NameSolverNetOutbox)),
-		SolverNetMiddleman: addr(network, s(NameSolverNetMiddleman)),
-		SolverNetExecutor:  addr(network, s(NameSovlerNetExecutor)),
-		FeeOracleV2:        addr(network, s(NameFeeOracleV2)),
+		Create3Factory:    Create3Factory(network),
+		AVS:               Avs(network),
+		Token:             TokenAddr(network),
+		Portal:            addr(network, s(NamePortal)),
+		L1Bridge:          addr(network, s(NameL1Bridge)),
+		GasPump:           addr(network, s(NameGasPump)),
+		GasStation:        addr(network, s(NameGasStation)),
+		SolverNetInbox:    addr(network, s(NameSolverNetInbox)),
+		SolverNetOutbox:   addr(network, s(NameSolverNetOutbox)),
+		SolverNetExecutor: addr(network, s(NameSovlerNetExecutor)),
+		FeeOracleV2:       addr(network, s(NameFeeOracleV2)),
 	}
 
 	addrsCache.cache[network] = addrs
@@ -206,17 +202,16 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 	s := func(name string) string { return salt(network, name, v) }
 
 	salts = Salts{
-		AVS:                s(NameAVS),
-		Portal:             s(NamePortal),
-		L1Bridge:           s(NameL1Bridge),
-		Token:              s(NameToken),
-		GasPump:            s(NameGasPump),
-		GasStation:         s(NameGasStation),
-		SolverNetInbox:     s(NameSolverNetInbox),
-		SolverNetOutbox:    s(NameSolverNetOutbox),
-		SolverNetMiddleman: s(NameSolverNetMiddleman),
-		SolverNetExecutor:  s(NameSovlerNetExecutor),
-		FeeOracleV2:        s(NameFeeOracleV2),
+		AVS:               s(NameAVS),
+		Portal:            s(NamePortal),
+		L1Bridge:          s(NameL1Bridge),
+		Token:             s(NameToken),
+		GasPump:           s(NameGasPump),
+		GasStation:        s(NameGasStation),
+		SolverNetInbox:    s(NameSolverNetInbox),
+		SolverNetOutbox:   s(NameSolverNetOutbox),
+		SolverNetExecutor: s(NameSovlerNetExecutor),
+		FeeOracleV2:       s(NameFeeOracleV2),
 	}
 
 	saltsCache.cache[network] = salts
@@ -280,7 +275,6 @@ func isVersioned(contract string) bool {
 func isSolvernet(contract string) bool {
 	return (contract == NameSolverNetInbox ||
 		contract == NameSolverNetOutbox ||
-		contract == NameSolverNetMiddleman ||
 		contract == NameSovlerNetExecutor)
 }
 

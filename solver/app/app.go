@@ -138,7 +138,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start rebalancing omni")
 	}
 
-	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
+	callAllower := newCallAllower(network.ID, addrs.SolverNetExecutor)
 
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
 	//nolint:contextcheck // False positive, inner context is used for shutdown
@@ -307,7 +307,7 @@ func startProcessingEvents(
 		debugOrderPrice(ctx, priceFunc, order)
 	}
 
-	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
+	callAllower := newCallAllower(network.ID, addrs.SolverNetExecutor)
 
 	ageCache := newAgeCache(backends)
 	go monitorAgeCacheForever(ctx, network, ageCache)
