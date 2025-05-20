@@ -157,7 +157,7 @@ var (
 			maxSwap: 10000,
 		},
 		mustToken(evmchain.IDMantle, tokens.USDC): {
-			target: 100, // Small target to start, to test
+			target: 10000,
 		},
 
 		// USDT
