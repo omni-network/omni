@@ -17,7 +17,6 @@ import (
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	"github.com/omni-network/omni/lib/tutil"
-	solver "github.com/omni-network/omni/solver/app"
 	"github.com/omni-network/omni/solver/fundthresh"
 	"github.com/omni-network/omni/solver/rebalance"
 )
@@ -65,26 +64,21 @@ func TestSnapshot(t *testing.T) {
 	var surpluses []tokenAmt
 
 	// Log all token balances w/ surplus/deficit
-	for _, token := range tokens.All() {
-		if !solver.IsSupportedToken(token) {
+	for _, token := range rebalance.Tokens() {
+		client, ok := clients[token.ChainID]
+		if !ok {
+			// Some clients, such as Mantle, are not included
+			// TODO(kevin): support mantle client
 			continue
 		}
 
-		if token.ChainClass != tokens.ClassMainnet {
-			continue
-		}
-
-		if !rebalance.CanRebalance(token.ChainID) {
-			continue
-		}
-
-		balance, err := tokenutil.BalanceOf(ctx, clients[token.ChainID], token, solverAddr)
+		balance, err := tokenutil.BalanceOf(ctx, client, token, solverAddr)
 		tutil.RequireNoError(t, err)
 
-		surplus, err := rebalance.GetSurplus(ctx, clients[token.ChainID], token, solverAddr)
+		surplus, err := rebalance.GetSurplus(ctx, client, token, solverAddr)
 		tutil.RequireNoError(t, err)
 
-		deficit, err := rebalance.GetDeficit(ctx, clients[token.ChainID], token, solverAddr)
+		deficit, err := rebalance.GetDeficit(ctx, client, token, solverAddr)
 		tutil.RequireNoError(t, err)
 
 		log.Info(ctx, "Token balance",

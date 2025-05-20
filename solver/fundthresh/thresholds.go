@@ -156,6 +156,9 @@ var (
 			minSwap: 1000,
 			maxSwap: 10000,
 		},
+		mustToken(evmchain.IDMantle, tokens.USDC): {
+			target: 100, // Small target to start, to test
+		},
 
 		// USDT
 		mustToken(evmchain.IDEthereum, tokens.USDT): {
