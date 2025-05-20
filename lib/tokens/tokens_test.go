@@ -97,6 +97,9 @@ func TestGenTokens(t *testing.T) {
 		weth(evmchain.IDArbitrumOne, addr("0x82af49447d8a07e3bd95bd0d56f35241523fbab1")),
 		weth(evmchain.IDBase, addr("0x4200000000000000000000000000000000000006")),
 		weth(evmchain.IDOptimism, addr("0x4200000000000000000000000000000000000006")),
+
+		// MNT
+		nativeMNT(evmchain.IDMantle),
 	)
 
 	for _, mock := range e2e.MockTokens() {
@@ -162,6 +165,15 @@ func weth(chainID uint64, addr common.Address) tokens.Token {
 func nativeOMNI(chainID uint64) tokens.Token {
 	return tokens.Token{
 		Asset:      tokens.OMNI,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    tokens.NativeAddr,
+	}
+}
+
+func nativeMNT(chainID uint64) tokens.Token {
+	return tokens.Token{
+		Asset:      tokens.MNT,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    tokens.NativeAddr,
