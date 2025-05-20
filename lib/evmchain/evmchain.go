@@ -30,10 +30,11 @@ const (
 	IDPlume       uint64 = 98866
 
 	// Testnets.
-	IDBSCTestnet uint64 = 97
-	IDOmniOmega  uint64 = 164
-
+	IDBSCTestnet      uint64 = 97
+	IDOmniOmega       uint64 = 164
+	IDSolanaTest      uint64 = 351
 	IDHyperEVMTestnet uint64 = 998
+	IDMegaETHTestnet  uint64 = 6342
 	IDHolesky         uint64 = 17000
 	IDPolygonAmoy     uint64 = 80002
 	IDBaseSepolia     uint64 = 84532
@@ -41,7 +42,6 @@ const (
 	IDArbSepolia      uint64 = 421614
 	IDSepolia         uint64 = 11155111
 	IDOpSepolia       uint64 = 11155420
-	IDSolanaTest      uint64 = 351
 
 	// Ephemeral.
 	IDOmniStaging uint64 = 1650
@@ -193,6 +193,13 @@ var static = map[uint64]Metadata{
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,
 	},
+	IDSolanaTest: {
+		ChainID:     IDSolanaTest,
+		Name:        "solana_testnet",
+		PrettyName:  "Solana Testnet",
+		BlockPeriod: 400 * time.Millisecond,
+		NativeToken: tokens.SOL,
+	},
 	IDHyperEVMTestnet: {
 		ChainID:     IDHyperEVMTestnet,
 		Name:        "hyper_evm_testnet",
@@ -200,6 +207,13 @@ var static = map[uint64]Metadata{
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.HYPE,
 		Reorgs:      true, // Hyperlane docs don't mention reorgs at all, neither do explorers
+	},
+	IDMegaETHTestnet: {
+		ChainID:     IDMegaETHTestnet,
+		Name:        "megaeth_testnet",
+		PrettyName:  "MegaETH Testnet",
+		BlockPeriod: 1 * time.Second,
+		NativeToken: tokens.ETH,
 	},
 	IDHolesky: {
 		ChainID:     IDHolesky,
@@ -255,13 +269,6 @@ var static = map[uint64]Metadata{
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.ETH,
 		PostsTo:     IDSepolia,
-	},
-	IDSolanaTest: {
-		ChainID:     IDSolanaTest,
-		Name:        "solana_testnet",
-		PrettyName:  "Solana Testnet",
-		BlockPeriod: 400 * time.Millisecond,
-		NativeToken: tokens.SOL,
 	},
 
 	// Ephemeral.

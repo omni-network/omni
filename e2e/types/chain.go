@@ -87,6 +87,12 @@ var (
 		Shards:   []xchain.ShardID{},
 	}
 
+	chainMegaETHTestnet = EVMChain{
+		Metadata: mustMetadata(evmchain.IDMegaETHTestnet),
+		IsPublic: true,
+		Shards:   []xchain.ShardID{},
+	}
+
 	chainHolesky = EVMChain{
 		Metadata: mustMetadata(evmchain.IDHolesky),
 		IsPublic: true,
@@ -191,6 +197,8 @@ func PublicChainByName(name string) (EVMChain, error) {
 		return chainBSCTestnet, nil
 	case chainHyperEVMTestnet.Name:
 		return chainHyperEVMTestnet, nil
+	case chainMegaETHTestnet.Name:
+		return chainMegaETHTestnet, nil
 	case chainHolesky.Name:
 		return chainHolesky, nil
 	case chainPolygonAmoy.Name:
@@ -239,6 +247,8 @@ func PublicRPCByName(name string) string {
 		return "https://bsc-testnet-rpc.publicnode.com"
 	case chainHyperEVMTestnet.Name:
 		return "https://rpc.hyperliquid-testnet.xyz/evm"
+	case chainMegaETHTestnet.Name:
+		return "https://carrot.megaeth.com/rpc"
 	case chainHolesky.Name:
 		return "https://ethereum-holesky-rpc.publicnode.com"
 	case chainPolygonAmoy.Name:
