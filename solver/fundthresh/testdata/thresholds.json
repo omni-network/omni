@@ -74,7 +74,7 @@
   "min": "0 USDC",
   "minSwap": "0 USDC",
   "surplus": "0 USDC",
-  "target": "100 USDC"
+  "target": "10000 USDC"
  },
  "optimism:ETH": {
   "maxSwap": "5 ETH",
