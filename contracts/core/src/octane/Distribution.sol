@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 
 /**
  * @title Distribution
@@ -9,7 +9,9 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
  *         Calls are proxied, and not executed synchronously. Their execution is left to
  *         the consensus chain, and they may fail.
  */
-contract Distribution is OwnableUpgradeable {
+contract Distribution {
+    using SafeTransferLib for address;
+
     /**
      * @notice Emitted when a rewards withdrawal request is made by a delegator
      * @param delegator     (MsgWithdraw.delegator_addr) The address of the delegator
@@ -28,17 +30,6 @@ contract Distribution is OwnableUpgradeable {
      */
     uint256 public constant Fee = 0.1 ether;
 
-    constructor() {
-        _disableInitializers();
-    }
-
-    /**
-     * @notice Initialize the contract, used for fresh deployment
-     */
-    function initialize(address owner_) public initializer {
-        __Ownable_init(owner_);
-    }
-
     /**
      * @notice Withdraw delegation rewards from a validator
      * @dev Proxies x/distribution.MsgWithdrawDelegatorReward
@@ -54,6 +45,13 @@ contract Distribution is OwnableUpgradeable {
      */
     function _burnFee() internal {
         require(msg.value >= Fee, "Distribution: insufficient fee");
-        payable(BurnAddr).transfer(msg.value);
+
+        BurnAddr.safeTransferETH(Fee);
+
+        // Send any overpayment back to the caller
+        uint256 remaining = msg.value - Fee;
+        if (remaining > 0) {
+            msg.sender.safeTransferETH(remaining);
+        }
     }
 }
