@@ -1,5 +1,11 @@
 # @omni-network/react
 
+## 0.2.1
+
+### Patch Changes
+
+- Added query options to relevant hooks
+
 ## 0.2.0
 
 ### Minor Changes
