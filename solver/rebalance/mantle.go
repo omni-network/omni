@@ -94,6 +94,12 @@ func rebalanceMantleOnce(
 
 	deficit := bi.Sub(l2Thresh.Target(), l2Balance)
 
+	const minDeposit = 1000
+	if bi.LT(deficit, bi.Dec6(minDeposit)) {
+		// Only deposit if defict > 1k USDC.
+		return nil
+	}
+
 	// L1 balance < deficit, error and warn.
 	if bi.LT(l1Balance, deficit) {
 		return errors.New("deficit > l1 balance")
