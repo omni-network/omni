@@ -1,10 +1,23 @@
-import { type Address, type Hex, fromHex, zeroAddress } from 'viem'
+import { z } from 'zod'
+import { fromHex, zeroAddress } from 'viem'
 import { fetchJSON } from '../internal/api.js'
 import type { Environment } from '../types/config.js'
 import type { Quote, Quoteable } from '../types/quote.js'
 import type { Prettify } from '../types/utils.js'
 import { getApiUrl } from '../utils/getApiUrl.js'
 import { toJSON } from '../utils/toJSON.js'
+import { address, hex } from '../schema/types.js'
+
+export const quoteResponseSchema = z.object({
+  deposit: z.object({
+    token: address(),
+    amount: hex(),
+  }),
+  expense: z.object({
+    token: address(),
+    amount: hex(),
+  }),
+})
 
 export type GetQuoteParameters = Prettify<
   {
@@ -26,10 +39,7 @@ export type GetQuoteParameters = Prettify<
 >
 
 // the response from /quote endpoint (amounts are hex encoded bigints)
-type QuoteResponse = {
-  deposit: { token: Address; amount: Hex }
-  expense: { token: Address; amount: Hex }
-}
+type QuoteResponse = z.infer<typeof quoteResponseSchema>
 
 // getQuote calls the /quote endpoint
 export async function getQuote(quote: GetQuoteParameters): Promise<Quote> {
@@ -77,15 +87,5 @@ export const toQuoteUnit = (q: Quoteable, omitAmount: boolean) => ({
 
 // asserts a json response is QuoteResponse
 function isQuoteRes(json: unknown): json is QuoteResponse {
-  // TODO: schema validation
-  const quote = json as QuoteResponse
-  return (
-    json != null &&
-    quote.deposit != null &&
-    quote.expense != null &&
-    typeof quote.deposit.token === 'string' &&
-    typeof quote.deposit.amount === 'string' &&
-    typeof quote.expense.token === 'string' &&
-    typeof quote.expense.amount === 'string'
-  )
+  return quoteResponseSchema.safeParse(json).success
 }

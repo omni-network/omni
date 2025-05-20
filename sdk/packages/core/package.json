@@ -28,7 +28,8 @@
     "node": ">=22.x"
   },
   "dependencies": {
-    "viem": "catalog:"
+    "viem": "catalog:",
+    "zod": "^3.25.7"
   },
   "devDependencies": {
     "typescript": "^5.7.2",
