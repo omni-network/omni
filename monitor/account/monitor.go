@@ -188,8 +188,15 @@ func monitorSolverNetRoleTokenOnce(
 		return nil
 	}
 
-	if !solver.IsSupportedToken(token) {
+	thresh, ok := eoa.GetSolverNetThreshold(role, network, chainID, meta)
+	if !ok {
+		// Thresholds only exist for solver and flowgen role on dest fill chains
+		return nil
+	}
+
+	if !bi.GT(thresh.MinBalance(), bi.Zero()) && !solver.IsSupportedToken(token) {
 		// No need to monitor unsupported tokens.
+		// Still monitor "unsupported" tokens with min balance > 0 (needed for gas).
 		return nil
 	}
 
@@ -201,12 +208,6 @@ func monitorSolverNetRoleTokenOnce(
 	// Convert to float64 ether
 	balF64 := token.AmtToF64(balance)
 	tokenBalance.WithLabelValues(chainName, string(role), meta.Symbol).Set(balF64)
-
-	thresh, ok := eoa.GetSolverNetThreshold(role, network, chainID, meta)
-	if !ok {
-		// Thresholds only exist for solver and flowgen role on dest fill chains
-		return nil
-	}
 
 	var isLow float64
 	if bi.LT(balance, thresh.MinBalance()) {

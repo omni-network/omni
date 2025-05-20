@@ -195,6 +195,11 @@ var (
 			minSwap: 1,
 			maxSwap: 5,
 		},
+
+		// MNT
+		mustToken(evmchain.IDMantle, tokens.MNT): {
+			min: 100, // Neede for gas + hyperlane fees
+		},
 	}
 )
 
