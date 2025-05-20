@@ -16,13 +16,13 @@ contract Distribution_Test is Test {
     address owner;
     address validator;
     address[] validators;
-    DistributionHarness distribution;
+    Distribution distribution;
 
     function setUp() public {
         owner = makeAddr("owner");
         validator = makeAddr("validator");
         validators.push(validator);
-        distribution = new DistributionHarness(owner);
+        distribution = new Distribution();
     }
 
     function test_withdraw() public {
@@ -36,15 +36,5 @@ contract Distribution_Test is Test {
         vm.expectEmit();
         emit Withdraw(owner, validator);
         distribution.withdraw{ value: fee }(validator);
-    }
-}
-
-/**
- * @title DistributionHarness
- * @notice Wrapper around Distribution.sol that allows setting owner in constructor
- */
-contract DistributionHarness is Distribution {
-    constructor(address _owner) {
-        _transferOwnership(_owner);
     }
 }
