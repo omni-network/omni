@@ -34,8 +34,8 @@ The function accepts a configuration object with the following properties.
 | ------------- | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `srcChainId`  | `number`                               | Yes      | Chain ID of the source chain (where the user provides the `deposit`).                                       |
 | `destChainId` | `number`                               | Yes      | Chain ID of the destination chain (where the action occurs and the `expense` is spent).                                               |
-| `deposit`     | `{ token?: Address; amount?: bigint }`     | Yes if `mode: 'expense'` | Asset to deposit on the source chain. Provide `amount` only if using `mode: 'expense'`.                                     |
-| `expense`     | `{ token?: Address; amount?: bigint }`     | Yes if `mode: 'deposit'` | Asset to spend on the destination chain. Provide `amount` only if using `mode: 'deposit'`.                                     |
+| `deposit`     | `{ token?: Address; amount?: bigint }`     | Yes if `mode: 'expense'` | Asset to deposit on the source chain. Provide `amount` only if using `mode: 'expense'`. Omit `token` if using native token (e.g. ETH).                                     |
+| `expense`     | `{ token?: Address; amount?: bigint }`     | Yes if `mode: 'deposit'` | Asset to spend on the destination chain. Provide `amount` only if using `mode: 'deposit'`. Omit `token` if using native token (e.g. ETH).                                     |
 | `mode`        | `'deposit' \| 'expense'`               | Yes      | Defines the direction of the quote. |
 | `environment`           | `Environment | string`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
 
