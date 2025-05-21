@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
@@ -16,6 +17,7 @@ import (
 	"cosmossdk.io/orm/model/ormdb"
 	"cosmossdk.io/orm/types/ormerrors"
 	db "github.com/cosmos/cosmos-db"
+	"github.com/gagliardetto/solana-go"
 )
 
 // newSolverDB returns a new DB backend based on the given directory
@@ -74,6 +76,43 @@ func (c *cursors) Get(ctx context.Context, chainVer xchain.ChainVersion) (uint64
 	}
 
 	return cursor.GetBlockHeight(), true, nil
+}
+
+// GetTxSig returns the tx sig of the cursor for the given chain version, or false, or an error.
+func (c *cursors) GetTxSig(ctx context.Context, chainVer xchain.ChainVersion) (solana.Signature, bool, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	cursor, err := c.table.Get(ctx, chainVer.ID, uint32(chainVer.ConfLevel))
+	if ormerrors.IsNotFound(err) {
+		return solana.Signature{}, false, nil
+	} else if err != nil {
+		return solana.Signature{}, false, errors.Wrap(err, "get cursor")
+	}
+
+	txSig, err := cast.Array64(cursor.GetTxSig())
+	if err != nil {
+		return solana.Signature{}, false, errors.Wrap(err, "cast tx sig")
+	}
+
+	return txSig, true, nil
+}
+
+// SetTxSig sets the tx sig of the cursor for the given chain version.
+func (c *cursors) SetTxSig(ctx context.Context, chainVer xchain.ChainVersion, sig solana.Signature) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	err := c.table.Save(ctx, &Cursor{
+		ChainId:   chainVer.ID,
+		ConfLevel: uint32(chainVer.ConfLevel),
+		TxSig:     sig[:],
+	})
+	if err != nil {
+		return errors.Wrap(err, "save cursor")
+	}
+
+	return nil
 }
 
 // Set sets the block height of the cursor for the given chain version.

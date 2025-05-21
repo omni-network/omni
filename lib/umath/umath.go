@@ -114,6 +114,17 @@ func ToUint32[N constraints.Integer](i N) (uint32, error) {
 	return uint32(i), nil
 }
 
+// ToUint8 returns i as an uint8 or an error if it cannot be represented as such.
+func ToUint8[N constraints.Integer](i N) (uint8, error) {
+	if i < 0 {
+		return 0, errors.New("underflow")
+	} else if uint64(i) > math.MaxUint8 {
+		return 0, errors.New("overflow")
+	}
+
+	return uint8(i), nil
+}
+
 // ToInt32 returns i as an int32 or an error if it cannot be represented as such.
 func ToInt32[N constraints.Integer](i N) (int32, error) {
 	// Using float64 for int32 is fine since rounding not a problem.

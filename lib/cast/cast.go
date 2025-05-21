@@ -55,6 +55,15 @@ func EthHash(b []byte) (common.Hash, error) {
 	return resp, nil
 }
 
+// Array64 casts a slice to an array of length 64.
+func Array64[A any](slice []A) ([64]A, error) {
+	if len(slice) == 64 {
+		return [64]A(slice), nil
+	}
+
+	return [64]A{}, errors.New("slice length not 64", "len", len(slice))
+}
+
 // Array32 casts a slice to an array of length 32.
 func Array32[A any](slice []A) ([32]A, error) {
 	if len(slice) == 32 {

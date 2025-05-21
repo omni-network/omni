@@ -77,12 +77,14 @@ const (
 	ConfFinalized ConfLevel = 4 // final
 	ConfMin1      ConfLevel = 5 // min1
 	ConfMin2      ConfLevel = 6 // min2
-	confSentinel  ConfLevel = 7 // sentinel must always be last
+	// ConfConfirmed is only applicable to solana.
+	ConfConfirmed ConfLevel = 7 // confirmed
+	confSentinel  ConfLevel = 8 // sentinel must always be last
 )
 
 // FuzzyConfLevels returns a list of all fuzzy confirmation levels.
 func FuzzyConfLevels() []ConfLevel {
-	return []ConfLevel{ConfLatest, ConfMin1, ConfMin2}
+	return []ConfLevel{ConfLatest, ConfMin1, ConfMin2, ConfConfirmed}
 }
 
 // AllConfLevels returns a list of all confirmation levels.

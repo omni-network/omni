@@ -27,6 +27,7 @@ type Cursor struct {
 	ChainId       uint64                 `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ConfLevel     uint32                 `protobuf:"varint,2,opt,name=conf_level,json=confLevel,proto3" json:"conf_level,omitempty"`
 	BlockHeight   uint64                 `protobuf:"varint,3,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
+	TxSig         []byte                 `protobuf:"bytes,4,opt,name=tx_sig,json=txSig,proto3" json:"tx_sig,omitempty"` // Replaces block height when streaming solana
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -82,17 +83,25 @@ func (x *Cursor) GetBlockHeight() uint64 {
 	return 0
 }
 
+func (x *Cursor) GetTxSig() []byte {
+	if x != nil {
+		return x.TxSig
+	}
+	return nil
+}
+
 var File_solver_app_solver_proto protoreflect.FileDescriptor
 
 const file_solver_app_solver_proto_rawDesc = "" +
 	"\n" +
 	"\x17solver/app/solver.proto\x12\n" +
-	"solver.app\x1a\x17cosmos/orm/v1/orm.proto\"\x86\x01\n" +
+	"solver.app\x1a\x17cosmos/orm/v1/orm.proto\"\x9d\x01\n" +
 	"\x06Cursor\x12\x19\n" +
 	"\bchain_id\x18\x01 \x01(\x04R\achainId\x12\x1d\n" +
 	"\n" +
 	"conf_level\x18\x02 \x01(\rR\tconfLevel\x12!\n" +
-	"\fblock_height\x18\x03 \x01(\x04R\vblockHeight:\x1f\xf2\x9eӎ\x03\x19\n" +
+	"\fblock_height\x18\x03 \x01(\x04R\vblockHeight\x12\x15\n" +
+	"\x06tx_sig\x18\x04 \x01(\fR\x05txSig:\x1f\xf2\x9eӎ\x03\x19\n" +
 	"\x15\n" +
 	"\x13chain_id,conf_level\x18\x01B\x8f\x01\n" +
 	"\x0ecom.solver.appB\vSolverProtoP\x01Z'github.com/omni-network/omni/solver/app\xa2\x02\x03SAX\xaa\x02\n" +
