@@ -104,12 +104,10 @@ function Deposit() {
     srcChainId: sourceChainId,
     destChainId: destChainId,
     deposit: {
-      isNative: false,
       token: sourceTokenAddress,
       amount: depositAmount // Use the state variable
     },
     expense: {
-      isNative: false,
       token: destTokenAddress
     },
     mode: "expense", // We specify deposit, quote the expense
@@ -253,8 +251,8 @@ function BasicDepositForm() {
   const quote = useQuote({
     srcChainId: sourceChainId,
     destChainId: destChainId,
-    deposit: { isNative: false, token: sourceTokenAddress, amount: depositAmount },
-    expense: { isNative: false, token: destTokenAddress },
+    deposit: { token: sourceTokenAddress, amount: depositAmount },
+    expense: { token: destTokenAddress },
     mode: "expense",
     enabled: isConnected && depositAmount > 0n,
   });

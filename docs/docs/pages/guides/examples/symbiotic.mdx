@@ -71,12 +71,10 @@ export function useL2Deposit(params: UseL2DepositParams) {
     srcChainId: params.srcChainId,
     destChainId: params.destChainId,
     deposit: {
-      isNative: false,
       token: WSTETH_L2_ADDRESS,
       amount: params.depositAmount
     },
     expense: {
-      isNative: false,
       token: WSTETH_L1_ADDRESS
     },
     mode: "expense",

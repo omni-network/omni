@@ -33,14 +33,13 @@ Supported assets are updated frequently. Please ask the Omni team for the most u
 
 When dealing with native gas tokens:
 
-*   Use `isNative: true` in the `deposit` or `expense` configuration objects for `useQuote` and `useOrder`.
-*   You do not need to provide a `token` address.
+*   The token address is optional.
 *   Ensure the `amount` is specified in the smallest unit (e.g., wei for ETH).
 
 ## ERC20 Tokens
 
 When dealing with ERC20 tokens:
 
-*   Use `isNative: false` (or omit it, as `false` is the default) in the `deposit` or `expense` configuration.
+*   The token address is required.
 *   Provide the correct ERC20 token contract `address` for the respective chain (`srcChainId` for deposit, `destChainId` for expense).
 *   Ensure the `amount` is specified in the token's smallest unit (considering its decimals).

@@ -41,23 +41,13 @@ The hook accepts a configuration object with the following properties.
 | ------------- | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `srcChainId`  | `number`                               | Yes      | Chain ID of the source chain (where the user provides the `deposit`).                                       |
 | `destChainId` | `number`                               | Yes      | Chain ID of the destination chain (where the action occurs and the `expense` is spent).                                               |
-| `deposit`     | `QuoteAsset & { amount?: bigint }`     | Yes      | Aasset to deposit on the source chain. Provide `amount` only if using `mode: 'expense'`.                                     |
-| `expense`     | `QuoteAsset & { amount?: bigint }`     | Yes      | Asset to spend on the destination chain. Provide `amount` only if using `mode: 'deposit'`.                                     |
+| `deposit`     | `{ token?: Address; amount?: bigint }` | Yes if `mode: 'expense'` | Asset to deposit on the source chain. Provide `amount` only if using `mode: 'expense'`.                                     |
+| `expense`     | `{ token?: Address; amount?: bigint }` | Yes if `mode: 'deposit'` | Asset to spend on the destination chain. Provide `amount` only if using `mode: 'deposit'`.                                     |
 | `mode`        | `'deposit' \| 'expense'`               | Yes      | Defines the direction of the quote. |
 | `enabled`     | `boolean`                              | No       | Defaults to `true`. Set to `false` to disable fetching the quote.                                                                          |
 | `queryOpts`     | `UseQueryOptions<Quote, QuoteError>` | No       | React query options, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
 
 ## Types
-
-### `QuoteAsset`
-
-```typescript
-type QuoteAsset =
-  | { isNative: true; token?: never } // For native ETH
-  | { isNative?: false; token: Address } // For ERC20 tokens
-```
-
-Describes `deposit` and `expense` paramaters shape.
 
 ### Quote
 
@@ -122,8 +112,8 @@ To find out how much `wstETH` can be spent on Holesky for a deposit of 0.1 `wstE
 const quote = useQuote({
   srcChainId: baseSepolia.id,
   destChainId: holesky.id,
-  deposit: { isNative: false, token: baseSepoliaWSTETH, amount: parseEther("0.1") },
-  expense: { isNative: false, token: holeskyWSTETH }, // note - when mode: "expense" we don't supply expense.amount
+  deposit: { token: baseSepoliaWSTETH, amount: parseEther("0.1") },
+  expense: { token: holeskyWSTETH }, // note - when mode: "expense" we don't supply expense.amount
   mode: "expense", // quote expense amount
   enabled: true,
 })
@@ -141,8 +131,8 @@ To find out how much `wstETH` needs to be deposited on Base Sepolia to spend exa
 const quote = useQuote({
   srcChainId: baseSepolia.id,
   destChainId: holesky.id,
-  deposit: { isNative: false, token: baseSepoliaWSTETH }, // note - when mode: "expense" we don't supply expense.amount
-  expense: { isNative: false, token: holeskyWSTETH, amount: parseEther("0.1") },
+  deposit: { token: baseSepoliaWSTETH }, // note - when mode: "expense" we don't supply expense.amount
+  expense: { token: holeskyWSTETH, amount: parseEther("0.1") },
   mode: "deposit", // quote deposit amount
   enabled: true,
 })
