@@ -23,7 +23,7 @@ var hlChains = map[netconf.ID][]uint64{
 	netconf.Mainnet: {
 		// evmchain.IDBSC,
 		// evmchain.IDPolygon,
-		// evmchain.IDHyperEVM,
+		evmchain.IDHyperEVM,
 		evmchain.IDMantle,
 		// evmchain.IDBerachain,
 		// evmchain.IDPlume,

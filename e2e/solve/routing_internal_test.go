@@ -43,6 +43,11 @@ var (
 	}
 
 	// Hyperlane only.
+	hyperEvm = netconf.Chain{
+		ID:   evmchain.IDHyperEVM,
+		Name: "hyper_evm",
+	}
+
 	mantle = netconf.Chain{
 		ID:   evmchain.IDMantle,
 		Name: "mantle",
@@ -125,6 +130,7 @@ var (
 			ethereum,
 			optimism,
 			omniMainnet,
+			hyperEvm,
 			mantle,
 			base,
 			arbitrum,
@@ -854,6 +860,14 @@ func makeRoutes() []TestRoute {
 				},
 			},
 			{
+				ChainID:           hyperEvm.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
 				ChainID:           mantle.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
@@ -910,6 +924,14 @@ func makeRoutes() []TestRoute {
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           hyperEvm.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
 				},
 			},
 			{
@@ -1017,6 +1039,14 @@ func makeRoutes() []TestRoute {
 			},
 			// No route to omniMainnet (Core-only) from mantle (HL-only)
 			{
+				ChainID:           hyperEvm.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
 				ChainID:           mantle.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
@@ -1073,6 +1103,14 @@ func makeRoutes() []TestRoute {
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           hyperEvm.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
 				},
 			},
 			{
@@ -1135,6 +1173,14 @@ func makeRoutes() []TestRoute {
 				},
 			},
 			{
+				ChainID:           hyperEvm.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
 				ChainID:           mantle.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
@@ -1156,6 +1202,66 @@ func makeRoutes() []TestRoute {
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderNone,
+				},
+			},
+		},
+	})
+
+	// Source: HyperEVM (HL-only)
+	routes = append(routes, TestRoute{
+		name:        "HyperEVM (HL-only) to Mainnet Network",
+		sourceChain: hyperEvm,
+		network:     mainnetNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			{
+				ChainID:           ethereum.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           optimism.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			// No route to omniMainnet (Core-only) from hyperEvm (HL-only)
+			{
+				ChainID:           hyperEvm.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
+			{
+				ChainID:           mantle.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           base.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           arbitrum.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
 				},
 			},
 		},
