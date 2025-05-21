@@ -147,5 +147,10 @@ export function assertAcceptedResult(
       rejectReason,
     )
   }
-  
+
+  // fallback: no matching schema
+  throw new ValidateOrderError(
+    'Unexpected response from server',
+    'Unknown error',
+  );
 }
