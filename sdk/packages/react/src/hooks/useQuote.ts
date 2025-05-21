@@ -45,6 +45,7 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
   const { apiBaseUrl } = useOmniContext()
   const { enabled, ...quoteParams } = params
   const query = useQuery<Quote, QuoteError>({
+    retry: false,
     ...params.queryOpts,
     queryKey: ['quote', quoteParams],
     queryFn: async () => getQuote({ ...quoteParams, environment: apiBaseUrl }),

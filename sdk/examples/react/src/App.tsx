@@ -80,11 +80,11 @@ function Quote() {
           </div>
           <div>
             quote.deposit.amount:{' '}
-            {quote.isSuccess ? `${formatEther(quote.deposit.amount)} ETH` : ""}
+            {quote.isSuccess ? `${formatEther(quote.deposit.amount)} ETH` : ''}
           </div>
           <div>
             quote.expense.amount:{' '}
-            {quote.isSuccess ? `${formatEther(quote.expense.amount)} ETH` : ""}
+            {quote.isSuccess ? `${formatEther(quote.expense.amount)} ETH` : ''}
           </div>
         </>
       ) : (
@@ -141,27 +141,36 @@ function Order() {
                 target="_blank"
                 rel="noopener noreferrer"
                 href={`https://sepolia.basescan.org/tx/${encodeURIComponent(
-                  order.txHash
+                  order.txHash,
                 )}`}
               >
                 <code>{order.txHash}</code>
               </a>
             )}
           </div>
-          <div>isError: <code>{JSON.stringify(order.isError)}</code></div>
-          <div>error: <pre>{order.error?.message}</pre></div>
-          <div>orderId: <code>{order.orderId}</code></div>
-          <div>destTxHash: {order.destTxHash && (
+          <div>
+            isError: <code>{JSON.stringify(order.isError)}</code>
+          </div>
+          <div>
+            error: <pre>{order.error?.message}</pre>
+          </div>
+          <div>
+            orderId: <code>{order.orderId}</code>
+          </div>
+          <div>
+            destTxHash:{' '}
+            {order.destTxHash && (
               <a
                 target="_blank"
                 rel="noopener noreferrer"
                 href={`https://holesky.etherscan.io/tx/${encodeURIComponent(
-                  order.destTxHash
+                  order.destTxHash,
                 )}`}
               >
                 <code>{order.destTxHash}</code>
               </a>
-            )}</div>
+            )}
+          </div>
           <button
             onClick={() => order.open()}
             disabled={

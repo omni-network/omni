@@ -1,4 +1,5 @@
 import * as core from '@omni-network/core'
+import { QueryClient } from '@tanstack/react-query'
 import { waitFor } from '@testing-library/react'
 import { zeroAddress } from 'viem'
 import { beforeEach, expect, test, vi } from 'vitest'
@@ -17,9 +18,13 @@ const params: UseQuoteParams = {
   enabled: true,
 } as const
 
-const renderQuoteHook = (params: Parameters<typeof useQuote>[0]) => {
+const renderQuoteHook = (
+  params: Parameters<typeof useQuote>[0],
+  queryClient?: QueryClient,
+) => {
   return renderHook(() => useQuote(params), {
     mockContractsCall: true,
+    queryClient,
   })
 }
 
@@ -118,10 +123,19 @@ test('behaviour: quote does not fire when both deposit and expense are zero', ()
 })
 
 test('behaviour: quote is error if call throws', async () => {
-  const error = new Error('Unexpected quote response')
-  vi.spyOn(core, 'getQuote').mockRejectedValue(error)
+  // Use custom query client that will retry queries
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 3,
+      },
+    },
+  })
 
-  const { result } = renderQuoteHook({ ...params, enabled: true })
+  const error = new Error('Unexpected quote response')
+  const spy = vi.spyOn(core, 'getQuote').mockRejectedValue(error)
+
+  const { result } = renderQuoteHook({ ...params, enabled: true }, queryClient)
 
   await waitFor(() => {
     expect(result.current.query.isLoading).toBe(false)
@@ -130,4 +144,7 @@ test('behaviour: quote is error if call throws', async () => {
       expect(result.current.error).toBe(error)
     }
   })
+
+  // Ensure the call has only be made once
+  expect(spy).toHaveBeenCalledTimes(1)
 })
