@@ -14,9 +14,10 @@ const (
 	RejectUnsupportedExpense    RejectReason = 7
 	RejectUnsupportedDestChain  RejectReason = 8
 	RejectUnsupportedSrcChain   RejectReason = 9
-	RejectSameChain             RejectReason = 10
 	RejectExpenseOverMax        RejectReason = 11
 	RejectExpenseUnderMin       RejectReason = 12
 	RejectCallNotAllowed        RejectReason = 13
 	rejectSentinel              RejectReason = 14
+
+	// RejectSameChain          RejectReason = 10 // Same chain orders supported.
 )

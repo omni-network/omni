@@ -23,10 +23,6 @@ type checkFunc func(context.Context, types.CheckRequest) error
 // It is the logic behind the /check endpoint.
 func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, priceFunc priceFunc, solverAddr, outboxAddr common.Address) checkFunc {
 	return func(ctx context.Context, req types.CheckRequest) error {
-		if req.SourceChainID == req.DestinationChainID {
-			return newRejection(types.RejectSameChain, errors.New("source and destination chain are the same"))
-		}
-
 		if _, err := backends.Backend(req.SourceChainID); err != nil {
 			return newRejection(types.RejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
 		}
@@ -71,7 +67,14 @@ func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, price
 		var orderID OrderID
 		_, _ = rand.Read(orderID[:])
 
-		return checkFill(ctx, dstBackend, orderID, fillOriginData, nativeAmt(expenses), solverAddr, outboxAddr)
+		return checkFill(ctx,
+			dstBackend,
+			orderID,
+			fillOriginData,
+			nativeAmt(expenses),
+			solverAddr,
+			outboxAddr,
+			req.SourceChainID == req.DestinationChainID)
 	}
 }
 

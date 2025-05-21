@@ -238,17 +238,6 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 			},
 		},
 		{
-			name: "same chain",
-			req: types.CheckRequest{
-				SourceChainID:      evmchain.IDHolesky,
-				DestinationChainID: evmchain.IDHolesky,
-			},
-			res: types.CheckResponse{
-				Rejected:     true,
-				RejectReason: types.RejectSameChain.String(),
-			},
-		},
-		{
 			name:  "debug trace - accepted",
 			trace: map[string]any{"test": "trace"},
 			mock:  accepted.mock,
@@ -641,6 +630,19 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			mock: func(clients MockClients) {
 				mockERC20Balance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC, ether(1))
 				mockERC20Allowance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC)
+			},
+		},
+		{
+			name: "same chain",
+			order: testOrder{
+				srcChainID: evmchain.IDHolesky,
+				dstChainID: evmchain.IDHolesky,
+				deposits:   []types.AddrAmt{{Amount: depositFor(t, ether(1))}},
+				calls:      []types.Call{{Value: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1)}},
+			},
+			mock: func(clients MockClients) {
+				mockNativeBalance(t, clients.Client(t, evmchain.IDHolesky), solver, ether(2))
 			},
 		},
 	}

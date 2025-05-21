@@ -270,17 +270,6 @@ describe('useOrder()', () => {
     })
   })
 
-  test('behaviour: rejects when source and destination chains are the same', async () => {
-    const order: AnyOrder = {
-      srcChainId: mockL1Id,
-      destChainId: mockL1Id,
-      expense: { token: zeroAddress, amount: 1n },
-      deposit: { token: zeroAddress, amount: 1n },
-      calls: [{ target: testAccount.address, value: 1n }],
-    }
-    await executeTestOrderUsingReact({ order, rejectReason: 'SameChain' })
-  })
-
   test('behaviour: rejects when using an unsupported expense token', async () => {
     const order: AnyOrder = {
       srcChainId: mockL1Id,
