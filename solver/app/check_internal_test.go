@@ -89,7 +89,7 @@ func TestCheck(t *testing.T) {
 			}
 
 			if tt.req.Debug && tt.traceErr != nil {
-				require.Equal(t, map[string]any{"error": tt.traceErr.Error()}, res.Trace)
+				require.Equal(t, map[string]any{"error": errors.Format(tt.traceErr)}, res.Trace)
 			}
 
 			if !tt.req.Debug {
