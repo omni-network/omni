@@ -8,24 +8,41 @@ import { type Order, isContractCall } from '../types/order.js'
 import { getApiUrl } from '../utils/getApiUrl.js'
 import { toJSON } from '../utils/toJSON.js'
 
-const validationResponseSchema = z.object({
-  accepted: z.boolean().optional(),
-  rejected: z.boolean().optional(),
-  error: z
-    .object({
+const acceptedResponseSchema = z.object({
+  accepted: z.literal(true),
+  rejectCode: z.literal(0).optional(),
+  rejected: z.literal(false).optional(),
+  rejectReason: z.literal("").optional(),
+  rejectDescription: z.literal("").optional(),
+}).strict()
+
+const rejectedResponseSchema = z
+  .object({
+    accepted: z.literal(false).optional(),
+    rejectCode: z.number().optional(),
+    rejected: z.literal(true),
+    rejectReason: z.string(),
+    rejectDescription: z.string(),
+  })
+  .strict()
+
+const errorResponseSchema = z
+  .object({
+    error: z.object({
       code: z.number(),
       message: z.string(),
-    })
-    .optional(),
-  rejectReason: z.string().optional(),
-  rejectDescription: z.string().optional(),
-})
+    }),
+  })
+  .strict()
 
 export type ValidateOrderParameters<abis extends OptionalAbis> = Order<abis> & {
   environment?: Environment | string
 }
 
-export type ValidationResponse = z.infer<typeof validationResponseSchema>
+export type ValidationResponse = 
+  | z.infer<typeof acceptedResponseSchema>
+  | z.infer<typeof rejectedResponseSchema>
+  | z.infer<typeof errorResponseSchema>
 
 // validateOrder calls /check - checking if an order is valid
 export async function validateOrder<abis extends OptionalAbis>(
@@ -99,29 +116,40 @@ const serialize = <abis extends OptionalAbis>(order: Order<abis>) => {
 
 // asserts a json response is ValidationResponse
 const isValidateRes = (json: unknown): json is ValidationResponse => {
-  return validationResponseSchema.safeParse(json).success
+  return (
+    acceptedResponseSchema.safeParse(json).success ||
+    rejectedResponseSchema.safeParse(json).success ||
+    errorResponseSchema.safeParse(json).success
+  )
 }
 
-export type AcceptedResult = {
-  accepted: true
-  rejected?: false
-  error?: never
-  rejectReason?: never
-  rejectDescription?: never
-}
+export type AcceptedResult = z.infer<typeof acceptedResponseSchema>
 
 export function assertAcceptedResult(
   res: ValidationResponse,
 ): asserts res is AcceptedResult {
-  if (!res.accepted) {
-    if (res.error != null) {
-      throw new ValidateOrderError(res.error.message, `Code ${res.error.code}`)
-    }
-    if (res.rejected) {
-      throw new ValidateOrderError(
-        res.rejectDescription ?? 'Server rejected order',
-        res.rejectReason,
-      )
-    }
+
+  // if the response is accepted
+  if(acceptedResponseSchema.safeParse(res).success) {
+    return;
   }
+
+  // if the response is an error
+  if (errorResponseSchema.safeParse(res).success) {
+    const { error } = errorResponseSchema.parse(res);
+    throw new ValidateOrderError(
+      error.message,
+      `Code ${error.code}`,
+    )
+  }
+
+  // if the response is rejected
+  if (rejectedResponseSchema.safeParse(res).success) {
+    const { rejectDescription, rejectReason } = rejectedResponseSchema.parse(res);
+    throw new ValidateOrderError(
+      rejectDescription ?? 'Server rejected order',
+      rejectReason,
+    )
+  }
+  
 }

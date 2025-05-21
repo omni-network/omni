@@ -1,5 +1,5 @@
-import { z } from 'zod'
-import { fromHex, zeroAddress } from 'viem'
+import { string, z } from 'zod'
+import { fromHex, Hex, zeroAddress } from 'viem'
 import { fetchJSON } from '../internal/api.js'
 import type { Environment } from '../types/config.js'
 import type { Quote, Quoteable } from '../types/quote.js'
@@ -11,11 +11,11 @@ import { address, hex } from '../schema/types.js'
 export const quoteResponseSchema = z.object({
   deposit: z.object({
     token: address(),
-    amount: hex(),
+    amount: z.union([hex(), string()]),
   }),
   expense: z.object({
     token: address(),
-    amount: hex(),
+    amount: z.union([hex(), string()]),
   }),
 })
 
@@ -74,8 +74,8 @@ export async function getQuote(quote: GetQuoteParameters): Promise<Quote> {
   const { deposit, expense } = json
 
   return {
-    deposit: { ...deposit, amount: fromHex(deposit.amount, 'bigint') },
-    expense: { ...expense, amount: fromHex(expense.amount, 'bigint') },
+    deposit: { ...deposit, amount: fromHex(deposit.amount as Hex, 'bigint') },
+    expense: { ...expense, amount: fromHex(expense.amount as Hex, 'bigint') },
   } satisfies Quote
 }
 
