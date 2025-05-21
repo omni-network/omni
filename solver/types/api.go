@@ -42,15 +42,17 @@ type CheckRequest struct {
 	Calls              []Call    `json:"calls"`
 	Expenses           []Expense `json:"expenses"`
 	Deposit            AddrAmt   `json:"deposit"`
+	Debug              bool      `json:"debug"`
 }
 
 // CheckResponse is the response json for the /check endpoint.
 type CheckResponse struct {
-	Accepted          bool         `json:"accepted"`
-	Rejected          bool         `json:"rejected"`
-	RejectCode        RejectReason `json:"rejectCode"`
-	RejectReason      string       `json:"rejectReason"`
-	RejectDescription string       `json:"rejectDescription"`
+	Accepted          bool           `json:"accepted"`
+	Rejected          bool           `json:"rejected"`
+	RejectCode        RejectReason   `json:"rejectCode"`
+	RejectReason      string         `json:"rejectReason"`
+	RejectDescription string         `json:"rejectDescription"`
+	Trace             map[string]any `json:"trace"` // If debug is true, result of debug_traceCall
 }
 
 // QuoteRequest is the expected request body for the /api/v1/quote endpoint.

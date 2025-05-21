@@ -65,7 +65,7 @@ func newContractsHandler(addrs contracts.Addresses) Handler {
 // newCheckHandler returns a handler for the /check endpoint.
 // It is responsible for http request / response handling, and delegates
 // logic to a checkFunc.
-func newCheckHandler(checkFunc checkFunc) Handler {
+func newCheckHandler(checkFunc checkFunc, traceFunc traceFunc) Handler {
 	return Handler{
 		Endpoint: endpointCheck,
 		ZeroReq:  func() any { return &types.CheckRequest{} },
@@ -75,6 +75,20 @@ func newCheckHandler(checkFunc checkFunc) Handler {
 				return nil, errors.New("invalid request type [BUG]", "type", fmt.Sprintf("%T", request))
 			}
 
+			// Returns trace result if debug == true, else nil.
+			maybeTrace := func() map[string]any {
+				if !req.Debug {
+					return nil
+				}
+
+				trace, err := traceFunc(ctx, *req)
+				if err != nil {
+					return map[string]any{"error": err.Error()}
+				}
+
+				return trace
+			}
+
 			err := checkFunc(ctx, *req)
 			if r := new(RejectionError); errors.As(err, &r) {
 				return types.CheckResponse{
@@ -82,12 +96,16 @@ func newCheckHandler(checkFunc checkFunc) Handler {
 					RejectCode:        r.Reason,
 					RejectReason:      r.Reason.String(),
 					RejectDescription: errors.Format(r.Err),
+					Trace:             maybeTrace(),
 				}, nil
 			} else if err != nil {
 				return types.CheckResponse{}, err
 			}
 
-			return types.CheckResponse{Accepted: true}, nil
+			return types.CheckResponse{
+				Accepted: true,
+				Trace:    maybeTrace(),
+			}, nil
 		},
 	}
 }

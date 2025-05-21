@@ -42,7 +42,15 @@ func TestCheck(t *testing.T) {
 			backends, clients := testBackends(t)
 
 			callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return !tt.disallowCall }
-			handler := handlerAdapter(newCheckHandler(newChecker(backends, callAllower, priceFunc, solver, outbox)))
+			handler := handlerAdapter(newCheckHandler(
+				newChecker(backends, callAllower, priceFunc, solver, outbox),
+				func(ctx context.Context, req types.CheckRequest) (map[string]any, error) {
+					require.True(t, tt.req.Debug)
+					require.True(t, tt.trace == nil || tt.traceErr == nil)
+
+					return tt.trace, tt.traceErr
+				},
+			))
 
 			if tt.mock != nil {
 				tt.mock(clients)
@@ -76,6 +84,20 @@ func TestCheck(t *testing.T) {
 			require.Equal(t, tt.res.RejectReason, res.RejectReason)
 			require.Equal(t, tt.res.Accepted, res.Accepted)
 
+			if tt.req.Debug && tt.trace != nil {
+				require.Equal(t, tt.trace, res.Trace)
+			}
+
+			if tt.req.Debug && tt.traceErr != nil {
+				require.Equal(t, map[string]any{"error": tt.traceErr.Error()}, res.Trace)
+			}
+
+			if !tt.req.Debug {
+				require.Nil(t, res.Trace)
+				require.Nil(t, tt.trace)
+				require.NoError(t, tt.traceErr)
+			}
+
 			res2 := fetchResponseViaClient(t, handler, tt.req)
 			require.Equal(t, res, res2)
 
@@ -98,7 +120,7 @@ func TestCheckError(t *testing.T) {
 			Err:        errors.New(msg),
 			StatusCode: http.StatusServiceUnavailable,
 		}
-	}))
+	}, noopTracer))
 
 	srv := httptest.NewServer(handler)
 	defer srv.Close()

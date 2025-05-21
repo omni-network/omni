@@ -189,27 +189,9 @@ func checkFill(
 	nativeValue *big.Int,
 	solverAddr, outboxAddr common.Address,
 ) error {
-	outbox, err := bindings.NewSolverNetOutbox(outboxAddr, client)
+	msg, err := fillCallMsg(ctx, client, orderID, fillOriginData, nativeValue, solverAddr, outboxAddr)
 	if err != nil {
-		return errors.Wrap(err, "new outbox")
-	}
-
-	// xcall fee
-	fee, err := outbox.FillFee(&bind.CallOpts{Context: ctx}, fillOriginData)
-	if err != nil {
-		return errors.Wrap(err, "get fulfill fee")
-	}
-
-	fillCallData, err := solvernet.PackFillCalldata(orderID, fillOriginData)
-	if err != nil {
-		return errors.Wrap(err, "pack fill inputs")
-	}
-
-	msg := ethereum.CallMsg{
-		To:    &outboxAddr,
-		From:  solverAddr,
-		Value: bi.Add(nativeValue, fee),
-		Data:  fillCallData,
+		return errors.Wrap(err, "fill call msg")
 	}
 
 	returnData, err := client.CallContract(ctx, msg, nil)
@@ -221,6 +203,39 @@ func checkFill(
 	}
 
 	return nil
+}
+
+// fillCallMsg returns the ethereum.CallMsg or an order fill.
+func fillCallMsg(
+	ctx context.Context,
+	client ethclient.Client,
+	orderID OrderID,
+	fillOriginData []byte,
+	nativeValue *big.Int,
+	solverAddr, outboxAddr common.Address,
+) (ethereum.CallMsg, error) {
+	outbox, err := bindings.NewSolverNetOutbox(outboxAddr, client)
+	if err != nil {
+		return ethereum.CallMsg{}, errors.Wrap(err, "new outbox")
+	}
+
+	// xcall fee
+	fee, err := outbox.FillFee(&bind.CallOpts{Context: ctx}, fillOriginData)
+	if err != nil {
+		return ethereum.CallMsg{}, errors.Wrap(err, "get fulfill fee")
+	}
+
+	fillCallData, err := solvernet.PackFillCalldata(orderID, fillOriginData)
+	if err != nil {
+		return ethereum.CallMsg{}, errors.Wrap(err, "pack fill inputs")
+	}
+
+	return ethereum.CallMsg{
+		To:    &outboxAddr,
+		From:  solverAddr,
+		Value: bi.Add(nativeValue, fee),
+		Data:  fillCallData,
+	}, nil
 }
 
 // parseMaxSpent parses order.MaxSpent, checks all tokens are supported, returns the list of expenses.
