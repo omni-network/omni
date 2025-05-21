@@ -1,5 +1,5 @@
-import { z } from 'zod/v4-mini'
 import { encodeFunctionData, zeroAddress } from 'viem'
+import { z } from 'zod/v4-mini'
 import { ValidateOrderError } from '../errors/base.js'
 import { fetchJSON } from '../internal/api.js'
 import type { OptionalAbis } from '../types/abi.js'
@@ -22,7 +22,7 @@ const rejectedResponseSchema = z.object({
   rejected: z.literal(true),
   rejectReason: z.string(),
   rejectDescription: z.string(),
-}) 
+})
 
 const errorResponseSchema = z.object({
   error: z.object({
@@ -35,7 +35,7 @@ export type ValidateOrderParameters<abis extends OptionalAbis> = Order<abis> & {
   environment?: Environment | string
 }
 
-export type ValidationResponse = 
+export type ValidationResponse =
   | z.infer<typeof acceptedResponseSchema>
   | z.infer<typeof rejectedResponseSchema>
   | z.infer<typeof errorResponseSchema>
@@ -124,24 +124,21 @@ export type AcceptedResult = z.infer<typeof acceptedResponseSchema>
 export function assertAcceptedResult(
   res: ValidationResponse,
 ): asserts res is AcceptedResult {
-
   // if the response is accepted
-  if(acceptedResponseSchema.safeParse(res).success) {
-    return;
+  if (acceptedResponseSchema.safeParse(res).success) {
+    return
   }
 
   // if the response is an error
   if (errorResponseSchema.safeParse(res).success) {
-    const { error } = errorResponseSchema.parse(res);
-    throw new ValidateOrderError(
-      error.message,
-      `Code ${error.code}`,
-    )
+    const { error } = errorResponseSchema.parse(res)
+    throw new ValidateOrderError(error.message, `Code ${error.code}`)
   }
 
   // if the response is rejected
   if (rejectedResponseSchema.safeParse(res).success) {
-    const { rejectDescription, rejectReason } = rejectedResponseSchema.parse(res);
+    const { rejectDescription, rejectReason } =
+      rejectedResponseSchema.parse(res)
     throw new ValidateOrderError(
       rejectDescription ?? 'Server rejected order',
       rejectReason,
@@ -152,5 +149,5 @@ export function assertAcceptedResult(
   throw new ValidateOrderError(
     'Unexpected response from server',
     'Unknown error',
-  );
+  )
 }
