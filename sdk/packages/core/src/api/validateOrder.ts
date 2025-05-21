@@ -1,4 +1,5 @@
 import { encodeFunctionData, zeroAddress } from 'viem'
+import { z } from 'zod/v4-mini'
 import { ValidateOrderError } from '../errors/base.js'
 import { fetchJSON } from '../internal/api.js'
 import type { OptionalAbis } from '../types/abi.js'
@@ -7,20 +8,37 @@ import { type Order, isContractCall } from '../types/order.js'
 import { getApiUrl } from '../utils/getApiUrl.js'
 import { toJSON } from '../utils/toJSON.js'
 
+const acceptedResponseSchema = z.object({
+  accepted: z.literal(true),
+  rejectCode: z.optional(z.literal(0)),
+  rejected: z.optional(z.literal(false)),
+  rejectReason: z.optional(z.literal('')),
+  rejectDescription: z.optional(z.literal('')),
+})
+
+const rejectedResponseSchema = z.object({
+  accepted: z.optional(z.literal(false)),
+  rejectCode: z.optional(z.number()),
+  rejected: z.literal(true),
+  rejectReason: z.string(),
+  rejectDescription: z.string(),
+})
+
+const errorResponseSchema = z.object({
+  error: z.object({
+    code: z.number(),
+    message: z.string(),
+  }),
+})
+
 export type ValidateOrderParameters<abis extends OptionalAbis> = Order<abis> & {
   environment?: Environment | string
 }
 
-export type ValidationResponse = {
-  accepted?: boolean
-  rejected?: boolean
-  error?: {
-    code: number
-    message: string
-  }
-  rejectReason?: string
-  rejectDescription?: string
-}
+export type ValidationResponse =
+  | z.infer<typeof acceptedResponseSchema>
+  | z.infer<typeof rejectedResponseSchema>
+  | z.infer<typeof errorResponseSchema>
 
 // validateOrder calls /check - checking if an order is valid
 export async function validateOrder<abis extends OptionalAbis>(
@@ -94,38 +112,61 @@ const serialize = <abis extends OptionalAbis>(order: Order<abis>) => {
 
 // asserts a json response is ValidationResponse
 const isValidateRes = (json: unknown): json is ValidationResponse => {
-  // TODO schema validation
-  const res = json as ValidationResponse
   return (
-    json != null &&
-    (res.accepted != null ||
-      (res.rejected != null &&
-        res.rejectReason != null &&
-        res.rejectDescription != null) ||
-      res.error != null)
+    acceptedResponseSchema.safeParse(json).success ||
+    rejectedResponseSchema.safeParse(json).success ||
+    errorResponseSchema.safeParse(json).success
   )
 }
 
-export type AcceptedResult = {
-  accepted: true
-  rejected?: false
-  error?: never
-  rejectReason?: never
-  rejectDescription?: never
+// asserts a json response is AcceptedResult
+export function isAcceptedRes(json: unknown): json is AcceptedResult {
+  return acceptedResponseSchema.safeParse(json).success
 }
+
+// asserts a json response is RejectedResult
+export function isRejectedRes(
+  json: unknown,
+): json is z.infer<typeof rejectedResponseSchema> {
+  return rejectedResponseSchema.safeParse(json).success
+}
+
+// asserts a json response is ErrorResult
+export function isErrorRes(
+  json: unknown,
+): json is z.infer<typeof errorResponseSchema> {
+  return errorResponseSchema.safeParse(json).success
+}
+
+export type AcceptedResult = z.infer<typeof acceptedResponseSchema>
 
 export function assertAcceptedResult(
   res: ValidationResponse,
 ): asserts res is AcceptedResult {
-  if (!res.accepted) {
-    if (res.error != null) {
-      throw new ValidateOrderError(res.error.message, `Code ${res.error.code}`)
-    }
-    if (res.rejected) {
-      throw new ValidateOrderError(
-        res.rejectDescription ?? 'Server rejected order',
-        res.rejectReason,
-      )
-    }
+  // if the response is accepted
+  if (isAcceptedRes(res)) {
+    return
   }
+
+  // if the response is an error
+  if (isErrorRes(res)) {
+    const { error } = errorResponseSchema.parse(res)
+    throw new ValidateOrderError(error.message, `Code ${error.code}`)
+  }
+
+  // if the response is rejected
+  if (isRejectedRes(res)) {
+    const { rejectDescription, rejectReason } =
+      rejectedResponseSchema.parse(res)
+    throw new ValidateOrderError(
+      rejectDescription ?? 'Server rejected order',
+      rejectReason,
+    )
+  }
+
+  // fallback: no matching schema
+  throw new ValidateOrderError(
+    'Unexpected response from server',
+    'Unknown error',
+  )
 }

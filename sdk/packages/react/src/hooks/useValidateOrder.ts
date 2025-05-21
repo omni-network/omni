@@ -4,7 +4,7 @@ import type {
   Order,
   ValidationResponse,
 } from '@omni-network/core'
-import { validateOrder } from '@omni-network/core'
+import { isAcceptedRes, isRejectedRes, validateOrder } from '@omni-network/core'
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useOmniContext } from '../context/omni.js'
@@ -75,9 +75,8 @@ const useResult = (
   useMemo(() => {
     if (q.isError) return { status: 'error', error: q.error }
     if (q.isPending) return { status: 'pending' }
-    if (q.data.accepted) return { status: 'accepted' }
-
-    if (q.data.rejected) {
+    if (isAcceptedRes(q.data)) return { status: 'accepted' }
+    if (isRejectedRes(q.data)) {
       return {
         status: 'rejected',
         // TODO validation on rejections
