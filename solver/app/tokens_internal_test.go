@@ -21,11 +21,11 @@ import (
 // TestGenSupportTokensDoc generates the supported tokens docs.
 func TestGenSupportTokensDoc(t *testing.T) {
 	t.Parallel()
-	genSupportedTokens(t, netconf.Omega, "Testnet", "../../../docs/docs/pages/sdk/assets/testnet.mdx")
-	genSupportedTokens(t, netconf.Mainnet, "Mainnet", "../../../docs/docs/pages/sdk/assets/mainnet.mdx")
+	genSupportedTokens(t, netconf.Omega, "../../../docs/docs/pages/sdk/assets/testnet.mdx")
+	genSupportedTokens(t, netconf.Mainnet, "../../../docs/docs/pages/sdk/assets/mainnet.mdx")
 }
 
-func genSupportedTokens(t *testing.T, network netconf.ID, networkName string, fileName string) {
+func genSupportedTokens(t *testing.T, network netconf.ID, fileName string) {
 	t.Helper()
 	m, err := manifests.Manifest(network)
 	require.NoError(t, err)
@@ -57,15 +57,15 @@ func genSupportedTokens(t *testing.T, network netconf.ID, networkName string, fi
 				addr = "Native"
 			}
 
-			lines = append(lines, fmt.Sprintf("| %s | %s | %d | %s | %s |", networkName, meta.PrettyName, meta.ChainID, token.Symbol, addr))
+			lines = append(lines, fmt.Sprintf("| %s | %d | %s | %s |", meta.PrettyName, meta.ChainID, token.Symbol, addr))
 		}
 	}
 
 	sort.Strings(lines)
 
 	var b bytes.Buffer
-	b.WriteString("| Network | Chain | Chain ID | Asset | Contract Address |\n")
-	b.WriteString("| ------- | ----- | -------- | ----- | ---------------- |\n")
+	b.WriteString("| Chain | Chain ID | Asset | Contract Address |\n")
+	b.WriteString("| ----- | -------- | ----- | ---------------- |\n")
 
 	for _, line := range lines {
 		b.WriteString(line + "\n")
