@@ -14,26 +14,22 @@ const acceptedResponseSchema = z.object({
   rejected: z.literal(false).optional(),
   rejectReason: z.literal("").optional(),
   rejectDescription: z.literal("").optional(),
-}).strict()
+})
 
-const rejectedResponseSchema = z
-  .object({
-    accepted: z.literal(false).optional(),
-    rejectCode: z.number().optional(),
-    rejected: z.literal(true),
-    rejectReason: z.string(),
-    rejectDescription: z.string(),
-  })
-  .strict()
+const rejectedResponseSchema = z.object({
+  accepted: z.literal(false).optional(),
+  rejectCode: z.number().optional(),
+  rejected: z.literal(true),
+  rejectReason: z.string(),
+  rejectDescription: z.string(),
+}) 
 
-const errorResponseSchema = z
-  .object({
-    error: z.object({
-      code: z.number(),
-      message: z.string(),
-    }),
-  })
-  .strict()
+const errorResponseSchema = z.object({
+  error: z.object({
+    code: z.number(),
+    message: z.string(),
+  }),
+})
 
 export type ValidateOrderParameters<abis extends OptionalAbis> = Order<abis> & {
   environment?: Environment | string
