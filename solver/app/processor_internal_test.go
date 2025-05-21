@@ -136,13 +136,21 @@ func TestEventProcessor(t *testing.T) {
 				},
 				ChainName:         func(uint64) string { return "" },
 				TargetName:        func(PendingData) string { return "" },
-				DebugPendingOrder: func(context.Context, Order, types.Log) {},
+				DebugPendingOrder: func(context.Context, Order, Event) {},
 				InstrumentAge:     func(context.Context, uint64, uint64, Order) slog.Attr { return slog.Attr{} },
 			}
 
 			proc := newEventProcFunc(deps, chainID)
 
-			err := proc(t.Context(), types.Log{Topics: []common.Hash{test.event, orderID}})
+			e, ok := solvernet.EventByTopic(test.event)
+			require.True(t, ok)
+
+			event := Event{
+				OrderID: OrderID(orderID),
+				Status:  e.Status,
+				Height:  height,
+			}
+			err := proc(t.Context(), event)
 			if test.err != "" {
 				require.ErrorContains(t, err, test.err)
 				return

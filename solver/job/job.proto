@@ -11,14 +11,18 @@ message Job {
   option (cosmos.orm.v1.table) = {
     id: 2; // solver.app.Cursor already table 1
     primary_key: { fields: "id", auto_increment: true }
-    index: {id: 2, fields: "chain_id,block_height,event_index", unique: true} // Unique event index
+    // index: {id: 2, fields: "chain_id,block_height,event_index", unique: true} // Unique event index
+    index: {id: 3, fields: "chain_id,height,tx_string,event_index", unique: true} // Unique event index
   };
 
   uint64 id           = 1; // Auto-incremented ID
   uint64 chain_id     = 2; // Source chain ID as per https://chainlist.org
-  uint64 block_height = 3; // Height of the source-chain block
-  uint64 event_index  = 4; // Event index in the block
-  bytes  event_json   = 5; // *types.Log JSON
+  uint64 height       = 3; // Height of the source-chain block/slot
+  uint64 event_index  = 4; // Event index in the block/tx
+  bytes  deprecated_event_json = 5; // *types.Log JSON
   google.protobuf.Timestamp created_at = 6; // Creation timestamp
+  string tx_string    = 7; // Source-chain transaction hash/sig
+  bytes  order_id     = 8; // Order ID
+  uint64 status       = 9; // Status of the order
 }
 

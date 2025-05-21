@@ -24,15 +24,18 @@ const (
 )
 
 type Job struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                      // Auto-incremented ID
-	ChainId       uint64                 `protobuf:"varint,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`             // Source chain ID as per https://chainlist.org
-	BlockHeight   uint64                 `protobuf:"varint,3,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"` // Height of the source-chain block
-	EventIndex    uint64                 `protobuf:"varint,4,opt,name=event_index,json=eventIndex,proto3" json:"event_index,omitempty"`    // Event index in the block
-	EventJson     []byte                 `protobuf:"bytes,5,opt,name=event_json,json=eventJson,proto3" json:"event_json,omitempty"`        // *types.Log JSON
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`        // Creation timestamp
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Id                  uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                                               // Auto-incremented ID
+	ChainId             uint64                 `protobuf:"varint,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                      // Source chain ID as per https://chainlist.org
+	Height              uint64                 `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`                                                       // Height of the source-chain block/slot
+	EventIndex          uint64                 `protobuf:"varint,4,opt,name=event_index,json=eventIndex,proto3" json:"event_index,omitempty"`                             // Event index in the block/tx
+	DeprecatedEventJson []byte                 `protobuf:"bytes,5,opt,name=deprecated_event_json,json=deprecatedEventJson,proto3" json:"deprecated_event_json,omitempty"` // *types.Log JSON
+	CreatedAt           *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`                                 // Creation timestamp
+	TxString            string                 `protobuf:"bytes,7,opt,name=tx_string,json=txString,proto3" json:"tx_string,omitempty"`                                    // Source-chain transaction hash/sig
+	OrderId             []byte                 `protobuf:"bytes,8,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`                                       // Order ID
+	Status              uint64                 `protobuf:"varint,9,opt,name=status,proto3" json:"status,omitempty"`                                                       // Status of the order
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *Job) Reset() {
@@ -79,9 +82,9 @@ func (x *Job) GetChainId() uint64 {
 	return 0
 }
 
-func (x *Job) GetBlockHeight() uint64 {
+func (x *Job) GetHeight() uint64 {
 	if x != nil {
-		return x.BlockHeight
+		return x.Height
 	}
 	return 0
 }
@@ -93,9 +96,9 @@ func (x *Job) GetEventIndex() uint64 {
 	return 0
 }
 
-func (x *Job) GetEventJson() []byte {
+func (x *Job) GetDeprecatedEventJson() []byte {
 	if x != nil {
-		return x.EventJson
+		return x.DeprecatedEventJson
 	}
 	return nil
 }
@@ -107,25 +110,48 @@ func (x *Job) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Job) GetTxString() string {
+	if x != nil {
+		return x.TxString
+	}
+	return ""
+}
+
+func (x *Job) GetOrderId() []byte {
+	if x != nil {
+		return x.OrderId
+	}
+	return nil
+}
+
+func (x *Job) GetStatus() uint64 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
 var File_solver_job_job_proto protoreflect.FileDescriptor
 
 const file_solver_job_job_proto_rawDesc = "" +
 	"\n" +
 	"\x14solver/job/job.proto\x12\n" +
-	"solver.job\x1a\x17cosmos/orm/v1/orm.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x89\x02\n" +
+	"solver.job\x1a\x17cosmos/orm/v1/orm.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe7\x02\n" +
 	"\x03Job\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x19\n" +
-	"\bchain_id\x18\x02 \x01(\x04R\achainId\x12!\n" +
-	"\fblock_height\x18\x03 \x01(\x04R\vblockHeight\x12\x1f\n" +
+	"\bchain_id\x18\x02 \x01(\x04R\achainId\x12\x16\n" +
+	"\x06height\x18\x03 \x01(\x04R\x06height\x12\x1f\n" +
 	"\vevent_index\x18\x04 \x01(\x04R\n" +
-	"eventIndex\x12\x1d\n" +
+	"eventIndex\x122\n" +
+	"\x15deprecated_event_json\x18\x05 \x01(\fR\x13deprecatedEventJson\x129\n" +
 	"\n" +
-	"event_json\x18\x05 \x01(\fR\teventJson\x129\n" +
-	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt:9\xf2\x9eӎ\x033\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1b\n" +
+	"\ttx_string\x18\a \x01(\tR\btxString\x12\x19\n" +
+	"\border_id\x18\b \x01(\fR\aorderId\x12\x16\n" +
+	"\x06status\x18\t \x01(\x04R\x06status:=\xf2\x9eӎ\x037\n" +
 	"\x06\n" +
-	"\x02id\x10\x01\x12'\n" +
-	"!chain_id,block_height,event_index\x10\x02\x18\x01\x18\x02B\x8c\x01\n" +
+	"\x02id\x10\x01\x12+\n" +
+	"%chain_id,height,tx_string,event_index\x10\x03\x18\x01\x18\x02B\x8c\x01\n" +
 	"\x0ecom.solver.jobB\bJobProtoP\x01Z'github.com/omni-network/omni/solver/job\xa2\x02\x03SJX\xaa\x02\n" +
 	"Solver.Job\xca\x02\n" +
 	"Solver\\Job\xe2\x02\x16Solver\\Job\\GPBMetadata\xea\x02\vSolver::Jobb\x06proto3"

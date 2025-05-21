@@ -5,13 +5,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/solver/job"
-
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // asyncWorkFunc abstracts the async processing of the job.
@@ -26,14 +26,9 @@ func newAsyncWorkerFunc(
 	var active sync.Map // Stores active job IDs.
 	return func(ctx context.Context, j *job.Job) error {
 		chainName := namer(j.GetChainId())
-		elog, err := j.EventLog()
+		event, err := jobToEvent(j)
 		if err != nil {
 			return errors.Wrap(err, "parse event log [BUG]")
-		}
-
-		orderID, status, err := solvernet.ParseEvent(elog)
-		if err != nil {
-			return errors.Wrap(err, "parse event [BUG]")
 		}
 
 		proc, ok := procs[j.GetChainId()]
@@ -50,26 +45,26 @@ func newAsyncWorkerFunc(
 			workActive.WithLabelValues(chainName).Inc()
 			defer workActive.WithLabelValues(chainName).Dec()
 
-			ctx, span := startTrace(ctx, chainName, orderID, status)
+			ctx, span := startTrace(ctx, chainName, event.OrderID, event.Status)
 			defer span.End()
 
-			ctx = log.WithCtx(ctx, "height", elog.BlockNumber, "src_chain", chainName)
+			ctx = log.WithCtx(ctx, "height", event.Height, "src_chain", chainName)
 
 			backoff := expbackoff.New(ctx)
 			for {
-				err := processJobOnce(ctx, jobDB, proc, j.GetId(), elog)
+				err := processJobOnce(ctx, jobDB, proc, j.GetId(), event)
 				if ctx.Err() != nil {
 					return // Shutdown
 				} else if err == nil {
 					// Done
 					duration := time.Since(j.GetCreatedAt().AsTime()).Seconds()
-					workDuration.WithLabelValues(chainName, status.String()).Observe(duration)
+					workDuration.WithLabelValues(chainName, event.Status.String()).Observe(duration)
 
 					return
 				}
 
-				log.Warn(ctx, "Failed to process job (will retry)", err, "job_id", j.GetId(), "order_id", orderID, "status", status)
-				workErrors.WithLabelValues(chainName, status.String()).Inc()
+				log.Warn(ctx, "Failed to process job (will retry)", err, "job_id", j.GetId(), "order_id", event.OrderID, "status", event.Status)
+				workErrors.WithLabelValues(chainName, event.Status.String()).Inc()
 				backoff()
 			}
 		}()
@@ -78,7 +73,7 @@ func newAsyncWorkerFunc(
 	}
 }
 
-func processJobOnce(ctx context.Context, jobDB *job.DB, proc eventProcFunc, jobID uint64, elog types.Log) error {
+func processJobOnce(ctx context.Context, jobDB *job.DB, proc eventProcFunc, jobID uint64, e Event) error {
 	if ok, err := jobDB.Exists(ctx, jobID); err != nil {
 		return err
 	} else if !ok {
@@ -86,10 +81,29 @@ func processJobOnce(ctx context.Context, jobDB *job.DB, proc eventProcFunc, jobI
 		return nil
 	}
 
-	err := proc(ctx, elog)
+	err := proc(ctx, e)
 	if err != nil {
 		return err
 	}
 
 	return jobDB.Delete(ctx, jobID)
+}
+
+func jobToEvent(job *job.Job) (Event, error) {
+	orderID, err := cast.Array32(job.GetOrderId())
+	if err != nil {
+		return Event{}, errors.Wrap(err, "cast order id")
+	}
+
+	status, err := umath.ToUint8(job.GetStatus())
+	if err != nil {
+		return Event{}, errors.Wrap(err, "cast status")
+	}
+
+	return Event{
+		OrderID: orderID,
+		Status:  solvernet.OrderStatus(status),
+		Height:  job.GetHeight(),
+		Tx:      job.GetTxString(),
+	}, nil
 }

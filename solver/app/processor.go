@@ -6,35 +6,31 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
+// Event represents an order status change event emitted from on-chain tx.
+type Event struct {
+	OrderID OrderID
+	Status  solvernet.OrderStatus
+	Height  uint64
+	Tx      string
+}
+
 // eventProcFunc abstracts the event processing function.
-type eventProcFunc func(ctx context.Context, elog types.Log) error
+type eventProcFunc func(ctx context.Context, event Event) error
 
 // newEventProcFunc returns a new event processing function for the provided chain.
 // It handles all inbox contract events and driving order lifecycle.
 func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
-	return func(ctx context.Context, elog types.Log) error {
-		event, ok := solvernet.EventByTopic(elog.Topics[0])
-		if !ok {
-			return errors.New("unknown event [BUG]")
-		}
-
-		orderID, err := deps.ParseID(elog)
-		if err != nil {
-			return errors.Wrap(err, "parse id")
-		}
-
-		order, found, err := deps.GetOrder(ctx, chainID, orderID)
+	return func(ctx context.Context, e Event) error {
+		order, found, err := deps.GetOrder(ctx, chainID, e.OrderID)
 		if err != nil {
 			return errors.Wrap(err, "get order")
 		} else if !found {
 			return errors.New("order not found [BUG]")
 		}
 
-		statusOffset.WithLabelValues(deps.ProcessorName, event.Status.String()).Set(float64(order.Offset))
+		statusOffset.WithLabelValues(deps.ProcessorName, e.Status.String()).Set(float64(order.Offset))
 
 		ctx = log.WithCtx(ctx,
 			"order_id", order.ID.String(),
@@ -42,15 +38,15 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 			"status", order.Status,
 		)
 
-		if !event.Status.ValidTarget(order.Status) {
+		if !e.Status.ValidTarget(order.Status) {
 			// Invalid order transition can occur when RPCs return stale data, so just retry for now.
-			return errors.New("invalid order transition", "event_status", event.Status.String())
-		} else if event.Status != order.Status {
-			log.Debug(ctx, "Ignoring old order event (status already changed)", "event_status", event.Status.String())
+			return errors.New("invalid order transition", "event_status", e.Status)
+		} else if e.Status != order.Status {
+			log.Debug(ctx, "Ignoring old order event (status already changed)", "event_status", e.Status)
 			return nil
 		}
 
-		age := deps.InstrumentAge(ctx, chainID, elog.BlockNumber, order)
+		age := deps.InstrumentAge(ctx, chainID, e.Height, order)
 
 		log.Debug(ctx, "Processing order event", age)
 
@@ -63,7 +59,7 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 				return false, nil
 			}
 
-			log.InfoErr(ctx, "Rejecting order", err, "reason", reason.String())
+			log.InfoErr(ctx, "Rejecting order", err, "reason", reason)
 
 			// reject, log and count, swallow err
 			if err := deps.Reject(ctx, order, reason); err != nil {
@@ -78,7 +74,7 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 			return true, nil
 		}
 
-		switch event.Status {
+		switch e.Status {
 		case solvernet.StatusPending:
 			if filled, err := deps.DidFill(ctx, order); err != nil {
 				return errors.Wrap(err, "already filled")
@@ -88,7 +84,7 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 				break
 			}
 
-			deps.DebugPendingOrder(ctx, order, elog)
+			deps.DebugPendingOrder(ctx, order, e)
 
 			if didReject, err := maybeReject(); err != nil {
 				return err
@@ -111,7 +107,7 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 			return errors.New("unknown status [BUG]")
 		}
 
-		processedEvents.WithLabelValues(deps.ProcessorName, event.Status.String()).Inc()
+		processedEvents.WithLabelValues(deps.ProcessorName, e.Status.String()).Inc()
 
 		return nil
 	}

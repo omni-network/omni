@@ -147,6 +147,20 @@ func EthereumChainID(network ID) uint64 {
 	}
 }
 
+// SolanaChainID returns the solana chain ID for the given network.
+func SolanaChainID(network ID) uint64 {
+	switch network {
+	case Mainnet:
+		return evmchain.IDSolana
+	case Omega:
+		return evmchain.IDSolanaTest
+	case Staging:
+		return evmchain.IDSolanaTest
+	default:
+		return evmchain.IDSolanaLocal
+	}
+}
+
 // ChainName returns the chain name for the given ID or an empty string if it does not exist.
 func (n Network) ChainName(id uint64) string {
 	chain, _ := n.Chain(id)

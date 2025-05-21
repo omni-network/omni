@@ -41,6 +41,11 @@ func chainVerFromID(network netconf.ID, chainID uint64) xchain.ChainVersion {
 		return xchain.NewChainVersion(chainID, xchain.ConfMin2)
 	}
 
+	// For solana, we use confirmed as per docs
+	if chainID == netconf.SolanaChainID(network) {
+		return xchain.NewChainVersion(chainID, xchain.ConfConfirmed)
+	}
+
 	// On other chains, we only stream latest for now,
 	return xchain.NewChainVersion(chainID, xchain.ConfLatest)
 }
@@ -103,6 +108,12 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return err
 	}
+	// TODO(corver): Remove once all networks migrated
+	count, err := job.Migrate(ctx, jobDB)
+	if err != nil {
+		return errors.Wrap(err, "migrate job db")
+	}
+	log.Info(ctx, "Migrated job db", "count", count)
 
 	cursors, err := newCursors(db)
 	if err != nil {
@@ -302,8 +313,8 @@ func startProcessingEvents(
 		return "unknown"
 	}
 
-	debugFunc := func(ctx context.Context, order Order, elog types.Log) {
-		debugPendingData(ctx, targetName, order, elog)
+	debugFunc := func(ctx context.Context, order Order, event Event) {
+		debugPendingData(ctx, targetName, order, event)
 		debugOrderPrice(ctx, priceFunc, order)
 	}
 
@@ -397,7 +408,7 @@ func streamEventsForever(
 		err = xprov.StreamEventLogs(ctx, req, func(ctx context.Context, header *types.Header, elogs []types.Log) error {
 			for _, elog := range elogs {
 				// Insert each event/job into the jobDB, and start work async
-				j, err := jobDB.Insert(ctx, chainVer.ID, elog)
+				j, err := jobDB.InsertLog(ctx, chainVer.ID, elog)
 				if err != nil {
 					return err
 				}

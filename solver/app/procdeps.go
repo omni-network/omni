@@ -37,7 +37,7 @@ type procDeps struct {
 	ProcessorName     string
 	TargetName        func(PendingData) string
 	ChainName         func(chainID uint64) string
-	DebugPendingOrder func(ctx context.Context, order Order, elog types.Log)
+	DebugPendingOrder func(ctx context.Context, order Order, event Event)
 	InstrumentAge     func(ctx context.Context, chainID uint64, height uint64, order Order) slog.Attr
 }
 
@@ -310,7 +310,7 @@ func newOrderGetter(inboxContracts map[uint64]*bindings.SolverNetInbox) func(ctx
 	}
 }
 
-func debugPendingData(ctx context.Context, targetName targetFunc, order Order, elog types.Log) {
+func debugPendingData(ctx context.Context, targetName targetFunc, order Order, event Event) {
 	pendingData, err := order.PendingData()
 	if err != nil {
 		log.Warn(ctx, "Order not pending [BUG]", err)
@@ -335,6 +335,6 @@ func debugPendingData(ctx context.Context, targetName targetFunc, order Order, e
 		"dst_chain", evmchain.Name(pendingData.DestinationChainID),
 		"full_order_id", order.ID.Hex(),
 		"target", targetName(pendingData),
-		"tx", elog.TxHash.Hex(),
+		"tx", event.Tx,
 	)
 }
