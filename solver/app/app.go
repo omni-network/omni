@@ -154,7 +154,10 @@ func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
 	//nolint:contextcheck // False positive, inner context is used for shutdown
 	apiChan, apiCancel := serveAPI(cfg.APIAddr,
-		newCheckHandler(newChecker(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox)),
+		newCheckHandler(
+			newChecker(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
+			newTracer(backends, solverAddr, addrs.SolverNetOutbox),
+		),
 		newContractsHandler(addrs),
 		newQuoteHandler(newQuoter(priceFunc)),
 		newPriceHandler(wrapPriceHandlerFunc(priceFunc)),

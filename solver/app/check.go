@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+type traceFunc func(context.Context, types.CheckRequest) (map[string]any, error)
 type checkFunc func(context.Context, types.CheckRequest) error
 
 // newChecker returns a checkFunc that can be used to see if an order would be accepted or rejected.
@@ -71,6 +72,49 @@ func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, price
 		_, _ = rand.Read(orderID[:])
 
 		return checkFill(ctx, dstBackend, orderID, fillOriginData, nativeAmt(expenses), solverAddr, outboxAddr)
+	}
+}
+
+// newTracer returns a traceFunc that returns debug_traceCall of a check request.
+func newTracer(backends ethbackend.Backends, solverAddr, outboxAddr common.Address) traceFunc {
+	return func(ctx context.Context, req types.CheckRequest) (map[string]any, error) {
+		backend, err := backends.Backend(req.DestinationChainID)
+		if err != nil {
+			return nil, errors.Wrap(err, "unsupported destination chain", "chain_id", req.DestinationChainID)
+		}
+
+		fillOriginData, err := getFillOriginData(req)
+		if err != nil {
+			return nil, errors.Wrap(err, "pack fill origin data")
+		}
+
+		nativeAmt := bi.Zero()
+		for _, e := range req.Expenses {
+			if isNative(e) {
+				nativeAmt.Add(nativeAmt, e.Amount)
+			}
+		}
+
+		// Random orderID (since unfilled).
+		var orderID OrderID
+		_, _ = rand.Read(orderID[:])
+
+		msg, err := fillCallMsg(ctx, backend, orderID, fillOriginData, nativeAmt, solverAddr, outboxAddr)
+		if err != nil {
+			return nil, errors.Wrap(err, "create call msg")
+		}
+
+		var trace map[string]any
+		err = backend.CallContext(ctx, &trace, "debug_traceCall",
+			msg,
+			"latest",
+			map[string]any{"tracer": "callTracer"},
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "debug_traceCall")
+		}
+
+		return trace, nil
 	}
 }
 

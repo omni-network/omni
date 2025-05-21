@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"math/big"
 	"testing"
 
@@ -73,6 +74,8 @@ type checkTestCase struct {
 	req          types.CheckRequest
 	res          types.CheckResponse
 	testdata     bool
+	trace        map[string]any
+	traceErr     error
 }
 
 func toCheckTestCase(t *testing.T, tt orderTestCase) checkTestCase {
@@ -184,6 +187,44 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 		tests = append(tests, toCheckTestCase(t, tt))
 	}
 
+	find := func(rejectReason types.RejectReason) checkTestCase {
+		for _, tt := range tests {
+			if rejectReason == types.RejectNone && tt.res.Accepted {
+				return tt
+			}
+
+			if tt.res.RejectReason == rejectReason.String() {
+				return tt
+			}
+		}
+
+		t.Fatalf("test case not found for reject reason: %s", rejectReason)
+
+		return checkTestCase{}
+	}
+
+	// re-use tests cases for debug trace
+	accepted := find(types.RejectNone)
+	fillReverts := find(types.RejectDestCallReverts)
+
+	// adds debug == true to request
+	withDebug := func(res types.CheckRequest) types.CheckRequest {
+		res.Debug = true
+		return res
+	}
+
+	// adds trace to response
+	withTrace := func(res types.CheckResponse, trace map[string]any) types.CheckResponse {
+		res.Trace = trace
+		return res
+	}
+
+	// adds trace error to response
+	withTraceErr := func(res types.CheckResponse, err error) types.CheckResponse {
+		res.Trace = map[string]any{"error": err.Error()}
+		return res
+	}
+
 	additional := []checkTestCase{
 		{
 			name: "unsupported source chain",
@@ -206,6 +247,27 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 				Rejected:     true,
 				RejectReason: types.RejectSameChain.String(),
 			},
+		},
+		{
+			name:  "debug trace - accepted",
+			trace: map[string]any{"test": "trace"},
+			mock:  accepted.mock,
+			req:   withDebug(accepted.req),
+			res:   withTrace(accepted.res, map[string]any{"test": "trace"}),
+		},
+		{
+			name:  "debug trace - rejected",
+			trace: map[string]any{"test": "trace"},
+			mock:  fillReverts.mock,
+			req:   withDebug(fillReverts.req),
+			res:   withTrace(fillReverts.res, map[string]any{"test": "trace"}),
+		},
+		{
+			name:     "debug trace - error",
+			traceErr: errors.New("trace error"),
+			mock:     fillReverts.mock,
+			req:      withDebug(fillReverts.req),
+			res:      withTraceErr(fillReverts.res, errors.New("trace error")),
 		},
 	}
 
@@ -582,6 +644,11 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			},
 		},
 	}
+}
+
+// noopTracer os a no-op traceFunc.
+func noopTracer(_ context.Context, _ types.CheckRequest) (map[string]any, error) {
+	return map[string]any{}, nil
 }
 
 // testBackends returns test backends / clients required for test cases above.

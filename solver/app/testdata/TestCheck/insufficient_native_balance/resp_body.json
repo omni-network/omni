@@ -3,5 +3,6 @@
   "rejected": true,
   "rejectCode": 5,
   "rejectReason": "InsufficientInventory",
-  "rejectDescription": "insufficient balance [balance=0 ETH, expense=1 ETH]"
+  "rejectDescription": "insufficient balance [balance=0 ETH, expense=1 ETH]",
+  "trace": null
 }

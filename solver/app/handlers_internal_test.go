@@ -118,7 +118,7 @@ func TestCheckHandlerRequests(t *testing.T) {
 				}
 
 				return nil
-			})
+			}, noopTracer)
 
 			srv := httptest.NewServer(handlerAdapter(handler))
 

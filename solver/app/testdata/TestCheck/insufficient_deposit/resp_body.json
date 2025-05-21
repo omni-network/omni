@@ -3,5 +3,6 @@
   "rejected": true,
   "rejectCode": 4,
   "rejectReason": "InsufficientDeposit",
-  "rejectDescription": "insufficient deposit [deposit=1 ETH, min=1.003 ETH]"
+  "rejectDescription": "insufficient deposit [deposit=1 ETH, min=1.003 ETH]",
+  "trace": null
 }
