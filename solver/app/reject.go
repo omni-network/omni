@@ -102,7 +102,14 @@ func newShouldRejector(
 				return err
 			}
 
-			return checkFill(ctx, backend, order.ID, pendingData.FillOriginData, nativeAmt(expenses), solverAddr, outboxAddr)
+			return checkFill(ctx,
+				backend,
+				order.ID,
+				pendingData.FillOriginData,
+				nativeAmt(expenses),
+				solverAddr,
+				outboxAddr,
+				order.SourceChainID == order.pendingData.DestinationChainID)
 		}(ctx, order)
 
 		if err == nil { // No error, no rejection
@@ -188,6 +195,7 @@ func checkFill(
 	fillOriginData []byte,
 	nativeValue *big.Int,
 	solverAddr, outboxAddr common.Address,
+	sameChain bool,
 ) error {
 	msg, err := fillCallMsg(ctx, client, orderID, fillOriginData, nativeValue, solverAddr, outboxAddr)
 	if err != nil {
@@ -196,9 +204,20 @@ func checkFill(
 
 	returnData, err := client.CallContract(ctx, msg, nil)
 	if err != nil {
+		solErr := solvernet.DetectCustomError(err)
+
+		if sameChain && solErr == "inbox::OrderNotPending" {
+			// For same chain orders, the fill will revert when the order is
+			// "not pending" (not opened, already filled, etc). We use random
+			// IDs to check fills - these will always revert with
+			// OrderNotPending. So for the purpose of a "check", getting this
+			// error means the fill will succeed.
+			return nil
+		}
+
 		return &RejectionError{
 			Reason: types.RejectDestCallReverts,
-			Err:    errors.Wrap(err, "call contract", "return_data", hexutil.Encode(returnData), "solidity_err", solvernet.DetectCustomError(err)),
+			Err:    errors.Wrap(err, "call contract", "return_data", hexutil.Encode(returnData), "solidity_err", solErr),
 		}
 	}
 

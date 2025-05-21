@@ -169,6 +169,7 @@ func makeOrders() []TestOrder {
 
 	// swaps
 	{
+		//nolint:unparam // test code
 		swapOrder := func(addr common.Address, srcChain uint64, srcAsset tokens.Asset, dstChain uint64, dstAsset tokens.Asset) TestOrder {
 			amount := bi.Ether(2)
 			srcToken := mustTokenByAsset(srcChain, srcAsset)
@@ -194,6 +195,7 @@ func makeOrders() []TestOrder {
 			swapOrder(user, evmchain.IDMockL1, tokens.ETH, evmchain.IDOmniDevnet, tokens.OMNI),
 			swapOrder(user, evmchain.IDMockL1, tokens.OMNI, evmchain.IDMockL2, tokens.ETH),
 			swapOrder(user, evmchain.IDMockL1, tokens.USDC, evmchain.IDOmniDevnet, tokens.OMNI),
+			swapOrder(user, evmchain.IDMockL1, tokens.OMNI, evmchain.IDMockL1, tokens.ETH), // same chain swap
 		)
 	}
 	// erc20 OMNI -> native OMNI orders
@@ -270,19 +272,6 @@ func makeOrders() []TestOrder {
 		Deposit:       erc20Deposit(bi.Wei(1), addrs.Token),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedDestChain.String(),
-	})
-
-	// same chain for src and dest
-	orders = append(orders, TestOrder{
-		Owner:         user,
-		FillDeadline:  time.Now().Add(1 * time.Hour),
-		SourceChainID: evmchain.IDMockL1,
-		DestChainID:   evmchain.IDMockL1,
-		Expenses:      nativeExpense(bi.Wei(1)),
-		Calls:         nativeTransferCall(bi.Wei(1), user),
-		Deposit:       erc20Deposit(bi.Wei(1), addrs.Token),
-		ShouldReject:  true,
-		RejectReason:  solver.RejectSameChain.String(),
 	})
 
 	// unsupported expense token
