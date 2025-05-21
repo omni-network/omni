@@ -104,7 +104,7 @@ function Order() {
     destChainId: holesky.id,
     deposit: { amount: parseEther('0.1') },
     expense: {
-      amount: parseEther('0.199'),
+      amount: parseEther('0.099'),
       spender: zeroAddress,
     },
     calls: [{ target: account.address ?? '0x', value: parseEther('0.099') }],
