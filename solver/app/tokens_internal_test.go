@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/manifests"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
@@ -31,6 +32,12 @@ func genSupportedTokens(t *testing.T, network netconf.ID, networkName string, fi
 
 	metas, err := m.EVMChains()
 	require.NoError(t, err)
+
+	for _, chain := range solvernet.HLChains(network) {
+		meta, ok := evmchain.MetadataByID(chain.ID)
+		require.True(t, ok, "chain %d not found", chain.ID)
+		metas = append(metas, meta)
+	}
 
 	var lines []string
 	for _, meta := range metas {
