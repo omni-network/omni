@@ -50,6 +50,56 @@
     "target": "0.2 ETH"
    }
   },
+  "HYPE": {
+   "cold": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "create3-deployer": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "deployer": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "flowgen": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "hot": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "manager": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "monitor": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "relayer": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "solver": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "tester": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "upgrader": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "xcaller": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   }
+  },
   "MNT": {
    "cold": {
     "min": "2.104 MNT",
@@ -202,6 +252,56 @@
     "target": "0.2 ETH"
    }
   },
+  "HYPE": {
+   "cold": {
+    "min": "2.104 HYPE",
+    "target": "8.84 HYPE"
+   },
+   "create3-deployer": {
+    "min": "0.001 HYPE",
+    "target": "0.01 HYPE"
+   },
+   "deployer": {
+    "min": "0.02 HYPE",
+    "target": "0.2 HYPE"
+   },
+   "flowgen": {
+    "min": "0.01 HYPE",
+    "target": "1 HYPE"
+   },
+   "hot": {
+    "min": "2.104 HYPE",
+    "target": "8.84 HYPE"
+   },
+   "manager": {
+    "min": "0.02 HYPE",
+    "target": "0.2 HYPE"
+   },
+   "monitor": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "relayer": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "solver": {
+    "min": "1 HYPE",
+    "target": "3 HYPE"
+   },
+   "tester": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "upgrader": {
+    "min": "0.001 HYPE",
+    "target": "0.01 HYPE"
+   },
+   "xcaller": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   }
+  },
   "MNT": {
    "cold": {
     "min": "0 MNT",
@@ -352,6 +452,56 @@
    "xcaller": {
     "min": "0.02 ETH",
     "target": "0.2 ETH"
+   }
+  },
+  "HYPE": {
+   "cold": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "create3-deployer": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "deployer": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "flowgen": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "hot": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "manager": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "monitor": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "relayer": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "solver": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "tester": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "upgrader": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "xcaller": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
    }
   },
   "MNT": {

@@ -27,6 +27,7 @@ var (
 		tokens.OMNI: 500,
 		tokens.ETH:  1,
 		tokens.MNT:  1,
+		tokens.HYPE: 1,
 	}
 
 	// thresholdTiny is used for EOAs which are rarely used, mostly to deploy a handful of contracts per network.
@@ -97,6 +98,7 @@ var (
 		tokens.ETH:  true,
 		tokens.OMNI: true,
 		tokens.MNT:  true,
+		tokens.HYPE: true,
 	}
 
 	// coreOnlyRoles are roles that are only used (and funded) on omni core chains.
@@ -105,14 +107,19 @@ var (
 	// nonMainnetNetworks are networks that are not mainnet and are used for testing.
 	nonMainnetNetworks = []netconf.ID{netconf.Omega, netconf.Staging, netconf.Devnet}
 
+	// nonOmegaNetworks are networks that are not omega.
+	nonOmegaNetworks = []netconf.ID{netconf.Mainnet, netconf.Staging, netconf.Devnet}
+
 	// excludeRoles maps asset to a set of roles to exclude from funding.
 	excludeRoles = map[tokens.Asset]map[Role]bool{
-		tokens.MNT: set(coreOnlyRoles...),
+		tokens.MNT:  set(coreOnlyRoles...),
+		tokens.HYPE: set(coreOnlyRoles...),
 	}
 
 	// excludeNetworks maps asset to a set of networks to exclude from funding.
 	excludeNetworks = map[tokens.Asset]map[netconf.ID]bool{
-		tokens.MNT: set(nonMainnetNetworks...),
+		tokens.MNT:  set(nonMainnetNetworks...),
+		tokens.HYPE: set(nonOmegaNetworks...),
 	}
 )
 

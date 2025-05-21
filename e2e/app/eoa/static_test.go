@@ -16,13 +16,17 @@ import (
 
 //go:generate go test . -run=TestThresholdReference -golden
 
+var (
+	fundTokens = []tokens.Asset{tokens.ETH, tokens.OMNI, tokens.MNT, tokens.HYPE}
+)
+
 func TestThresholdReference(t *testing.T) {
 	t.Parallel()
 
 	resp := make(map[netconf.ID]map[string]map[eoa.Role]map[string]string)
 	for _, network := range []netconf.ID{netconf.Staging, netconf.Omega, netconf.Mainnet} {
 		resp[network] = make(map[string]map[eoa.Role]map[string]string)
-		for _, token := range []tokens.Asset{tokens.ETH, tokens.OMNI, tokens.MNT} {
+		for _, token := range fundTokens {
 			resp[network][token.Symbol] = make(map[eoa.Role]map[string]string)
 			for _, role := range eoa.AllRoles() {
 				resp[network][token.Symbol][role] = make(map[string]string)
