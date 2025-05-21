@@ -32,7 +32,7 @@ var hlChains = map[netconf.ID][]uint64{
 	// Testnet
 	netconf.Omega: {
 		// evmchain.IDBSCTestnet,
-		// evmchain.IDHyperEVMTestnet,
+		evmchain.IDHyperEVMTestnet,
 		evmchain.IDMegaETHTestnet,
 		// evmchain.IDPolygonAmoy,
 		// evmchain.IDPlumeTestnet,

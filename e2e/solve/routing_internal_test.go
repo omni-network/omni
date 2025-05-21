@@ -43,6 +43,11 @@ var (
 	}
 
 	// Hyperlane only.
+	hyperEVMTestnet = netconf.Chain{
+		ID:   evmchain.IDHyperEVMTestnet,
+		Name: "hyper_evm_testnet",
+	}
+
 	mantle = netconf.Chain{
 		ID:   evmchain.IDMantle,
 		Name: "mantle",
@@ -116,6 +121,7 @@ var (
 		ID: netconf.Omega,
 		Chains: []netconf.Chain{
 			omniOmega,
+			hyperEVMTestnet,
 			megaethTestnet,
 			holesky,
 			baseSepolia,
@@ -501,7 +507,6 @@ func makeRoutes() []TestRoute {
 					Provider: solvernet.ProviderNone,
 				},
 			},
-			// MegaETH is HL-only, so no route from Core-only
 			{
 				ChainID:           holesky.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
@@ -526,7 +531,6 @@ func makeRoutes() []TestRoute {
 					Provider: solvernet.ProviderCore,
 				},
 			},
-			// No route to sepolia (HL-only) from omniOmega (Core-only)
 			{
 				ChainID:           opSepolia.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
@@ -538,21 +542,28 @@ func makeRoutes() []TestRoute {
 		},
 	})
 
-	// Source: MegaETH Testnet (HL-only)
+	// Source: HyperEVM Testnet (HL-only)
 	routes = append(routes, TestRoute{
-		name:        "MegaETH Testnet (HL-only) to Omega Network",
-		sourceChain: megaethTestnet,
+		name:        "HyperEVM Testnet (HL-only) to Omega Network",
+		sourceChain: hyperEVMTestnet,
 		network:     omegaNetwork,
 		inboxAddr:   dummyInboxAddr,
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
-			// No route to omniOmega (Core-only) from HL-only
+			{
+				ChainID:           hyperEVMTestnet.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
 			{
 				ChainID:           megaethTestnet.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
-					Provider: solvernet.ProviderNone,
+					Provider: solvernet.ProviderHL,
 				},
 			},
 			{
@@ -598,7 +609,74 @@ func makeRoutes() []TestRoute {
 		},
 	})
 
-	// Source: Holesky (Core+HL) on Omega Network
+	// Source: MegaETH Testnet (HL-only)
+	routes = append(routes, TestRoute{
+		name:        "MegaETH Testnet (HL-only) to Omega Network",
+		sourceChain: megaethTestnet,
+		network:     omegaNetwork,
+		inboxAddr:   dummyInboxAddr,
+		outboxAddr:  dummyOutboxAddr,
+		expectedRoutes: []Route{
+			{
+				ChainID:           megaethTestnet.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderNone,
+				},
+			},
+			{
+				ChainID:           hyperEVMTestnet.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           holesky.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           baseSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           arbSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           sepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
+				ChainID:           opSepolia.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+		},
+	})
+
+	// Source: Holesky (Core+HL)
 	routes = append(routes, TestRoute{
 		name:        "Holesky (Core+HL) to Omega Network",
 		sourceChain: holesky,
@@ -615,6 +693,14 @@ func makeRoutes() []TestRoute {
 				},
 			},
 			{
+				ChainID:           hyperEVMTestnet.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
 				ChainID:           megaethTestnet.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
@@ -665,7 +751,7 @@ func makeRoutes() []TestRoute {
 		},
 	})
 
-	// Source: Base Sepolia (Core+HL) on Omega Network
+	// Source: Base Sepolia (Core+HL)
 	routes = append(routes, TestRoute{
 		name:        "Base Sepolia (Core+HL) to Omega Network",
 		sourceChain: baseSepolia,
@@ -682,6 +768,14 @@ func makeRoutes() []TestRoute {
 				},
 			},
 			{
+				ChainID:           hyperEVMTestnet.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
 				ChainID:           megaethTestnet.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
@@ -732,9 +826,9 @@ func makeRoutes() []TestRoute {
 		},
 	})
 
-	// Source: Arbitrum Sepolia (Core+HL) on Omega Network
+	// Source: Arb Sepolia (Core+HL)
 	routes = append(routes, TestRoute{
-		name:        "Arbitrum Sepolia (Core+HL) to Omega Network",
+		name:        "Arb Sepolia (Core+HL) to Omega Network",
 		sourceChain: arbSepolia,
 		network:     omegaNetwork,
 		inboxAddr:   dummyInboxAddr,
@@ -749,6 +843,14 @@ func makeRoutes() []TestRoute {
 				},
 			},
 			{
+				ChainID:           hyperEVMTestnet.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
+			{
 				ChainID:           megaethTestnet.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
@@ -799,7 +901,7 @@ func makeRoutes() []TestRoute {
 		},
 	})
 
-	// Source: Sepolia (HL-only) on Omega Network
+	// Source: Sepolia (HL-only)
 	routes = append(routes, TestRoute{
 		name:        "Sepolia (HL-only) to Omega Network",
 		sourceChain: sepolia,
@@ -807,7 +909,14 @@ func makeRoutes() []TestRoute {
 		inboxAddr:   dummyInboxAddr,
 		outboxAddr:  dummyOutboxAddr,
 		expectedRoutes: []Route{
-			// No route to omniOmega (Core-only) from sepolia (HL-only)
+			{
+				ChainID:           hyperEVMTestnet.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
+				},
+			},
 			{
 				ChainID:           megaethTestnet.ID,
 				OutboxAddrOnInbox: dummyOutboxAddr,
@@ -859,7 +968,7 @@ func makeRoutes() []TestRoute {
 		},
 	})
 
-	// Source: OP Sepolia (Core+HL) on Omega Network
+	// Source: OP Sepolia (Core+HL)
 	routes = append(routes, TestRoute{
 		name:        "OP Sepolia (Core+HL) to Omega Network",
 		sourceChain: opSepolia,
@@ -873,6 +982,14 @@ func makeRoutes() []TestRoute {
 				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
 					Inbox:    dummyInboxAddr,
 					Provider: solvernet.ProviderCore,
+				},
+			},
+			{
+				ChainID:           hyperEVMTestnet.ID,
+				OutboxAddrOnInbox: dummyOutboxAddr,
+				InboxConfigOnOutbox: bindings.ISolverNetOutboxInboxConfig{
+					Inbox:    dummyInboxAddr,
+					Provider: solvernet.ProviderHL,
 				},
 			},
 			{
