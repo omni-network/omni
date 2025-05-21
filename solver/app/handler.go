@@ -83,7 +83,7 @@ func newCheckHandler(checkFunc checkFunc, traceFunc traceFunc) Handler {
 
 				trace, err := traceFunc(ctx, *req)
 				if err != nil {
-					return map[string]any{"error": err.Error()}
+					return map[string]any{"error": errors.Format(err)}
 				}
 
 				return trace
