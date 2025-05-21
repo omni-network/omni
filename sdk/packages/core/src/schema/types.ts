@@ -1,16 +1,15 @@
-import type { Address, Hex } from 'viem'
-import { z, ZodType } from 'zod'
+import { z } from 'zod/v4-mini';
+import type { Address, Hex } from 'viem';
+export const hex = () =>
+  z.string().check(
+    z.regex(/^0x[0-9a-fA-F]+$/, {
+      message: 'Invalid hex string: must start with 0x and contain only hex characters',
+    })
+  ) as z.ZodMiniType<Hex>;
 
-export const hex = (): ZodType<Hex> =>
-  z
-  .string()
-  .refine((val): val is Hex => /^0x[0-9a-fA-F]+$/.test(val), {
-    message: 'Invalid hex string: must start with 0x and contain only hex characters',
-  }) as unknown as ZodType<Hex>
-
-export const address = (): ZodType<Address> =>
-  z
-  .string()
-  .refine((val): val is Address => /^0x[0-9a-fA-F]{40}$/.test(val), {
-    message: 'Invalid address: must start with 0x and be 20 bytes long',
-  }) as unknown as ZodType<Address>
+export const address = () =>
+  z.string().check(
+    z.regex(/^0x[0-9a-fA-F]{40}$/, {
+      message: 'Invalid address: must start with 0x and be 20 bytes long',
+    })
+  ) as z.ZodMiniType<Address>;

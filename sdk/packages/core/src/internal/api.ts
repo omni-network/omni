@@ -1,5 +1,5 @@
 import { version } from '../version.js'
-import { z } from 'zod'
+import { z } from 'zod/v4-mini'
 
 const jsonErrorSchema = z.object({
   code: z.number(),

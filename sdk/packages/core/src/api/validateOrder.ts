@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from 'zod/v4-mini'
 import { encodeFunctionData, zeroAddress } from 'viem'
 import { ValidateOrderError } from '../errors/base.js'
 import { fetchJSON } from '../internal/api.js'
@@ -10,15 +10,15 @@ import { toJSON } from '../utils/toJSON.js'
 
 const acceptedResponseSchema = z.object({
   accepted: z.literal(true),
-  rejectCode: z.literal(0).optional(),
-  rejected: z.literal(false).optional(),
-  rejectReason: z.literal("").optional(),
-  rejectDescription: z.literal("").optional(),
+  rejectCode: z.optional(z.literal(0)),
+  rejected: z.optional(z.literal(false)),
+  rejectReason: z.optional(z.literal('')),
+  rejectDescription: z.optional(z.literal('')),
 })
 
 const rejectedResponseSchema = z.object({
-  accepted: z.literal(false).optional(),
-  rejectCode: z.number().optional(),
+  accepted: z.optional(z.literal(false)),
+  rejectCode: z.optional(z.number()),
   rejected: z.literal(true),
   rejectReason: z.string(),
   rejectDescription: z.string(),

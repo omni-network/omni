@@ -1,4 +1,4 @@
-import { string, z } from 'zod'
+import { string, z } from 'zod/v4-mini'
 import { fromHex, Hex, zeroAddress } from 'viem'
 import { fetchJSON } from '../internal/api.js'
 import type { Environment } from '../types/config.js'
