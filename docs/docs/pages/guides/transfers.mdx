@@ -24,8 +24,8 @@ const desiredETH = parseEther('1'); // 1 ETH
 const quote = useQuote({
     srcChainId: opChainId,
     destChainId: ethChainId,
-    deposit: { isNative: false, token: opUSDC },
-    expense: { isNative: true, amount: desiredETH },
+    deposit: { token: opUSDC },
+    expense: { amount: desiredETH },
     mode: 'deposit', // Quote me the required deposit
     enabled: true,
 })
@@ -67,8 +67,7 @@ const desiredUSDC = parseUnits('1000', 6); // 1000 USDC
 const quote = useQuote({
   srcChainId: ethChainId,
   destChainId: opChainId,
-  deposit: { isNative: true },
-  expense: { isNative: false, token: opUSDC, amount: desiredUSDC },
+  expense: { token: opUSDC, amount: desiredUSDC },
   mode: 'deposit', // Quote me the required deposit
   enabled: true,
 })

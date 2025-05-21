@@ -219,8 +219,8 @@ function DepositComponent() {
     const quote = useQuote({
         srcChainId: baseSepolia.id,
         destChainId: holesky.id,
-        deposit: { isNative: false, token: baseSepoliaWSTETH, amount: parseEther("0.1") },
-        expense: { isNative: false, token: holeskyWSTETH },
+        deposit: { token: baseSepoliaWSTETH, amount: parseEther("0.1") },
+        expense: { token: holeskyWSTETH },
         mode: "expense",
         enabled: true,
     })
