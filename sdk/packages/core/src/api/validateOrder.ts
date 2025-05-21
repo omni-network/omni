@@ -119,24 +119,43 @@ const isValidateRes = (json: unknown): json is ValidationResponse => {
   )
 }
 
+// asserts a json response is AcceptedResult
+export function isAcceptedRes(json: unknown): json is AcceptedResult {
+  return acceptedResponseSchema.safeParse(json).success
+}
+
+// asserts a json response is RejectedResult
+export function isRejectedRes(
+  json: unknown,
+): json is z.infer<typeof rejectedResponseSchema> {
+  return rejectedResponseSchema.safeParse(json).success
+}
+
+// asserts a json response is ErrorResult
+export function isErrorRes(
+  json: unknown,
+): json is z.infer<typeof errorResponseSchema> {
+  return errorResponseSchema.safeParse(json).success
+}
+
 export type AcceptedResult = z.infer<typeof acceptedResponseSchema>
 
 export function assertAcceptedResult(
   res: ValidationResponse,
 ): asserts res is AcceptedResult {
   // if the response is accepted
-  if (acceptedResponseSchema.safeParse(res).success) {
+  if (isAcceptedRes(res)) {
     return
   }
 
   // if the response is an error
-  if (errorResponseSchema.safeParse(res).success) {
+  if (isErrorRes(res)) {
     const { error } = errorResponseSchema.parse(res)
     throw new ValidateOrderError(error.message, `Code ${error.code}`)
   }
 
   // if the response is rejected
-  if (rejectedResponseSchema.safeParse(res).success) {
+  if (isRejectedRes(res)) {
     const { rejectDescription, rejectReason } =
       rejectedResponseSchema.parse(res)
     throw new ValidateOrderError(
