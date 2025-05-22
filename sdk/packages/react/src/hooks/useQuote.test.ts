@@ -136,6 +136,7 @@ test('behaviour: quote is error if call throws', async () => {
   const spy = vi.spyOn(core, 'getQuote').mockRejectedValue(error)
 
   const { result } = renderQuoteHook({ ...params, enabled: true }, queryClient)
+  expect(spy).toHaveBeenCalledTimes(1)
 
   await waitFor(() => {
     expect(result.current.query.isLoading).toBe(false)
@@ -144,7 +145,4 @@ test('behaviour: quote is error if call throws', async () => {
       expect(result.current.error).toBe(error)
     }
   })
-
-  // Ensure the call has only be made once
-  expect(spy).toHaveBeenCalledTimes(1)
 })
