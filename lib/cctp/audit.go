@@ -348,11 +348,6 @@ func sanityCheck(stored, streamed types.MsgSendUSDC) error {
 		return errors.New("message hash changed post marked mint", "tx_hash", stored.TxHash, "stored", stored.MessageHash, "streamed", stored.MessageHash)
 	}
 
-	// Same message hash, but different content
-	if stored.MessageHash == streamed.MessageHash && !stored.Equals(withStatus(streamed, stored.Status)) {
-		return errors.New("message same for different content", "tx_hash", stored.TxHash, "diff", stored.Diff(streamed))
-	}
-
 	// Source chain ID mismatch
 	if stored.SrcChainID != streamed.SrcChainID {
 		return errors.New("source chain ID mismatch", "tx_hash", stored.TxHash, "stored", stored.SrcChainID, "streamed", streamed.SrcChainID)
