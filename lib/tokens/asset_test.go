@@ -13,7 +13,7 @@ func TestDecimals(t *testing.T) {
 	t.Parallel()
 
 	for _, asset := range tokens.UniqueAssets() {
-		if asset == tokens.USDC || asset == tokens.USDT {
+		if asset == tokens.USDC || asset == tokens.USDT || asset == tokens.USDT0 {
 			require.Equal(t, uint(6), asset.Decimals)
 		} else {
 			require.Equal(t, uint(18), asset.Decimals, "unexpected decimals for %s", asset.Symbol)
