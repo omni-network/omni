@@ -47,22 +47,14 @@ The hook accepts a configuration object with the following properties.
 | `enabled`     | `boolean`                              | No       | Defaults to `true`. Set to `false` to disable fetching the quote.                                                                          |
 | `queryOpts`     | `UseQueryOptions<Quote, QuoteError>` | No       | React query options, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
 
-## Types
-
-### Quote
-
-```typescript
-export type Quote = {
-  deposit: { token: Address; amount: bigint }
-  expense: { token: Address; amount: bigint }
-}
-```
-
-Describes a successful quote return.
 
 ## Return
 
-`useQuote` returns a quote and the query object from [`@tanstack/react-query`](https://tanstack.com/query/latest/docs/react/reference/useQuery). Consult their documentation for all available properties.
+### query
+
+`UseQueryResult<Quote, FetchJSONError>`
+
+A the query object from [`@tanstack/react-query`](https://tanstack.com/query/latest/docs/react/reference/useQuery) - consult their documentation for all available properties.
 
 ### isPending
 
@@ -123,6 +115,19 @@ if (quote.isSuccess) {
 }
 ```
 
+Or to quote for a native deposit:
+
+```tsx
+const quote = useQuote({
+  srcChainId: baseSepolia.id,
+  destChainId: holesky.id,
+  deposit: { amount: parseEther("0.1") }, // for native you can omit token or supply zero address
+  // when native and mode === 'expense', you can omit expense entirely
+  mode: "expense", // quote expense amount
+  enabled: true,
+})
+```
+
 ### Quote Deposit
 
 To find out how much `wstETH` needs to be deposited on Base Sepolia to spend exactly 0.1 `wstETH` on Holesky:
@@ -140,4 +145,17 @@ const quote = useQuote({
 if (quote.isSuccess) {
   console.log(`Spending ${quote.data.expense.amount} requires depositing ${quote.data.deposit.amount} on source`);
 }
+```
+
+Or to quote for a native expense:
+
+```tsx
+const quote = useQuote({
+  srcChainId: baseSepolia.id,
+  destChainId: holesky.id,
+  expense: { amount: parseEther("0.1") }, // for native you can omit token or supply zero address
+  // when native and mode === 'deposit', you can omit deposit entirely
+  mode: "deposit", // quote expense amount
+  enabled: true,
+})
 ```

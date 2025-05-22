@@ -1,9 +1,11 @@
 ---
 sidebar_position: 2
-title: Transfers
+title: Cross Chain Transfers
 ---
 
-# Transfers
+import { Callout } from 'vocs/components'
+
+# Cross Chain Transfers
 
 This guide demonstrates how to open orders for ERC20 and native token transfers. Both can be paid for with any supported token on the source chain.
 
@@ -51,10 +53,13 @@ const order = useOrder({
 // Call order.open() to open
 ```
 
-
 ## ERC20 Transfers
 
 ERC20 transfers work similarly. Though instead of requesting a call with no calldata and `target == recipient`, call the `ERC20.transfer` function on the desination token directly. Consider the reverse of the example above - using ETH on Ethereum to pay for a 1000 USDC transfer on Optimism.
+
+<Callout type="info">
+  Don't forget, you'll need to approve the inbox contract to spend the user's erc20 tokens. See our basic deposit example [here](/sdk/getting-started/basic-deposit).
+</Callout>
 
 ### 1. Get Quote
 

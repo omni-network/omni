@@ -1,0 +1,49 @@
+---
+sidebar_position: 3
+title: useOmniContracts
+---
+
+import { Callout } from 'vocs/components'
+
+# `useOmniContracts`
+
+The `useOmniContracts` hook can be used to obtain contract addresses. The environment is controlled based on what you set in your `OmniProvider` (testnet or mainnet).
+
+<Callout type="info">
+  You'll need this hook to fetch and approve the inbox contract address if you're deposit token is an ERC20.
+</Callout>
+
+
+## Usage
+
+`import { useOmniContracts } from '@omni-network/react'`
+
+```tsx
+import { useOmniContracts } from '@omni-network/react'
+
+function Component() {
+    const contracts = useOmniContracts()
+}
+```
+
+## Parameters
+
+### queryOpts
+
+`Omit<UseQueryOptions, 'queryKey' | 'queryFn' | 'enabled'>`
+
+Optional query options for the react query fetching assets - consult [`@tanstack/react-query`](https://tanstack.com/query/latest/docs/react/reference/useQuery) for more information.
+
+## Return
+
+### query
+
+`UseQueryResult<OmniContracts, FetchJSONError>`
+
+The return is a query object from [`@tanstack/react-query`](https://tanstack.com/query/latest/docs/react/reference/useQuery) - consult their documentation for all available properties.
+
+### data
+
+`OmniContracts | undefined`
+
+Contains the addresses of the Omni contracts.

@@ -57,19 +57,22 @@ export default defineConfig({
             { text: 'With React', link: '/sdk/getting-started/react' },
             { text: 'Without framework', link: '/sdk/getting-started/core' },
             { text: 'Basic Deposit', link: '/sdk/getting-started/basic-deposit' },
-            { text: 'Template', link: '/sdk/getting-started/template' },
           ],
         },
         { text: 'Supported Assets', link: '/sdk/supported-assets' },
         {
           text: 'React hooks',
+          collapsed: true,
           items: [
             { text: 'useQuote', link: '/sdk/hooks/useQuote' },
             { text: 'useOrder', link: '/sdk/hooks/useOrder' },
+            { text: 'useOmniContracts', link: '/sdk/hooks/useOmniContracts' },
+            { text: 'useOmniAssets', link: '/sdk/hooks/useOmniAssets' },
           ],
         },
         {
           text: 'Core functions',
+          collapsed: true,
           items: [
             {
               text: 'getContracts',
@@ -115,11 +118,10 @@ export default defineConfig({
           text: 'Advanced Guides',
           collapsed: true,
           items: [
-            { text: 'Transfers', link: '/guides/transfers' },
+            { text: 'Cross Chain Transfers', link: '/guides/transfers' },
             { text: 'Multi-Step Deposit', link: '/guides/multistep-deposit' },
             { text: 'Contracts without onBehalfOf', link: '/guides/contracts-without-onbehalfof' },
             { text: 'Symbiotic', link: '/guides/examples/symbiotic' },
-            { text: 'EigenLayer', link: '/guides/examples/eigenlayer' },
             { text: 'Rocketpool', link: '/guides/examples/rocketpool' },
           ],
         },
