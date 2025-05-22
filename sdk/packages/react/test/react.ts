@@ -24,13 +24,14 @@ export function createWrapper<TComponent extends React.FunctionComponent<any>>(
   Wrapper: TComponent,
   props: Parameters<TComponent>[0],
   web3Config: ReturnType<typeof createConfig> = defaultWeb3Config,
+  client: QueryClient = queryClient,
 ) {
   return function CreatedWrapper({
     children,
   }: { children?: React.ReactNode | undefined }) {
     return createElement(
       QueryClientProvider,
-      { client: queryClient },
+      { client },
       createElement(
         WagmiProvider,
         {
@@ -49,9 +50,11 @@ export function renderHook<Result, Props>(
     mockContractsCall?: boolean
     mockContractsCallFailure?: boolean
     env?: 'devnet' | 'testnet'
+    queryClient?: QueryClient
   },
 ): RenderHookResult<Result, Props> {
-  queryClient.clear()
+  const client = options?.queryClient ?? queryClient
+  client.clear()
 
   if (options?.mockContractsCall) {
     mockContractsQuery()
@@ -70,9 +73,12 @@ export function renderHook<Result, Props>(
   }
 
   return _renderHook(render, {
-    wrapper: createWrapper(OmniProvider, {
-      env: options?.env ?? 'devnet',
-    }),
+    wrapper: createWrapper(
+      OmniProvider,
+      { env: options?.env ?? 'devnet' },
+      defaultWeb3Config,
+      client,
+    ),
     ...options,
   })
 }
