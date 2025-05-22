@@ -69,6 +69,13 @@ var (
 		CoingeckoID: "tether",
 	}
 
+	USDT0 = Asset{
+		Symbol:      "USDT0",
+		Name:        "Tether Zero",
+		Decimals:    6,
+		CoingeckoID: "usdt0",
+	}
+
 	BNB = Asset{
 		Symbol:      "BNB",
 		Name:        "BNB",

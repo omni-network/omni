@@ -10,6 +10,9 @@
    "USDT": {
     "min": "5000 USDT"
    },
+   "USDT0": {
+    "min": "0 USDT0"
+   },
    "WETH": {
     "min": "0 WETH"
    }
@@ -65,6 +68,9 @@
    },
    "USDT": {
     "min": "5000 USDT"
+   },
+   "USDT0": {
+    "min": "0 USDT0"
    },
    "WETH": {
     "min": "0 WETH"

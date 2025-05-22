@@ -75,6 +75,11 @@ func TestGenTokens(t *testing.T) {
 		usdt(evmchain.IDArbitrumOne, addr("0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9")),
 		usdt(evmchain.IDOptimism, addr("0x94b008aA00579c1307B0EF2c499aD98a8ce58e58")),
 
+		// USDT0 (mainnet)
+		usdt0(evmchain.IDArbitrumOne, addr("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9")),
+		usdt0(evmchain.IDOptimism, addr("0x01bFF41798a0BcF287b996046Ca68b395DbC1071")),
+		usdt0(evmchain.IDHyperEVM, addr("0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb")),
+
 		// ERC20 OMNI
 		omniERC20(netconf.Mainnet),
 		omniERC20(netconf.Omega),
@@ -238,6 +243,15 @@ func usdt(chainID uint64, addr common.Address) tokens.Token {
 	}
 }
 
+func usdt0(chainID uint64, addr common.Address) tokens.Token {
+	return tokens.Token{
+		Asset:      tokens.USDT0,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    addr,
+	}
+}
+
 func mustChainClass(chainID uint64) tokens.ChainClass {
 	class, err := chainClass(chainID)
 	if err != nil {
@@ -255,7 +269,8 @@ func chainClass(chainID uint64) (tokens.ChainClass, error) {
 		evmchain.IDArbitrumOne,
 		evmchain.IDBase,
 		evmchain.IDOptimism,
-		evmchain.IDMantle:
+		evmchain.IDMantle,
+		evmchain.IDHyperEVM:
 		return tokens.ClassMainnet, nil
 	case
 		evmchain.IDOmniOmega,
