@@ -53,7 +53,6 @@ const destTokenAddress = '0x8d09a4502Cc8Cf1547aD300E066060D043f6982D' as const; 
 // Chain IDs
 const sourceChainId = baseSepolia.id;
 const destChainId = holesky.id;
-// ------------------------------------------------------
 ```
 
 2.  **Create the React Component:**
@@ -64,16 +63,8 @@ function Deposit() {
   const [depositAmountStr, setDepositAmountStr] = useState<string>('0.1');
   const { address: userAddress, isConnected } = useAccount();
 
-  // Convert input string to bigint, handle potential errors
-  const depositAmount = React.useMemo(() => {
-    try {
-      return parseEther(depositAmountStr as `${number}`);
-    } catch {
-      return 0n; // Handle invalid input
-    }
-  }, [depositAmountStr]);
-
-  // ... (hooks will go here)
+  // Convert input string to bigint, handle potential errors / empty deposit amount
+  const depositAmount = parseEther(depositAmountStr as `${number}`);
 
   return (
     <div>
@@ -88,8 +79,6 @@ function Deposit() {
       </label>
 
       {!isConnected && <p>Please connect your wallet.</p>}
-
-      {/* ... (Quote and Order logic will go here) ... */}
     </div>
   );
 }
@@ -104,26 +93,26 @@ function Deposit() {
     srcChainId: sourceChainId,
     destChainId: destChainId,
     deposit: {
-      token: sourceTokenAddress,
+      token: sourceTokenAddress, // If native, you can omit
       amount: depositAmount // Use the state variable
     },
     expense: {
-      token: destTokenAddress
+      token: destTokenAddress // If native, you can omit
     },
     mode: "expense", // We specify deposit, quote the expense
     enabled: isConnected && depositAmount > 0n, // Only run if connected and amount > 0
   });
 
   // Get the exact amounts from the successful quote
-  const quotedDepositAmt = quote.data?.deposit.amount ?? 0n;
-  const quotedExpenseAmt = quote.data?.expense.amount ?? 0n;
+  const quotedDepositAmt = quote.isSuccess ? quote.deposit.amount : 0n;
+  const quotedExpenseAmt = quote.isSuccess ? quote.expense.amount : 0n;
 ```
 
 4.  **Implement `useOrder`:**
     Configure the order using the amounts from the successful quote and define the destination call.
 
 ```tsx
-  // Inside BasicDepositForm component
+  // Inside your react component
   const order = useOrder({
     srcChainId: sourceChainId,
     destChainId: destChainId,
@@ -150,7 +139,7 @@ function Deposit() {
   });
 
   const {
-    open: openOrder, // Rename to avoid conflict if needed
+    open: openOrder,
     status: orderStatus,
     validation,
     isReady,
@@ -159,18 +148,17 @@ function Deposit() {
   } = order;
 
   // Determine if the button should be enabled
-  const canOpen = isReady && validation?.status === 'accepted' && !isTxPending;
+  const canOpen = isReady && validation?.status === 'accepted'
 ```
 
 5.  **Add UI Elements for Feedback and Action:**
     Display quote status, validation status, order status, and the deposit button.
 
 ```tsx
-  // Inside the return statement of BasicDepositForm
+  // Inside your react component
   return (
     <div>
       {/* ... Input field ... */}
-
       {isConnected && depositAmount > 0n && (
         <>
           {quote.isLoading && <p>Fetching quote...</p>}
@@ -190,14 +178,13 @@ function Deposit() {
 
           <button
             disabled={!canOpen}
-            onClick={() => openOrder?.()} // Call the open function from useOrder
-            style={{ marginTop: '10px' }}
+            onClick={() => openOrder?.()}
           >
             {isTxPending ? 'Opening Order...' : 'Deposit via Omni'}
           </button>
 
-          <p style={{ marginTop: '10px' }}>Order Status: <strong>{orderStatus}</strong></p>
-          {orderError && <p style={{ color: 'red' }}>Order Error: {orderError.message}</p>}
+          <p>Order Status: <strong>{orderStatus}</strong></p>
+          {orderError && <p>Order Error: {orderError.message}</p>}
         </>
       )}
     </div>
@@ -207,11 +194,32 @@ function Deposit() {
 export default BasicDepositForm;
 ```
 
+6.  **If deposit is ERC20, approve inbox contract to spend:**
+    The inbox contract will need approval to spend the users erc20 tokens.
+
+```tsx
+
+const inboxAddress = useOmniContracts().data?.inbox
+
+const approveERC20 = async () => {
+  // check if the allowance is < deposit amount
+  if (deposit.token !== zeroAddress && allowance < quotedDepositAmt) {
+    // call your approve function
+    await approveERC20({
+      token: deposit.token,
+      amount: deposit.amount,
+      spender: inboxAddress,
+    })
+  }
+}
+
+```
+
 ## Example
 
 ```tsx
 import React, { useState, useMemo } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 import { useQuote, useOrder } from '@omni-network/react';
 import { parseEther, formatEther, type Abi, type Address, zeroAddress } from 'viem';
 import { baseSepolia, holesky } from 'viem/chains';
@@ -238,7 +246,8 @@ const destChainId = holesky.id;
 
 function BasicDepositForm() {
   const [depositAmountStr, setDepositAmountStr] = useState<string>('0.1');
-  const { address: userAddress, isConnected } = useAccount();
+  const { address: userAddress, isConnected, chainId } = useAccount();
+  const { switchChainAsync } = useSwitchChain()
 
   const depositAmount = useMemo(() => {
     try {
@@ -292,7 +301,27 @@ function BasicDepositForm() {
     error: orderError,
   } = order;
 
-  const canOpen = isReady && validation?.status === 'accepted' && !isTxPending;
+  const canOpen = isReady && validation?.status === 'accepted'
+
+  const open = async () => {
+    if (!canOpen) return
+
+    if (chainId !== sourceChainId) {
+      // switch chain if needed
+      await switchChainAsync({ chainId: sourceChainId })
+    }
+
+    if (sourceTokenAddress !== zeroAddress && allowance < quotedDepositAmt) {
+      // call your approve function
+      await approveERC20({
+        token: deposit.token,
+        amount: deposit.amount,
+        spender: inboxAddress,
+      })
+    }
+
+    order.open()
+  }
 
   return (
     <div>
@@ -310,7 +339,7 @@ function BasicDepositForm() {
       {!isConnected && <p>Please connect your wallet.</p>}
 
       {isConnected && depositAmount > 0n && (
-        <div style={{ marginTop: '15px' }}>
+        <div>
           {quote.isLoading && <p>Fetching quote...</p>}
           {quote.isError && <p>Quote Error: {quote.error.message}</p>}
           {quote.isSuccess && (
@@ -328,14 +357,13 @@ function BasicDepositForm() {
 
           <button
             disabled={!canOpen}
-            onClick={() => openOrder?.()}
-            style={{ marginTop: '10px' }}
+            onClick={() => open()}
           >
             {isTxPending ? 'Opening Order...' : 'Deposit via Omni'}
           </button>
 
-          <p style={{ marginTop: '10px' }}>Order Status: <strong>{orderStatus}</strong></p>
-          {orderError && <p style={{ color: 'red' }}>Order Error: {orderError.message}</p>}
+          <p>Order Status: <strong>{orderStatus}</strong></p>
+          {orderError && <p>Order Error: {orderError.message}</p>}
         </div>
       )}
     </div>
