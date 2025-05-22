@@ -32,6 +32,7 @@ var (
 		staking,
 		morpho,
 		cygnus,
+		gearbox,
 	}
 
 	// dynamic is the list of dynamic targets, see RefreshForever.
