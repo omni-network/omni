@@ -11,7 +11,6 @@ import (
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -88,9 +87,6 @@ func TestEventProcessor(t *testing.T) {
 			actual := ignored
 
 			deps := procDeps{
-				ParseID: func(log types.Log) (OrderID, error) {
-					return OrderID(log.Topics[1]), nil // Return second topic as order ID
-				},
 				GetOrder: func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error) {
 					return Order{
 						ID:     id,
@@ -128,12 +124,7 @@ func TestEventProcessor(t *testing.T) {
 
 					return nil
 				},
-				SetCursor: func(ctx context.Context, c uint64, h uint64) error {
-					require.EqualValues(t, chainID, c)
-					require.EqualValues(t, height, h)
-
-					return nil
-				},
+				ProcessorName:     func(uint64) string { return "" },
 				ChainName:         func(uint64) string { return "" },
 				TargetName:        func(PendingData) string { return "" },
 				DebugPendingOrder: func(context.Context, Order, Event) {},

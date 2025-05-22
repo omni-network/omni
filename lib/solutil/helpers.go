@@ -2,8 +2,10 @@ package solutil
 
 import (
 	"context"
+	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 
@@ -70,4 +72,32 @@ func ChainID(ctx context.Context, cl *rpc.Client) (uint64, error) {
 	}
 
 	return evmchain.IDSolanaLocal, nil
+}
+
+func NativeBalanceAt(ctx context.Context, cl *rpc.Client, addr solana.PublicKey) (*big.Int, error) {
+	resp, err := cl.GetBalance(ctx, addr, rpc.CommitmentConfirmed)
+	if err != nil {
+		return nil, errors.Wrap(WrapRPCError(err, "getBalance"), "get balance")
+	}
+
+	return bi.N(resp.Value), nil
+}
+
+func TokenBalanceAt(ctx context.Context, cl *rpc.Client, mint, wallet solana.PublicKey) (*big.Int, error) {
+	tokenAccount, _, err := solana.FindAssociatedTokenAddress(wallet, mint)
+	if err != nil {
+		return nil, errors.Wrap(err, "find ata")
+	}
+
+	resp, err := cl.GetTokenAccountBalance(ctx, tokenAccount, rpc.CommitmentConfirmed)
+	if err != nil {
+		return nil, errors.Wrap(WrapRPCError(err, "getTokenAccountBalance"), "get token balance")
+	}
+
+	bal, ok := new(big.Int).SetString(resp.Value.Amount, 10)
+	if !ok {
+		return nil, errors.New("invalid balance", "amount", resp.Value.Amount)
+	}
+
+	return bal, nil
 }

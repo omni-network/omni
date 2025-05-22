@@ -251,7 +251,7 @@ func (p Provider) stream(
 			callbackLatency.WithLabelValues(workerName, srcChain).Observe(d.Seconds())
 		},
 		StartTrace: func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span) {
-			return tracer.StartChainHeight(ctx, p.network, srcChain, height,
+			return tracer.StartChainHeight(ctx, p.network.String(), srcChain, height,
 				path.Join("cprovider", spanName),
 				trace.WithAttributes(attribute.String("worker", workerName)),
 			)

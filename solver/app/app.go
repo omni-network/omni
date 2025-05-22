@@ -21,6 +21,7 @@ import (
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tracer"
+	"github.com/omni-network/omni/lib/unibackend"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/solver/job"
@@ -56,7 +57,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	buildinfo.Instrument(ctx)
 
-	tracerID := tracer.Identifiers{Network: cfg.Network, Service: "solver"}
+	tracerID := tracer.Identifiers{Network: cfg.Network.String(), Service: "solver"}
 	stopTracer, err := tracer.Init(ctx, tracerID, cfg.Tracer)
 	if err != nil {
 		return err
@@ -96,6 +97,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 	backends.StartIdleConnectionClosing(ctx)
+	uniBackends := unibackend.EthBackends(backends)
 
 	xprov := xprovider.New(network, backends.Clients(), nil)
 
@@ -155,7 +157,7 @@ func Run(ctx context.Context, cfg Config) error {
 	//nolint:contextcheck // False positive, inner context is used for shutdown
 	apiChan, apiCancel := serveAPI(cfg.APIAddr,
 		newCheckHandler(
-			newChecker(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
+			newChecker(uniBackends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
 			newTracer(backends, solverAddr, addrs.SolverNetOutbox),
 		),
 		newContractsHandler(addrs),
@@ -316,6 +318,10 @@ func startProcessingEvents(
 		return "unknown"
 	}
 
+	procName := func(chainID uint64) string {
+		return network.ChainVersionName(chainVerFromID(network.ID, chainID))
+	}
+
 	debugFunc := func(ctx context.Context, order Order, event Event) {
 		debugPendingData(ctx, targetName, order, event)
 		debugOrderPrice(ctx, priceFunc, order)
@@ -329,30 +335,25 @@ func startProcessingEvents(
 	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, ageCache.InstrumentDestFilled)
 	updatePnL := newUpdatePnLFunc(pricer, network.ChainName)
 
+	uniBackends := unibackend.EthBackends(backends)
+
+	deps := procDeps{
+		GetOrder:          newOrderGetter(inboxContracts),
+		ShouldReject:      newShouldRejector(uniBackends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
+		DidFill:           newDidFiller(outboxContracts),
+		Reject:            newRejector(inboxContracts, backends, solverAddr, updatePnL),
+		Fill:              newFiller(outboxContracts, uniBackends, solverAddr, addrs.SolverNetOutbox, filledPnL),
+		Claim:             newClaimer(inboxContracts, backends, solverAddr, updatePnL),
+		ChainName:         network.ChainName,
+		ProcessorName:     procName,
+		TargetName:        targetName,
+		InstrumentAge:     ageCache.InstrumentAge,
+		DebugPendingOrder: debugFunc,
+	}
+
 	// Create all event processing functions per chain
 	procs := make(map[uint64]eventProcFunc)
 	for _, chainID := range inboxChains {
-		chainVer := chainVerFromID(network.ID, chainID)
-		cursorSetter := func(ctx context.Context, _ uint64, height uint64) error {
-			return cursors.Set(ctx, chainVer, height)
-		}
-
-		deps := procDeps{
-			ParseID:           newIDParser(),
-			GetOrder:          newOrderGetter(inboxContracts),
-			ShouldReject:      newShouldRejector(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
-			DidFill:           newDidFiller(outboxContracts),
-			Reject:            newRejector(inboxContracts, backends, solverAddr, updatePnL),
-			Fill:              newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
-			Claim:             newClaimer(inboxContracts, backends, solverAddr, updatePnL),
-			SetCursor:         cursorSetter,
-			ChainName:         network.ChainName,
-			ProcessorName:     network.ChainVersionName(chainVer),
-			TargetName:        targetName,
-			InstrumentAge:     ageCache.InstrumentAge,
-			DebugPendingOrder: debugFunc,
-		}
-
 		procs[chainID] = newEventProcFunc(deps, chainID)
 	}
 

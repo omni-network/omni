@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/uni"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/gagliardetto/solana-go"
 
 	_ "embed"
 )
@@ -22,17 +25,34 @@ const (
 )
 
 // Token represents a deployed instance of an Asset on a specific blockchain.
-// It includes both ERC20 and native tokens.
+// It includes ERC20 and native and solana tokens.
 type Token struct {
 	Asset
 	ChainID    uint64
 	ChainClass ChainClass
-	Address    common.Address // empty if native
+	Address    common.Address   // zero if native eth or solana
+	SolAddress solana.PublicKey `json:"SolAddress,omitempty"` // zero if native sol or erc20
 	IsMock     bool
 }
 
 func (t Token) IsNative() bool {
-	return t.Address == NativeAddr
+	return t.UniAddress().IsZero()
+}
+
+func (t Token) UniAddress() uni.Address {
+	if uni.IsSolChain(t.ChainID) {
+		return uni.SolAddress(t.SolAddress)
+	}
+
+	return uni.EthAddress(t.Address)
+}
+
+func (t Token) IsSol() bool {
+	return t.UniAddress().IsSol()
+}
+
+func (t Token) IsEth() bool {
+	return t.UniAddress().IsEth()
 }
 
 func (t Token) Is(asset Asset) bool {
@@ -93,7 +113,18 @@ func Native(chainID uint64) (Token, bool) {
 // ByAddress returns the token with the given address and chain ID.
 func ByAddress(chainID uint64, addr common.Address) (Token, bool) {
 	for _, t := range tokens {
-		if t.ChainID == chainID && t.Address == addr {
+		if t.ChainID == chainID && t.UniAddress().EqualsEth(addr) {
+			return t, true
+		}
+	}
+
+	return Token{}, false
+}
+
+// ByUniAddress returns the token with the given universal address and chain ID.
+func ByUniAddress(chainID uint64, addr uni.Address) (Token, bool) {
+	for _, t := range tokens {
+		if t.ChainID == chainID && t.UniAddress().Equals(addr) {
 			return t, true
 		}
 	}

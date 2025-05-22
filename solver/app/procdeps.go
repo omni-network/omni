@@ -13,19 +13,17 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tracer"
+	"github.com/omni-network/omni/lib/unibackend"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // procDeps abstracts dependencies for the event processor allowed simplified testing.
 type procDeps struct {
-	ParseID      func(log types.Log) (OrderID, error)
 	GetOrder     func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error)
-	SetCursor    func(ctx context.Context, chainID uint64, height uint64) error
 	ShouldReject func(ctx context.Context, order Order) (stypes.RejectReason, bool, error)
 	DidFill      func(ctx context.Context, order Order) (bool, error) // Note DidFill return false/nil on invalid orders, it only returns temporary RPC errors, so it is safe to retry always.
 
@@ -34,7 +32,7 @@ type procDeps struct {
 	Claim  func(ctx context.Context, order Order) error
 
 	// Monitoring helpers
-	ProcessorName     string
+	ProcessorName     func(chainID uint64) string
 	TargetName        func(PendingData) string
 	ChainName         func(chainID uint64) string
 	DebugPendingOrder func(ctx context.Context, order Order, event Event)
@@ -83,7 +81,7 @@ func newClaimer(
 
 func newFiller(
 	outboxContracts map[uint64]*bindings.SolverNetOutbox,
-	backends ethbackend.Backends,
+	backends unibackend.Backends,
 	solverAddr, outboxAddr common.Address,
 	pnl filledPnLFunc,
 ) func(ctx context.Context, order Order) error {
@@ -107,10 +105,13 @@ func newFiller(
 			return errors.New("unknown chain")
 		}
 
-		backend, err := backends.Backend(destChainID)
+		uniBackend, err := backends.Backend(destChainID)
 		if err != nil {
 			return err
+		} else if !uniBackend.IsEth() {
+			return errors.New("filler only supports eth backend")
 		}
+		backend := uniBackend.EthBackend()
 
 		callOpts := &bind.CallOpts{Context: ctx}
 		txOpts, err := backend.BindOpts(ctx, solverAddr)
@@ -151,7 +152,7 @@ func newFiller(
 				return errors.New("unsupported token, should have been rejected [BUG]", "addr", tknAddr.Hex(), "dst_chain", destChainName)
 			}
 
-			if ok, err = isAppproved(ctx, tknAddr, backend, solverAddr, outboxAddr, output.Amount); err != nil {
+			if ok, err = isAppproved(ctx, tkn, uniBackend, solverAddr, outboxAddr, output.Amount); err != nil {
 				return errors.Wrap(err, "is approved")
 			} else if !ok {
 				return errors.New("outbox not approved to spend token",
@@ -263,17 +264,6 @@ func newDidFiller(outboxContracts map[uint64]*bindings.SolverNetOutbox) func(ctx
 		}
 
 		return filled, nil
-	}
-}
-
-func newIDParser() func(log types.Log) (OrderID, error) {
-	return func(log types.Log) (OrderID, error) {
-		event, ok := solvernet.EventByTopic(log.Topics[0])
-		if !ok {
-			return OrderID{}, errors.New("unknown event")
-		}
-
-		return event.ParseID(log)
 	}
 }
 

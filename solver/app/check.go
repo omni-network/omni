@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/unibackend"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -21,7 +22,7 @@ type checkFunc func(context.Context, types.CheckRequest) error
 
 // newChecker returns a checkFunc that can be used to see if an order would be accepted or rejected.
 // It is the logic behind the /check endpoint.
-func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, priceFunc priceFunc, solverAddr, outboxAddr common.Address) checkFunc {
+func newChecker(backends unibackend.Backends, isAllowedCall callAllowFunc, priceFunc priceFunc, solverAddr, outboxAddr common.Address) checkFunc {
 	return func(ctx context.Context, req types.CheckRequest) error {
 		if _, err := backends.Backend(req.SourceChainID); err != nil {
 			return newRejection(types.RejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
