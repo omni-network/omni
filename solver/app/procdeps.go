@@ -8,7 +8,6 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
@@ -41,7 +40,7 @@ type procDeps struct {
 
 func newClaimer(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
-	backends ethbackend.Backends,
+	backends unibackend.Backends,
 	solverAddr common.Address,
 	pnl updatePnLFunc,
 ) func(ctx context.Context, order Order) error {
@@ -54,10 +53,13 @@ func newClaimer(
 			return errors.New("unknown chain")
 		}
 
-		backend, err := backends.Backend(order.SourceChainID)
+		uniBackend, err := backends.Backend(order.SourceChainID)
 		if err != nil {
 			return err
+		} else if !uniBackend.IsEth() {
+			return errors.New("claim only supports eth backend")
 		}
+		backend := uniBackend.EthBackend()
 
 		txOpts, err := backend.BindOpts(ctx, solverAddr)
 		if err != nil {
@@ -195,7 +197,7 @@ func newFiller(
 
 func newRejector(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
-	backends ethbackend.Backends,
+	backends unibackend.Backends,
 	solverAddr common.Address,
 	pnl updatePnLFunc,
 ) func(ctx context.Context, order Order, reason stypes.RejectReason) error {
@@ -208,10 +210,13 @@ func newRejector(
 			return errors.New("unknown chain")
 		}
 
-		backend, err := backends.Backend(order.SourceChainID)
+		uniBackend, err := backends.Backend(order.SourceChainID)
 		if err != nil {
 			return err
+		} else if !uniBackend.IsEth() {
+			return errors.New("reject only supports eth backend")
 		}
+		backend := uniBackend.EthBackend()
 
 		// Ensure latest on-chain order is still pending
 		if latest, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, order.ID); err != nil {
