@@ -113,14 +113,14 @@ Monitor the `status` to provide feedback to user's throughout the lifecycle of t
 The result of the pre-validation check if `validateEnabled` is true.
 
 `{
-  status: 'pending' | 'rejected' | 'accepted'
-  rejectReason?: string
+  status: 'pending' | 'rejected' | 'accepted',
+  rejectReason?: string,
   rejectDescription?: string
 }
 `
 
 ### error
-`Error \| null`
+`Error | undefined`
 
 Contains error information if `status` is `'error'`.
 
@@ -135,12 +135,12 @@ Contains error information if `status` is `'error'`.
 The raw mutation result object from `wagmi` for the opening transaction.
 
 ### txHash
-`Hex \| undefined`
+`Hex | undefined`
 
 The hash of the source chain transaction used to open the order.
 
 ### destTxHash
-`Hex \| undefined`
+`Hex | undefined`
 
 The hash of the destination chain transaction that filled the order.
 

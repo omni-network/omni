@@ -17,6 +17,8 @@ Based on the `mode` you select, the hook calculates either:
 
 This quote accounts for solver fees and current market conditions.
 
+Use the `quote` return (specifically `quote.deposit.amount` and `quote.expense.amount`) to inform the parameters for [`useOrder`](/sdk/hooks/useOrder.mdx).
+
 ## Usage
 
 `import { useQuote } from '@omni-network/react'`
@@ -85,77 +87,10 @@ if (res.isSuccess) res.quote.deposit
 ```
 
 ### error
+`Error | undefined`
 
 Only available when `isError` is `true`.
 
-```typescript
-if (res.isError) res.error
-```
+## Example
 
-Use the `quote` return (specifically `quote.deposit.amount` and `quote.expense.amount`) to inform the parameters for [`useOrder`](/sdk/hooks/useOrder.mdx).
-
-## Examples
-
-### Quote Expense
-
-To find out how much `wstETH` can be spent on Holesky for a deposit of 0.1 `wstETH` from Base Sepolia:
-
-```tsx
-const quote = useQuote({
-  srcChainId: baseSepolia.id,
-  destChainId: holesky.id,
-  deposit: { token: baseSepoliaWSTETH, amount: parseEther("0.1") },
-  expense: { token: holeskyWSTETH }, // note - when mode: "expense" we don't supply expense.amount
-  mode: "expense", // quote expense amount
-  enabled: true,
-})
-
-if (quote.isSuccess) {
-  console.log(`Depositing ${quote.deposit.amount} yields ${quote.expense.amount} on destination`);
-}
-```
-
-Or to quote for a native deposit:
-
-```tsx
-const quote = useQuote({
-  srcChainId: baseSepolia.id,
-  destChainId: holesky.id,
-  deposit: { amount: parseEther("0.1") }, // for native you can omit token or supply zero address
-  // when native and mode === 'expense', you can omit expense entirely
-  mode: "expense", // quote expense amount
-  enabled: true,
-})
-```
-
-### Quote Deposit
-
-To find out how much `wstETH` needs to be deposited on Base Sepolia to spend exactly 0.1 `wstETH` on Holesky:
-
-```tsx
-const quote = useQuote({
-  srcChainId: baseSepolia.id,
-  destChainId: holesky.id,
-  deposit: { token: baseSepoliaWSTETH }, // note - when mode: "expense" we don't supply expense.amount
-  expense: { token: holeskyWSTETH, amount: parseEther("0.1") },
-  mode: "deposit", // quote deposit amount
-  enabled: true,
-})
-
-if (quote.isSuccess) {
-  console.log(`Spending ${quote.data.expense.amount} requires depositing ${quote.data.deposit.amount} on source`);
-}
-```
-
-Or to quote for a native expense:
-
-```tsx
-const quote = useQuote({
-  srcChainId: baseSepolia.id,
-  destChainId: holesky.id,
-  expense: { amount: parseEther("0.1") }, // for native you can omit token or supply zero address
-  // when native and mode === 'deposit', you can omit deposit entirely
-  mode: "deposit", // quote expense amount
-  enabled: true,
-})
-```
+See our basic deposit example [here](/sdk/getting-started/basic-deposit).
