@@ -104,7 +104,7 @@ func approveToken(ctx context.Context, backend *ethbackend.Backend, token tokens
 	}
 
 	isApproved := func() (bool, error) {
-		return isAppproved(ctx, token, unibackend.EthBackend(backend), solverAddr, outboxAddr, umath.MaxUint256)
+		return isAppproved(ctx, token, unibackend.EVMBackend(backend), solverAddr, outboxAddr, umath.MaxUint256)
 	}
 
 	if approved, err := isApproved(); err != nil {
@@ -141,11 +141,11 @@ func isAppproved(
 	solverAddr, outboxAddr common.Address,
 	spend *big.Int,
 ) (bool, error) {
-	if token.IsSol() {
+	if token.IsSVM() {
 		return true, nil // Approvals not required for solana
 	}
 
-	tkn, err := bindings.NewIERC20(token.Address, backend.EthClient())
+	tkn, err := bindings.NewIERC20(token.Address, backend.EVMClient())
 	if err != nil {
 		return false, errors.Wrap(err, "new token")
 	}

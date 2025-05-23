@@ -8,7 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/solutil"
+	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/solver/job"
@@ -17,26 +17,26 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
-func solProcDeps(
+func svmProcDeps(
 	cl *rpc.Client,
 	network netconf.ID,
 	ethProcDeps procDeps,
 ) procDeps {
 	resp := ethProcDeps
-	resp.GetOrder = adaptSolGetOrder(cl, network)
+	resp.GetOrder = adaptSVMGetOrder(cl, network)
 
 	return resp
 }
 
-func NewSolStreamCallback(
+func NewSVMStreamCallback(
 	cl *rpc.Client,
 	chainVer xchain.ChainVersion,
 	cursors *cursors,
 	jobDB *job.DB,
 	asyncWork asyncWorkFunc,
-) solutil.StreamCallback {
+) svmutil.StreamCallback {
 	return func(ctx context.Context, sig *rpc.TransactionSignature) error {
-		txResp, err := solutil.AwaitConfirmedTransaction(ctx, cl, sig.Signature)
+		txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, sig.Signature)
 		if customErr := anchorinbox.DecodeMetaError(txResp); customErr != nil {
 			log.Warn(ctx, "AnchorInbox: Ignoring failed tx", customErr, "tx", sig)
 			return nil
@@ -98,9 +98,9 @@ func NewSolStreamCallback(
 	}
 }
 
-// adaptSolGetOrder adapts the solGetOrder function to the procDeps interface.
-func adaptSolGetOrder(cl *rpc.Client, network netconf.ID) func(context.Context, uint64, OrderID) (Order, bool, error) {
+// adaptSVMGetOrder adapts the svmGetOrder function to the procDeps interface.
+func adaptSVMGetOrder(cl *rpc.Client, network netconf.ID) func(context.Context, uint64, OrderID) (Order, bool, error) {
 	return func(ctx context.Context, _ uint64, id OrderID) (Order, bool, error) {
-		return solGetOrder(ctx, cl, network, id)
+		return svmGetOrder(ctx, cl, network, id)
 	}
 }

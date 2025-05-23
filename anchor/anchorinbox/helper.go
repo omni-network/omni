@@ -8,7 +8,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/solutil"
+	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/gagliardetto/solana-go"
@@ -150,7 +150,7 @@ func GetOrderState(ctx context.Context, cl *rpc.Client, orderID solana.PublicKey
 
 	// Decode the account data into an OrderState struct.
 	var orderStateData OrderStateAccount
-	_, err = solutil.GetAccountDataInto(ctx, cl, orderState, &orderStateData)
+	_, err = svmutil.GetAccountDataInto(ctx, cl, orderState, &orderStateData)
 	if errors.Is(err, rpc.ErrNotFound) {
 		return OrderStateAccount{}, false, nil
 	} else if err != nil {
@@ -196,7 +196,7 @@ func NewMarkFilledOrder(ctx context.Context, cl *rpc.Client, claimableBy, admin,
 		return nil, errors.New("order not found")
 	}
 
-	chainID, err := solutil.ChainID(ctx, cl)
+	chainID, err := svmutil.ChainID(ctx, cl)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +312,7 @@ func fillHash(chainID uint64, state OrderStateAccount) (solana.PublicKey, error)
 		return solana.PublicKey{}, err
 	}
 
-	resp, err := solutil.FillHash(
+	resp, err := svmutil.FillHash(
 		state.OrderId,
 		chainID,
 		state.DestChainId,

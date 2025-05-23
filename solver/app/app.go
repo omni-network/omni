@@ -97,7 +97,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 	backends.StartIdleConnectionClosing(ctx)
-	uniBackends := unibackend.EthBackends(backends)
+	uniBackends := unibackend.EVMBackends(backends)
 
 	xprov := xprovider.New(network, backends.Clients(), nil)
 
@@ -335,7 +335,7 @@ func startProcessingEvents(
 	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, ageCache.InstrumentDestFilled)
 	updatePnL := newUpdatePnLFunc(pricer, network.ChainName)
 
-	uniBackends := unibackend.EthBackends(backends)
+	uniBackends := unibackend.EVMBackends(backends)
 
 	deps := procDeps{
 		GetOrder:          newOrderGetter(inboxContracts),

@@ -56,10 +56,10 @@ func newClaimer(
 		uniBackend, err := backends.Backend(order.SourceChainID)
 		if err != nil {
 			return err
-		} else if !uniBackend.IsEth() {
+		} else if !uniBackend.IsEVM() {
 			return errors.New("claim only supports eth backend")
 		}
-		backend := uniBackend.EthBackend()
+		backend := uniBackend.EVMBackend()
 
 		txOpts, err := backend.BindOpts(ctx, solverAddr)
 		if err != nil {
@@ -110,10 +110,10 @@ func newFiller(
 		uniBackend, err := backends.Backend(destChainID)
 		if err != nil {
 			return err
-		} else if !uniBackend.IsEth() {
+		} else if !uniBackend.IsEVM() {
 			return errors.New("filler only supports eth backend")
 		}
-		backend := uniBackend.EthBackend()
+		backend := uniBackend.EVMBackend()
 
 		callOpts := &bind.CallOpts{Context: ctx}
 		txOpts, err := backend.BindOpts(ctx, solverAddr)
@@ -213,10 +213,10 @@ func newRejector(
 		uniBackend, err := backends.Backend(order.SourceChainID)
 		if err != nil {
 			return err
-		} else if !uniBackend.IsEth() {
+		} else if !uniBackend.IsEVM() {
 			return errors.New("reject only supports eth backend")
 		}
-		backend := uniBackend.EthBackend()
+		backend := uniBackend.EVMBackend()
 
 		// Ensure latest on-chain order is still pending
 		if latest, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, order.ID); err != nil {
