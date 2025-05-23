@@ -8,12 +8,15 @@ import { type Order, isContractCall } from '../types/order.js'
 import { getApiUrl } from '../utils/getApiUrl.js'
 import { toJSON } from '../utils/toJSON.js'
 
+const traceSchema = z.union([z.record(z.string(), z.unknown()), z.null()])
+
 const acceptedResponseSchema = z.object({
   accepted: z.literal(true),
   rejectCode: z.optional(z.literal(0)),
   rejected: z.optional(z.literal(false)),
   rejectReason: z.optional(z.literal('')),
   rejectDescription: z.optional(z.literal('')),
+  trace: z.optional(traceSchema),
 })
 
 const rejectedResponseSchema = z.object({
@@ -22,6 +25,7 @@ const rejectedResponseSchema = z.object({
   rejected: z.literal(true),
   rejectReason: z.string(),
   rejectDescription: z.string(),
+  trace: z.optional(traceSchema),
 })
 
 const errorResponseSchema = z.object({
@@ -32,6 +36,7 @@ const errorResponseSchema = z.object({
 })
 
 export type ValidateOrderParameters<abis extends OptionalAbis> = Order<abis> & {
+  debug?: boolean
   environment?: Environment | string
 }
 
@@ -44,12 +49,12 @@ export type ValidationResponse =
 export async function validateOrder<abis extends OptionalAbis>(
   params: ValidateOrderParameters<abis>,
 ) {
-  const { environment, ...order } = params
+  const { environment, ...orderWithDebug } = params
   const apiUrl = getApiUrl(environment)
   const json = await fetchJSON(`${apiUrl}/check`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: serialize(order),
+    body: serialize(orderWithDebug),
   })
 
   if (!isValidateRes(json)) {
@@ -59,7 +64,9 @@ export async function validateOrder<abis extends OptionalAbis>(
   return json satisfies ValidationResponse
 }
 
-const serialize = <abis extends OptionalAbis>(order: Order<abis>) => {
+const serialize = <abis extends OptionalAbis>(
+  order: Order<abis> & { debug?: boolean },
+) => {
   try {
     const calls = order.calls.map((call) => {
       if (!isContractCall(call)) {
@@ -100,6 +107,7 @@ const serialize = <abis extends OptionalAbis>(order: Order<abis>) => {
           spender: order.expense.spender ?? zeroAddress,
         },
       ],
+      debug: order.debug ?? false,
     })
   } catch (e) {
     const error =

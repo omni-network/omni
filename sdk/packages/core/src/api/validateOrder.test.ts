@@ -50,6 +50,23 @@ test('default: order', async () => {
   )
 })
 
+test('parameters: debug', async () => {
+  vi.spyOn(api, 'fetchJSON').mockResolvedValue({ accepted: true })
+  await expect(
+    validateOrder({
+      ...testOrder,
+      debug: true,
+      environment: 'http://localhost',
+    }),
+  ).resolves.toEqual({ accepted: true })
+  expect(api.fetchJSON).toHaveBeenCalledWith(
+    'http://localhost/check',
+    expect.objectContaining({
+      body: expect.stringContaining('"debug":true'),
+    }),
+  )
+})
+
 test('behaviour: resolves if response is supported error object', async () => {
   const response = {
     error: {

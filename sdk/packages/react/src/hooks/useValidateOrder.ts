@@ -14,6 +14,7 @@ import type { QueryOpts } from './types.js'
 type UseValidateOrderParams<abis extends OptionalAbis> = {
   order: Order<abis>
   enabled: boolean
+  debug?: boolean
   queryOpts?: QueryOpts<ValidationResponse, FetchJSONError>
 }
 
@@ -54,6 +55,7 @@ export type UseValidateOrderResult =
 export function useValidateOrder<abis extends OptionalAbis>({
   order,
   enabled,
+  debug,
   queryOpts,
 }: UseValidateOrderParams<abis>): UseValidateOrderResult {
   const { apiBaseUrl } = useOmniContext()
@@ -61,7 +63,9 @@ export function useValidateOrder<abis extends OptionalAbis>({
   const query = useQuery<ValidationResponse, FetchJSONError>({
     ...queryOpts,
     queryKey: ['check', order],
-    queryFn: async () => validateOrder({ ...order, environment: apiBaseUrl }),
+    queryFn: async () => {
+      return await validateOrder({ ...order, debug, environment: apiBaseUrl })
+    },
     queryKeyHashFn: hashFn,
     enabled,
   })

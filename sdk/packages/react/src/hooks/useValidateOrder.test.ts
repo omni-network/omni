@@ -55,6 +55,16 @@ test('default: native transfer order', async () => {
   await waitFor(() => expect(result.current.status).toBe('accepted'))
 })
 
+test('parameters: passes debug to validateOrder', async () => {
+  const spy = vi.spyOn(core, 'validateOrder').mockResolvedValue({
+    accepted: true,
+  })
+  renderValidateOrderHook({ order, debug: true, enabled: true })
+  expect(spy).toHaveBeenCalledWith(
+    expect.objectContaining({ ...order, debug: true }),
+  )
+})
+
 test('parameters: passes through queryOpts to useQuery', async () => {
   const queryOpts = {
     refetchInterval: 5000,
