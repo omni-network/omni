@@ -3,6 +3,7 @@ package app
 
 import (
 	"context"
+	"crypto/ecdsa"
 
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/lib/errors"
@@ -19,22 +20,36 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
-// svmProcDeps returns the SVM-specific processor dependencies.
+// svmProcDeps returns the SVM-specific processor dependencies based on the provided global procdeps.
 // Specifically, it replaces the functions that interact with the SVM chain.
 func svmProcDeps(
 	cl *rpc.Client,
 	outboxAddr common.Address,
-	solver solana.PrivateKey,
+	solverEVM *ecdsa.PrivateKey,
 	deps procDeps,
 ) procDeps {
+	solver := svmutil.MapEVMKey(solverEVM)
+
+	evmFill := deps.Fill
+
 	deps.GetOrder = adaptSVMGetOrder(cl, outboxAddr)
 	deps.Reject = adaptSVMReject(cl, solver)
 	deps.Claim = adaptSVMClaim(cl, solver)
+	deps.Fill = func(ctx context.Context, order Order) error {
+		if err := evmFill(ctx, order); err != nil {
+			return err
+		}
+
+		// TODO(corver): Move this to dedicated outbox event processor.
+		return markFilledSVMOrder(ctx, cl, solver, solver.PublicKey(), order.ID)
+	}
 
 	return deps
 }
 
-func NewSVMStreamCallback(
+// newSVMStreamCallback returns stream handler for anchor inbox events.
+// It starts async jobs for each valid event.
+func newSVMStreamCallback(
 	cl *rpc.Client,
 	chainVer xchain.ChainVersion,
 	cursors *cursors,
