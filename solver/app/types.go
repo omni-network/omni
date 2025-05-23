@@ -85,7 +85,7 @@ func newOrder(resolved OrderResolved, state OrderState, offset *big.Int) (Order,
 	)
 	if err != nil {
 		return Order{}, errors.Wrap(err, "settler")
-	} else if settler.IsEVM() {
+	} else if !settler.IsEVM() {
 		return Order{}, errors.New("only evm settler supported", "settler", settler)
 	}
 
