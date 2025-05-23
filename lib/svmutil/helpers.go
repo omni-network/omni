@@ -2,12 +2,16 @@ package svmutil
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/ed25519"
 	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+
+	"github.com/ethereum/go-ethereum/crypto"
 
 	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
@@ -100,4 +104,9 @@ func TokenBalanceAt(ctx context.Context, cl *rpc.Client, mint, wallet solana.Pub
 	}
 
 	return bal, nil
+}
+
+// MapEVMKey returns a deterministic mapping of an EVM secp256k1 private key to a Solana ed25519 private key.
+func MapEVMKey(key *ecdsa.PrivateKey) solana.PrivateKey {
+	return solana.PrivateKey(ed25519.NewKeyFromSeed(crypto.FromECDSA(key)))
 }

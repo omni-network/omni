@@ -13,6 +13,7 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
+// StreamReq defines which transactions to stream.
 type StreamReq struct {
 	FromSlot   *uint64          // Inclusive if not nil
 	AfterSig   solana.Signature // Exclusive
@@ -20,6 +21,8 @@ type StreamReq struct {
 	Commitment rpc.CommitmentType
 }
 
+// StreamCallback abstracts the logic that handles a stream of transaction signatures.
+// The logic must be idempotent.
 type StreamCallback func(ctx context.Context, sig *rpc.TransactionSignature) error
 
 func Stream(ctx context.Context, cl *rpc.Client, req StreamReq, callback StreamCallback) error {
