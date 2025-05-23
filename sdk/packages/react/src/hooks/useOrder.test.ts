@@ -205,6 +205,17 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
   })
 })
 
+test('parameters: validateDebug is passed to useValidateOrder', async () => {
+  renderOrderHook({
+    ...orderRequest,
+    validateEnabled: true,
+    validateDebug: true,
+  })
+  expect(useValidateOrder).toHaveBeenCalledWith(
+    expect.objectContaining({ order: orderRequest, debug: true }),
+  )
+})
+
 test('parameters: omniContractsQueryOpts, getOrderQueryOpts and didFillQueryOpts are passed to the relevant hooks', async () => {
   const omniContractsQueryOpts = { staleTime: 5000 }
   const getOrderQueryOpts = { staleTime: 1000 }

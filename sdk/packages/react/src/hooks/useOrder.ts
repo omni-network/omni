@@ -45,6 +45,7 @@ import {
 
 type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
   validateEnabled: boolean
+  validateDebug?: boolean
   omniContractsQueryOpts?: QueryOpts<OmniContracts>
   getOrderQueryOpts?: QueryOpts<GetOrderReturn>
   didFillQueryOpts?: QueryOpts<boolean>
@@ -103,6 +104,7 @@ export function useOrder<abis extends OptionalAbis>(
 ): UseOrderReturnType {
   const {
     validateEnabled,
+    validateDebug,
     omniContractsQueryOpts,
     getOrderQueryOpts,
     didFillQueryOpts,
@@ -155,7 +157,11 @@ export function useOrder<abis extends OptionalAbis>(
     wait.fetchStatus,
   )
 
-  const validation = useValidateOrder({ order, enabled: validateEnabled })
+  const validation = useValidateOrder({
+    order,
+    enabled: validateEnabled,
+    debug: validateDebug,
+  })
 
   const error = deriveError({
     contracts: contractsResult,
