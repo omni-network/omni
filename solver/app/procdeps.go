@@ -144,14 +144,14 @@ func newFiller(
 				continue
 			}
 
-			tknAddr, err := toEthAddr(output.Token)
+			tknAddr, err := toUniAddr(destChainID, output.Token)
 			if err != nil {
 				return errors.Wrap(err, "output token address")
 			}
 
-			tkn, ok := tokens.ByAddress(destChainID, tknAddr)
+			tkn, ok := tokens.ByUniAddress(destChainID, tknAddr)
 			if !ok || !IsSupportedToken(tkn) {
-				return errors.New("unsupported token, should have been rejected [BUG]", "addr", tknAddr.Hex(), "dst_chain", destChainName)
+				return errors.New("unsupported token, should have been rejected [BUG]", "addr", tknAddr, "dst_chain", destChainName)
 			}
 
 			if ok, err = isAppproved(ctx, tkn, uniBackend, solverAddr, outboxAddr, output.Amount); err != nil {
@@ -160,7 +160,7 @@ func newFiller(
 				return errors.New("outbox not approved to spend token",
 					"token", tkn.Symbol,
 					"dst_chain", destChainName,
-					"addr", tknAddr.Hex(),
+					"addr", tknAddr,
 					"amount", output.Amount,
 				)
 			}

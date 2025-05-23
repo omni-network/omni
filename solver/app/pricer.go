@@ -137,12 +137,12 @@ func debugOrderPrice(ctx context.Context, priceFunc priceFunc, order Order) {
 }
 
 func tokenByAddr32(chainID uint64, addr32 [32]byte) (tokens.Token, bool) {
-	addr, err := toEthAddr(addr32)
+	addr, err := toUniAddr(chainID, addr32)
 	if err != nil {
 		return tokens.Token{}, false
 	}
 
-	return tokens.ByAddress(chainID, addr)
+	return tokens.ByUniAddress(chainID, addr)
 }
 
 // monitorPricesForever blocks and instruments all supported asset prices (in USD) periodically.

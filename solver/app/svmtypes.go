@@ -7,10 +7,8 @@ import (
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/bi"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/solver/types"
 
@@ -22,12 +20,7 @@ import (
 
 // svmGetOrder retrieves the order from the Solana chain.
 // It converts the order state to the required Order struct.
-func svmGetOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderID OrderID) (Order, bool, error) {
-	addrs, err := contracts.GetAddresses(ctx, network)
-	if err != nil {
-		return Order{}, false, errors.Wrap(err, "get addresses")
-	}
-
+func svmGetOrder(ctx context.Context, cl *rpc.Client, outboxAddr common.Address, orderID OrderID) (Order, bool, error) {
 	state, ok, err := anchorinbox.GetOrderState(ctx, cl, solana.PublicKey(orderID))
 	if err != nil || !ok {
 		return Order{}, ok, err
@@ -38,20 +31,9 @@ func svmGetOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderI
 		return Order{}, false, err
 	}
 
-	var status solvernet.OrderStatus
-	switch state.Status {
-	case anchorinbox.StatusPending:
-		status = solvernet.StatusPending
-	case anchorinbox.StatusFilled:
-		status = solvernet.StatusFilled
-	case anchorinbox.StatusClaimed:
-		status = solvernet.StatusClaimed
-	case anchorinbox.StatusClosed:
-		status = solvernet.StatusClosed
-	case anchorinbox.StatusRejected:
-		status = solvernet.StatusRejected
-	default:
-		return Order{}, false, errors.New("invalid order status", "status", state.Status)
+	status, err := toEVMStatus(state.Status)
+	if err != nil {
+		return Order{}, false, err
 	}
 
 	minReceived := []bindings.IERC7683Output{
@@ -90,7 +72,7 @@ func svmGetOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderI
 		UpdatedBy:     common.Address{}, // N/A
 		pendingData: PendingData{
 			MinReceived:        minReceived,
-			DestinationSettler: addrs.SolverNetOutbox,
+			DestinationSettler: outboxAddr,
 			DestinationChainID: state.DestChainId,
 			FillOriginData:     encoded,
 			MaxSpent:           maxSpent,
@@ -101,7 +83,24 @@ func svmGetOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderI
 	}, true, nil
 }
 
-func ClaimSVMOrder(
+func toEVMStatus(status anchorinbox.Status) (solvernet.OrderStatus, error) {
+	switch status {
+	case anchorinbox.StatusPending:
+		return solvernet.StatusPending, nil
+	case anchorinbox.StatusFilled:
+		return solvernet.StatusFilled, nil
+	case anchorinbox.StatusClaimed:
+		return solvernet.StatusClaimed, nil
+	case anchorinbox.StatusClosed:
+		return solvernet.StatusClosed, nil
+	case anchorinbox.StatusRejected:
+		return solvernet.StatusRejected, nil
+	default:
+		return 0, errors.New("invalid order status", "status", status)
+	}
+}
+
+func claimSVMOrder(
 	ctx context.Context,
 	cl *rpc.Client,
 	claimer solana.PrivateKey,
@@ -125,7 +124,7 @@ func ClaimSVMOrder(
 	return nil
 }
 
-func RejectSVMOrder(
+func rejectSVMOrder(
 	ctx context.Context,
 	cl *rpc.Client,
 	admin solana.PrivateKey,

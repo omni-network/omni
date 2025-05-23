@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/uni"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -47,6 +48,20 @@ func toEthAddr(bz [32]byte) (common.Address, error) {
 	}
 
 	return addr, nil
+}
+
+// toUniAddr converts a 32-byte address to a universal address based on the chain ID.
+func toUniAddr(chainID uint64, address [32]byte) (uni.Address, error) {
+	if uni.IsSVMChain(chainID) {
+		return uni.SVMAddress(address), nil
+	}
+
+	ethAddr, err := toEthAddr(address)
+	if err != nil {
+		return uni.Address{}, err
+	}
+
+	return uni.EVMAddress(ethAddr), nil
 }
 
 // cmpAddrs returns true if the eth address is equal to the 32-byte address.

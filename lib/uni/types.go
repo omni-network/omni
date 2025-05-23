@@ -67,3 +67,11 @@ func (a Address) IsSVM() bool {
 func (a Address) IsZero() bool {
 	return a.evm == common.Address{} && a.svm == solana.PublicKey{}
 }
+
+func (a Address) String() string {
+	if a.IsEVM() {
+		return a.evm.String()
+	}
+
+	return a.svm.String()
+}
