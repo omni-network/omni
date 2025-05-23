@@ -205,11 +205,11 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
   })
 })
 
-test('parameters: validateDebug is passed to useValidateOrder', async () => {
+test('parameters: debugValidation is passed to useValidateOrder', async () => {
   renderOrderHook({
     ...orderRequest,
     validateEnabled: true,
-    validateDebug: true,
+    debugValidation: true,
   })
   expect(useValidateOrder).toHaveBeenCalledWith(
     expect.objectContaining({ order: orderRequest, debug: true }),
