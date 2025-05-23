@@ -44,7 +44,8 @@ interface ISolverNetOutbox is IDestinationSettler {
     enum Provider {
         None,
         OmniCore,
-        Hyperlane
+        Hyperlane,
+        Trusted
     }
 
     /**
