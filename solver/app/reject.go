@@ -198,10 +198,10 @@ func checkFill(
 	solverAddr, outboxAddr common.Address,
 	sameChain bool,
 ) error {
-	if !backend.IsEth() {
+	if !backend.IsEVM() {
 		return errors.New("checkFill only supports eth backend")
 	}
-	client := backend.EthClient()
+	client := backend.EVMClient()
 
 	msg, err := fillCallMsg(ctx, client, orderID, fillOriginData, nativeValue, solverAddr, outboxAddr)
 	if err != nil {
@@ -336,7 +336,7 @@ func checkQuote(ctx context.Context, priceFunc priceFunc, deposits, expenses []T
 // checkLiquidity checks that the solver has enough liquidity to pay for the expenses.
 func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend unibackend.Backend, solverAddr common.Address) error {
 	for _, expense := range expenses {
-		bal, err := tokenutil.UniBalanceOf(ctx, backend, expense.Token, uni.EthAddress(solverAddr))
+		bal, err := tokenutil.UniBalanceOf(ctx, backend, expense.Token, uni.EVMAddress(solverAddr))
 		if err != nil {
 			return errors.Wrap(err, "get balance", "token", expense.Token.Symbol)
 		}

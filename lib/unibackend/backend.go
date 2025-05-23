@@ -20,11 +20,11 @@ func (b Backends) Backend(chainID uint64) (Backend, error) {
 	return resp, nil
 }
 
-func EthBackends(backends ethbackend.Backends) Backends {
+func EVMBackends(backends ethbackend.Backends) Backends {
 	resp := make(Backends)
 	for _, backend := range backends.All() {
 		_, id := backend.Chain()
-		resp[id] = EthBackend(backend)
+		resp[id] = EVMBackend(backend)
 	}
 
 	return resp
@@ -37,20 +37,20 @@ type Backend struct {
 	chainID uint64
 }
 
-func EthBackend(backend *ethbackend.Backend) Backend {
+func EVMBackend(backend *ethbackend.Backend) Backend {
 	_, id := backend.Chain()
 
 	return Backend{
-		kind:    uni.KindEth,
+		kind:    uni.KindEVM,
 		eth:     backend,
 		sol:     nil,
 		chainID: id,
 	}
 }
 
-func SolBackend(cl *rpc.Client, chainID uint64) Backend {
+func SVMBackend(cl *rpc.Client, chainID uint64) Backend {
 	return Backend{
-		kind:    uni.KindSol,
+		kind:    uni.KindSVM,
 		sol:     cl,
 		chainID: chainID,
 	}
@@ -60,22 +60,22 @@ func (b Backend) ChainID() uint64 {
 	return b.chainID
 }
 
-func (b Backend) IsSol() bool {
-	return b.kind == uni.KindSol
+func (b Backend) IsSVM() bool {
+	return b.kind == uni.KindSVM
 }
 
-func (b Backend) IsEth() bool {
-	return b.kind == uni.KindEth
+func (b Backend) IsEVM() bool {
+	return b.kind == uni.KindEVM
 }
 
-func (b Backend) EthClient() ethclient.Client {
+func (b Backend) EVMClient() ethclient.Client {
 	return b.eth
 }
 
-func (b Backend) EthBackend() *ethbackend.Backend {
+func (b Backend) EVMBackend() *ethbackend.Backend {
 	return b.eth
 }
 
-func (b Backend) SolClient() *rpc.Client {
+func (b Backend) SVMClient() *rpc.Client {
 	return b.sol
 }

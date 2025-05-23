@@ -1,4 +1,4 @@
-package solutil
+package svmutil
 
 import "github.com/gagliardetto/solana-go"
 

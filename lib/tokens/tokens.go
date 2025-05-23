@@ -30,8 +30,8 @@ type Token struct {
 	Asset
 	ChainID    uint64
 	ChainClass ChainClass
-	Address    common.Address   // zero if native eth or solana
-	SolAddress solana.PublicKey `json:"SolAddress,omitempty"` // zero if native sol or erc20
+	Address    common.Address   // zero if native evm or solana
+	SVMAddress solana.PublicKey // zero if native svm or erc20
 	IsMock     bool
 }
 
@@ -40,19 +40,19 @@ func (t Token) IsNative() bool {
 }
 
 func (t Token) UniAddress() uni.Address {
-	if uni.IsSolChain(t.ChainID) {
-		return uni.SolAddress(t.SolAddress)
+	if uni.IsSVMChain(t.ChainID) {
+		return uni.SVMAddress(t.SVMAddress)
 	}
 
-	return uni.EthAddress(t.Address)
+	return uni.EVMAddress(t.Address)
 }
 
-func (t Token) IsSol() bool {
-	return t.UniAddress().IsSol()
+func (t Token) IsSVM() bool {
+	return t.UniAddress().IsSVM()
 }
 
-func (t Token) IsEth() bool {
-	return t.UniAddress().IsEth()
+func (t Token) IsEVM() bool {
+	return t.UniAddress().IsEVM()
 }
 
 func (t Token) Is(asset Asset) bool {
@@ -113,7 +113,7 @@ func Native(chainID uint64) (Token, bool) {
 // ByAddress returns the token with the given address and chain ID.
 func ByAddress(chainID uint64, addr common.Address) (Token, bool) {
 	for _, t := range tokens {
-		if t.ChainID == chainID && t.UniAddress().EqualsEth(addr) {
+		if t.ChainID == chainID && t.UniAddress().EqualsEVM(addr) {
 			return t, true
 		}
 	}

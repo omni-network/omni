@@ -41,7 +41,7 @@ func TestCheck(t *testing.T) {
 	for _, tt := range checkTestCases(t, solver) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
-			uniBackends := unibackend.EthBackends(backends)
+			uniBackends := unibackend.EVMBackends(backends)
 
 			callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return !tt.disallowCall }
 			handler := handlerAdapter(newCheckHandler(

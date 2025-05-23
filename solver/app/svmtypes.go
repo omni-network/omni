@@ -11,7 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/solutil"
+	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -20,9 +20,9 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
-// solGetOrder retrieves the order from the Solana chain.
+// svmGetOrder retrieves the order from the Solana chain.
 // It converts the order state to the required Order struct.
-func solGetOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderID OrderID) (Order, bool, error) {
+func svmGetOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderID OrderID) (Order, bool, error) {
 	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
 		return Order{}, false, errors.Wrap(err, "get addresses")
@@ -33,7 +33,7 @@ func solGetOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderI
 		return Order{}, ok, err
 	}
 
-	chainID, err := solutil.ChainID(ctx, cl)
+	chainID, err := svmutil.ChainID(ctx, cl)
 	if err != nil {
 		return Order{}, false, err
 	}
@@ -101,7 +101,7 @@ func solGetOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderI
 	}, true, nil
 }
 
-func ClaimSolOrder(
+func ClaimSVMOrder(
 	ctx context.Context,
 	cl *rpc.Client,
 	claimer solana.PrivateKey,
@@ -112,12 +112,12 @@ func ClaimSolOrder(
 		return err
 	}
 
-	sig, err := solutil.SendSimple(ctx, cl, claimer, claim.Build())
+	sig, err := svmutil.SendSimple(ctx, cl, claimer, claim.Build())
 	if err != nil {
 		return err
 	}
 
-	_, err = solutil.AwaitConfirmedTransaction(ctx, cl, sig)
+	_, err = svmutil.AwaitConfirmedTransaction(ctx, cl, sig)
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func ClaimSolOrder(
 	return nil
 }
 
-func RejectSolOrder(
+func RejectSVMOrder(
 	ctx context.Context,
 	cl *rpc.Client,
 	admin solana.PrivateKey,
@@ -137,12 +137,12 @@ func RejectSolOrder(
 		return err
 	}
 
-	sig, err := solutil.SendSimple(ctx, cl, admin, reject.Build())
+	sig, err := svmutil.SendSimple(ctx, cl, admin, reject.Build())
 	if err != nil {
 		return err
 	}
 
-	_, err = solutil.AwaitConfirmedTransaction(ctx, cl, sig)
+	_, err = svmutil.AwaitConfirmedTransaction(ctx, cl, sig)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func RejectSolOrder(
 	return nil
 }
 
-func MarkFilledSolOrder(
+func MarkFilledSVMOrder(
 	ctx context.Context,
 	cl *rpc.Client,
 	admin solana.PrivateKey,
@@ -162,12 +162,12 @@ func MarkFilledSolOrder(
 		return err
 	}
 
-	sig, err := solutil.SendSimple(ctx, cl, admin, mark.Build())
+	sig, err := svmutil.SendSimple(ctx, cl, admin, mark.Build())
 	if err != nil {
 		return err
 	}
 
-	_, err = solutil.AwaitConfirmedTransaction(ctx, cl, sig)
+	_, err = svmutil.AwaitConfirmedTransaction(ctx, cl, sig)
 	if err != nil {
 		return err
 	}

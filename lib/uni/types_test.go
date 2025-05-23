@@ -12,11 +12,11 @@ import (
 func TestIsSolChain(t *testing.T) {
 	t.Parallel()
 
-	require.True(t, uni.IsSolChain(evmchain.IDSolana))
-	require.True(t, uni.IsSolChain(evmchain.IDSolanaTest))
-	require.True(t, uni.IsSolChain(evmchain.IDSolanaLocal))
+	require.True(t, uni.IsSVMChain(evmchain.IDSolana))
+	require.True(t, uni.IsSVMChain(evmchain.IDSolanaTest))
+	require.True(t, uni.IsSVMChain(evmchain.IDSolanaLocal))
 
-	require.False(t, uni.IsSolChain(evmchain.IDBase))
-	require.False(t, uni.IsSolChain(evmchain.IDOptimism))
-	require.False(t, uni.IsSolChain(evmchain.IDArbitrumOne))
+	require.False(t, uni.IsSVMChain(evmchain.IDBase))
+	require.False(t, uni.IsSVMChain(evmchain.IDOptimism))
+	require.False(t, uni.IsSVMChain(evmchain.IDArbitrumOne))
 }
