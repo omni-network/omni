@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 
-	"github.com/omni-network/omni/lib/netconf"
-
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -15,14 +13,14 @@ import (
 // This creates a new trace root and should generally only by xprovider or cprovider.
 //
 //nolint:spancheck // False positive.
-func StartChainHeight(ctx context.Context, network netconf.ID, chain string, height uint64, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+func StartChainHeight(ctx context.Context, network string, chain string, height uint64, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	// Deterministic TraceID for network+chain+height.
 	// So all traces of the same block across all apps/instances of the same network are correlated.
 	// Note this only works for protected networks with consistent versions.
 	// Ephemeral network traces will not be correlated.
 
 	h := fnv.New128a()
-	_, _ = h.Write([]byte(network.String()))
+	_, _ = h.Write([]byte(network))
 	_, _ = h.Write([]byte(chain))
 	_ = binary.Write(h, binary.BigEndian, height)
 

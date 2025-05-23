@@ -37,7 +37,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	ids := tracer.Identifiers{
-		Network:  netconf.Simnet,
+		Network:  netconf.Simnet.String(),
 		Service:  "test_service",
 		Instance: "test_instance",
 	}
@@ -51,7 +51,7 @@ func TestIntegration(t *testing.T) {
 		t.Log("Stopped tracer")
 	}()
 
-	ctx, span1 := tracer.StartChainHeight(ctx, netconf.Simnet, "test_chain", 123, "root")
+	ctx, span1 := tracer.StartChainHeight(ctx, netconf.Simnet.String(), "test_chain", 123, "root")
 	defer span1.End()
 
 	time.Sleep(time.Millisecond * 10)
@@ -82,7 +82,7 @@ func TestStdOutTracer(t *testing.T) {
 	ctx := t.Context()
 
 	ids := tracer.Identifiers{
-		Network:  netconf.Simnet,
+		Network:  netconf.Simnet.String(),
 		Service:  "test_service",
 		Instance: "test_instance",
 	}

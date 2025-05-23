@@ -9,13 +9,13 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/lib/unibackend"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -104,7 +104,7 @@ func approveToken(ctx context.Context, backend *ethbackend.Backend, token tokens
 	}
 
 	isApproved := func() (bool, error) {
-		return isAppproved(ctx, token.Address, backend, solverAddr, outboxAddr, umath.MaxUint256)
+		return isAppproved(ctx, token, unibackend.EthBackend(backend), solverAddr, outboxAddr, umath.MaxUint256)
 	}
 
 	if approved, err := isApproved(); err != nil {
@@ -136,12 +136,16 @@ func approveToken(ctx context.Context, backend *ethbackend.Backend, token tokens
 
 func isAppproved(
 	ctx context.Context,
-	token common.Address,
-	client ethclient.Client,
+	token tokens.Token,
+	backend unibackend.Backend,
 	solverAddr, outboxAddr common.Address,
 	spend *big.Int,
 ) (bool, error) {
-	tkn, err := bindings.NewIERC20(token, client)
+	if token.IsSol() {
+		return true, nil // Approvals not required for solana
+	}
+
+	tkn, err := bindings.NewIERC20(token.Address, backend.EthClient())
 	if err != nil {
 		return false, errors.Wrap(err, "new token")
 	}

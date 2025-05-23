@@ -1,3 +1,4 @@
+//nolint:unused // Partially integrated
 package app
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/solutil"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
@@ -14,6 +16,17 @@ import (
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
 )
+
+func solProcDeps(
+	cl *rpc.Client,
+	network netconf.ID,
+	ethProcDeps procDeps,
+) procDeps {
+	resp := ethProcDeps
+	resp.GetOrder = adaptSolGetOrder(cl, network)
+
+	return resp
+}
 
 func NewSolStreamCallback(
 	cl *rpc.Client,
@@ -82,5 +95,12 @@ func NewSolStreamCallback(
 		}
 
 		return nil
+	}
+}
+
+// adaptSolGetOrder adapts the solGetOrder function to the procDeps interface.
+func adaptSolGetOrder(cl *rpc.Client, network netconf.ID) func(context.Context, uint64, OrderID) (Order, bool, error) {
+	return func(ctx context.Context, _ uint64, id OrderID) (Order, bool, error) {
+		return solGetOrder(ctx, cl, network, id)
 	}
 }

@@ -1,3 +1,4 @@
+//nolint:unused // Partially integrated
 package app
 
 import (
@@ -19,9 +20,9 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
-// GetSolOrder retrieves the order from the Solana chain.
+// solGetOrder retrieves the order from the Solana chain.
 // It converts the order state to the required Order struct.
-func GetSolOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderID OrderID) (Order, bool, error) {
+func solGetOrder(ctx context.Context, cl *rpc.Client, network netconf.ID, orderID OrderID) (Order, bool, error) {
 	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
 		return Order{}, false, errors.Wrap(err, "get addresses")

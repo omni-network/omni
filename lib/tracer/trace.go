@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -49,7 +48,7 @@ func RootedCtx(ctx context.Context, traceID trace.TraceID) context.Context {
 // That uniquely identifies the network/service/instance
 // that produced each trace.
 type Identifiers struct {
-	Network  netconf.ID
+	Network  string // netconf.ID
 	Service  string // halo/relayer/monitor
 	Instance string // validator01/seed01
 }
@@ -136,7 +135,7 @@ func newTraceProvider(exp sdktrace.SpanExporter, ids Identifiers) (*sdktrace.Tra
 		resource.NewWithAttributes(semconv.SchemaURL,
 			semconv.ServiceName(ids.Service),
 			semconv.ServiceInstanceID(ids.Instance),
-			semconv.DeploymentEnvironment(ids.Network.String()),
+			semconv.DeploymentEnvironment(ids.Network),
 		))
 	if err != nil {
 		return nil, errors.Wrap(err, "merge resource")

@@ -105,7 +105,7 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 			callbackLatency.WithLabelValues(chainVersionName, streamTypeEvent).Observe(d.Seconds())
 		},
 		StartTrace: func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span) {
-			return tracer.StartChainHeight(ctx, p.network.ID, chain.Name, height, path.Join("events", spanName))
+			return tracer.StartChainHeight(ctx, p.network.ID.String(), chain.Name, height, path.Join("events", spanName))
 		},
 	}
 

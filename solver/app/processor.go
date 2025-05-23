@@ -30,7 +30,7 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 			return errors.New("order not found [BUG]")
 		}
 
-		statusOffset.WithLabelValues(deps.ProcessorName, e.Status.String()).Set(float64(order.Offset))
+		statusOffset.WithLabelValues(deps.ProcessorName(chainID), e.Status.String()).Set(float64(order.Offset))
 
 		ctx = log.WithCtx(ctx,
 			"order_id", order.ID.String(),
@@ -107,7 +107,7 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 			return errors.New("unknown status [BUG]")
 		}
 
-		processedEvents.WithLabelValues(deps.ProcessorName, e.Status.String()).Inc()
+		processedEvents.WithLabelValues(deps.ProcessorName(chainID), e.Status.String()).Inc()
 
 		return nil
 	}

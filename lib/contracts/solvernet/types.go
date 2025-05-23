@@ -9,6 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/gagliardetto/solana-go"
 )
 
 type (
@@ -26,6 +28,11 @@ func (id OrderID) String() string {
 // Hex returns the full 0xHEX representation of the order ID.
 func (id OrderID) Hex() string {
 	return hexutil.Encode(id[:])
+}
+
+// Sol returns the Solana public key representation of the order ID.
+func (id OrderID) Sol() solana.PublicKey {
+	return solana.PublicKey(id)
 }
 
 func (s OrderStatus) String() string {

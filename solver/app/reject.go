@@ -11,10 +11,11 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	"github.com/omni-network/omni/lib/tracer"
+	"github.com/omni-network/omni/lib/uni"
+	"github.com/omni-network/omni/lib/unibackend"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -55,7 +56,7 @@ func newRejection(reason types.RejectReason, err error) *RejectionError {
 // It will return true if the order has rleady been filled. DidFill check
 // should be made before calling ShouldReject.
 func newShouldRejector(
-	backends ethbackend.Backends,
+	backends unibackend.Backends,
 	isAllowedCall callAllowFunc,
 	priceFunc priceFunc,
 	solverAddr, outboxAddr common.Address,
@@ -161,7 +162,7 @@ func parseMinReceived(order Order) ([]TokenAmt, error) {
 }
 
 // checkApprovals checks if the outbox is approved to spend all expenses.
-func checkApprovals(ctx context.Context, expenses []TokenAmt, client ethclient.Client, solverAddr, outboxAddr common.Address) error {
+func checkApprovals(ctx context.Context, expenses []TokenAmt, backend unibackend.Backend, solverAddr, outboxAddr common.Address) error {
 	for _, expense := range expenses {
 		tkn := expense.Token
 
@@ -169,7 +170,7 @@ func checkApprovals(ctx context.Context, expenses []TokenAmt, client ethclient.C
 			continue
 		}
 
-		isAppproved, err := isAppproved(ctx, tkn.Address, client, solverAddr, outboxAddr, expense.Amount)
+		isAppproved, err := isAppproved(ctx, tkn, backend, solverAddr, outboxAddr, expense.Amount)
 		if err != nil {
 			return errors.Wrap(err, "is approved")
 		}
@@ -190,13 +191,18 @@ func checkApprovals(ctx context.Context, expenses []TokenAmt, client ethclient.C
 // checkFill checks if a destination call reverts. Does not check if order was already filled.
 func checkFill(
 	ctx context.Context,
-	client ethclient.Client,
+	backend unibackend.Backend,
 	orderID OrderID,
 	fillOriginData []byte,
 	nativeValue *big.Int,
 	solverAddr, outboxAddr common.Address,
 	sameChain bool,
 ) error {
+	if !backend.IsEth() {
+		return errors.New("checkFill only supports eth backend")
+	}
+	client := backend.EthClient()
+
 	msg, err := fillCallMsg(ctx, client, orderID, fillOriginData, nativeValue, solverAddr, outboxAddr)
 	if err != nil {
 		return errors.Wrap(err, "fill call msg")
@@ -328,9 +334,9 @@ func checkQuote(ctx context.Context, priceFunc priceFunc, deposits, expenses []T
 }
 
 // checkLiquidity checks that the solver has enough liquidity to pay for the expenses.
-func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbackend.Backend, solverAddr common.Address) error {
+func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend unibackend.Backend, solverAddr common.Address) error {
 	for _, expense := range expenses {
-		bal, err := tokenutil.BalanceOf(ctx, backend, expense.Token, solverAddr)
+		bal, err := tokenutil.UniBalanceOf(ctx, backend, expense.Token, uni.EthAddress(solverAddr))
 		if err != nil {
 			return errors.Wrap(err, "get balance", "token", expense.Token.Symbol)
 		}

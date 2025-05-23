@@ -110,7 +110,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		ctx = feature.WithFlags(ctx, cfg.FeatureFlags)
 	}
 
-	tracerIDs := tracer.Identifiers{Network: cfg.Network, Service: "halo", Instance: cfg.Comet.Moniker}
+	tracerIDs := tracer.Identifiers{Network: cfg.Network.String(), Service: "halo", Instance: cfg.Comet.Moniker}
 	stopTracer, err := tracer.Init(ctx, tracerIDs, cfg.Tracer)
 	if err != nil {
 		return nil, nil, err
