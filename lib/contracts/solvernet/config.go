@@ -32,6 +32,7 @@ var (
 		// Testnet
 		evmchain.IDBSCTestnet:      common.HexToAddress("0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D"),
 		evmchain.IDHyperEVMTestnet: common.HexToAddress("0x589C201a07c26b4725A4A829d772f24423da480B"),
+		evmchain.IDMegaETHTestnet:  common.HexToAddress("0xF78deCe5Cf97e1bd61C202A5ba1af33b87454878"),
 		evmchain.IDHolesky:         common.HexToAddress("0x46f7C5D896bbeC89bE1B19e4485e59b4Be49e9Cc"),
 		evmchain.IDPolygonAmoy:     common.HexToAddress("0x54148470292C24345fb828B003461a9444414517"),
 		evmchain.IDBaseSepolia:     common.HexToAddress("0x6966b0E55883d49BFB24539356a2f8A673E02039"),
