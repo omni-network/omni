@@ -142,12 +142,12 @@ func parseMinReceived(order Order) ([]TokenAmt, error) {
 			return nil, errors.New("min received chain id mismatch [BUG]", "got", chainID, "expected", order.SourceChainID)
 		}
 
-		addr, err := toEthAddr(output.Token)
+		addr, err := toUniAddr(chainID, output.Token)
 		if err != nil {
 			return nil, newRejection(types.RejectUnsupportedDeposit, err)
 		}
 
-		tkn, ok := tokens.ByAddress(chainID, addr)
+		tkn, ok := tokens.ByUniAddress(chainID, addr)
 		if !ok || !IsSupportedToken(tkn) {
 			return nil, newRejection(types.RejectUnsupportedDeposit, errors.New("unsupported deposit token", "token", addr))
 		}
@@ -275,12 +275,12 @@ func parseMaxSpent(pendingData PendingData) ([]TokenAmt, error) {
 			return nil, errors.New("max spent chain id mismatch [BUG]", "got", chainID, "expected", pendingData.DestinationChainID)
 		}
 
-		addr, err := toEthAddr(output.Token)
+		addr, err := toUniAddr(chainID, output.Token)
 		if err != nil {
 			return nil, newRejection(types.RejectUnsupportedExpense, errors.Wrap(err, "expense token"))
 		}
 
-		tkn, ok := tokens.ByAddress(chainID, addr)
+		tkn, ok := tokens.ByUniAddress(chainID, addr)
 		if !ok || !IsSupportedToken(tkn) {
 			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported expense token", "addr", addr))
 		}

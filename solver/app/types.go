@@ -79,9 +79,14 @@ func newOrder(resolved OrderResolved, state OrderState, offset *big.Int) (Order,
 		return Order{}, errors.Wrap(err, "validate resolved")
 	}
 
-	settler, err := toEthAddr(resolved.FillInstructions[0].DestinationSettler)
+	settler, err := toUniAddr(
+		resolved.FillInstructions[0].DestinationChainId,
+		resolved.FillInstructions[0].DestinationSettler,
+	)
 	if err != nil {
 		return Order{}, errors.Wrap(err, "settler")
+	} else if settler.IsEVM() {
+		return Order{}, errors.New("only evm settler supported", "settler", settler)
 	}
 
 	return Order{
@@ -97,7 +102,7 @@ func newOrder(resolved OrderResolved, state OrderState, offset *big.Int) (Order,
 			MinReceived:        resolved.MinReceived,
 			FillOriginData:     resolved.FillInstructions[0].OriginData,
 			DestinationChainID: resolved.FillInstructions[0].DestinationChainId,
-			DestinationSettler: settler,
+			DestinationSettler: settler.EVM(),
 			MaxSpent:           resolved.MaxSpent,
 		},
 	}, nil

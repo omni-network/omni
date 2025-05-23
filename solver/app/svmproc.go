@@ -7,25 +7,31 @@ import (
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/solver/job"
+	stypes "github.com/omni-network/omni/solver/types"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
+// svmProcDeps returns the SVM-specific processor dependencies.
+// Specifically, it replaces the functions that interact with the SVM chain.
 func svmProcDeps(
 	cl *rpc.Client,
-	network netconf.ID,
-	ethProcDeps procDeps,
+	outboxAddr common.Address,
+	solver solana.PrivateKey,
+	deps procDeps,
 ) procDeps {
-	resp := ethProcDeps
-	resp.GetOrder = adaptSVMGetOrder(cl, network)
+	deps.GetOrder = adaptSVMGetOrder(cl, outboxAddr)
+	deps.Reject = adaptSVMReject(cl, solver)
+	deps.Claim = adaptSVMClaim(cl, solver)
 
-	return resp
+	return deps
 }
 
 func NewSVMStreamCallback(
@@ -99,8 +105,22 @@ func NewSVMStreamCallback(
 }
 
 // adaptSVMGetOrder adapts the svmGetOrder function to the procDeps interface.
-func adaptSVMGetOrder(cl *rpc.Client, network netconf.ID) func(context.Context, uint64, OrderID) (Order, bool, error) {
+func adaptSVMGetOrder(cl *rpc.Client, outboxAddr common.Address) func(context.Context, uint64, OrderID) (Order, bool, error) {
 	return func(ctx context.Context, _ uint64, id OrderID) (Order, bool, error) {
-		return svmGetOrder(ctx, cl, network, id)
+		return svmGetOrder(ctx, cl, outboxAddr, id)
+	}
+}
+
+// adaptSVMReject adapts the rejectSVMOrder function to the procDeps interface.
+func adaptSVMReject(cl *rpc.Client, solver solana.PrivateKey) func(ctx context.Context, order Order, reason stypes.RejectReason) error {
+	return func(ctx context.Context, order Order, reason stypes.RejectReason) error {
+		return rejectSVMOrder(ctx, cl, solver, order.ID, reason)
+	}
+}
+
+// adaptSVMClaim adapts the claimSVMOrder function to the procDeps interface.
+func adaptSVMClaim(cl *rpc.Client, solver solana.PrivateKey) func(ctx context.Context, order Order) error {
+	return func(ctx context.Context, order Order) error {
+		return claimSVMOrder(ctx, cl, solver, order.ID)
 	}
 }
