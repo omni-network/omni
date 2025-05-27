@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import { MerkleDistributor } from "src/token/MerkleDistributor.sol";
-import { Ownable } from "solady/src/auth/Ownable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { EIP712 } from "solady/src/utils/EIP712.sol";
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
@@ -15,7 +15,7 @@ import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { SolverNet } from "solve/src/lib/SolverNet.sol";
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract DebugMerkleDistributorWithoutDeadline is MerkleDistributor, Ownable, EIP712 {
+contract DebugMerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgradeable, EIP712 {
     using LibBitmap for LibBitmap.Bitmap;
     using SafeTransferLib for address;
     using SafeERC20 for IERC20;
@@ -49,16 +49,24 @@ contract DebugMerkleDistributorWithoutDeadline is MerkleDistributor, Ownable, EI
         address genesisStaking_,
         address solverNetInbox_
     ) MerkleDistributor(token_, merkleRoot_) {
+        _disableInitializers();
         if (omniPortal_ == address(0) || genesisStaking_ == address(0) || solverNetInbox_ == address(0)) {
             revert ZeroAddress();
         }
 
-        _initializeOwner(msg.sender);
-        token_.safeApprove(solverNetInbox_, type(uint256).max);
-
         omniPortal = IOmniPortal(omniPortal_);
         genesisStaking = IGenesisStakeV2(genesisStaking_);
         solvernetInbox = IOriginSettler(solverNetInbox_);
+    }
+
+   /**
+     * @notice Initialize the contract
+     * @param admin_            The admin of the contract
+     */
+    function initialize(address admin_) external initializer {
+        __Ownable_init(admin_);
+
+        token.safeApprove(address(solvernetInbox), type(uint256).max);
     }
 
     /**
