@@ -203,6 +203,29 @@ describe.concurrent('useValidateOrder()', () => {
     await waitFor(() => expect(result.current.status).toBe('accepted'))
   })
 
+  test('parameters: returns the trace when the debug flag is enabled', async () => {
+    const amount = parseEther('1') / 2n
+    const order: AnyOrder = {
+      srcChainId: mockL1Id,
+      destChainId: mockL2Id,
+      expense: { token: zeroAddress, amount },
+      deposit: { token: zeroAddress, amount: parseEther('1') },
+      calls: [{ target: testAccount.address, value: amount }],
+    }
+
+    const { result } = renderHook(
+      () => useValidateOrder({ enabled: true, order, debug: true }),
+      { wrapper: ContextProvider },
+    )
+
+    await waitFor(() => expect(result.current.status).toBe('accepted'))
+
+    if (result.current.status !== 'accepted') {
+      throw new Error('We expect an error')
+    }
+    expect(result.current.trace).toBeInstanceOf(Object)
+  })
+
   test('behaviour: returns the "rejected" status with a rejection reason and description', async () => {
     const amount = parseEther('1') / 2n
     const order: AnyOrder = {
@@ -240,6 +263,21 @@ describe('useOrder()', () => {
       calls: [{ target: testAccount.address, value: amount }],
     }
     await executeTestOrderUsingReact({ order })
+  })
+
+  test('parameters: returns the trace when the debugValidation flag is enabled', async () => {
+    const amount = parseEther('1') / 2n
+    const order = {
+      srcChainId: mockL1Id,
+      destChainId: mockL2Id,
+      expense: { token: zeroAddress, amount },
+      deposit: { token: zeroAddress, amount: parseEther('1') },
+      calls: [{ target: testAccount.address, value: amount }],
+      validateEnabled: true,
+      debugValidation: true,
+    }
+    const result = await executeTestOrderUsingReact({ order })
+    expect(result?.validation?.trace).toBeInstanceOf(Object)
   })
 
   test('behaviour: rejects when using invalid source chain', async () => {

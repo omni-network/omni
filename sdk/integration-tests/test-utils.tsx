@@ -264,7 +264,7 @@ type ExecuteTestOrderUsingReactParams = {
 
 export async function executeTestOrderUsingReact(
   params: ExecuteTestOrderUsingReactParams,
-): Promise<void> {
+): Promise<ReturnType<typeof useOrder> | null> {
   const { account, order, rejectReason } = params
   const orderRef = useOrderRef(order, account)
 
@@ -317,6 +317,8 @@ export async function executeTestOrderUsingReact(
     expect(orderRef.current?.isTxPending).toBe(false)
     expect(orderRef.current?.status).toBe('filled')
   }, waitForOpts)
+
+  return orderRef.current
 }
 
 export function assertResolvedOrder(
