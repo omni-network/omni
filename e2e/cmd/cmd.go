@@ -46,6 +46,11 @@ func New() *cobra.Command {
 			return err
 		}
 
+		// Some commands do not require a full definition.
+		if matchAny(cmd.Use, "hyperliquid-use-big-blocks") {
+			return nil
+		}
+
 		var err error
 		def, err = app.MakeDefinition(ctx, defCfg, cmd.Use)
 		if err != nil {
@@ -91,7 +96,7 @@ func New() *cobra.Command {
 		newDeployXBridgeCmd(&def),
 		newDeploySolverNetCmd(&def),
 		newSetSolverNetRoutesCmd(&def),
-		newHyperliquidUseBigBlocksCmd(&def),
+		newHyperliquidUseBigBlocksCmd(&defCfg),
 		fundAccounts(&def),
 	)
 
@@ -378,25 +383,34 @@ func newSetSolverNetRoutesCmd(def *app.Definition) *cobra.Command {
 	return cmd
 }
 
-func newHyperliquidUseBigBlocksCmd(def *app.Definition) *cobra.Command {
+func newHyperliquidUseBigBlocksCmd(cfg *app.DefinitionConfig) *cobra.Command {
+	var networkID netconf.ID
+
 	cmd := &cobra.Command{
 		Use:   "hyperliquid-use-big-blocks",
 		Short: "Enables big HyperEVM blocks for configured accounts",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
-			fireCl, err := app.NewFireblocksClient(def.Cfg, def.Testnet.Network, cmd.Name())
+			if err := networkID.Verify(); err != nil {
+				return errors.Wrap(err, "invalid network ID")
+			}
+
+			fireCl, err := app.NewFireblocksClient(*cfg, networkID, cmd.Name())
 			if err != nil {
 				return errors.Wrap(err, "new fireblocks client")
 			}
 
-			if err := app.HyperliquidUseBigBlocks(ctx, def.Testnet.Network, fireCl); err != nil {
+			if err := app.HyperliquidUseBigBlocks(ctx, networkID, fireCl); err != nil {
 				return errors.Wrap(err, "use big blocks")
 			}
 
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar((*string)(&networkID), "network", "", "Network ID to use for Hyperliquid big blocks")
+	_ = cmd.MarkFlagRequired("network")
 
 	return cmd
 }
