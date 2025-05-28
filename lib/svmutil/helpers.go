@@ -5,6 +5,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"math/big"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/omni-network/omni/lib/bi"
@@ -109,4 +111,56 @@ func TokenBalanceAt(ctx context.Context, cl *rpc.Client, mint, wallet solana.Pub
 // MapEVMKey returns a deterministic mapping of an EVM secp256k1 private key to a Solana ed25519 private key.
 func MapEVMKey(key *ecdsa.PrivateKey) solana.PrivateKey {
 	return solana.PrivateKey(ed25519.NewKeyFromSeed(crypto.FromECDSA(key)))
+}
+
+var stackRegex = regexp.MustCompile(`Program (\w+) (invoke|success|failed)(.*)?`)
+
+// FilterDataLogs filters the logs for a specific program, returning only the data logs
+// and true if logs were not truncated.
+func FilterDataLogs(logs []string, program solana.PublicKey) ([]string, bool, error) {
+	var stack []string
+	push := func(program string) {
+		stack = append(stack, program)
+	}
+	pop := func() string {
+		if len(stack) == 0 {
+			return ""
+		}
+		resp := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		return resp
+	}
+	current := func() bool {
+		return len(stack) > 0 && stack[len(stack)-1] == program.String()
+	}
+
+	var filtered []string
+	for _, log := range logs {
+		// If target program is current, filter any data logs
+		if current() && strings.HasPrefix(log, "Program data: ") {
+			filtered = append(filtered, log)
+			continue
+		}
+
+		// Check for stack operations
+		matches := stackRegex.FindStringSubmatch(log)
+		if len(matches) < 3 {
+			continue
+		}
+
+		programID := matches[1]
+		action := matches[2]
+
+		switch action {
+		case "invoke":
+			push(programID)
+		case "success", "failed":
+			if pop() != programID {
+				return nil, false, errors.New("stack mismatch", "expected", programID, "got", pop())
+			}
+		}
+	}
+
+	return filtered, len(stack) == 0, nil
 }

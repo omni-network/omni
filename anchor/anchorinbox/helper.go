@@ -19,6 +19,15 @@ import (
 
 var EventNameUpdated = "EventUpdated"
 
+func DecodeLogEvents(logMsgs []string) ([]*Event, error) {
+	decoded, err := decodeEventsFromLogMessage(logMsgs)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseEvents(decoded)
+}
+
 // NewOrderID returns the order ID (32 byte array Pubkey),
 // by hashing the account (pubkey) and nonce.
 func NewOrderID(owner solana.PublicKey, nonce uint64) solana.PublicKey {

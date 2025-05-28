@@ -3,6 +3,7 @@ package svmutil
 import (
 	"context"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -19,6 +20,14 @@ type StreamReq struct {
 	AfterSig   solana.Signature // Exclusive
 	Account    solana.PublicKey
 	Commitment rpc.CommitmentType
+}
+
+func (r StreamReq) FormatFromSlot() string {
+	if r.FromSlot == nil {
+		return "nil"
+	}
+
+	return strconv.FormatUint(*r.FromSlot, 10)
 }
 
 // StreamCallback abstracts the logic that handles a stream of transaction signatures.
@@ -61,7 +70,7 @@ func Stream(ctx context.Context, cl *rpc.Client, req StreamReq, callback StreamC
 		for _, sig := range sigs {
 			// Sanity checks
 			if req.FromSlot != nil && sig.Slot < *req.FromSlot {
-				return errors.New("signature slot is less than fromSlot [BUG]")
+				return errors.New("signature slot is less than fromSlot [BUG]", "sig_slot", sig.Slot, "from_slot", *req.FromSlot)
 			} else if req.AfterSig == sig.Signature {
 				return errors.New("signature is equal to afterSig [BUG]")
 			} else if prev != nil && sig.BlockTime != nil && *prev.BlockTime > *sig.BlockTime {
@@ -97,25 +106,33 @@ func allSigsForAccount(ctx context.Context, cl *rpc.Client, req StreamReq) ([]*r
 	for i := 0; ; i++ {
 		const limit int = 1000
 		sigs, err := cl.GetSignaturesForAddressWithOpts(ctx, req.Account, &rpc.GetSignaturesForAddressOpts{
-			Before:         before,
-			MinContextSlot: req.FromSlot,
-			Until:          req.AfterSig,
-			Commitment:     req.Commitment,
-			Limit:          ptr(limit),
+			Before:     before,
+			Until:      req.AfterSig,
+			Commitment: req.Commitment,
+			Limit:      ptr(limit),
 		})
 		if err != nil {
 			return nil, WrapRPCError(err, "getSignaturesForAddress", "page", i)
 		}
 
-		// Sigs are descending order (newer to older, so we need to reverse them and prepend to resp)
-		slices.Reverse(sigs)
-		resp = append(sigs, resp...)
+		// Drop sigs that are older than FromSlot
+		var selected []*rpc.TransactionSignature
+		for _, sig := range sigs {
+			if req.FromSlot != nil && sig.Slot < *req.FromSlot {
+				continue
+			}
+			selected = append(selected, sig)
+		}
 
-		if len(sigs) < limit {
+		// Sigs are in descending order (newer to older, so we need to reverse them and prepend to resp)
+		slices.Reverse(selected)
+		resp = append(selected, resp...)
+
+		if len(selected) < limit {
 			break
 		}
 
-		before = sigs[0].Signature
+		before = selected[0].Signature
 	}
 
 	return resp, nil
