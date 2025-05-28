@@ -82,7 +82,7 @@ svm-local: ## Deploys local svm, see /tmp/svm/config.json
 
 .PHONY: devnet-deploy
 devnet-deploy: ## Deploys devnet (MANIFEST=devnet1 by default)
-	@go run lib/svmutil/localsvm/main.go --dir=/tmp/svm
+	@echo "Creating a docker-compose devnet in ./e2e/run/$(if $(MANIFEST),$(MANIFEST),devnet1)"
 	@go run github.com/omni-network/omni/e2e -f e2e/manifests/$(if $(MANIFEST),$(MANIFEST),devnet1).toml deploy
 
 .PHONY: devnet-clean
