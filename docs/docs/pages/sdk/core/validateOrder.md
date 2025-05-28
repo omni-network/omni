@@ -23,7 +23,8 @@ const validation = await validateOrder({
 | `deposit`           | `Deposit`                         | Yes      | Describes the asset and amount being deposited on the source chain (paid by the user) - taken from `quote.deposit`. |
 | `expense`           | `Expense`  | Yes      | Describes the asset, amount, and spender on the destination chain (paid by the solver) - taken from `quote.expense`.            |
 | `calls`             | `Call[]`                             | Yes      | An array of contract calls to be executed on the destination chain by the solver.                                                     |
-| `environment`           | `Environment | string`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
+| `environment`       | `Environment`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
+| `debug` | `boolean` | No  | Whether to return the debug `trace` in the validation result or not (default) |
 
 ## Types
 
@@ -98,6 +99,7 @@ type ValidationResponse = {
   }
   rejectReason?: string
   rejectDescription?: string
+  trace?: Record<string, unknown>
 }
 ```
 

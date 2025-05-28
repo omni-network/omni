@@ -1,5 +1,11 @@
 # @omni-network/core
 
+## 0.2.1
+
+### Patch Changes
+
+- 60b097a: add support for debug flag in order validation call
+
 ## 0.2.0
 
 ### Minor Changes
