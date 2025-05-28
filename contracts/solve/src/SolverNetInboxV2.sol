@@ -263,15 +263,6 @@ contract SolverNetInboxV2 is
     }
 
     /**
-     * @notice Returns the next gasless order ID for the given user.
-     * @param user Address of the user paying for the order.
-     * @param nonce Nonce of the order.
-     */
-    function getNextGaslessOrderId(address user, uint256 nonce) external view returns (bytes32) {
-        return _getOrderId({ user: user, nonce: nonce, gasless: true });
-    }
-
-    /**
      * @notice Returns the onchain nonce for the given user.
      * @param user Address of the user the order is opened for.
      */
