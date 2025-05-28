@@ -147,6 +147,9 @@ contract SolverNetOutbox is
                 _fillGasLimit(fillData),
                 msg.sender
             );
+        } else if (inboxConfig.provider == Provider.Trusted) {
+            // Trusted routes simply emit an event as they do not rely on messaging, so we return 0 here.
+            return 0;
         } else {
             revert InvalidConfig();
         }
@@ -358,6 +361,10 @@ contract SolverNetOutbox is
                 uint32(fillData.srcChainId), inboxConfig.inbox, message, _fillGasLimit(fillData), msg.sender
             );
             _dispatch(uint32(fillData.srcChainId), inboxConfig.inbox, fee, message, _fillGasLimit(fillData), msg.sender);
+        } else if (inboxConfig.provider == Provider.Trusted) {
+            // Trusted routes simply emit an event as they do not rely on messaging, so we return 0 here.
+            // This is a temporary measure for fills from new chains such as Solana.
+            return 0;
         } else {
             revert InvalidConfig();
         }

@@ -7,7 +7,7 @@ import { SolverNet } from "src/lib/SolverNet.sol";
 
 contract SolverNet_Outbox_RetryMarkFilled_Test is TestBase {
     function test_v2_retryMarkFilled_reverts(uint8 provider) public {
-        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        provider = uint8(bound(provider, uint8(1), uint8(3)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
         vm.chainId(srcChainId);
@@ -43,14 +43,16 @@ contract SolverNet_Outbox_RetryMarkFilled_Test is TestBase {
         vm.expectRevert(ISolverNetOutbox.InvalidSettlement.selector);
         outbox.retryMarkFilled{ value: fillFee }(orderId, originData, fillerDataUser);
 
-        // `msg.value` must be at least `fillFee`
-        vm.deal(address(outbox), fillFee);
-        vm.expectRevert(ISolverNetOutbox.InsufficientFee.selector);
-        outbox.retryMarkFilled{ value: fillFee - 1 }(orderId, originData, fillerDataSolver);
+        // `msg.value` must be at least `fillFee`, skipped for trusted routes as fee is 0
+        if (fillFee > 0) {
+            vm.deal(address(outbox), fillFee);
+            vm.expectRevert(ISolverNetOutbox.InsufficientFee.selector);
+            outbox.retryMarkFilled{ value: fillFee - 1 }(orderId, originData, fillerDataSolver);
+        }
     }
 
     function test_v2_retryMarkFilled_succeeds(uint8 provider) public {
-        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        provider = uint8(bound(provider, uint8(1), uint8(3)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
         vm.chainId(srcChainId);
@@ -80,7 +82,7 @@ contract SolverNet_Outbox_RetryMarkFilled_Test is TestBase {
     }
 
     function test_v2_retryMarkFilled_succeeds_feeRefund(uint8 provider) public {
-        provider = uint8(bound(provider, uint8(1), uint8(2)));
+        provider = uint8(bound(provider, uint8(1), uint8(3)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
         vm.chainId(srcChainId);
