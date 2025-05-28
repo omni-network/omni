@@ -5,7 +5,7 @@ import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { DeployedAt } from "../../src/util/DeployedAt.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { IERC7683 } from "../../src/erc7683/IERC7683.sol";
-import { ISolverNetInboxV2 } from "../../src/interfaces/ISolverNetInboxV2.sol";
+import { IMockSolverNetInbox } from "../../src/interfaces/IMockSolverNetInbox.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { HashLib } from "../../src/lib/HashLib.sol";
 import { SolverNet } from "../../src/lib/SolverNet.sol";
@@ -18,7 +18,7 @@ import { IOmniPortalPausable } from "core/src/interfaces/IOmniPortalPausable.sol
  * @notice Entrypoint and alt-mempool for user solve orders.
  * @dev This mock implementation is ownerless and is not initialized.
  */
-contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNetInboxV2 {
+contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, IMockSolverNetInbox {
     using SafeTransferLib for address;
     using AddrUtils for address;
 

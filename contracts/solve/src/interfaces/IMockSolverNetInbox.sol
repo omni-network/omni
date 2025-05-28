@@ -2,27 +2,27 @@
 pragma solidity ^0.8.24;
 
 import { IOriginSettler } from "../erc7683/IOriginSettler.sol";
-import { IMessageRecipient } from "@hyperlane-xyz/core/contracts/interfaces/IMessageRecipient.sol";
 import { SolverNet } from "../lib/SolverNet.sol";
 
-interface ISolverNetInboxV2 is IOriginSettler, IMessageRecipient {
+interface IMockSolverNetInbox is IOriginSettler {
     // Validation errors
     error InvalidOrderTypehash();
     error InvalidOrderData();
-    error InvalidOriginSettler();
     error InvalidOriginChainId();
+    error InvalidOriginSettler();
     error InvalidDestinationChainId();
     error InvalidOpenDeadline();
     error InvalidFillDeadline();
     error InvalidMissingCalls();
+    error InvalidCallTarget();
     error InvalidExpenseToken();
     error InvalidExpenseAmount();
     error InvalidArrayLength();
     error InvalidUser();
 
     // Open order errors
-    error InvalidERC20Deposit();
     error InvalidNativeDeposit();
+    error InvalidSignature();
 
     // Reject order errors
     error InvalidReason();
@@ -41,6 +41,7 @@ interface ISolverNetInboxV2 is IOriginSettler, IMessageRecipient {
     // Pause errors
     error IsPaused();
     error AllPaused();
+    error PortalPaused();
 
     /**
      * @notice Emitted when an outbox is set.
@@ -48,14 +49,6 @@ interface ISolverNetInboxV2 is IOriginSettler, IMessageRecipient {
      * @param outbox  Address of the outbox.
      */
     event OutboxSet(uint64 indexed chainId, address indexed outbox);
-
-    /**
-     * @notice Emitted when a pause state is set.
-     * @param key Pause key.
-     * @param pause True if paused, false if unpaused.
-     * @param pauseState Current pause state.
-     */
-    event Paused(bytes32 indexed key, bool indexed pause, uint8 indexed pauseState);
 
     /**
      * @notice Emitted when an order is opened.
@@ -122,18 +115,33 @@ interface ISolverNetInboxV2 is IOriginSettler, IMessageRecipient {
     }
 
     /**
+     * @notice Pause the `open` function, preventing new orders from being opened.
+     * @dev Cannot override ALL_PAUSED state.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseOpen(bool pause) external;
+
+    /**
+     * @notice Pause the `close` function, preventing orders from being closed by users.
+     * @dev `close` should only be paused if the Omni Core relayer is not available.
+     * @dev Cannot override ALL_PAUSED state.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseClose(bool pause) external;
+
+    /**
+     * @notice Pause open and close functions.
+     * @dev Can override OPEN_PAUSED or CLOSE_PAUSED states.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseAll(bool pause) external;
+
+    /**
      * @notice Set the outbox addresses for the given chain IDs.
      * @param chainIds IDs of the chains.
      * @param outboxes Addresses of the outboxes.
      */
     function setOutboxes(uint64[] calldata chainIds, address[] calldata outboxes) external;
-
-    /**
-     * @notice Returns the outbox address for the given chain ID.
-     * @param chainId ID of the chain.
-     * @return outbox Outbox address.
-     */
-    function getOutbox(uint64 chainId) external view returns (address);
 
     /**
      * @notice Returns the order, its state, and offset with the given ID.
@@ -146,11 +154,11 @@ interface ISolverNetInboxV2 is IOriginSettler, IMessageRecipient {
 
     /**
      * @notice Returns the order ID for the given user and nonce.
+     * @param gasless Whether the order is gasless.
      * @param user  Address of the user.
      * @param nonce Nonce of the order.
-     * @param gasless Whether the order is gasless.
      */
-    function getOrderId(address user, uint256 nonce, bool gasless) external view returns (bytes32);
+    function getOrderId(bool gasless, address user, uint256 nonce) external view returns (bytes32);
 
     /**
      * @notice Returns the next onchain order ID for the given user.
@@ -204,7 +212,7 @@ interface ISolverNetInboxV2 is IOriginSettler, IMessageRecipient {
     function close(bytes32 id) external;
 
     /**
-     * @notice Fill an order via Omni Core.
+     * @notice Fill an order.
      * @dev Only callable by the outbox.
      * @param id         ID of the order.
      * @param fillHash   Hash of fill instructions origin data.
