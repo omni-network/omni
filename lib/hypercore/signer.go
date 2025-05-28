@@ -4,6 +4,11 @@ import (
 	"context"
 	"crypto/ecdsa"
 
+	"github.com/omni-network/omni/lib/cast"
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/fireblocks"
+
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -27,4 +32,26 @@ func (s pkSigner) Sign(_ context.Context, digest []byte) ([65]byte, error) {
 	copy(out[:], sig)
 
 	return out, nil
+}
+
+type fbSigner struct {
+	client fireblocks.Client
+	addr   common.Address
+}
+
+// NewFireblocksSigner returns a new Signer that uses Fireblocks to sign messages.
+func NewFireblocksSigner(client fireblocks.Client, addr common.Address) Signer {
+	return fbSigner{
+		client: client,
+		addr:   addr,
+	}
+}
+
+func (s fbSigner) Sign(ctx context.Context, digest []byte) ([65]byte, error) {
+	hash, err := cast.EthHash(digest)
+	if err != nil {
+		return [65]byte{}, errors.Wrap(err, "cast eth hash")
+	}
+
+	return s.client.Sign(ctx, hash, s.addr)
 }
