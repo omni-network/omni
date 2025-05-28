@@ -149,7 +149,7 @@ func rejectSVMOrder(
 	return nil
 }
 
-func MarkFilledSVMOrder(
+func markFilledSVMOrder(
 	ctx context.Context,
 	cl *rpc.Client,
 	admin solana.PrivateKey,

@@ -10,6 +10,8 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/gagliardetto/solana-go"
 )
 
 type Role string
@@ -90,6 +92,20 @@ type Account struct {
 	Role       Role
 	Address    common.Address
 	privateKey *ecdsa.PrivateKey // only for devnet (well-known type)
+}
+
+func (a Account) SVMAddress() (solana.PublicKey, error) {
+	m := svmAddrs
+	if a.Type == TypeRemote {
+		m = svmRemoteAddrs
+	}
+
+	resp, ok := m[a.Address]
+	if !ok {
+		return solana.PublicKey{}, errors.New("svm address not defined", "address", a.Address)
+	}
+
+	return resp, nil
 }
 
 // privKey returns the private key for the account.
