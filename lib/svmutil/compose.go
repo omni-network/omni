@@ -26,27 +26,27 @@ var Version = "stable"
 
 // Start starts a genesis solana node and returns a client, a funded private key and a stop function or an error.
 // The dir parameter is the location of the docker compose.
-func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Client, solana.PrivateKey, func(), error) {
+func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Client, string, solana.PrivateKey, func(), error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Allow 1 minute for edge case of pulling images.
 	defer cancel()
 
 	if !composeDown(ctx, composeDir) {
-		return nil, nil, nil, errors.New("failure to clean up previous solana instance")
+		return nil, "", nil, nil, errors.New("failure to clean up previous solana instance")
 	}
 
 	// Ensure ports are available
 	port, err := getAvailablePort()
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "get available port")
+		return nil, "", nil, nil, errors.Wrap(err, "get available port")
 	}
 
 	if err := writeComposeFile(composeDir, port, Version); err != nil {
-		return nil, nil, nil, errors.Wrap(err, "write compose file")
+		return nil, "", nil, nil, errors.Wrap(err, "write compose file")
 	}
 
 	for _, program := range programs {
 		if err := copyProgram(composeDir, program); err != nil {
-			return nil, nil, nil, errors.Wrap(err, "copy program")
+			return nil, "", nil, nil, errors.Wrap(err, "copy program")
 		}
 	}
 
@@ -54,7 +54,7 @@ func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Cl
 
 	out, err := execCmd(ctx, composeDir, "docker", "compose", "up", "-d", "--remove-orphans")
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "docker compose up: "+out)
+		return nil, "", nil, nil, errors.Wrap(err, "docker compose up: "+out)
 	}
 
 	endpoint := "http://localhost:" + port
@@ -73,12 +73,12 @@ func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Cl
 	for i := 0; i < retry; i++ {
 		if i == retry-1 {
 			stop()
-			return nil, nil, nil, errors.New("wait for RPC timed out")
+			return nil, "", nil, nil, errors.New("wait for RPC timed out")
 		}
 
 		select {
 		case <-ctx.Done():
-			return nil, nil, nil, errors.Wrap(ctx.Err(), "timeout")
+			return nil, "", nil, nil, errors.Wrap(ctx.Err(), "timeout")
 		case <-time.After(time.Second):
 		}
 
@@ -95,12 +95,12 @@ func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Cl
 
 	privKey, err := solana.PrivateKeyFromSolanaKeygenFile(filepath.Join(composeDir, "id.json"))
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "get private key")
+		return nil, "", nil, nil, errors.Wrap(err, "get private key")
 	}
 
 	log.Info(ctx, "Solana: RPC is available", "addr", endpoint)
 
-	return cl, privKey, stop, nil
+	return cl, endpoint, privKey, stop, nil
 }
 
 // Deploy deploys a program to the localhost compose network using hte default keypair.

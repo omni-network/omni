@@ -76,9 +76,13 @@ staging-addrs: ## Prints staging address json.
 ###                                Testing                                 	###
 ###############################################################################
 
+.PHONY: svm-local
+svm-local: ## Deploys local svm, see /tmp/svm/config.json
+	@go run lib/svmutil/localsvm/main.go --dir=/tmp/svm
+
 .PHONY: devnet-deploy
 devnet-deploy: ## Deploys devnet (MANIFEST=devnet1 by default)
-	@echo "Creating a docker-compose devnet in ./e2e/run/$(if $(MANIFEST),$(MANIFEST),devnet1)"
+	@go run lib/svmutil/localsvm/main.go --dir=/tmp/svm
 	@go run github.com/omni-network/omni/e2e -f e2e/manifests/$(if $(MANIFEST),$(MANIFEST),devnet1).toml deploy
 
 .PHONY: devnet-clean
