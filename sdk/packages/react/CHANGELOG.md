@@ -1,5 +1,13 @@
 # @omni-network/react
 
+## 0.2.2
+
+### Patch Changes
+
+- 60b097a: add support for debug flag in order validation call
+- Updated dependencies [60b097a]
+  - @omni-network/core@0.2.1
+
 ## 0.2.1
 
 ### Patch Changes
