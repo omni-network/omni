@@ -66,6 +66,8 @@ require (
 	google.golang.org/protobuf v1.36.6
 )
 
+require github.com/ugorji/go/codec v1.2.7
+
 require (
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.6-20250121211742-6d880cc6cc8d.1 // indirect
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250425153114-8976f5be98c1.1 // indirect
