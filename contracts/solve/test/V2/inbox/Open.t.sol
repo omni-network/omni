@@ -4,7 +4,7 @@ pragma solidity =0.8.24;
 import "../TestBase.sol";
 
 contract SolverNet_Inbox_Open_Test is TestBase {
-    function test_open_reverts() public {
+    function test_v2_open_reverts() public {
         inbox.pauseOpen(true);
 
         address[] memory expenseTokens = new address[](1);
@@ -80,7 +80,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         vm.stopPrank();
     }
 
-    function test_open_nativeDeposit_succeeds() public {
+    function test_v2_open_nativeDeposit_succeeds() public {
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -101,7 +101,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         assertEq(address(inbox).balance, defaultAmount, "inbox should have received the deposit");
     }
 
-    function test_open_erc20Deposit_succeeds() public {
+    function test_v2_open_erc20Deposit_succeeds() public {
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -122,19 +122,19 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         assertEq(token1.balanceOf(address(inbox)), defaultAmount, "inbox should have received the deposit");
     }
 
-    function test_open_hyperlane() public {
+    function test_v2_open_hyperlane() public {
         address impl = address(new SolverNetInboxV2(address(0), address(mailboxes[uint32(srcChainId)])));
         inbox = SolverNetInboxV2(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
         uint256 snapshot = vm.snapshotState();
-        test_open_reverts();
+        test_v2_open_reverts();
         vm.revertToState(snapshot);
 
-        test_open_nativeDeposit_succeeds();
+        test_v2_open_nativeDeposit_succeeds();
         vm.revertToState(snapshot);
 
-        test_open_erc20Deposit_succeeds();
+        test_v2_open_erc20Deposit_succeeds();
     }
 }

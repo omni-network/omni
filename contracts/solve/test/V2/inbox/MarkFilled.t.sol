@@ -4,7 +4,7 @@ pragma solidity =0.8.24;
 import "../TestBase.sol";
 
 contract SolverNet_Inbox_MarkFilled_Test is TestBase {
-    function test_markFilled_reverts() public {
+    function test_v2_markFilled_reverts() public {
         // order must be pending
         bytes32 orderId = inbox.getNextOnchainOrderId(user);
         vm.expectRevert(ISolverNetInboxV2.OrderNotPending.selector);
@@ -82,7 +82,7 @@ contract SolverNet_Inbox_MarkFilled_Test is TestBase {
         );
     }
 
-    function test_markFilled_succeeds() public {
+    function test_v2_markFilled_succeeds() public {
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -106,7 +106,7 @@ contract SolverNet_Inbox_MarkFilled_Test is TestBase {
         assertStatus(resolvedOrder.orderId, ISolverNetInboxV2.Status.Filled);
     }
 
-    function test_markFilled_oldFillHash_succeeds() public {
+    function test_v2_markFilled_oldFillHash_succeeds() public {
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");

@@ -28,7 +28,7 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         milady = new MockERC721("Milady Maker", "MILADY", "https://www.miladymaker.net/milady/json/");
     }
 
-    function test_executor_reverts() public {
+    function test_v2_executor_reverts() public {
         vm.expectRevert(ISolverNetExecutor.NotOutbox.selector);
         executor.approve(address(0), address(0), 0);
 
@@ -74,25 +74,25 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         executor.execute{ value: 1 ether }(address(executor), 1 ether, "");
     }
 
-    function test_fallback_reverts() public {
+    function test_v2_fallback_reverts() public {
         vm.expectRevert(Receiver.FnSelectorNotRecognized.selector);
         SolverNetInboxV2(address(executor)).markFilled(bytes32(0), bytes32(0), address(0));
     }
 
-    function test_onERC721Received_succeeds() public {
+    function test_v2_onERC721Received_succeeds() public {
         milady.mint();
         milady.safeTransferFrom(address(this), address(executor), 1);
         assertEq(milady.ownerOf(1), address(executor), "executor should have received the Milady NFT");
     }
 
-    function test_approve_succeeds() public {
+    function test_v2_approve_succeeds() public {
         vm.prank(address(outbox));
         executor.approve(address(token1), user, 1 ether);
 
         assertEq(token1.allowance(address(executor), user), 1 ether, "allowance should be 1 ether");
     }
 
-    function test_tryRevokeApproval_succeeds_approve_reverts() public {
+    function test_v2_tryRevokeApproval_succeeds_approve_reverts() public {
         vm.startPrank(address(outbox));
         executor.approve(address(approvalReverter), user, 1 ether);
         executor.tryRevokeApproval(address(approvalReverter), user);
@@ -101,7 +101,7 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         assertEq(approvalReverter.allowance(address(executor), user), 1, "allowance should be 1 wei");
     }
 
-    function test_execute_succeeds() public {
+    function test_v2_execute_succeeds() public {
         token1.mint(address(executor), 1 ether);
 
         vm.prank(address(outbox));
@@ -110,7 +110,7 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         assertEq(token1.balanceOf(user), 1 ether, "balance should be 1 ether");
     }
 
-    function test_execute_target_is_executor() public {
+    function test_v2_execute_target_is_executor() public {
         vm.prank(address(outbox));
         executor.execute(
             address(0),
@@ -123,7 +123,7 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         assertEq(milady.ownerOf(1), user, "user should have received the Milady NFT from executor");
     }
 
-    function test_executeAndTransfer_erc20_succeeds() public {
+    function test_v2_executeAndTransfer_erc20_succeeds() public {
         address lstToken = address(lst.token());
         vm.deal(address(executor), 1 ether);
         vm.prank(address(executor));
@@ -133,14 +133,14 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         assertEq(lst.token().balanceOf(user), 1 ether, "user should have received 1 ether of the LST from executor");
     }
 
-    function test_executeAndTransfer_native_succeeds() public {
+    function test_v2_executeAndTransfer_native_succeeds() public {
         vm.deal(address(executor), 1 ether);
         vm.prank(address(executor));
         executor.executeAndTransfer{ value: 1 ether }(address(0), user, address(refunder), "");
         assertEq(user.balance, 1 ether, "user should have received 1 ether of native tokens from executor");
     }
 
-    function test_executeAndTransfer721_succeeds() public {
+    function test_v2_executeAndTransfer721_succeeds() public {
         vm.prank(address(executor));
         executor.executeAndTransfer721(
             address(milady), 1, user, address(milady), abi.encodeWithSelector(MockERC721.mint.selector)
@@ -148,7 +148,7 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         assertEq(milady.ownerOf(1), user, "user should have received the Milady NFT from executor");
     }
 
-    function test_transfer_succeeds() public {
+    function test_v2_transfer_succeeds() public {
         token1.mint(address(executor), 1 ether);
 
         vm.prank(address(outbox));
@@ -157,7 +157,7 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         assertEq(token1.balanceOf(user), 1 ether, "balance should be 1 ether");
     }
 
-    function test_transferNative_succeeds() public {
+    function test_v2_transferNative_succeeds() public {
         vm.deal(address(executor), 1 ether);
 
         vm.prank(address(outbox));

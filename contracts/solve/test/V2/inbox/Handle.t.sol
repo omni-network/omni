@@ -11,7 +11,7 @@ contract SolverNet_Inbox_Handle_Test is TestBase {
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
     }
 
-    function test_handle_reverts() public {
+    function test_v2_handle_reverts() public {
         // call must come from the Hyperlane mailbox
         vm.expectRevert(Ownable.Unauthorized.selector);
         inbox.handle(destinationDomain, bytes32(0), bytes(""));
@@ -62,7 +62,7 @@ contract SolverNet_Inbox_Handle_Test is TestBase {
         mailboxes[originDomain].processInboundMessage(3);
     }
 
-    function test_handle_succeeds() public {
+    function test_v2_handle_succeeds() public {
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");

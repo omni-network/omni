@@ -6,7 +6,7 @@ import { ISolverNetOutbox } from "src/interfaces/ISolverNetOutbox.sol";
 import { SolverNet } from "src/lib/SolverNet.sol";
 
 contract SolverNet_Outbox_RetryMarkFilled_Test is TestBase {
-    function test_retryMarkFilled_reverts(uint8 provider) public {
+    function test_v2_retryMarkFilled_reverts(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
@@ -49,7 +49,7 @@ contract SolverNet_Outbox_RetryMarkFilled_Test is TestBase {
         outbox.retryMarkFilled{ value: fillFee - 1 }(orderId, originData, fillerDataSolver);
     }
 
-    function test_retryMarkFilled_succeeds(uint8 provider) public {
+    function test_v2_retryMarkFilled_succeeds(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
@@ -79,7 +79,7 @@ contract SolverNet_Outbox_RetryMarkFilled_Test is TestBase {
         assertEq(address(outbox).balance, 0, "Outbox native balance should be zero after successful retry (exact fee)");
     }
 
-    function test_retryMarkFilled_succeeds_feeRefund(uint8 provider) public {
+    function test_v2_retryMarkFilled_succeeds_feeRefund(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 

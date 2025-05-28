@@ -4,7 +4,7 @@ pragma solidity =0.8.24;
 import "../TestBase.sol";
 
 contract SolverNet_Outbox_General_Test is TestBase {
-    function test_setOutboxes_reverts() public {
+    function test_v2_setOutboxes_reverts() public {
         uint64[] memory chainIds = new uint64[](1);
         chainIds[0] = srcChainId;
         ISolverNetOutbox.InboxConfig[] memory configs = new ISolverNetOutbox.InboxConfig[](0);
@@ -13,7 +13,7 @@ contract SolverNet_Outbox_General_Test is TestBase {
         outbox.setInboxes(chainIds, configs);
     }
 
-    function test_fillFee_reverts() public {
+    function test_v2_fillFee_reverts() public {
         setRoutes(ISolverNetOutbox.Provider.None);
 
         (, IERC7683.OnchainCrossChainOrder memory order) = getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
@@ -24,7 +24,7 @@ contract SolverNet_Outbox_General_Test is TestBase {
         outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
     }
 
-    function test_didFill_oldFillHash_succeeds() public {
+    function test_v2_didFill_oldFillHash_succeeds() public {
         (, IERC7683.OnchainCrossChainOrder memory order) = getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         bytes32 oldFillHash = keccak256(abi.encode(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData));

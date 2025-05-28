@@ -4,7 +4,7 @@ pragma solidity =0.8.24;
 import "./TestBase.sol";
 
 contract SolverNet_E2E_Test is TestBase {
-    function test_e2e_nativeDeposit_nativeExpense() public {
+    function test_v2_e2e_nativeDeposit_nativeExpense() public {
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);
 
@@ -60,7 +60,7 @@ contract SolverNet_E2E_Test is TestBase {
         assertEq(solver.balance, defaultAmount, "solver should have received the native deposit as their reward");
     }
 
-    function test_e2e_nativeDeposit_erc20Expense() public {
+    function test_v2_e2e_nativeDeposit_erc20Expense() public {
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(erc20Vault), 0, user, defaultAmount);
 
@@ -119,7 +119,7 @@ contract SolverNet_E2E_Test is TestBase {
         assertEq(solver.balance, defaultAmount, "solver should have received the native deposit as their reward");
     }
 
-    function test_e2e_erc20Deposit_nativeExpense() public {
+    function test_v2_e2e_erc20Deposit_nativeExpense() public {
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);
 
@@ -177,7 +177,7 @@ contract SolverNet_E2E_Test is TestBase {
         );
     }
 
-    function test_e2e_erc20Deposit_erc20Expense() public {
+    function test_v2_e2e_erc20Deposit_erc20Expense() public {
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(erc20Vault), 0, user, defaultAmount);
 
@@ -238,7 +238,7 @@ contract SolverNet_E2E_Test is TestBase {
         );
     }
 
-    function test_e2e_nativeDeposit_mixedExpenses_multicall() public {
+    function test_v2_e2e_nativeDeposit_mixedExpenses_multicall() public {
         SolverNet.Call[] memory calls = new SolverNet.Call[](2);
         calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);
         calls[1] = getVaultCall(address(erc20Vault), 0, user, defaultAmount);
@@ -302,7 +302,7 @@ contract SolverNet_E2E_Test is TestBase {
         assertEq(solver.balance, defaultAmount * 2, "solver should have received the native deposit as their reward");
     }
 
-    function test_e2e_localOrder() public {
+    function test_v2_e2e_localOrder() public {
         vm.chainId(srcChainId);
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);

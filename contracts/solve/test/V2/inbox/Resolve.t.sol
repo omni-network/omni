@@ -6,7 +6,7 @@ import "../TestBase.sol";
 contract SolverNet_Inbox_Resolve_Test is TestBase {
     using AddrUtils for address;
 
-    function test_resolve_nativeDeposit_nativeExpense_succeeds() public {
+    function test_v2_resolve_nativeDeposit_nativeExpense_succeeds() public {
         bytes32 id = inbox.getNextOnchainOrderId(user);
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
@@ -50,7 +50,7 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
         );
     }
 
-    function test_resolve_erc20Deposit_erc20Expense_succeeds() public {
+    function test_v2_resolve_erc20Deposit_erc20Expense_succeeds() public {
         bytes32 id = inbox.getNextOnchainOrderId(user);
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
@@ -94,7 +94,7 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
         );
     }
 
-    function test_resolve_erc20Deposit_mixedExpenses_multicall_succeeds() public {
+    function test_v2_resolve_erc20Deposit_mixedExpenses_multicall_succeeds() public {
         bytes32 id = inbox.getNextOnchainOrderId(user);
 
         SolverNet.Deposit memory deposit =
@@ -179,19 +179,19 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
         );
     }
 
-    function test_resolve_hyperlane() public {
+    function test_v2_resolve_hyperlane() public {
         address impl = address(new SolverNetInboxV2(address(0), address(mailboxes[uint32(srcChainId)])));
         inbox = SolverNetInboxV2(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
         uint256 snapshot = vm.snapshotState();
-        test_resolve_nativeDeposit_nativeExpense_succeeds();
+        test_v2_resolve_nativeDeposit_nativeExpense_succeeds();
         vm.revertToState(snapshot);
 
-        test_resolve_erc20Deposit_erc20Expense_succeeds();
+        test_v2_resolve_erc20Deposit_erc20Expense_succeeds();
         vm.revertToState(snapshot);
 
-        test_resolve_erc20Deposit_mixedExpenses_multicall_succeeds();
+        test_v2_resolve_erc20Deposit_mixedExpenses_multicall_succeeds();
     }
 }

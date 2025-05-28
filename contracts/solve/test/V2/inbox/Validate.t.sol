@@ -4,7 +4,7 @@ pragma solidity =0.8.24;
 import "../TestBase.sol";
 
 contract SolverNet_Inbox_Validate_Test is TestBase {
-    function test_validate_reverts() public {
+    function test_v2_validate_reverts() public {
         IERC7683.OnchainCrossChainOrder memory order =
             IERC7683.OnchainCrossChainOrder({ fillDeadline: 1, orderDataType: bytes32(0), orderData: "" });
 
@@ -61,21 +61,21 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         order.orderData = abi.encode(orderData);
     }
 
-    function test_validate_succeeds() public view {
+    function test_v2_validate_succeeds() public view {
         (, IERC7683.OnchainCrossChainOrder memory order) = getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         inbox.validate(order);
     }
 
-    function test_validate_hyperlane() public {
+    function test_v2_validate_hyperlane() public {
         address impl = address(new SolverNetInboxV2(address(0), address(mailboxes[uint32(srcChainId)])));
         inbox = SolverNetInboxV2(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
         uint256 snapshot = vm.snapshotState();
-        test_validate_reverts();
+        test_v2_validate_reverts();
         vm.revertToState(snapshot);
 
-        test_validate_succeeds();
+        test_v2_validate_succeeds();
     }
 }

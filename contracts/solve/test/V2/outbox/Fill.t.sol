@@ -12,7 +12,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         refunder = new Refunder();
     }
 
-    function test_fill_reverts(uint8 provider) public {
+    function test_v2_fill_reverts(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
@@ -86,7 +86,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.stopPrank();
     }
 
-    function test_fill_nativeExpense_succeeds(uint8 provider) public {
+    function test_v2_fill_nativeExpense_succeeds(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
@@ -123,7 +123,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(address(nativeVault).balance, defaultAmount, "vault native balance after");
     }
 
-    function test_fill_erc20Expense_succeeds(uint8 provider) public {
+    function test_v2_fill_erc20Expense_succeeds(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
@@ -160,7 +160,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(token2.balanceOf(address(erc20Vault)), defaultAmount, "vault token2 balance after");
     }
 
-    function test_fill_call_refund_succeeds(uint8 provider) public {
+    function test_v2_fill_call_refund_succeeds(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
@@ -197,7 +197,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(address(refunder).balance, 0, "refunder balance after");
     }
 
-    function test_fill_native_overpayment_refund_succeeds(uint8 provider) public {
+    function test_v2_fill_native_overpayment_refund_succeeds(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
@@ -234,7 +234,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(address(nativeVault).balance, defaultAmount, "vault native balance after");
     }
 
-    function test_fill_erc20_overpayment_refund_succeeds(uint8 provider) public {
+    function test_v2_fill_erc20_overpayment_refund_succeeds(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 

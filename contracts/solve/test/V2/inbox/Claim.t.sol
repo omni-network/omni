@@ -6,7 +6,7 @@ import "../TestBase.sol";
 contract SolverNet_Inbox_Claim_Test is TestBase {
     using AddrUtils for address;
 
-    function test_claim_reverts(uint8 provider) public {
+    function test_v2_claim_reverts(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
@@ -52,7 +52,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
         inbox.claim(resolvedOrder.orderId, address(0));
     }
 
-    function test_claim_nativeDeposit_succeeds(uint8 provider) public {
+    function test_v2_claim_nativeDeposit_succeeds(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 
@@ -97,7 +97,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
         assertEq(solver.balance, defaultAmount, "deposit should have been claimed by the solver");
     }
 
-    function test_claim_erc20Deposit_succeeds(uint8 provider) public {
+    function test_v2_claim_erc20Deposit_succeeds(uint8 provider) public {
         provider = uint8(bound(provider, uint8(1), uint8(2)));
         setRoutes(ISolverNetOutbox.Provider(provider));
 

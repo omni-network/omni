@@ -4,7 +4,7 @@ pragma solidity =0.8.24;
 import "../TestBase.sol";
 
 contract SolverNet_Inbox_General_Test is TestBase {
-    function test_setOutboxes_reverts() public {
+    function test_v2_setOutboxes_reverts() public {
         uint64[] memory chainIds = new uint64[](1);
         chainIds[0] = destChainId;
         address[] memory outboxes = new address[](0);
@@ -13,7 +13,7 @@ contract SolverNet_Inbox_General_Test is TestBase {
         inbox.setOutboxes(chainIds, outboxes);
     }
 
-    function test_pause_reverts() public {
+    function test_v2_pause_reverts() public {
         // Should revert if overwriting an active OPEN pause state
         inbox.pauseOpen(true);
         vm.expectRevert(ISolverNetInboxV2.IsPaused.selector);

@@ -4,7 +4,7 @@ pragma solidity =0.8.24;
 import "../TestBase.sol";
 
 contract SolverNet_Inbox_Close_Test is TestBase {
-    function test_close_reverts() public {
+    function test_v2_close_reverts() public {
         inbox.pauseClose(true);
 
         // should revert when `close` is paused
@@ -45,7 +45,7 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         inbox.close(resolvedOrder.orderId);
     }
 
-    function test_close_nativeDeposit_succeeds() public {
+    function test_v2_close_nativeDeposit_succeeds() public {
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -68,7 +68,7 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         assertEq(user.balance, defaultAmount, "deposit should have been returned to the user");
     }
 
-    function test_close_erc20Deposit_succeeds() public {
+    function test_v2_close_erc20Deposit_succeeds() public {
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -91,7 +91,7 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         assertEq(token1.balanceOf(user), defaultAmount, "deposit should have been returned to the user");
     }
 
-    function test_close_localOrder_succeeds() public {
+    function test_v2_close_localOrder_succeeds() public {
         vm.chainId(srcChainId);
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);
@@ -121,22 +121,22 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         assertEq(user.balance, defaultAmount, "deposit should have been returned to the user");
     }
 
-    function test_close_hyperlane() public {
+    function test_v2_close_hyperlane() public {
         address impl = address(new SolverNetInboxV2(address(0), address(mailboxes[uint32(srcChainId)])));
         inbox = SolverNetInboxV2(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
         uint256 snapshot = vm.snapshotState();
-        test_close_reverts();
+        test_v2_close_reverts();
         vm.revertToState(snapshot);
 
-        test_close_nativeDeposit_succeeds();
+        test_v2_close_nativeDeposit_succeeds();
         vm.revertToState(snapshot);
 
-        test_close_erc20Deposit_succeeds();
+        test_v2_close_erc20Deposit_succeeds();
         vm.revertToState(snapshot);
 
-        test_close_localOrder_succeeds();
+        test_v2_close_localOrder_succeeds();
     }
 }
