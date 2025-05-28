@@ -91,6 +91,7 @@ func New() *cobra.Command {
 		newDeployXBridgeCmd(&def),
 		newDeploySolverNetCmd(&def),
 		newSetSolverNetRoutesCmd(&def),
+		newHyperliquidUseBigBlocksCmd(&def),
 		fundAccounts(&def),
 	)
 
@@ -371,6 +372,29 @@ func newSetSolverNetRoutesCmd(def *app.Definition) *cobra.Command {
 			}
 
 			return solve.SetSolverNetRoutes(cmd.Context(), network, backends)
+		},
+	}
+
+	return cmd
+}
+
+func newHyperliquidUseBigBlocksCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "hyperliquid-use-big-blocks",
+		Short: "Enables big HyperEVM blocks for configured accounts",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
+
+			fireCl, err := app.NewFireblocksClient(def.Cfg, def.Testnet.Network, cmd.Name())
+			if err != nil {
+				return errors.Wrap(err, "new fireblocks client")
+			}
+
+			if err := app.HyperliquidUseBigBlocks(ctx, def.Testnet.Network, fireCl); err != nil {
+				return errors.Wrap(err, "use big blocks")
+			}
+
+			return nil
 		},
 	}
 
