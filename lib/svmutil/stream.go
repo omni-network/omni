@@ -30,9 +30,9 @@ func Stream(ctx context.Context, cl *rpc.Client, req StreamReq, callback StreamC
 		return errors.New("neither FromSlot nor AfterSig provided")
 	}
 
-	// Max backoff of 10s
+	// Max backoff of 3s
 	backoffCfg := expbackoff.DefaultConfig
-	backoffCfg.MaxDelay = time.Second * 10
+	backoffCfg.MaxDelay = time.Second * 3
 	backoff, reset := expbackoff.NewWithReset(ctx, expbackoff.With(backoffCfg))
 
 	var prev *rpc.TransactionSignature

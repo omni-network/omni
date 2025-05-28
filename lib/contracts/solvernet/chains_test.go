@@ -10,12 +10,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHLChains(t *testing.T) {
+func TestChains(t *testing.T) {
 	t.Parallel()
 
 	require.NotPanics(t, func() {
 		for _, network := range netconf.All() {
-			_ = solvernet.HLChains(network)
+			_ = solvernet.Chains(network)
 		}
 	})
 }
@@ -25,6 +25,6 @@ func TestFilterByContracts(t *testing.T) {
 	network := netconf.Network{ID: netconf.Mainnet}
 	endpoints := xchain.RPCEndpoints{"bsc": "https://foo.bar"}
 
-	network = solvernet.AddHLNetwork(t.Context(), network, solvernet.FilterByContracts(t.Context(), endpoints))
+	network = solvernet.AddNetwork(t.Context(), network, solvernet.FilterByContracts(t.Context(), endpoints))
 	require.Empty(t, network.Chains)
 }

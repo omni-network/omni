@@ -50,16 +50,32 @@ var hlChains = map[netconf.ID][]uint64{
 }
 
 var trustedChains = map[netconf.ID][]uint64{
-	// Devnet
 	netconf.Devnet: {
-		evmchain.IDSolanaLocal,
+		// evmchain.IDSolanaLocal,
+	},
+	netconf.Staging: {
+		// evmchain.IDSolanaTest,
+	},
+	netconf.Omega: {
+		// evmchain.IDSolanaTest,
+	},
+	netconf.Mainnet: {
+		// evmchain.IDSolana,
 	},
 }
 
-// HLChains returns the list of hyperlane-secured chains for a given solvernet network.
-func HLChains(network netconf.ID) []netconf.Chain {
+func allChains(network netconf.ID) []uint64 {
+	var resp []uint64
+	resp = append(resp, hlChains[network]...)
+	resp = append(resp, trustedChains[network]...)
+
+	return resp
+}
+
+// Chains returns the list of solver-specific chains for a given solvernet network.
+func Chains(network netconf.ID) []netconf.Chain {
 	var resp []netconf.Chain
-	for _, chainID := range hlChains[network] {
+	for _, chainID := range allChains(network) {
 		chain, ok := evmchain.MetadataByID(chainID)
 		if !ok {
 			panic(errors.New("unknown chain", "chain_id", chainID))
@@ -74,39 +90,28 @@ func HLChains(network netconf.ID) []netconf.Chain {
 	return resp
 }
 
-func TrustedChains(network netconf.ID) []netconf.Chain {
-	var resp []netconf.Chain
-	for _, chainID := range trustedChains[network] {
-		chain, ok := evmchain.MetadataByID(chainID)
-		if !ok {
-			panic(errors.New("unknown chain", "chain_id", chainID))
-		}
-		resp = append(resp, netconf.Chain{
-			ID:          chain.ChainID,
-			Name:        chain.Name,
-			BlockPeriod: chain.BlockPeriod,
-		})
-	}
-
-	return resp
-}
-
-// SkipRole returns true if the role should be skipped for the given chain ID.
-func SkipRole(chainID uint64, role eoa.Role) bool {
-	if IsHLOnly(chainID) {
-		return !IsHLRole(role)
-	}
-
-	return false // Otherwise don't skip any roles
-}
-
-// IsHLRole returns true if the role is a hyperlane-related role.
-func IsHLRole(role eoa.Role) bool {
+// isHLRole returns true if the role is a hyperlane-related role.
+func isHLRole(role eoa.Role) bool {
 	if role != eoa.RoleRelayer && role != eoa.RoleMonitor && role != eoa.RoleTester && role != eoa.RoleXCaller {
 		return true
 	}
 
 	return false
+}
+
+func isTrustedRole(role eoa.Role) bool {
+	return map[eoa.Role]bool{
+		eoa.RoleCold:     true,
+		eoa.RoleHot:      true,
+		eoa.RoleDeployer: true,
+		eoa.RoleSolver:   true,
+		eoa.RoleFlowgen:  true,
+	}[role]
+}
+
+// IsSolverOnly returns true if the chain is a solver-specific chain (not part of omni core).
+func IsSolverOnly(chainID uint64) bool {
+	return IsHLOnly(chainID) || IsTrusted(chainID)
 }
 
 // IsDisabled returns true if the chain is disabled.
@@ -138,99 +143,54 @@ func FilterByContracts(ctx context.Context, endpoints xchain.RPCEndpoints) func(
 	return func(network netconf.ID, chain netconf.Chain) bool {
 		endpoint, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		if err != nil {
-			log.Debug(ctx, "Endpoint", "error", err.Error())
 			return false
 		}
 
 		ethCl, err := ethclient.DialContext(ctx, chain.Name, endpoint)
 		if err != nil {
-			log.Debug(ctx, "Dial", "error", err.Error())
 			return false
 		}
 
 		addrs, err := contracts.GetAddresses(ctx, network)
 		if err != nil {
-			log.Debug(ctx, "Addresses", "error", err.Error())
 			return false
 		}
 
 		contract, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, ethCl)
 		if err != nil {
-			log.Debug(ctx, "Inbox contract", "error", err.Error())
 			return false
 		}
 
 		_, err = contract.DeployedAt(&bind.CallOpts{Context: ctx})
-		if err != nil {
-			log.Debug(ctx, "Deployed at", "error", err.Error())
-		}
 
 		return err == nil
 	}
 }
 
-// AddHLNetwork returns a copy of the network with hyperlane-secured chains added.
+// AddNetwork returns a copy of the network with solver-specific chains added.
 // Optional selector functions can be provided to filter the chains.
-func AddHLNetwork(ctx context.Context, network netconf.Network, selectors ...func(netconf.ID, netconf.Chain) bool) netconf.Network {
-	resp := filter(network.ID, HLChains(network.ID), selectors...)
+func AddNetwork(ctx context.Context, network netconf.Network, selectors ...func(netconf.ID, netconf.Chain) bool) netconf.Network {
+	chains := Chains(network.ID)
 
-	log.Debug(ctx, "Adding hyperlane chains to network", "network", network.ID, "included", resp.FmtIncluded(), "excluded", resp.FmtExcluded())
-
-	return network.AddChains(resp.Included...)
-}
-
-// AddTrustedNetwork returns a copy of the network with solver-trusted chains added.
-// Optional selector functions can be provided to filter the chains.
-func AddTrustedNetwork(ctx context.Context, network netconf.Network, selectors ...func(netconf.ID, netconf.Chain) bool) netconf.Network {
-	resp := filter(network.ID, TrustedChains(network.ID), selectors...)
-
-	log.Debug(ctx, "Adding solver-trusted chains to network", "network", network.ID, "included", resp.FmtIncluded(), "excluded", resp.FmtExcluded())
-
-	return network.AddChains(resp.Included...)
-}
-
-type filterResp struct {
-	Included []netconf.Chain
-	Excluded []netconf.Chain
-}
-
-func (f filterResp) FmtIncluded() []string {
-	var resp []string
-	for _, chain := range f.Included {
-		resp = append(resp, chain.Name)
-	}
-
-	return resp
-}
-
-func (f filterResp) FmtExcluded() []string {
-	var resp []string
-	for _, chain := range f.Excluded {
-		resp = append(resp, chain.Name)
-	}
-
-	return resp
-}
-
-// AddTrustedNetwork returns a copy of the network with solver-trusted chains added.
-// Optional selector functions can be provided to filter the chains.
-func filter(network netconf.ID, chains []netconf.Chain, selectors ...func(netconf.ID, netconf.Chain) bool) filterResp {
 	// Filter out chains using provided selectors
-	var excluded []netconf.Chain
+	var included, excluded []string
 	for _, selector := range selectors {
 		var selected []netconf.Chain
 		for _, chain := range chains {
-			if selector(network, chain) {
+			if selector(network.ID, chain) {
 				selected = append(selected, chain)
 			} else {
-				excluded = append(excluded, chain)
+				excluded = append(excluded, chain.Name)
 			}
 		}
 		chains = selected
 	}
 
-	return filterResp{
-		Included: chains,
-		Excluded: excluded,
+	for _, chain := range chains {
+		included = append(included, chain.Name)
 	}
+
+	log.Debug(ctx, "Adding solver-specific chains to network", "network", network.ID, "included", included, "excluded", excluded)
+
+	return network.AddChains(chains...)
 }
