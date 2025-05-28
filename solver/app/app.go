@@ -79,8 +79,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, cfg.RPCEndpoints))
-	log.Debug(ctx, "Hyperlane network initialized", "network", network.ID, "chain_ids", network.ChainIDs())
+	network = solvernet.AddNetwork(ctx, network, solvernet.FilterByContracts(ctx, cfg.RPCEndpoints))
 
 	if cfg.SolverPrivKey == "" {
 		return errors.New("private key not set")

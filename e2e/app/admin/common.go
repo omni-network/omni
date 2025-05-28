@@ -143,18 +143,16 @@ func setupChainHL(ctx context.Context, s shared, c netconf.Chain) (chain, error)
 		return chain{}, errors.Wrap(err, "get addresses")
 	}
 
-	if solvernet.IsHLOnly(evmchain.ChainID) {
-		return chain{
-			EVMChain:    evmchain,
-			RPCEndpoint: rpc,
-		}, nil
-	}
-
-	return chain{
+	chain := chain{
 		EVMChain:      evmchain,
 		PortalAddress: addrs.Portal,
 		RPCEndpoint:   rpc,
-	}, nil
+	}
+	if solvernet.IsHLOnly(evmchain.ChainID) {
+		chain.PortalAddress = common.Address{}
+	}
+
+	return chain, nil
 }
 
 // getEVMChain returns the EVMChain for a given netconf chain, with special handling for the Omni EVM.
@@ -234,7 +232,7 @@ func (s shared) runHL(ctx context.Context, def app.Definition, fn func(context.C
 	if err != nil {
 		return errors.Wrap(err, "network from def")
 	}
-	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, _s.endpoints))
+	network = solvernet.AddNetwork(ctx, network, solvernet.FilterByContracts(ctx, _s.endpoints))
 
 	for _, _chain := range network.EVMChains() {
 		if s.cfg.Chain != "" && s.cfg.Chain != _chain.Name {

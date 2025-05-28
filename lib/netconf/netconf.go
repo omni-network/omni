@@ -9,6 +9,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/uni"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -52,6 +53,8 @@ func (n Network) EVMChains() []Chain {
 	for _, chain := range n.Chains {
 		if IsOmniConsensus(n.ID, chain.ID) {
 			continue
+		} else if uni.IsSVMChain(chain.ID) {
+			continue // Skip SVM chains, they are not EVM chains.
 		}
 
 		resp = append(resp, chain)

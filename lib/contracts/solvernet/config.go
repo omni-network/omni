@@ -1,6 +1,7 @@
 package solvernet
 
 import (
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -8,9 +9,10 @@ import (
 )
 
 const (
-	ProviderNone uint8 = iota // No provider
-	ProviderCore uint8 = 1    // Omni Core
-	ProviderHL   uint8 = 2    // Hyperlane
+	ProviderNone    uint8 = iota // No provider
+	ProviderCore                 // Omni Core
+	ProviderHL                   // Hyperlane
+	ProviderTrusted              // Trusted (e.g. Solana)
 )
 
 var (
@@ -83,17 +85,48 @@ func IsHL(chainID uint64) bool {
 	return ok
 }
 
+// IsTrusted returns true if the chain ID is solver-trusted chain, like solana.
+func IsTrusted(chainID uint64) bool {
+	for _, chains := range trustedChains {
+		for _, id := range chains {
+			if id == chainID {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 // IsHLOnly returns true if the chain only supports Hyperlane interop.
 func IsHLOnly(chainID uint64) bool {
-	return IsHL(chainID) && !IsCore(chainID)
+	return IsHL(chainID) && !IsCore(chainID) && !IsTrusted(chainID)
 }
 
 // IsSupported returns true if the chain ID is supported.
 func IsSupported(chainID uint64) bool {
-	return IsCore(chainID) || IsHL(chainID)
+	return IsCore(chainID) || IsHL(chainID) || IsTrusted(chainID)
 }
 
-// onlyCoreEndpoints filters the given RPC endpoints to only include core endpoints.
+func SkipRole(chainID uint64, role eoa.Role) bool {
+	// Only skip the role if the chain is a solvernet chain.
+	if !IsSolverOnly(chainID) {
+		return false
+	}
+
+	// Skip non-HL roles on HL-only chains.
+	if IsHLOnly(chainID) && !isHLRole(role) {
+		return true
+	}
+
+	if IsTrusted(chainID) && !isTrustedRole(role) {
+		return true // Skip non-trusted roles on trusted chains.
+	}
+
+	return false
+}
+
+// OnlyCoreEndpoints filters the given RPC endpoints to only include core endpoints.
 // Necessary prereq for netconf.AwaitOnExecutionChain, which expects all
 // endopints to have portal registrations.
 func OnlyCoreEndpoints(endpoints xchain.RPCEndpoints) xchain.RPCEndpoints {
@@ -119,6 +152,12 @@ func Provider(srcChainID, destChainID uint64) (uint8, bool) {
 	if !IsSupported(srcChainID) || !IsSupported(destChainID) {
 		// Unsupported chain: not supported
 		return ProviderNone, false
+	}
+
+	if IsTrusted(destChainID) {
+		return ProviderTrusted, true
+	} else if IsTrusted(srcChainID) {
+		return ProviderNone, false // Trusted chains are only destinations for now.
 	}
 
 	if srcChainID == destChainID {

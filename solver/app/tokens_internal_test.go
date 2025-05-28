@@ -33,7 +33,7 @@ func genSupportedTokens(t *testing.T, network netconf.ID, fileName string) {
 	metas, err := m.EVMChains()
 	require.NoError(t, err)
 
-	for _, chain := range solvernet.HLChains(network) {
+	for _, chain := range solvernet.Chains(network) {
 		meta, ok := evmchain.MetadataByID(chain.ID)
 		require.True(t, ok, "chain %d not found", chain.ID)
 		metas = append(metas, meta)

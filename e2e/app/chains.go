@@ -20,7 +20,7 @@ func AddSolverEndpoints(ctx context.Context, networkID netconf.ID, endpoints xch
 	log.Debug(ctx, "Adding solver endpoints", "network", networkID, "endpoints", endpoints, "rpc_overrides", rpcOverrides)
 
 	// extend endpoints w/ hl chains
-	for _, chain := range solvernet.HLChains(networkID) {
+	for _, chain := range solvernet.Chains(networkID) {
 		meta, ok := evmchain.MetadataByID(chain.ID)
 		if !ok {
 			return xchain.RPCEndpoints{}, errors.New("unknown chain", "chain_id", chain.ID)
@@ -49,7 +49,7 @@ func AddSolverNetworkAndBackends(ctx context.Context, network netconf.Network, e
 		return netconf.Network{}, ethbackend.Backends{}, errors.Wrap(err, "get endpoints")
 	}
 
-	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByEndpoints(endpoints))
+	network = solvernet.AddNetwork(ctx, network, solvernet.FilterByEndpoints(endpoints))
 
 	var backends ethbackend.Backends
 	if network.ID == netconf.Devnet {
@@ -86,7 +86,7 @@ func HLNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, err
 	}
 
 	newChain := func(chain types.EVMChain) netconf.Chain {
-		if solvernet.IsHLOnly(chain.ChainID) {
+		if solvernet.IsSolverOnly(chain.ChainID) {
 			return netconf.Chain{
 				ID:          chain.ChainID,
 				Name:        chain.Name,

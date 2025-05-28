@@ -519,7 +519,7 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 	}
 
 	// Extend endpoints with non-manifest HL chains, passed in via rpc overrides.
-	for _, chain := range solvernet.HLChains(def.Testnet.Network) {
+	for _, chain := range solvernet.Chains(def.Testnet.Network) {
 		rpc, ok := def.Cfg.RPCOverrides[chain.Name]
 		if !ok {
 			continue
@@ -592,7 +592,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	}
 
 	// Extend endpoints with non-manifest HL chains, passed in via rpc overrides.
-	for _, chain := range solvernet.HLChains(def.Testnet.Network) {
+	for _, chain := range solvernet.Chains(def.Testnet.Network) {
 		rpc, ok := def.Cfg.RPCOverrides[chain.Name]
 		if !ok {
 			continue
