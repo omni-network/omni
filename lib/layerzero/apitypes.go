@@ -1,11 +1,31 @@
 package layerzero
 
-const (
-	MessageStatusFailed     = "FAILED"
-	MessageStatusConfirming = "CONFIRMING"
-	MessageStatusInFlight   = "INFLIGHT"
-	MessageStatusDelivered  = "DELIVERED"
+import (
+	"github.com/omni-network/omni/lib/errors"
 )
+
+type MsgStatus string
+
+const (
+	MsgStatusConfirming    MsgStatus = "CONFIRMING"     // System confirming the source tx
+	MsgStatusInFlight      MsgStatus = "INFLIGHT"       // Inflight to destination
+	MsgStatusDelivered     MsgStatus = "DELIVERED"      // Successfully delivered on the destination
+	MsgStatusFailed        MsgStatus = "FAILED"         // Tx errored and did not complete
+	MsgStatusPayloadStored MsgStatus = "PAYLOAD_STORED" // Ran out of gas, needs to be retried
+)
+
+func (s MsgStatus) Verify() error {
+	switch s {
+	case MsgStatusConfirming, MsgStatusInFlight, MsgStatusDelivered, MsgStatusFailed, MsgStatusPayloadStored:
+		return nil
+	default:
+		return errors.New("invalid message status", "status", s)
+	}
+}
+
+func (s MsgStatus) String() string {
+	return string(s)
+}
 
 // Message is the Message type returned by the LayerZero API.
 // Most of the fields are omitted. Full docs here: https://scan.layerzero-api.com/v1/swagger
@@ -15,19 +35,23 @@ type Message struct {
 }
 
 func (m Message) IsInFlight() bool {
-	return m.Status.Name == MessageStatusInFlight
+	return m.Status.Name == MsgStatusInFlight.String()
 }
 
 func (m Message) IsDelivered() bool {
-	return m.Status.Name == MessageStatusDelivered
+	return m.Status.Name == MsgStatusDelivered.String()
 }
 
 func (m Message) IsConfirming() bool {
-	return m.Status.Name == MessageStatusConfirming
+	return m.Status.Name == MsgStatusConfirming.String()
 }
 
 func (m Message) IsFailed() bool {
-	return m.Status.Name == MessageStatusFailed
+	return m.Status.Name == MsgStatusFailed.String()
+}
+
+func (m Message) IsPayloadStored() bool {
+	return m.Status.Name == MsgStatusPayloadStored.String()
 }
 
 type Pathway struct {

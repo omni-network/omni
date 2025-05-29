@@ -1,4 +1,4 @@
-package usdt0
+package layerzero
 
 import (
 	"github.com/omni-network/omni/lib/evmchain"
@@ -13,3 +13,8 @@ var (
 		evmchain.IDHyperEVM:    30367,
 	}
 )
+
+func EIDByChain(chainID uint64) (uint32, bool) {
+	eid, ok := eidByChain[chainID]
+	return eid, ok
+}

@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/layerzero"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
@@ -32,7 +33,7 @@ func Send(
 		return nil, errors.New("no oft", "chain_id", srcChainID)
 	}
 
-	destEID, ok := eidByChain[destChainID]
+	destEID, ok := layerzero.EIDByChain(destChainID)
 	if !ok {
 		return nil, errors.New("no eid", "chain_id", destChainID)
 	}
