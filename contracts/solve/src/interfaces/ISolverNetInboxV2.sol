@@ -18,6 +18,7 @@ interface ISolverNetInboxV2 is IOriginSettler, IMessageRecipient {
     error InvalidExpenseToken();
     error InvalidExpenseAmount();
     error InvalidArrayLength();
+    error InvalidNonce();
     error InvalidUser();
 
     // Open order errors

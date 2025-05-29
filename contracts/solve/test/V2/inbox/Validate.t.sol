@@ -16,7 +16,7 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         // `orderDataType` must be correct
         vm.expectRevert(ISolverNetInboxV2.InvalidOrderTypehash.selector);
         inbox.validate(order);
-        order.orderDataType = ORDER_DATA_TYPEHASH;
+        order.orderDataType = HashLibV2.OLD_ORDERDATA_TYPEHASH;
 
         // `orderData` must not be empty
         vm.expectRevert(ISolverNetInboxV2.InvalidOrderData.selector);

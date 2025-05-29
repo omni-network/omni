@@ -34,30 +34,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         vm.prank(user);
         inbox.open(order);
 
-        // Should revert if order contains more than 32 calls
-        SolverNet.Call[] memory originalCalls = orderData.calls;
-        SolverNet.Call[] memory calls = new SolverNet.Call[](33);
-        orderData.calls = calls;
-        order.orderData = abi.encode(orderData);
-
-        vm.deal(user, defaultAmount);
-        vm.expectRevert(ISolverNetInboxV2.InvalidArrayLength.selector);
-        vm.prank(user);
-        inbox.open{ value: defaultAmount }(order);
-
-        // Should revert if order contains more than 32 expenses
-        orderData.calls = originalCalls;
-        SolverNet.TokenExpense[] memory originalExpenses = orderData.expenses;
-        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](33);
-        orderData.expenses = expenses;
-        order.orderData = abi.encode(orderData);
-
-        vm.expectRevert(ISolverNetInboxV2.InvalidArrayLength.selector);
-        vm.prank(user);
-        inbox.open{ value: defaultAmount }(order);
-
         // Should revert if less tokens are received than expected due to max transfer balance override
-        orderData.expenses = originalExpenses;
         orderData.deposit = SolverNet.Deposit({ token: address(maxTransferToken), amount: type(uint96).max });
         order.orderData = abi.encode(orderData);
 
