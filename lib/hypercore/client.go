@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 )
 
 const (
@@ -85,8 +86,27 @@ func (c client) do(ctx context.Context, action any) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("unexpected error response", "code", resp.StatusCode, "body", string(respBody))
+		return errors.New("request failed", "code", resp.StatusCode, "body", string(respBody))
 	}
+
+	type Response struct {
+		Status   string `json:"status"`
+		Response any    `json:"response"`
+	}
+
+	var respData Response
+	if err := json.Unmarshal(respBody, &respData); err != nil {
+		return errors.Wrap(err, "unmarshal response", "body", string(respBody))
+	}
+
+	if respData.Status != "ok" {
+		return errors.New("unexpected response status", "status", respData.Status, "response", respData.Response)
+	}
+
+	log.Debug(ctx, "Hyperliquid action executed successfully",
+		"action", action,
+		"status", respData.Status,
+		"response", respData.Response)
 
 	return nil
 }
