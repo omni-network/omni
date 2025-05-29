@@ -28,6 +28,11 @@ func newChecker(backends unibackend.Backends, isAllowedCall callAllowFunc, price
 			return newRejection(types.RejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
 		}
 
+		_, ok := solvernet.Provider(req.SourceChainID, req.DestinationChainID)
+		if !ok {
+			return newRejection(types.RejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
+		}
+
 		dstBackend, err := backends.Backend(req.DestinationChainID)
 		if err != nil {
 			return newRejection(types.RejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))

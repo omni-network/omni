@@ -415,6 +415,15 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			},
 		},
 		{
+			name:   "unsupported dest chain - no route",
+			reason: types.RejectUnsupportedDestChain,
+			reject: true,
+			order: testOrder{
+				srcChainID: evmchain.IDSepolia,   // Hyperlane only chain
+				dstChainID: evmchain.IDOmniOmega, // Core only
+			},
+		},
+		{
 			name:   "invalid deposit (native token mismatch)",
 			reason: types.RejectInvalidDeposit,
 			reject: true,
