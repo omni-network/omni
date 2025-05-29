@@ -10,14 +10,14 @@ import (
 )
 
 // MonitorSendsForever monitors USDT0 sends in db, logging and udpating their status.
-func MonitorSendsForever(ctx context.Context, db *DB, client layerzero.Client) error {
+func MonitorSendsForever(ctx context.Context, db *DB, client layerzero.Client) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return
 		case <-ticker.C:
 			if err := monitorSends(ctx, db, client); err != nil {
 				log.Error(ctx, "Failed to monitor sends (will retry)", err)
@@ -30,8 +30,9 @@ func MonitorSendsForever(ctx context.Context, db *DB, client layerzero.Client) e
 func monitorSends(ctx context.Context, db *DB, client layerzero.Client) error {
 	// Get all messages that are not in a final state
 	msgs, err := db.GetMsgs(ctx, FilterMsgByStatus(
-		layerzero.MsgStatusConfirming,
+		layerzero.MsgStatusUnknown,
 		layerzero.MsgStatusInFlight,
+		layerzero.MsgStatusConfirming,
 		layerzero.MsgStatusPayloadStored,
 	))
 	if err != nil {
