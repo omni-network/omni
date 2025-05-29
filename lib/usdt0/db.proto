@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package lib.usdt0;
+
+import "cosmos/orm/v1/orm.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/omni-network/omni/lib/usdt0";
+
+// Match layer zero message status types
+enum MsgStatus {
+  MSG_STATUS_UNKNOWN = 0;
+  MSG_STATUS_CONFIRMING = 1;
+  MSG_STATUS_INFLIGHT = 2;
+  MSG_STATUS_DELIVERED = 3;
+  MSG_STATUS_FAILED = 4;
+  MSG_STATUS_PAYLOAD_STORED = 6;
+}
+
+message MsgSendUSDT0 {
+  option (cosmos.orm.v1.table) = {
+    id: 1;
+    primary_key: { fields: "tx_hash" }
+  };
+
+  bytes tx_hash = 1;        // Source tx hash
+  uint64 block_height = 2;  // Height of soruce chain block
+  uint64 src_chain_id = 3;  // Source chain ID
+  uint64 dest_chain_id = 4; // Destination chain ID
+  bytes amount = 5;         // Amount of USDT0 sent
+  int32 status = 6;         // Message status
+  google.protobuf.Timestamp created_at = 7; // Creation timestamp
+}

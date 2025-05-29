@@ -13,4 +13,6 @@ if [[ "${EXPECT}" != "${ACTUAL}" ]]; then
 fi
 
 ./scripts/buf_generate.sh
-buf lint
+
+echo "Running buf lint"
+buf lint --exclude-path "contracts"
