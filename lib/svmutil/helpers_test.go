@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/svmutil"
 
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/gagliardetto/solana-go"
 	"github.com/stretchr/testify/require"
 )

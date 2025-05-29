@@ -75,9 +75,9 @@ func AddSolverNetworkAndBackends(ctx context.Context, network netconf.Network, e
 	return network, backends, nil
 }
 
-// HLNetworkFromDef returns the network configuration from the definition.
+// SolverNetworkFromDef returns the network configuration from the definition.
 // Note that this does not panic as it does in definition.go by manually setting portal addresses without deploy height.
-func HLNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, error) {
+func SolverNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, error) {
 	var chains []netconf.Chain
 
 	addrs, err := contracts.GetAddresses(ctx, def.Testnet.Network)
@@ -121,6 +121,14 @@ func HLNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, err
 	// Add all anvil chains
 	for _, anvil := range def.Testnet.AnvilChains {
 		chains = append(chains, newChain(anvil.Chain))
+	}
+
+	for _, svm := range def.Testnet.SVMChains {
+		chains = append(chains, netconf.Chain{
+			ID:          svm.ChainID,
+			Name:        svm.Name,
+			BlockPeriod: svm.BlockPeriod,
+		})
 	}
 
 	return netconf.Network{

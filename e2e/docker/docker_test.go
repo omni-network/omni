@@ -50,6 +50,8 @@ func TestComposeTemplate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			_, ipNet, err := net.ParseCIDR("10.186.73.0/24")
 			require.NoError(t, err)
+			svmMeta, ok := evmchain.MetadataByID(evmchain.IDSolanaLocal)
+			require.True(t, ok)
 
 			key, err := crypto.HexToECDSA("59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
 			require.NoError(t, err)
@@ -109,6 +111,11 @@ func TestComposeTemplate(t *testing.T) {
 						LoadState:  "path/to/anvil/state.json",
 					},
 				},
+				SVMChains: []types.SVMChain{{
+					Metadata:    svmMeta,
+					InternalRPC: "http://svm:8899",
+					ExternalRPC: "http://localhost:8899",
+				}},
 			}
 
 			// If the network is empheral, we use the devnet configuration.

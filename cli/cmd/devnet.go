@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/buildinfo"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -202,7 +203,7 @@ func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoint
 		return netconf.Network{}, nil, errors.Wrap(err, "make portal registry")
 	}
 
-	network, err := netconf.AwaitOnExecutionChain(log.WithNoopLogger(ctx), netID, portalReg, endpoints.Keys())
+	network, err := netconf.AwaitOnExecutionChain(log.WithNoopLogger(ctx), netID, portalReg, solvernet.OnlyCoreEndpoints(endpoints).Keys())
 	if err != nil {
 		return netconf.Network{}, nil, &CliError{
 			Msg:     "failed to check on-chain registry",
