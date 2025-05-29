@@ -57,20 +57,26 @@ func newSVMStreamCallback(
 	asyncWork asyncWorkFunc,
 ) svmutil.StreamCallback {
 	return func(ctx context.Context, sig *rpc.TransactionSignature) error {
+		if sig.Err != nil {
+			log.Debug(ctx, "AnchorInbox: Ignoring failed tx", "tx_err", sig.Err, "tx", sig)
+			return nil // Skip failed transactions
+		}
+
 		txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, sig.Signature)
-		if customErr := anchorinbox.DecodeMetaError(txResp); customErr != nil {
-			log.Warn(ctx, "AnchorInbox: Ignoring failed tx", customErr, "tx", sig)
-			return nil
-		} else if err != nil {
+		if err != nil {
 			return errors.Wrap(err, "get tx")
 		}
 
-		events, err := anchorinbox.DecodeEvents(txResp, anchorinbox.ProgramID, func([]solana.PublicKey) (map[solana.PublicKey]solana.PublicKeySlice, error) {
-			return nil, errors.New("address lookup not supported")
-		})
+		logMsgs, ok, err := svmutil.FilterDataLogs(txResp.Meta.LogMessages, anchorinbox.ProgramID)
 		if err != nil {
-			log.Warn(ctx, "AnchorInbox: ignoring decode events failure tx", err, "tx", sig)
-			return nil
+			return errors.Wrap(err, "filter logs")
+		} else if !ok {
+			log.Warn(ctx, "AnchorInbox: potentially skipping truncated logs [BUG]", nil, "tx", sig)
+		}
+
+		events, err := anchorinbox.DecodeLogEvents(logMsgs)
+		if err != nil {
+			return errors.Wrap(err, "decode events")
 		}
 
 		for i, event := range events {
