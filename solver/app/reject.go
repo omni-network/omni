@@ -72,6 +72,11 @@ func newShouldRejector(
 
 		// Internal logic just return errors (convert them to rejections below)
 		err = func(ctx context.Context, order Order) error {
+			_, ok := solvernet.Provider(order.SourceChainID, pendingData.DestinationChainID)
+			if !ok {
+				return newRejection(types.RejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", pendingData.DestinationChainID))
+			}
+
 			backend, err := backends.Backend(pendingData.DestinationChainID)
 			if err != nil {
 				return newRejection(types.RejectUnsupportedDestChain, err)
