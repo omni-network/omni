@@ -70,7 +70,7 @@ contract SolverNetInboxV2 is
     uint8 internal constant ALL_PAUSED = 3;
 
     /**
-     * @notice The canonical Permit2 contract.
+     * @notice Canonical permit2 contract address.
      */
     IPermit2 internal constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
@@ -305,6 +305,7 @@ contract SolverNetInboxV2 is
 
     /**
      * @notice Resolve the gasless order with validation.
+     * @dev The `bytes calldata originFillerData` param is currently unused.
      * @param order GaslessCrossChainOrder to resolve.
      */
     function resolveFor(GaslessCrossChainOrder calldata order, bytes calldata)
@@ -337,6 +338,7 @@ contract SolverNetInboxV2 is
 
     /**
      * @notice Open a gasless order to execute a call on another chain, backed by deposits.
+     * @dev The `bytes calldata originFillerData` param is currently unused.
      * @dev Token deposits are transferred from order.user to this inbox, native deposits are not supported.
      * @param order GaslessCrossChainOrder to open.
      * @param signature Signature from order.user.
@@ -728,7 +730,7 @@ contract SolverNetInboxV2 is
             permit,
             details,
             order.user,
-            HashLibV2.witnessHashCalldata(order),
+            HashLibV2.witnessHashCalldata(order, orderData),
             HashLibV2.PERMIT2_WITNESS_TYPE_STRING,
             signature
         );
