@@ -198,7 +198,17 @@ var (
 
 		// MNT
 		mustToken(evmchain.IDMantle, tokens.MNT): {
-			min: 100, // Neede for gas + hyperlane fees
+			min: 15000, // Alert on 15k (rebalance is manual)
+		},
+
+		// mETH
+		mustToken(evmchain.IDMantle, tokens.METH): {
+			min: 4, // Alert on 4 mETH (rebalance is manual)
+		},
+
+		// WETH
+		mustToken(evmchain.IDMantle, tokens.WETH): {
+			min: 4, // Alert on 1 WETH (rebalance is manual)
 		},
 	}
 )

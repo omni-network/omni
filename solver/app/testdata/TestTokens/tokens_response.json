@@ -12,6 +12,16 @@
   },
   {
    "enabled": true,
+   "name": "Mantle",
+   "symbol": "MNT",
+   "chainId": 1,
+   "address": "0x3c3a81e81dc49a522a592e7622a7e711c06bf354",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x3635c9adc5dea00000"
+  },
+  {
+   "enabled": true,
    "name": "Omni Network",
    "symbol": "OMNI",
    "chainId": 1,
@@ -39,6 +49,26 @@
    "decimals": 6,
    "expenseMin": "0x186a0",
    "expenseMax": "0x2540be400"
+  },
+  {
+   "enabled": true,
+   "name": "Wrapped Ether",
+   "symbol": "WETH",
+   "chainId": 1,
+   "address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x29a2241af62c0000"
+  },
+  {
+   "enabled": true,
+   "name": "mETH",
+   "symbol": "mETH",
+   "chainId": 1,
+   "address": "0xd5f7838f5c461feff7fe49ea5ebaf7728bb0adfa",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x29a2241af62c0000"
   },
   {
    "enabled": true,
@@ -82,6 +112,16 @@
   },
   {
    "enabled": true,
+   "name": "Wrapped Ether",
+   "symbol": "WETH",
+   "chainId": 10,
+   "address": "0x4200000000000000000000000000000000000006",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x29a2241af62c0000"
+  },
+  {
+   "enabled": true,
    "name": "Omni Network",
    "symbol": "OMNI",
    "chainId": 166,
@@ -109,6 +149,16 @@
    "decimals": 6,
    "expenseMin": "0x186a0",
    "expenseMax": "0x2540be400"
+  },
+  {
+   "enabled": true,
+   "name": "Wrapped Ether",
+   "symbol": "WETH",
+   "chainId": 8453,
+   "address": "0x4200000000000000000000000000000000000006",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x29a2241af62c0000"
   },
   {
    "enabled": true,
@@ -149,6 +199,16 @@
    "decimals": 6,
    "expenseMin": "0x186a0",
    "expenseMax": "0x2540be400"
+  },
+  {
+   "enabled": true,
+   "name": "Wrapped Ether",
+   "symbol": "WETH",
+   "chainId": 42161,
+   "address": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x29a2241af62c0000"
   }
  ]
 }

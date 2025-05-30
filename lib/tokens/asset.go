@@ -124,6 +124,13 @@ var (
 		Decimals:    9,
 		CoingeckoID: "solana",
 	}
+
+	METH = Asset{
+		Symbol:      "mETH",
+		Name:        "mETH",
+		Decimals:    18,
+		CoingeckoID: "mantle-staked-ether",
+	}
 )
 
 func AssetBySymbol(symbol string) (Asset, error) {
