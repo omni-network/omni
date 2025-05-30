@@ -7,6 +7,7 @@ import (
 type MsgStatus string
 
 const (
+	MsgStatusUnknown       MsgStatus = "UNKNOWN"        // Unknown status
 	MsgStatusConfirming    MsgStatus = "CONFIRMING"     // System confirming the source tx
 	MsgStatusInFlight      MsgStatus = "INFLIGHT"       // Inflight to destination
 	MsgStatusDelivered     MsgStatus = "DELIVERED"      // Successfully delivered on the destination
@@ -16,7 +17,7 @@ const (
 
 func (s MsgStatus) Verify() error {
 	switch s {
-	case MsgStatusConfirming, MsgStatusInFlight, MsgStatusDelivered, MsgStatusFailed, MsgStatusPayloadStored:
+	case MsgStatusUnknown, MsgStatusConfirming, MsgStatusInFlight, MsgStatusDelivered, MsgStatusFailed, MsgStatusPayloadStored:
 		return nil
 	default:
 		return errors.New("invalid message status", "status", s)

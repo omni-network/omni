@@ -2,7 +2,6 @@ package usdt0
 
 import (
 	"math/big"
-	"time"
 
 	"github.com/omni-network/omni/lib/layerzero"
 
@@ -17,5 +16,4 @@ type MsgSend struct {
 	DestChainID uint64              // Destination chain ID
 	Amount      *big.Int            // Amount of USDT0 sent
 	Status      layerzero.MsgStatus // Message status
-	CreatedAt   time.Time           // Creation timestamp
 }
