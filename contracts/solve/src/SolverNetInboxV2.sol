@@ -12,6 +12,7 @@ import { ISolverNetInboxV2 } from "./interfaces/ISolverNetInboxV2.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
+import { HashLibV2 } from "./lib/HashLibV2.sol";
 import { IPermit2, ISignatureTransfer } from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 
 /**
@@ -49,13 +50,6 @@ contract SolverNetInboxV2 is
     uint256 internal constant SOLVER = _ROLE_0;
 
     /**
-     * @notice Typehash for the OrderData struct.
-     */
-    bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
-        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
-    );
-
-    /**
      * @notice Action ID for xsubmissions, used as Pauseable key in OmniPortal
      */
     bytes32 internal constant ACTION_XSUBMIT = keccak256("xsubmit");
@@ -76,7 +70,7 @@ contract SolverNetInboxV2 is
     uint8 internal constant ALL_PAUSED = 3;
 
     /**
-     * @notice The canonical Permit2 contract.
+     * @notice Canonical permit2 contract address.
      */
     IPermit2 internal constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
@@ -131,9 +125,9 @@ contract SolverNetInboxV2 is
     mapping(bytes32 id => uint248) internal _orderOffset;
 
     /**
-     * @notice Map user to nonce.
+     * @notice Map user address to onchain order nonce.
      */
-    mapping(address user => uint256 nonce) internal _userNonce;
+    mapping(address user => uint256 nonce) internal _onchainUserNonce;
 
     /**
      * @notice Modifier to ensure contract functions are not paused.
@@ -259,7 +253,7 @@ contract SolverNetInboxV2 is
      * @param user Address of the user the order is opened for.
      */
     function getNextOnchainOrderId(address user) external view returns (bytes32) {
-        return _getOrderId({ user: user, nonce: _userNonce[user], gasless: false });
+        return _getOrderId({ user: user, nonce: _onchainUserNonce[user], gasless: false });
     }
 
     /**
@@ -267,7 +261,7 @@ contract SolverNetInboxV2 is
      * @param user Address of the user the order is opened for.
      */
     function getOnchainUserNonce(address user) external view returns (uint256) {
-        return _userNonce[user];
+        return _onchainUserNonce[user];
     }
 
     /**
@@ -304,13 +298,14 @@ contract SolverNetInboxV2 is
         address user = _order.header.owner;
         return _resolve({
             order: _order,
-            id: _getOrderId({ user: user, nonce: _userNonce[user], gasless: false }),
+            id: _getOrderId({ user: user, nonce: _onchainUserNonce[user], gasless: false }),
             openDeadline: 0
         });
     }
 
     /**
      * @notice Resolve the gasless order with validation.
+     * @dev The `bytes calldata originFillerData` param is currently unused.
      * @param order GaslessCrossChainOrder to resolve.
      */
     function resolveFor(GaslessCrossChainOrder calldata order, bytes calldata)
@@ -335,7 +330,7 @@ contract SolverNetInboxV2 is
     function open(OnchainCrossChainOrder calldata order) external payable whenNotPaused(OPEN) nonReentrant {
         SolverNet.Order memory _order = _validate(order);
         address user = _order.header.owner;
-        bytes32 id = _getOrderId({ user: user, nonce: _userNonce[user]++, gasless: false });
+        bytes32 id = _getOrderId({ user: user, nonce: _onchainUserNonce[user]++, gasless: false });
 
         _onchainDeposit(_order.deposit);
         _openOrder({ order: _order, id: id, openDeadline: 0 });
@@ -343,13 +338,13 @@ contract SolverNetInboxV2 is
 
     /**
      * @notice Open a gasless order to execute a call on another chain, backed by deposits.
-     * @dev Token deposits are transferred from order.user to this inbox.
+     * @dev The `bytes calldata originFillerData` param is currently unused.
+     * @dev Token deposits are transferred from order.user to this inbox, native deposits are not supported.
      * @param order GaslessCrossChainOrder to open.
      * @param signature Signature from order.user.
      */
     function openFor(GaslessCrossChainOrder calldata order, bytes calldata signature, bytes calldata)
         external
-        payable
         whenNotPaused(OPEN)
         nonReentrant
     {
@@ -463,8 +458,12 @@ contract SolverNetInboxV2 is
      */
     function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
         _validateOnchainOrder(order);
-        (, SolverNet.Order memory _order) =
-            _validateOrderData({ orderDataBytes: order.orderData, fillDeadline: order.fillDeadline, user: address(0) });
+        (, SolverNet.Order memory _order) = _validateOrderData({
+            orderDataBytes: order.orderData,
+            fillDeadline: order.fillDeadline,
+            user: address(0),
+            gasless: false
+        });
         return _order;
     }
 
@@ -478,8 +477,12 @@ contract SolverNetInboxV2 is
         returns (SolverNet.OmniOrderData memory, SolverNet.Order memory)
     {
         _validateGaslessOrder(order);
-        return
-            _validateOrderData({ orderDataBytes: order.orderData, fillDeadline: order.fillDeadline, user: order.user });
+        return _validateOrderData({
+            orderDataBytes: order.orderData,
+            fillDeadline: order.fillDeadline,
+            user: order.user,
+            gasless: true
+        });
     }
 
     /**
@@ -488,7 +491,12 @@ contract SolverNetInboxV2 is
      */
     function _validateOnchainOrder(OnchainCrossChainOrder calldata order) internal view {
         if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
-        if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
+        if (
+            order.orderDataType != HashLibV2.OLD_ORDERDATA_TYPEHASH
+                && order.orderDataType != HashLibV2.OMNIORDERDATA_TYPEHASH
+        ) {
+            revert InvalidOrderTypehash();
+        }
         if (order.orderData.length == 0) revert InvalidOrderData();
     }
 
@@ -499,12 +507,16 @@ contract SolverNetInboxV2 is
     function _validateGaslessOrder(GaslessCrossChainOrder calldata order) internal view {
         if (order.originSettler != address(this)) revert InvalidOriginSettler();
         if (order.user == address(0)) revert InvalidUser();
+        if (order.nonce == 0) revert InvalidNonce();
         if (order.originChainId != block.chainid) revert InvalidOriginChainId();
-        if (order.openDeadline < block.timestamp || order.openDeadline >= order.fillDeadline) {
-            revert InvalidOpenDeadline();
+        if (order.openDeadline < block.timestamp) revert InvalidOpenDeadline();
+        if (order.fillDeadline <= order.openDeadline) revert InvalidFillDeadline();
+        if (
+            order.orderDataType != HashLibV2.OLD_ORDERDATA_TYPEHASH
+                && order.orderDataType != HashLibV2.OMNIORDERDATA_TYPEHASH
+        ) {
+            revert InvalidOrderTypehash();
         }
-        if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
-        if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
     }
 
@@ -513,8 +525,9 @@ contract SolverNetInboxV2 is
      * @param orderDataBytes Undecoded SolverNet.OmniOrderData to validate
      * @param fillDeadline Fill deadline of the order
      * @param user Address to override a missing order owner with
+     * @param gasless Whether the order is gasless
      */
-    function _validateOrderData(bytes calldata orderDataBytes, uint32 fillDeadline, address user)
+    function _validateOrderData(bytes calldata orderDataBytes, uint32 fillDeadline, address user, bool gasless)
         internal
         view
         returns (SolverNet.OmniOrderData memory, SolverNet.Order memory)
@@ -527,6 +540,11 @@ contract SolverNetInboxV2 is
             else orderData.owner = user;
         }
         if (orderData.destChainId == 0) revert InvalidDestinationChainId();
+
+        // Gasless orders do not support native deposits
+        if (gasless) {
+            if (orderData.deposit.token == address(0) && orderData.deposit.amount > 0) revert InvalidNativeDeposit();
+        }
 
         SolverNet.Header memory header =
             SolverNet.Header({ owner: orderData.owner, destChainId: orderData.destChainId, fillDeadline: fillDeadline });
@@ -693,30 +711,32 @@ contract SolverNetInboxV2 is
         SolverNet.OmniOrderData memory orderData,
         bytes calldata signature
     ) internal {
-        if (orderData.deposit.token != address(0)) {
-            if (msg.value > 0) revert InvalidNativeDeposit();
+        if (msg.value > 0) revert InvalidNativeDeposit();
 
-            ISignatureTransfer.TokenPermissions memory perms = ISignatureTransfer.TokenPermissions({
-                token: orderData.deposit.token,
-                amount: orderData.deposit.amount
-            });
-            ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
-                permitted: perms,
-                nonce: order.nonce,
-                deadline: order.openDeadline
-            });
-            ISignatureTransfer.SignatureTransferDetails memory details = ISignatureTransfer.SignatureTransferDetails({
-                to: address(this),
-                requestedAmount: orderData.deposit.amount
-            });
+        ISignatureTransfer.TokenPermissions memory perms =
+            ISignatureTransfer.TokenPermissions({ token: orderData.deposit.token, amount: orderData.deposit.amount });
+        ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
+            permitted: perms,
+            nonce: order.nonce,
+            deadline: order.openDeadline
+        });
+        ISignatureTransfer.SignatureTransferDetails memory details = ISignatureTransfer.SignatureTransferDetails({
+            to: address(this),
+            requestedAmount: orderData.deposit.amount
+        });
 
-            // TODO: permit2 witness data
-            bytes32 witnessHash;
-            string memory witnessTypeString;
-
-            PERMIT2.permitWitnessTransferFrom(permit, details, order.user, witnessHash, witnessTypeString, signature);
-        } else {
-            if (msg.value != orderData.deposit.amount) revert InvalidNativeDeposit();
+        uint256 balance = orderData.deposit.token.balanceOf(address(this));
+        PERMIT2.permitWitnessTransferFrom(
+            permit,
+            details,
+            order.user,
+            HashLibV2.witnessHashCalldata(order, orderData),
+            HashLibV2.PERMIT2_WITNESS_TYPE_STRING,
+            signature
+        );
+        // If we received less tokens than expected (max transfer value override or fee on transfer), revert
+        if (orderData.deposit.token.balanceOf(address(this)) < balance + orderData.deposit.amount) {
+            revert InvalidERC20Deposit();
         }
     }
 

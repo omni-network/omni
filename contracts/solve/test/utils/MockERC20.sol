@@ -1,16 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.24;
+pragma solidity ^0.8.24;
 
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 } from "solady/src/tokens/ERC20.sol";
 
 /**
  * @title MockERC20
  * @notice ERC20 with public mints.
  */
 contract MockERC20 is ERC20 {
-    constructor(string memory name, string memory symbol)
-        ERC20(string.concat(name, " (Mock)"), string.concat(symbol, " (Mock)"))
-    { }
+    string private _name;
+    string private _symbol;
+
+    constructor(string memory name_, string memory symbol_) {
+        _name = string.concat(name_, " (Mock)");
+        _symbol = string.concat(symbol_, " (Mock)");
+    }
+
+    function name() public view override returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view override returns (string memory) {
+        return _symbol;
+    }
 
     function mint(address to, uint256 amount) external {
         _mint(to, amount);

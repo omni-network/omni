@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.24;
+pragma solidity ^0.8.24;
 
 import { MockERC20 } from "./MockERC20.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";

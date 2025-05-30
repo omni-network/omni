@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.24;
+pragma solidity ^0.8.24;
 
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 } from "solady/src/tokens/ERC20.sol";
 
 /**
  * @title ApprovalReverterERC20
@@ -11,7 +11,16 @@ contract ApprovalReverterERC20 is ERC20 {
     error ZeroAmount();
     error ZeroAddress();
 
-    constructor() ERC20("Approve Reverter Token", "REVERT") { }
+    string private constant _name = "Approve Reverter Token";
+    string private constant _symbol = "REVERT";
+
+    function name() public pure override returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public pure override returns (string memory) {
+        return _symbol;
+    }
 
     function mint(address to, uint256 amount) external {
         _mint(to, amount);
