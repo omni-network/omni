@@ -44,8 +44,21 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         // `calls` must not be empty
         vm.expectRevert(ISolverNetInboxV2.InvalidMissingCalls.selector);
         inbox.validate(order);
+        orderData.calls = new SolverNet.Call[](33);
+        order.orderData = abi.encode(orderData);
+
+        // `calls` must not exceed array length limit of 32
+        vm.expectRevert(ISolverNetInboxV2.InvalidArrayLength.selector);
+        inbox.validate(order);
         orderData.calls = new SolverNet.Call[](1);
         orderData.calls[0].target = address(erc20Vault);
+        orderData.expenses = new SolverNet.TokenExpense[](33);
+        order.orderData = abi.encode(orderData);
+
+        // `expenses` must not exceed array length limit of 32
+        vm.expectRevert(ISolverNetInboxV2.InvalidArrayLength.selector);
+        inbox.validate(order);
+        orderData.expenses = new SolverNet.TokenExpense[](1);
         order.orderData = abi.encode(orderData);
 
         // `expenses` must not have a zero token

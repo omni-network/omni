@@ -133,15 +133,14 @@ contract TestBase is Test, TestStorage, MockHyperlaneEnvironment {
                 vm.deal(user, amount);
             } else {
                 vm.startPrank(user);
-                MockERC20(token).approve(address(inbox), type(uint256).max);
-                MockERC20(token).approve(address(permit2), type(uint256).max);
                 MockERC20(token).mint(user, amount);
+                MockERC20(token).approve(address(inbox), type(uint256).max);
                 vm.stopPrank();
             }
         }
     }
 
-    function fundUser(SolverNet.OmniOrderData memory orderData) internal {
+    function fundUser(SolverNet.OmniOrderData memory orderData, bool gasless) internal {
         SolverNet.Deposit memory deposit = orderData.deposit;
         address token = deposit.token;
         uint96 amount = deposit.amount;
@@ -151,9 +150,9 @@ contract TestBase is Test, TestStorage, MockHyperlaneEnvironment {
                 vm.deal(user, amount);
             } else {
                 vm.startPrank(user);
-                MockERC20(token).approve(address(inbox), type(uint256).max);
-                MockERC20(token).approve(address(permit2), type(uint256).max);
                 MockERC20(token).mint(user, amount);
+                // Gasless orders do not need approvals
+                if (!gasless) MockERC20(token).approve(address(inbox), type(uint256).max);
                 vm.stopPrank();
             }
         }

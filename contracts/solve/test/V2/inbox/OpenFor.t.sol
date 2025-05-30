@@ -63,7 +63,7 @@ contract SolverNet_Inbox_OpenFor_Test is TestBase {
         (v, r, s) = vm.sign(userPk, digest);
         signature = abi.encodePacked(r, s, v);
 
-        fundUser(orderData);
+        maxTransferToken.mint(user, defaultAmount);
         vm.expectRevert(ISolverNetInboxV2.InvalidERC20Deposit.selector);
         vm.prank(user);
         inbox.openFor(order, signature, "");
@@ -76,7 +76,7 @@ contract SolverNet_Inbox_OpenFor_Test is TestBase {
         (v, r, s) = vm.sign(userPk, digest);
         signature = abi.encodePacked(r, s, v);
 
-        fundUser(orderData);
+        fundUser(orderData, true);
         vm.expectRevert(ISolverNetInboxV2.InvalidERC20Deposit.selector);
         vm.prank(user);
         inbox.openFor(order, signature, "");
@@ -111,7 +111,7 @@ contract SolverNet_Inbox_OpenFor_Test is TestBase {
         bytes32 orderId = inbox.getOrderId(user, 1, true);
         assertEq(resolvedOrder.orderId, orderId, "order id should match");
 
-        fundUser(orderData);
+        fundUser(orderData, true);
         vm.prank(user);
         vm.expectEmit(true, true, true, true);
         emit IERC7683.Open(resolvedOrder.orderId, resolvedOrder);

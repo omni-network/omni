@@ -8,6 +8,7 @@ import { SolverNet } from "./SolverNet.sol";
 library HashLibV2 {
     /**
      * @notice Typehash for the OrderData struct.
+     * @dev Deprecated typehash for the old OrderData struct, which is being replaced with OmniOrderData for more clarity in EIP-712 signing.
      */
     bytes32 internal constant OLD_ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
@@ -15,6 +16,7 @@ library HashLibV2 {
 
     /**
      * @notice Typehash for the OmniOrderData struct.
+     * @dev Newer typehash for the OmniOrderData struct, which is replacing the deprecated OrderData struct.
      */
     bytes32 internal constant OMNIORDERDATA_TYPEHASH = keccak256(
         "OmniOrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Call(address target,bytes4 selector,uint256 value,bytes params)Deposit(address token,uint96 amount)TokenExpense(address spender,address token,uint96 amount)"
