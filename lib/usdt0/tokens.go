@@ -11,7 +11,7 @@ var (
 		evmchain.IDEthereum:    mustToken(evmchain.IDEthereum, tokens.USDT),
 		evmchain.IDOptimism:    mustToken(evmchain.IDOptimism, tokens.USDT0),
 		evmchain.IDArbitrumOne: mustToken(evmchain.IDArbitrumOne, tokens.USDT0),
-		evmchain.IDBase:        mustToken(evmchain.IDBase, tokens.USDT0),
+		evmchain.IDHyperEVM:    mustToken(evmchain.IDHyperEVM, tokens.USDT0),
 	}
 )
 
