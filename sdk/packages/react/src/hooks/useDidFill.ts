@@ -1,7 +1,7 @@
 import { type ResolvedOrder, didFill } from '@omni-network/core'
+import { invariant } from '@omni-network/core'
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useClient } from 'wagmi'
-import { invariant } from '../utils/invariant.js'
 import type { QueryOpts } from './types.js'
 import { useOmniContracts } from './useOmniContracts.js'
 

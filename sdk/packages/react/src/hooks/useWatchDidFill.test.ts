@@ -1,18 +1,11 @@
 import { waitFor } from '@testing-library/react'
-import type { Hex, Log } from 'viem'
+import type { Hex } from 'viem'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderHook } from '../../test/index.js'
 import { useWatchDidFill } from './useWatchDidFill.js'
 
 const unwatch = vi.fn()
-const testLogs: Log[] = [
-  {
-    logIndex: 0,
-    topics: [],
-    data: '0x',
-    transactionHash: '0x123',
-  } as unknown as Log,
-]
+const txHash = '0x123'
 
 const { watchDidFill } = vi.hoisted(() => {
   return {
@@ -32,7 +25,7 @@ beforeEach(() => {
   unwatch.mockClear()
 })
 
-test('default: returns destTxHash when core api triggers onLogs callback', async () => {
+test('default: returns destTxHash when core api triggers onFill callback', async () => {
   const { result, rerender } = renderHook(
     (orderId?: Hex) =>
       useWatchDidFill({
@@ -48,7 +41,7 @@ test('default: returns destTxHash when core api triggers onLogs callback', async
   expect(watchDidFill).not.toHaveBeenCalled()
 
   watchDidFill.mockImplementation((params) => {
-    params.onLogs(testLogs)
+    params.onFill(txHash)
     return unwatch
   })
 
@@ -56,7 +49,7 @@ test('default: returns destTxHash when core api triggers onLogs callback', async
 
   await waitFor(() => {
     expect(watchDidFill).toHaveBeenCalledTimes(1)
-    expect(result.current.destTxHash).toBe('0x123')
+    expect(result.current.destTxHash).toBe(txHash)
     expect(result.current.status).toBe('success')
   })
 

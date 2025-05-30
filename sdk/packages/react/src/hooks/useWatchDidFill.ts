@@ -51,8 +51,8 @@ export function useWatchDidFill({
       client,
       outboxAddress,
       orderId,
-      onLogs: (logs) => {
-        setDestTxHash(logs[0].transactionHash ?? undefined)
+      onFill: (txHash) => {
+        setDestTxHash(txHash)
         unwatch()
       },
       onError: (error) => {
