@@ -24,3 +24,15 @@ func TestVerify(t *testing.T) {
 		uniqChainIDs[metadata.ChainID] = true
 	}
 }
+
+func TestIsSolChain(t *testing.T) {
+	t.Parallel()
+
+	require.True(t, IsSVM(IDSolana))
+	require.True(t, IsSVM(IDSolanaTest))
+	require.True(t, IsSVM(IDSolanaLocal))
+
+	require.False(t, IsSVM(IDBase))
+	require.False(t, IsSVM(IDOptimism))
+	require.False(t, IsSVM(IDArbitrumOne))
+}

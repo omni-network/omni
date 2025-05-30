@@ -90,6 +90,9 @@ type Manifest struct {
 	// MultiOmniEVMs defines whether to deploy one or multiple Omni EVMs.
 	MultiOmniEVMs bool `toml:"multi_omni_evms"`
 
+	// SVMChains defines the SVM chains to deploy; only solana_localnet supported.
+	SVMChains []string `toml:"svm_chains"`
+
 	// PingPongN defines the number of ping pong messages to send. Defaults 3 if 0.
 	PingPongN uint64 `toml:"pingpong_n"`
 

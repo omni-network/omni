@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/halo/comet"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
@@ -107,7 +108,7 @@ func (l *voterLoader) LazyLoad(
 	// and avoid a dependency on possibly mismatching/incorrect RPCEndpoints config.
 	//
 	// TODO(corver): Dynamic reloading of voter when on-chain registry is updated.
-	expected := endpoints.Keys()
+	expected := solvernet.OnlyCoreEndpoints(endpoints).Keys()
 	const day = 100_000 // At least a day old
 	if height, err := omniEVMCl.BlockNumber(ctx); err == nil && height > day {
 		expected = nil

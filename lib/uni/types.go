@@ -16,6 +16,8 @@ const (
 	KindSVM          // solana
 )
 
+// IsSVMChain return true if the given chain ID is one of the SVM chains.
+// Note that evmchain.IsSVMChain is equivalent and preferred, but this avoids a dependency on the evmchain->tokens package.
 func IsSVMChain(chainID uint64) bool {
 	return chainID == 350 || chainID == 351 || chainID == 352 // Hardcoded to avoid dependency on evmchain.
 }

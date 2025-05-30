@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain/queryutil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -357,6 +358,7 @@ func checkSupportedChains(ctx context.Context, n netman.Manager) (bool, error) {
 			}
 
 			supported, err := src.Contract.IsSupportedDest(&bind.CallOpts{Context: ctx}, dest.Chain.ChainID)
+			log.Warn(ctx, "Checking supported chain", err, "src", evmchain.Name(src.Chain.ChainID), "dest", evmchain.Name(dest.Chain.ChainID), "supported", supported)
 			if err != nil {
 				return false, errors.Wrap(err, "check supported chain")
 			} else if !supported {

@@ -100,6 +100,7 @@ func (p *Provider) Setup() error {
 		Nodes:            p.testnet.Nodes,
 		OmniEVMs:         p.testnet.OmniEVMs,
 		Anvils:           p.testnet.AnvilChains,
+		SVM:              len(p.testnet.SVMChains) > 0,
 		Relayer:          true,
 		Prometheus:       p.testnet.Prometheus,
 		Monitor:          true,
@@ -205,6 +206,7 @@ type ComposeDef struct {
 	Relayer    bool
 	Solver     bool
 	Prometheus bool
+	SVM        bool
 
 	MonitorTag    string
 	RelayerTag    string
@@ -379,6 +381,9 @@ func additionalServices(testnet types.Testnet) []string {
 	}
 	for _, anvil := range testnet.AnvilChains {
 		resp = append(resp, anvil.Chain.Name)
+	}
+	if len(testnet.SVMChains) > 0 {
+		resp = append(resp, "svm")
 	}
 
 	resp = append(resp, "monitor", "relayer", "solver")

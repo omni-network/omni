@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
@@ -23,7 +24,7 @@ func networkFromDef(ctx context.Context, def app.Definition) (netconf.Network, e
 		return netconf.Network{}, errors.Wrap(err, "portal registry")
 	}
 
-	network, err := netconf.AwaitOnExecutionChain(ctx, networkID, portalReg, endpoints.Keys())
+	network, err := netconf.AwaitOnExecutionChain(ctx, networkID, portalReg, solvernet.OnlyCoreEndpoints(endpoints).Keys())
 	if err != nil {
 		return netconf.Network{}, errors.Wrap(err, "await onchain")
 	}

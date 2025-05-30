@@ -332,3 +332,8 @@ func Name(id uint64) string {
 
 	return metadata.Name
 }
+
+// IsSVM returns true if the chain is a Solana Virtual Machine (SVM) chain.
+func IsSVM(chainID uint64) bool {
+	return chainID == IDSolana || chainID == IDSolanaTest || chainID == IDSolanaLocal
+}

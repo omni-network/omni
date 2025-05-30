@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -260,7 +261,7 @@ func loadEnv(t *testing.T) NetworkDeps {
 	portalReg, err := makePortalRegistry(testnet.Network, endpoints)
 	require.NoError(t, err)
 
-	network, err := netconf.AwaitOnExecutionChain(t.Context(), testnet.Network, portalReg, endpoints.Keys())
+	network, err := netconf.AwaitOnExecutionChain(t.Context(), testnet.Network, portalReg, solvernet.OnlyCoreEndpoints(endpoints).Keys())
 	require.NoError(t, err)
 
 	backends, err := ethbackend.BackendsFromTestnet(t.Context(), testnet)

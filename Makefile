@@ -12,7 +12,10 @@ FOUNDRY_VERSION := $(shell cat scripts/foundry_version.txt)
 build-docker: ensure-go-releaser ## Builds the docker images using local arch.
 	@git config --local core.abbrev 7
 	@sed "s/amd64/$(ARCH)/g" .goreleaser-snapshot.yaml > .goreleaser-local.yaml
-	@FOUNDRY_VERSION=$(FOUNDRY_VERSION) goreleaser release -f .goreleaser-local.yaml --snapshot --clean --skip=archive
+	@FOUNDRY_VERSION=$(FOUNDRY_VERSION) \
+	 GORELEASER_CURRENT_TAG=$$(./scripts/go_tag.sh 0) \
+	 GORELEASER_PREVIOUS_TAG=$$(./scripts/go_tag.sh 1) \
+	 goreleaser release -f .goreleaser-local.yaml --snapshot --clean --skip=archive
 	@rm .goreleaser-local.yaml
 	@scripts/halovisor/build.sh
 
