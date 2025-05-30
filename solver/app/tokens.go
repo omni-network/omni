@@ -14,12 +14,16 @@ import (
 )
 
 var (
+	// supportedAssets maps asset to true, if the asset is supported on all chains.
 	supportedAssets = map[tokens.Asset]bool{
 		tokens.ETH:    true,
 		tokens.OMNI:   true,
 		tokens.WSTETH: true,
 		tokens.USDC:   true,
 		tokens.USDT:   true,
+		tokens.WETH:   true,
+		tokens.METH:   true,
+		tokens.MNT:    true,
 	}
 
 	// minSafeETH is the minimum amount of ETH the solver can leave itself with post-fill,
@@ -107,6 +111,24 @@ var (
 			tokens.ClassMainnet: {
 				MinSpend: bi.Dec6(0.1),    // 0.1 USDT
 				MaxSpend: bi.Dec6(10_000), // 10 USDT
+			},
+		},
+		tokens.WETH: {
+			tokens.ClassMainnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 WETH
+				MaxSpend: bi.Ether(3),     // 3 WETH
+			},
+		},
+		tokens.METH: {
+			tokens.ClassMainnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 METH
+				MaxSpend: bi.Ether(3),     // 3 METH
+			},
+		},
+		tokens.MNT: {
+			tokens.ClassMainnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 MNT
+				MaxSpend: bi.Ether(1000),  // 1000 MNT
 			},
 		},
 	}

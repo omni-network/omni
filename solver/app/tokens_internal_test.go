@@ -91,7 +91,7 @@ func TestTokens(t *testing.T) {
 		}
 
 		bounds, ok := GetSpendBounds(tkn)
-		if !tkn.IsMock { // Require spend bounds for non-mock tokens
+		if tkn.ChainClass == tokens.ClassMainnet { // Require spend for mainnet tokens.
 			require.True(t, ok, "missing spend bounds for token: %s", tkn)
 			require.NotNil(t, bounds.MaxSpend, "max spend should not be nil")
 			require.NotNil(t, bounds.MinSpend, "min spend should not be nil")
