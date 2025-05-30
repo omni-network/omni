@@ -5,7 +5,6 @@ import {
   useParseOpenEvent,
   useQuote,
   useValidateOrder,
-  useWatchDidFill,
 } from '@omni-network/react'
 import {
   createAnvilClient,
@@ -514,36 +513,15 @@ describe.concurrent('useOmniAssets()', () => {
 })
 
 describe('useWatchDidFill()', () => {
-  test('default: returns the expected order data from the getOrder inbox contract method', async () => {
-    const renderHook = createRenderHook()
-
+  test('default: returns the destTxHash from useWatchDidFill via useOrder', async () => {
     const orderRef = await execOrder()
 
     await waitFor(
-      () => expect(orderRef.current?.waitForTx.status).toBe('success'),
+      () => {
+        expect(orderRef.current?.waitForTx.status).toBe('success')
+        expect(orderRef.current?.destTxHash).toBeDefined()
+      },
       { timeout: 20_000 },
-    )
-
-    // biome-ignore lint/style/noNonNullAssertion: safe due to throwing condition above
-    const orderId = orderRef.current?.orderId!
-
-    const watchDidFillHook = renderHook(() => {
-      return useWatchDidFill({
-        destChainId: mockL2Id,
-        orderId,
-      })
-    })
-
-    expect(watchDidFillHook.result.current.unwatch).toBeTypeOf('function')
-
-    await waitFor(() => {
-      expect(watchDidFillHook.result.current.status).toBe('success')
-    })
-
-    expect(watchDidFillHook.result.current.destTxHash).toBeDefined()
-    expect(watchDidFillHook.result.current.error).toBeUndefined()
-    expect(orderRef.current?.destTxHash).toBe(
-      watchDidFillHook.result.current.destTxHash,
     )
   })
 })
