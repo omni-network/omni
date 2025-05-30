@@ -27,6 +27,7 @@ func Send(
 	srcChainID uint64,
 	destChainID uint64,
 	amount *big.Int,
+	db *DB,
 ) (*ethclient.Receipt, error) {
 	oftAddr, ok := oftByChain[srcChainID]
 	if !ok {
@@ -107,6 +108,22 @@ func Send(
 		"received", dstToken.FormatAmt(oftReceipt.AmountReceivedLD),
 		"fee", srcNativeTkn.FormatAmt(fee.NativeFee),
 		"tx", receipt.TxHash)
+
+	// Track message in DB if provided
+	if db != nil {
+		msg := MsgSend{
+			TxHash:      receipt.TxHash,
+			BlockHeight: receipt.BlockNumber.Uint64(),
+			SrcChainID:  srcChainID,
+			DestChainID: destChainID,
+			Amount:      amount,
+			Status:      layerzero.MsgStatusConfirming,
+		}
+
+		if err := db.InsertMsg(ctx, msg); err != nil {
+			log.Error(ctx, "Failed to insert message", err, "tx", receipt.TxHash)
+		}
+	}
 
 	return receipt, nil
 }
