@@ -5,8 +5,7 @@ import { fetchJSON } from '../internal/api.js'
 import type { OptionalAbis } from '../types/abi.js'
 import type { Environment } from '../types/config.js'
 import { type Order, isContractCall } from '../types/order.js'
-import { getApiUrl } from '../utils/getApiUrl.js'
-import { toJSON } from '../utils/toJSON.js'
+import { getApiUrl, toJSON } from '../utils/index.js'
 
 const traceSchema = z.union([z.record(z.string(), z.unknown()), z.null()])
 

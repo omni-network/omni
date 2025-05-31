@@ -277,6 +277,8 @@ describe('useOrder()', () => {
       debugValidation: true,
     }
     const result = await executeTestOrderUsingReact({ order })
+    if (result?.validation?.status !== 'accepted')
+      throw new Error('Validation status should be accepted')
     expect(result?.validation?.trace).toBeInstanceOf(Object)
   })
 
@@ -507,5 +509,19 @@ describe.concurrent('useOmniAssets()', () => {
     expect(asset.expenseMax).toBeTypeOf('bigint')
     expect(asset.expenseMin).toBeGreaterThan(0n)
     expect(asset.expenseMax).toBeGreaterThan(0n)
+  })
+})
+
+describe('useWatchDidFill()', () => {
+  test('default: returns the destTxHash from useWatchDidFill via useOrder', async () => {
+    const orderRef = await execOrder()
+
+    await waitFor(
+      () => {
+        expect(orderRef.current?.waitForTx.status).toBe('success')
+        expect(orderRef.current?.destTxHash).toBeDefined()
+      },
+      { timeout: 20_000 },
+    )
   })
 })
