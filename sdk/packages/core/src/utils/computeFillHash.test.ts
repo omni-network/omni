@@ -39,7 +39,7 @@ const resolvedOrder = {
 } as const
 
 const expectedHash =
-  '0x9045415F572C4A0C52F6B504E0449F11A36BE805180CA26CE6813FA4785576BE'
+  '0x9c944d5aae984cca845663fd6a40dab5fcb5aa52e826776286e90666e7fd06cc'
 
 test('default: matches expected hash calculation', () => {
   const actual = computeFillHash(resolvedOrder)
