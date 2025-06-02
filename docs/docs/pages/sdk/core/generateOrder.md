@@ -26,6 +26,7 @@ const generator = await generateOrder({
 | `client`        | `Client`                             | Yes      | The `viem` client used to send the transaction. This client must have an `account` attached to it.                                                                          |
 | `inboxAddress`       | `Address`                             | Yes      | The address of the inbox contract, retrieved using the [`getContracts` function](/sdk/core/getContracts).                                                                     |
 | `order`           | `Order`                         | Yes      | [Order parameters](/sdk/core/validateOrder#1-order-parameters-required) |
+| `outboxAddress`           | `Hex`                         | Yes      |  The address of the outbox contract, retrieved using the [`getContracts` function](/sdk/core/getContracts).  |
 | `pollinginterval`       | `number`                             | No      | Polling interval in milliseconds, defaults to the `client` polling interval.                                                                     |
 | `environment`           | `Environment`                         | No      | SolverNet environment to use, either `mainnet` (default) or `testnet`. |
 
@@ -40,7 +41,7 @@ type OrderState =
   | { status: 'valid'; txHash?: never; order?: never }
   | { status: 'sent'; txHash: Hex; order?: never }
   | { status: 'open'; txHash: Hex; order: ResolvedOrder }
-  | { status: TerminalStatus; txHash: Hex; order: ResolvedOrder }
+  | { status: TerminalStatus; txHash: Hex; order: ResolvedOrder, destTxHash?: Hex }
 ```
 
 ## Example
@@ -52,6 +53,7 @@ const contracts = await getContracts()
 const generator = generateOrder({
   client: viemWalletClient,
   inboxAddress: contracts.inbox,
+  outboxAddress: contracts.outbox
   order: orderParams,
 })
 
