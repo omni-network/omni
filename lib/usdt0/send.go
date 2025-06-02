@@ -66,9 +66,10 @@ func Send(
 	}
 
 	params := SendParam{
-		DstEid:   destEID,
-		To:       toBz32(user),
-		AmountLD: amount,
+		DstEid:      destEID,
+		To:          toBz32(user),
+		AmountLD:    amount,
+		MinAmountLD: bi.Zero(),
 	}
 
 	_, _, oftReceipt, err := oft.QuoteOFT(&bind.CallOpts{Context: ctx}, params)
@@ -76,12 +77,18 @@ func Send(
 		return nil, errors.Wrap(err, "quote oft")
 	}
 
-	// TODO: check amount received, require within acceptable range
 	params.MinAmountLD = oftReceipt.AmountReceivedLD
 
 	fee, err := oft.QuoteSend(&bind.CallOpts{Context: ctx}, params, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "quote send")
+	}
+
+	// Protection against USDT0 fees, can relax if needed
+	if bi.LT(params.AmountLD, params.MinAmountLD) {
+		return nil, errors.New("amount received is less than amount sent",
+			"amount_received", oftReceipt.AmountReceivedLD,
+			"amount_sent", oftReceipt.AmountSentLD)
 	}
 
 	txOpts, err := backend.BindOpts(ctx, user)
@@ -117,7 +124,7 @@ func Send(
 			SrcChainID:  srcChainID,
 			DestChainID: destChainID,
 			Amount:      amount,
-			Status:      layerzero.MsgStatusConfirming,
+			Status:      layerzero.MsgStatusUnknown,
 		}
 
 		if err := db.InsertMsg(ctx, msg); err != nil {
