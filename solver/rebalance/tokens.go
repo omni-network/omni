@@ -5,14 +5,13 @@ import (
 	"github.com/omni-network/omni/lib/tokens"
 )
 
-// rebalanceTokens is a list of tokens supported by the rebalance service.
-var rebalanceTokens = []tokens.Token{
+// swappable is a set of tokens that can be swapped to/from USDC.
+var swappable = []tokens.Token{
 	// USDC
 	mustToken(evmchain.IDEthereum, tokens.USDC),
 	mustToken(evmchain.IDBase, tokens.USDC),
 	mustToken(evmchain.IDArbitrumOne, tokens.USDC),
 	mustToken(evmchain.IDOptimism, tokens.USDC),
-	mustToken(evmchain.IDMantle, tokens.USDC),
 
 	// USDT
 	mustToken(evmchain.IDEthereum, tokens.USDT),
@@ -30,19 +29,21 @@ var rebalanceTokens = []tokens.Token{
 	mustToken(evmchain.IDBase, tokens.WSTETH),
 }
 
-func Tokens() []tokens.Token {
-	return rebalanceTokens
+// SwappableTokens returns a list of swappable tokens.
+func SwappableTokens() []tokens.Token {
+	return swappable
 }
 
-func TokensByChain(chainID uint64) []tokens.Token {
-	var tokens []tokens.Token
-	for _, t := range rebalanceTokens {
+// SwappableTokensByChain returns a list of swappable tokens for a given chain ID.
+func SwappableTokensByChain(chainID uint64) []tokens.Token {
+	var tkns []tokens.Token
+	for _, t := range swappable {
 		if t.ChainID == chainID {
-			tokens = append(tokens, t)
+			tkns = append(tkns, t)
 		}
 	}
 
-	return tokens
+	return tkns
 }
 
 func mustToken(chainID uint64, asset tokens.Asset) tokens.Token {

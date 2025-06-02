@@ -10,6 +10,7 @@ import (
 	cctpdb "github.com/omni-network/omni/lib/cctp/db"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
@@ -73,29 +74,34 @@ func AmtToUSD(
 	return bi.Rebase(bi.MulF64(amount, price), token.Decimals, usdDecimals), nil
 }
 
-// GetUSDChainDeficit returns the total USD deficit for a given chain.
-// Total Deficit = (Sum token deficits) - (Sum token surplus) - (Inflight USDC to the chain).
+// Total Deficit = (Sum token deficits) - (Sum token surplus) - (Inflight USDC to the chain) + (Deficit of dependent chains).
 func GetUSDChainDeficit(
 	ctx context.Context,
 	db *cctpdb.DB,
-	client ethclient.Client,
+	clients map[uint64]ethclient.Client,
 	pricer tokenpricer.Pricer,
 	chainID uint64,
 	solver common.Address,
 ) (*big.Int, error) {
 	deficit := bi.Zero()
 
+	client, ok := clients[chainID]
+	if !ok {
+		return nil, errors.New("no client", "chain", evmchain.Name(chainID))
+	}
+
 	// Add up all the token deficits
-	for _, token := range TokensByChain(chainID) {
+	for _, token := range tokens.ByChain(chainID) {
 		d, err := GetUSDDeficit(ctx, client, pricer, token, solver)
 		if err != nil {
 			return nil, errors.Wrap(err, "get deficit")
 		}
+
 		deficit = bi.Add(deficit, d)
 	}
 
 	// Subtract all the token surpluses
-	for _, token := range TokensByChain(chainID) {
+	for _, token := range tokens.ByChain(chainID) {
 		sTkn, err := GetSurplus(ctx, client, token, solver)
 		if err != nil {
 			return nil, errors.Wrap(err, "get surplus")
@@ -114,6 +120,17 @@ func GetUSDChainDeficit(
 		}
 
 		deficit = bi.Sub(deficit, sUSD)
+	}
+
+	// Add deficit of dependent chains
+	deps := GetDependents(chainID)
+	for _, dep := range deps {
+		d, err := GetUSDChainDeficit(ctx, db, clients, pricer, dep, solver)
+		if err != nil {
+			return nil, errors.Wrap(err, "get deficit", "chain", evmchain.Name(dep))
+		}
+
+		deficit = bi.Add(deficit, d)
 	}
 
 	// If no DB, we can't get inflight USDC, so return deficit as is.
@@ -148,12 +165,7 @@ func GetUSDChainDeficits(
 	var deficits []ChainAmount
 
 	for _, chain := range network.EVMChains() {
-		client, ok := clients[chain.ID]
-		if !ok {
-			return nil, errors.New("no client", "chain", chain.ID)
-		}
-
-		deficit, err := GetUSDChainDeficit(ctx, db, client, pricer, chain.ID, solver)
+		deficit, err := GetUSDChainDeficit(ctx, db, clients, pricer, chain.ID, solver)
 		if err != nil {
 			return nil, errors.Wrap(err, "get chain deficit")
 		}

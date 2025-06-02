@@ -85,11 +85,17 @@ func Get(token tokens.Token) FundThreshold {
 		}
 	}
 
+	surplus := t.surplus
+	if surplus == 0 && t.target > 0 {
+		// Surplus threshold should always be >= target.
+		surplus = t.target
+	}
+
 	return FundThreshold{
 		token:   token,
 		min:     t.min,
 		target:  t.target,
-		surplus: t.surplus,
+		surplus: surplus,
 		maxSwap: t.maxSwap,
 		minSwap: t.minSwap,
 	}
@@ -198,17 +204,27 @@ var (
 
 		// MNT
 		mustToken(evmchain.IDMantle, tokens.MNT): {
-			min: 15000, // Alert on 15k (rebalance is manual)
+			min:    15000, // Alert on 15k (rebalance is manual)
+			target: 30000,
 		},
 
 		// mETH
 		mustToken(evmchain.IDMantle, tokens.METH): {
-			min: 4, // Alert on 4 mETH (rebalance is manual)
+			min:    4, // Alert on 4 mETH (rebalance is manual)
+			target: 8,
 		},
 
 		// WETH
 		mustToken(evmchain.IDMantle, tokens.WETH): {
-			min: 4, // Alert on 1 WETH (rebalance is manual)
+			min:    4, // Alert on 1 WETH (rebalance is manual)
+			target: 8,
+		},
+
+		// USDT0
+		mustToken(evmchain.IDHyperEVM, tokens.USDT0): {
+			min:     1_000,
+			target:  10_000,
+			surplus: 20_000,
 		},
 	}
 )

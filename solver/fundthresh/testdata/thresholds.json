@@ -20,6 +20,13 @@
   "surplus": "12000 USDT",
   "target": "10000 USDT"
  },
+ "arbitrum_one:WETH": {
+  "maxSwap": "0 WETH",
+  "min": "0 WETH",
+  "minSwap": "0 WETH",
+  "surplus": "inf",
+  "target": "0 WETH"
+ },
  "base:ETH": {
   "maxSwap": "5 ETH",
   "min": "1 ETH",
@@ -33,6 +40,13 @@
   "minSwap": "1000 USDC",
   "surplus": "50000 USDC",
   "target": "40000 USDC"
+ },
+ "base:WETH": {
+  "maxSwap": "0 WETH",
+  "min": "0 WETH",
+  "minSwap": "0 WETH",
+  "surplus": "inf",
+  "target": "0 WETH"
  },
  "base:wstETH": {
   "maxSwap": "5 wstETH",
@@ -48,6 +62,20 @@
   "surplus": "60 ETH",
   "target": "50 ETH"
  },
+ "ethereum:MNT": {
+  "maxSwap": "0 MNT",
+  "min": "0 MNT",
+  "minSwap": "0 MNT",
+  "surplus": "inf",
+  "target": "0 MNT"
+ },
+ "ethereum:OMNI": {
+  "maxSwap": "0 OMNI",
+  "min": "0 OMNI",
+  "minSwap": "0 OMNI",
+  "surplus": "inf",
+  "target": "0 OMNI"
+ },
  "ethereum:USDC": {
   "maxSwap": "10000 USDC",
   "min": "50000 USDC",
@@ -62,6 +90,20 @@
   "surplus": "10000 USDT",
   "target": "5000 USDT"
  },
+ "ethereum:WETH": {
+  "maxSwap": "0 WETH",
+  "min": "0 WETH",
+  "minSwap": "0 WETH",
+  "surplus": "inf",
+  "target": "0 WETH"
+ },
+ "ethereum:mETH": {
+  "maxSwap": "0 mETH",
+  "min": "0 mETH",
+  "minSwap": "0 mETH",
+  "surplus": "inf",
+  "target": "0 mETH"
+ },
  "ethereum:wstETH": {
   "maxSwap": "5 wstETH",
   "min": "20 wstETH",
@@ -69,12 +111,40 @@
   "surplus": "55 wstETH",
   "target": "50 wstETH"
  },
+ "mantle:MNT": {
+  "maxSwap": "0 MNT",
+  "min": "15000 MNT",
+  "minSwap": "0 MNT",
+  "surplus": "30000 MNT",
+  "target": "30000 MNT"
+ },
  "mantle:USDC": {
   "maxSwap": "0 USDC",
   "min": "0 USDC",
   "minSwap": "0 USDC",
-  "surplus": "0 USDC",
+  "surplus": "10000 USDC",
   "target": "10000 USDC"
+ },
+ "mantle:WETH": {
+  "maxSwap": "0 WETH",
+  "min": "4 WETH",
+  "minSwap": "0 WETH",
+  "surplus": "8 WETH",
+  "target": "8 WETH"
+ },
+ "mantle:mETH": {
+  "maxSwap": "0 mETH",
+  "min": "4 mETH",
+  "minSwap": "0 mETH",
+  "surplus": "8 mETH",
+  "target": "8 mETH"
+ },
+ "omni_evm:OMNI": {
+  "maxSwap": "0 OMNI",
+  "min": "0 OMNI",
+  "minSwap": "0 OMNI",
+  "surplus": "inf",
+  "target": "0 OMNI"
  },
  "optimism:ETH": {
   "maxSwap": "5 ETH",
@@ -96,5 +166,12 @@
   "minSwap": "1000 USDT",
   "surplus": "12000 USDT",
   "target": "10000 USDT"
+ },
+ "optimism:WETH": {
+  "maxSwap": "0 WETH",
+  "min": "0 WETH",
+  "minSwap": "0 WETH",
+  "surplus": "inf",
+  "target": "0 WETH"
  }
 }
