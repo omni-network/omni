@@ -37,7 +37,7 @@ func newJob(
 ) (types.Job, bool, error) {
 	addrs, err := contracts.GetAddresses(ctx, networkID)
 	if err != nil {
-		return types.Job{}, false, errors.New("contract addresses")
+		return types.Job{}, false, errors.Wrap(err, "contract addresses")
 	}
 
 	conf, ok := config[networkID]
