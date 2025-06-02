@@ -1,4 +1,4 @@
-import { watchDidFill } from '@omni-network/core'
+import { type ResolvedOrder, watchDidFill } from '@omni-network/core'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Hex } from 'viem'
 import { useClient } from 'wagmi'
@@ -6,7 +6,7 @@ import { useOmniContracts } from './useOmniContracts.js'
 
 export type UseWatchDidFillParams = {
   destChainId: number
-  orderId?: Hex
+  resolvedOrder?: ResolvedOrder
   pollingInterval?: number
 }
 
@@ -19,7 +19,7 @@ export type UseWatchDidFillReturn = {
 
 export function useWatchDidFill({
   destChainId,
-  orderId,
+  resolvedOrder,
   pollingInterval,
 }: UseWatchDidFillParams): UseWatchDidFillReturn {
   const unwatchRef = useRef<(() => void) | undefined>()
@@ -45,14 +45,14 @@ export function useWatchDidFill({
     setError(undefined)
     setDestTxHash(undefined)
 
-    if (!client || !orderId || !outboxAddress) return
+    if (!client || !resolvedOrder || !outboxAddress) return
 
     unwatchRef.current = watchDidFill({
       client,
       outboxAddress,
-      orderId,
-      onLogs: (logs) => {
-        setDestTxHash(logs[0].transactionHash ?? undefined)
+      resolvedOrder,
+      onFill: (txHash) => {
+        setDestTxHash(txHash)
         unwatch()
       },
       onError: (error) => {
@@ -63,7 +63,7 @@ export function useWatchDidFill({
     })
 
     return unwatch
-  }, [client, outboxAddress, orderId, pollingInterval, unwatch])
+  }, [client, outboxAddress, resolvedOrder, pollingInterval, unwatch])
 
   return { destTxHash, unwatch, status, error }
 }

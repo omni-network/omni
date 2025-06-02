@@ -1,3 +1,4 @@
+import { testResolvedOrder } from '@omni-network/test-utils'
 import { expectTypeOf, test } from 'vitest'
 import {
   type UseWatchDidFillParams,
@@ -8,7 +9,7 @@ import {
 test('type: useWatchDidFill', () => {
   const result = useWatchDidFill({
     destChainId: 1,
-    orderId: '0x123',
+    resolvedOrder: testResolvedOrder,
     pollingInterval: 1000,
   })
 

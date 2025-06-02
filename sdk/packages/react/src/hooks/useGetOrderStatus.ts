@@ -52,7 +52,7 @@ export function useGetOrderStatus({
 
   const watchDidFill = useWatchDidFill({
     destChainId,
-    orderId,
+    resolvedOrder,
   })
 
   const status = deriveStatus(inboxStatus, didFill, watchDidFill)

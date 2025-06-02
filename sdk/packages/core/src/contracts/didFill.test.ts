@@ -1,6 +1,6 @@
 import {
+  encodedOriginData,
   testOrderId,
-  testOriginData,
   testResolvedOrder,
 } from '@omni-network/test-utils'
 import type { Client } from 'viem'
@@ -27,6 +27,6 @@ test('default: returns true when outbox read is truthy', async () => {
     address: outboxAddress,
     abi: outboxABI,
     functionName: 'didFill',
-    args: [testOrderId, testOriginData],
+    args: [testOrderId, encodedOriginData],
   })
 })

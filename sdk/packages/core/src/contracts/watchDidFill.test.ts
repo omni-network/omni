@@ -1,85 +1,87 @@
-import type { Address, Client, Log } from 'viem'
+import { testResolvedOrder } from '@omni-network/test-utils'
+import type { Address, Block, Client } from 'viem'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { outboxABI } from '../constants/abis.js'
 import { watchDidFill } from './watchDidFill.js'
 
 const client = {} as Client
 const outboxAddrs = '0x0' as Address
-const orderId = '0x123'
-const testLogs: Log[] = [
-  { logIndex: 0, topics: [], data: '0x' } as unknown as Log,
-]
-const mockOnLogs = vi.fn()
+const resolvedOrder = testResolvedOrder
+const txHash = '0xTxHash'
+const blockHash = '0xBlockHash'
 const mockOnError = vi.fn()
+const mockOnFill = vi.fn()
 const unwatch = vi.fn()
-let onLogs: ((logs: Log[]) => void) | undefined
+let onBlock: ((block: Block) => Promise<void>) | undefined
 let onError: ((error: Error) => void) | undefined
 
-const { watchContractEvent } = vi.hoisted(() => ({
-  watchContractEvent: vi.fn().mockImplementation((_client, params) => {
-    onLogs = params.onLogs
+const block = {
+  hash: blockHash,
+} as unknown as Block
+
+const { watchBlocks, getLogs } = vi.hoisted(() => ({
+  watchBlocks: vi.fn().mockImplementation((_client, params) => {
     onError = params.onError
+    onBlock = params.onBlock
     return unwatch
   }),
+  getLogs: vi.fn().mockResolvedValue([
+    {
+      transactionHash: '0xTxHash',
+    },
+  ]),
 }))
 
 vi.mock('viem/actions', () => ({
-  watchContractEvent,
+  watchBlocks,
+  getLogs,
 }))
 
 beforeEach(() => {
-  watchContractEvent.mockClear()
-  unwatch.mockClear()
-  mockOnLogs.mockClear()
+  watchBlocks.mockClear()
   mockOnError.mockClear()
-  onLogs = undefined
+  mockOnFill.mockClear()
+  onBlock = undefined
   onError = undefined
+  unwatch.mockClear()
 })
 
-test('default: should trigger onLogs callback on Filled event and return an unwatch func', () => {
+test('default: should trigger onFill callback when filled function in block and return an unwatch func', async () => {
   const unwatch = watchDidFill({
     client,
     outboxAddress: outboxAddrs,
-    orderId,
-    onLogs: mockOnLogs,
+    resolvedOrder,
+    onFill: mockOnFill,
     onError: mockOnError,
     pollingInterval: 5000,
   })
 
   expect(unwatch).toBeTypeOf('function')
+  expect(onBlock).toBeDefined()
+  expect(onError).toBe(mockOnError)
 
-  expect(onLogs).toBeDefined()
-  expect(onLogs).toBe(mockOnLogs)
+  await onBlock?.(block)
+  expect(mockOnFill).toHaveBeenCalledTimes(1)
+  expect(mockOnFill).toHaveBeenCalledWith(txHash)
 
-  if (onLogs) {
-    onLogs(testLogs)
-  }
+  expect(getLogs).toHaveBeenCalledTimes(1)
 
-  expect(mockOnLogs).toHaveBeenCalledTimes(1)
-  expect(mockOnLogs).toHaveBeenCalledWith(testLogs)
-
-  expect(watchContractEvent).toHaveBeenCalledTimes(1)
-  expect(watchContractEvent).toHaveBeenCalledWith(client, {
-    address: outboxAddrs,
-    eventName: 'Filled',
-    abi: outboxABI,
-    args: { orderId },
-    onLogs: mockOnLogs,
+  expect(watchBlocks).toHaveBeenCalledTimes(1)
+  expect(watchBlocks).toHaveBeenCalledWith(client, {
+    onBlock,
     onError: mockOnError,
     pollingInterval: 5000,
+    emitMissed: true,
   })
-
   unwatch()
-
   expect(unwatch).toHaveBeenCalledTimes(1)
 })
 
-test('behaviour: should trigger onError callback when watchContractEvent emits an error', () => {
+test('behaviour: should trigger onError callback when watchBlocks emits an error', () => {
   watchDidFill({
     client,
     outboxAddress: outboxAddrs,
-    orderId,
-    onLogs: mockOnLogs,
+    resolvedOrder,
+    onFill: mockOnFill,
     onError: mockOnError,
   })
 
@@ -99,18 +101,15 @@ test('params: should pass undefined for optional params if not provided', () => 
   watchDidFill({
     client,
     outboxAddress: outboxAddrs,
-    orderId,
-    onLogs: mockOnLogs,
+    resolvedOrder,
+    onFill: mockOnFill,
   })
 
-  expect(watchContractEvent).toHaveBeenCalledTimes(1)
-  expect(watchContractEvent).toHaveBeenCalledWith(client, {
-    address: outboxAddrs,
-    eventName: 'Filled',
-    abi: outboxABI,
-    args: { orderId },
-    onLogs: mockOnLogs,
+  expect(watchBlocks).toHaveBeenCalledTimes(1)
+  expect(watchBlocks).toHaveBeenCalledWith(client, {
+    onBlock,
     onError: undefined,
     pollingInterval: undefined,
+    emitMissed: true,
   })
 })

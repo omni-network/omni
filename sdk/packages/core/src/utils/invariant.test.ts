@@ -1,5 +1,5 @@
-import { invariant } from '@omni-network/core'
 import { expect, it } from 'vitest'
+import { invariant } from './invariant.js'
 
 it('default: should not throw when condition is true', () => {
   expect(() => invariant(true, 'This should not throw')).not.toThrow()

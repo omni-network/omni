@@ -282,7 +282,7 @@ export async function executeTestOrderUsingReact(
       throw new Error('Rejection expected')
     expect(orderRef.current?.validation?.status).toBe('rejected')
     expect(orderRef.current?.validation?.rejectReason).toBe(rejectReason)
-    return
+    return null
   }
 
   expect(orderRef.current?.validation?.status).toBe('accepted')

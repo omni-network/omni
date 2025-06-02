@@ -277,6 +277,8 @@ describe('useOrder()', () => {
       debugValidation: true,
     }
     const result = await executeTestOrderUsingReact({ order })
+    if (result?.validation?.status !== 'accepted')
+      throw new Error('Validation status should be accepted')
     expect(result?.validation?.trace).toBeInstanceOf(Object)
   })
 
