@@ -205,7 +205,7 @@ func swapSurplusOnce(
 		return errors.Wrap(err, "get backend")
 	}
 
-	for _, token := range TokensByChain(chainID) {
+	for _, token := range SwappableTokensByChain(chainID) {
 		if token.Is(tokens.USDC) { // Already USDC, skip.
 			continue
 		}
@@ -275,7 +275,7 @@ func fillDeficitOnce(
 		return errors.Wrap(err, "get backend")
 	}
 
-	for _, token := range TokensByChain(chainID) {
+	for _, token := range SwappableTokensByChain(chainID) {
 		if token.Is(tokens.USDC) { // Already USDC, skip.
 			continue
 		}

@@ -93,7 +93,7 @@ func TestIntegration(t *testing.T) {
 		sum := bi.Zero()
 
 		// Log deficits
-		for _, tkn := range rebalance.Tokens() {
+		for _, tkn := range rebalance.SwappableTokens() {
 			if !cctp.IsSupportedChain(tkn.ChainID) {
 				continue
 			}
@@ -111,7 +111,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	logSnapshot := func() {
-		for _, tkn := range rebalance.Tokens() {
+		for _, tkn := range rebalance.SwappableTokens() {
 			if !cctp.IsSupportedChain(tkn.ChainID) {
 				continue
 			}
@@ -187,7 +187,7 @@ func fundUnbalanced(t *testing.T, ctx context.Context, pricer tokenpricer.Pricer
 			var toDeficit []tokens.Token
 			var toSurplus []tokens.Token
 
-			for i, token := range shuffle(rebalance.Tokens()) {
+			for i, token := range shuffle(rebalance.SwappableTokens()) {
 				if !cctp.IsSupportedChain(token.ChainID) {
 					continue
 				}
@@ -347,6 +347,8 @@ func getRPCs(t *testing.T) map[uint64]string {
 		evmchain.IDBase:        notEmpty("BASE_RPC"),
 		evmchain.IDArbitrumOne: notEmpty("ARB_RPC"),
 		evmchain.IDOptimism:    notEmpty("OP_RPC"),
+		evmchain.IDMantle:      notEmpty("MANTLE_RPC"),
+		evmchain.IDHyperEVM:    notEmpty("HYPER_EVM_RPC"),
 	}
 }
 

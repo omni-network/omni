@@ -5,9 +5,10 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
+	solver "github.com/omni-network/omni/solver/app"
 	"github.com/omni-network/omni/solver/fundthresh"
-	"github.com/omni-network/omni/solver/rebalance"
 )
 
 //go:generate go test . -golden -clean
@@ -17,7 +18,17 @@ func TestThresholdReference(t *testing.T) {
 
 	golden := make(map[string]map[string]string)
 
-	for _, token := range rebalance.Tokens() {
+	for _, token := range tokens.All() {
+		if token.ChainClass != tokens.ClassMainnet {
+			// Skip non-mainnet tokens
+			continue
+		}
+
+		if !solver.IsSupportedToken(token) {
+			// Skip unsupported tokens
+			continue
+		}
+
 		thresh := fundthresh.Get(token)
 
 		key := fmt.Sprintf("%s:%s", evmchain.Name(token.ChainID), token.Symbol)
