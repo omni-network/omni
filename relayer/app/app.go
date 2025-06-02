@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/chaos"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -40,7 +41,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	network, err := netconf.AwaitOnExecutionChain(ctx, cfg.Network, portalReg, cfg.RPCEndpoints.Keys())
+	network, err := netconf.AwaitOnExecutionChain(ctx, cfg.Network, portalReg, solvernet.OnlyCoreEndpoints(cfg.RPCEndpoints).Keys())
 	if err != nil {
 		return err
 	}

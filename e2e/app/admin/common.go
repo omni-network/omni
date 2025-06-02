@@ -228,7 +228,7 @@ func (s shared) runHL(ctx context.Context, def app.Definition, fn func(context.C
 		return errors.Wrap(err, "add hl endpoints")
 	}
 
-	network, err := app.HLNetworkFromDef(ctx, def)
+	network, err := app.SolverNetworkFromDef(ctx, def)
 	if err != nil {
 		return errors.Wrap(err, "network from def")
 	}

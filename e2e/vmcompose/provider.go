@@ -47,6 +47,10 @@ func (*Provider) AllLogs(context.Context) ([]byte, error) {
 
 // Setup generates the docker-compose file for each VM IP.
 func (p *Provider) Setup() error {
+	if len(p.Testnet.SVMChains) > 0 {
+		return errors.New("vmcompose doesn't support SVM chains")
+	}
+
 	// Group infra services by VM IP
 	for vmIP, services := range groupByVM(p.Data.Instances) {
 		// Get all halo nodes in this VM

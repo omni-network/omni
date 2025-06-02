@@ -40,7 +40,8 @@ func (t Token) IsNative() bool {
 }
 
 func (t Token) UniAddress() uni.Address {
-	if uni.IsSVMChain(t.ChainID) {
+	// Hardcoded to avoid dependency on evmchain
+	if t.ChainID == 350 || t.ChainID == 351 || t.ChainID == 352 {
 		return uni.SVMAddress(t.SVMAddress)
 	}
 
