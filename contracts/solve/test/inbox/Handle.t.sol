@@ -17,7 +17,7 @@ contract SolverNet_Inbox_Handle_Test is TestBase {
         inbox.handle(destinationDomain, bytes32(0), bytes(""));
 
         // order must be pending
-        bytes32 orderId = inbox.getOrderId(user, inbox.getUserNonce(user));
+        bytes32 orderId = inbox.getNextOnchainOrderId(user);
         bytes memory message = mailboxes[destinationDomain].buildMessage(
             originDomain, bytes32(0), address(inbox).toBytes32(), abi.encode(orderId, bytes32(0), address(0))
         );

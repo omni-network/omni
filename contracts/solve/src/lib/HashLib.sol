@@ -2,186 +2,140 @@
 pragma solidity ^0.8.24;
 
 import { IERC7683 } from "../erc7683/IERC7683.sol";
+import { IPermit2 } from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import { SolverNet } from "./SolverNet.sol";
 
 library HashLib {
     /**
-     * @notice Type for the Deposit struct.
+     * @notice Typehash for the OrderData struct.
+     * @dev Deprecated typehash for the old OrderData struct, which is being replaced with OmniOrderData for more clarity in EIP-712 signing.
      */
-    bytes internal constant DEPOSIT_TYPE = abi.encodePacked("Deposit(address token,uint96 amount)");
+    bytes32 internal constant OLD_ORDERDATA_TYPEHASH = keccak256(
+        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
+    );
 
     /**
-     * @notice Typehash for the Deposit struct.
+     * @notice Typehash for the OmniOrderData struct.
+     * @dev Newer typehash for the OmniOrderData struct, which is replacing the deprecated OrderData struct.
      */
-    bytes32 internal constant DEPOSIT_TYPEHASH = keccak256(DEPOSIT_TYPE);
+    bytes32 internal constant OMNIORDERDATA_TYPEHASH = keccak256(
+        "OmniOrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Call(address target,bytes4 selector,uint256 value,bytes params)Deposit(address token,uint96 amount)TokenExpense(address spender,address token,uint96 amount)"
+    );
 
     /**
-     * @notice Type for the Call struct.
+     * @notice Typehash for the GaslessCrossChainOrder struct for witness data with structured OmniOrderData.
      */
-    bytes internal constant CALL_TYPE =
-        abi.encodePacked("Call(address target,bytes4 selector,uint256 value,bytes params)");
+    bytes32 internal constant GASLESS_ORDER_TYPEHASH = keccak256(
+        "GaslessCrossChainOrder(address originSettler,address user,uint256 nonce,uint256 originChainId,uint32 openDeadline,uint32 fillDeadline,bytes32 orderDataType,OmniOrderData orderData)Call(address target,bytes4 selector,uint256 value,bytes params)Deposit(address token,uint96 amount)OmniOrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)TokenExpense(address spender,address token,uint96 amount)"
+    );
 
     /**
      * @notice Typehash for the Call struct.
      */
-    bytes32 internal constant CALL_TYPEHASH = keccak256(CALL_TYPE);
+    bytes32 internal constant CALL_TYPEHASH =
+        keccak256("Call(address target,bytes4 selector,uint256 value,bytes params)");
 
     /**
-     * @notice Type for the TokenExpense struct.
+     * @notice Typehash for the Deposit struct.
      */
-    bytes internal constant TOKENEXPENSE_TYPE =
-        abi.encodePacked("TokenExpense(address spender,address token,uint96 amount)");
+    bytes32 internal constant DEPOSIT_TYPEHASH = keccak256("Deposit(address token,uint96 amount)");
 
     /**
      * @notice Typehash for the TokenExpense struct.
      */
-    bytes32 internal constant TOKENEXPENSE_TYPEHASH = keccak256(TOKENEXPENSE_TYPE);
+    bytes32 internal constant TOKEN_EXPENSE_TYPEHASH =
+        keccak256("TokenExpense(address spender,address token,uint96 amount)");
 
     /**
-     * @notice Type for the OrderData struct.
+     * @notice Type string for permit2 witness transfers.
      */
-    bytes internal constant ORDERDATA_TYPE = abi.encodePacked(
-        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)"
-    );
+    string internal constant PERMIT2_TRANSFER_TYPE_STRING =
+        "PermitWitnessTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline,";
 
     /**
-     * @notice Type for the OmniOrderData struct.
+     * @notice Type string for permit2 witness data with structured OmniOrderData.
      */
-    bytes internal constant OMNIORDERDATA_TYPE = abi.encodePacked(
-        "OmniOrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)"
-    );
+    string internal constant PERMIT2_WITNESS_TYPE_STRING =
+        "GaslessCrossChainOrder witness)Call(address target,bytes4 selector,uint256 value,bytes params)Deposit(address token,uint96 amount)GaslessCrossChainOrder(address originSettler,address user,uint256 nonce,uint256 originChainId,uint32 openDeadline,uint32 fillDeadline,bytes32 orderDataType,OmniOrderData orderData)OmniOrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)TokenExpense(address spender,address token,uint96 amount)TokenPermissions(address token,uint256 amount)";
 
     /**
-     * @notice Previous full EIP-712 type for the OrderData struct.
-     * @dev Included to maintain backwards compatibility.
+     * @notice Typehash for the TokenPermissions struct.
      */
-    bytes internal constant FULL_ORDERDATA_TYPE =
-        abi.encodePacked(ORDERDATA_TYPE, DEPOSIT_TYPE, CALL_TYPE, TOKENEXPENSE_TYPE);
+    bytes32 internal constant PERMIT2_TOKEN_PERMISSIONS_TYPEHASH =
+        keccak256("TokenPermissions(address token,uint256 amount)");
 
     /**
-     * @notice Full EIP-712 type for the OmniOrderData struct.
+     * @notice Typehash for the full permit2 witness transfer with structured OmniOrderData.
      */
-    bytes internal constant FULL_OMNIORDERDATA_TYPE =
-        abi.encodePacked(OMNIORDERDATA_TYPE, CALL_TYPE, DEPOSIT_TYPE, TOKENEXPENSE_TYPE);
+    bytes32 internal constant PERMIT2_WITNESS_TYPEHASH =
+        keccak256(abi.encodePacked(PERMIT2_TRANSFER_TYPE_STRING, PERMIT2_WITNESS_TYPE_STRING));
 
     /**
-     * @notice Old typehash for the full OrderData struct.
-     * @dev Included to maintain backwards compatibility.
+     * @notice Canonical permit2 contract address.
      */
-    bytes32 internal constant FULL_ORDERDATA_TYPEHASH = keccak256(FULL_ORDERDATA_TYPE);
+    IPermit2 internal constant permit2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     /**
-     * @notice Typehash for the full OmniOrderData struct.
+     * @notice Generate witness hash for permit2 witness transfers using structured OmniOrderData.
+     * @param order GaslessCrossChainOrder to hash as witness data.
+     * @param orderData Decoded OmniOrderData from order.orderData.
+     * @return witnessHash The EIP-712 compliant hash of the gasless order with structured data.
      */
-    bytes32 internal constant FULL_OMNIORDERDATA_TYPEHASH = keccak256(FULL_OMNIORDERDATA_TYPE);
-
-    /**
-     * @notice Type for the GaslessCrossChainOrder struct.
-     */
-    bytes internal constant GASLESS_ORDER_TYPE = abi.encodePacked(
-        "GaslessCrossChainOrder(address originSettler,address user,uint256 nonce,uint256 originChainId,uint32 openDeadline,uint32 fillDeadline,bytes32 orderDataType,OmniOrderData orderData)"
-    );
-
-    /**
-     * @notice Full EIP-712 type for the GaslessCrossChainOrder struct.
-     * @dev "Omni" prefix is added so wallets can show that the signature is for an Omni order.
-     */
-    bytes internal constant EIP712_GASLESS_ORDER_TYPE =
-        abi.encodePacked(GASLESS_ORDER_TYPE, CALL_TYPE, DEPOSIT_TYPE, OMNIORDERDATA_TYPE, TOKENEXPENSE_TYPE);
-
-    /**
-     * @notice EIP-712 typehash for the GaslessCrossChainOrder struct.
-     */
-    bytes32 internal constant EIP712_GASLESS_ORDER_TYPEHASH = keccak256(EIP712_GASLESS_ORDER_TYPE);
-
-    /**
-     * @notice Type for the TokenPermissions struct.
-     */
-    string internal constant TOKEN_PERMISSIONS_TYPE = "TokenPermissions(address token,uint256 amount)";
-
-    /**
-     * @notice Type for the Permit2 witness.
-     */
-    string internal constant PERMIT2_WITNESS_TYPE = "GaslessCrossChainOrder witness)";
-
-    /**
-     * @notice Full EIP-712 type for the Permit2 order.
-     * @dev "Omni" prefix is added so wallets can show that the signature is for an Omni order.
-     */
-    string internal constant PERMIT2_ORDER_TYPE = string(
-        abi.encodePacked(
-            PERMIT2_WITNESS_TYPE,
-            CALL_TYPE,
-            DEPOSIT_TYPE,
-            GASLESS_ORDER_TYPE,
-            OMNIORDERDATA_TYPE,
-            TOKEN_PERMISSIONS_TYPE,
-            TOKENEXPENSE_TYPE
-        )
-    );
-
-    /**
-     * @dev Hashes a deposit.
-     * @param deposit Deposit to hash.
-     * @return _ Hashed deposit.
-     */
-    function hashDeposit(SolverNet.Deposit memory deposit) internal pure returns (bytes32) {
-        return keccak256(abi.encode(DEPOSIT_TYPEHASH, deposit.token, deposit.amount));
-    }
-
-    /**
-     * @dev Hashes a call.
-     * @param call Call to hash.
-     * @return _ Hashed call.
-     */
-    function hashCall(SolverNet.Call memory call) internal pure returns (bytes32) {
-        return keccak256(abi.encode(CALL_TYPEHASH, call.target, call.selector, call.value, keccak256(call.params)));
-    }
-
-    /**
-     * @dev Hashes an array of calls.
-     * @param calls Calls to hash.
-     * @return _ Hashed calls.
-     */
-    function hashCalls(SolverNet.Call[] memory calls) internal pure returns (bytes32) {
-        bytes32[] memory callHashes = new bytes32[](calls.length);
-        for (uint256 i; i < calls.length; ++i) {
-            callHashes[i] = hashCall(calls[i]);
-        }
-        return keccak256(abi.encodePacked(callHashes));
-    }
-
-    /**
-     * @dev Hashes a token expense.
-     * @param expense Token expense to hash.
-     * @return _ Hashed token expense.
-     */
-    function hashTokenExpense(SolverNet.TokenExpense memory expense) internal pure returns (bytes32) {
-        return keccak256(abi.encode(TOKENEXPENSE_TYPEHASH, expense.spender, expense.token, expense.amount));
-    }
-
-    /**
-     * @dev Hashes an array of token expenses.
-     * @param expenses Token expenses to hash.
-     * @return _ Hashed token expenses.
-     */
-    function hashTokenExpenses(SolverNet.TokenExpense[] memory expenses) internal pure returns (bytes32) {
-        bytes32[] memory expenseHashes = new bytes32[](expenses.length);
-        for (uint256 i; i < expenses.length; ++i) {
-            expenseHashes[i] = hashTokenExpense(expenses[i]);
-        }
-        return keccak256(abi.encodePacked(expenseHashes));
-    }
-
-    /**
-     * @dev Hashes the order data.
-     * @param orderData Order data to hash.
-     * @return _ Hashed order data.
-     */
-    function hashOrderData(SolverNet.OmniOrderData memory orderData) internal pure returns (bytes32) {
+    function witnessHash(IERC7683.GaslessCrossChainOrder memory order, SolverNet.OmniOrderData memory orderData)
+        internal
+        pure
+        returns (bytes32)
+    {
         return keccak256(
             abi.encode(
-                FULL_OMNIORDERDATA_TYPEHASH,
+                GASLESS_ORDER_TYPEHASH,
+                order.originSettler,
+                order.user,
+                order.nonce,
+                order.originChainId,
+                order.openDeadline,
+                order.fillDeadline,
+                order.orderDataType,
+                hashOmniOrderData(orderData)
+            )
+        );
+    }
+
+    /**
+     * @notice Generate witness hash for permit2 witness transfers using structured OmniOrderData.
+     * @dev This function is used with calldata types for efficiency. (decoded OmniOrderData is never stored as calldata)
+     * @param order GaslessCrossChainOrder to hash as witness data.
+     * @param orderData Decoded OmniOrderData from order.orderData.
+     * @return witnessHash The EIP-712 compliant hash of the gasless order with structured data.
+     */
+    function witnessHashCalldata(
+        IERC7683.GaslessCrossChainOrder calldata order,
+        SolverNet.OmniOrderData memory orderData
+    ) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                GASLESS_ORDER_TYPEHASH,
+                order.originSettler,
+                order.user,
+                order.nonce,
+                order.originChainId,
+                order.openDeadline,
+                order.fillDeadline,
+                order.orderDataType,
+                hashOmniOrderData(orderData)
+            )
+        );
+    }
+
+    /**
+     * @notice Hash an OmniOrderData struct for EIP-712 compliance.
+     * @param orderData OmniOrderData to hash.
+     * @return hash The EIP-712 compliant hash of the OmniOrderData.
+     */
+    function hashOmniOrderData(SolverNet.OmniOrderData memory orderData) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                OMNIORDERDATA_TYPEHASH,
                 orderData.owner,
                 orderData.destChainId,
                 hashDeposit(orderData.deposit),
@@ -192,28 +146,122 @@ library HashLib {
     }
 
     /**
-     * @dev Hashes a gasless order.
-     * @param order GaslessCrossChainOrder to hash.
-     * @param orderDataHash Hashed order data.
-     * @return _ Hashed gasless order.
+     * @notice Hash a Deposit struct for EIP-712 compliance.
+     * @param deposit Deposit to hash.
+     * @return hash The EIP-712 compliant hash of the Deposit.
      */
-    function hashGaslessOrder(IERC7683.GaslessCrossChainOrder memory order, bytes32 orderDataHash)
-        internal
-        pure
-        returns (bytes32)
-    {
-        return keccak256(
+    function hashDeposit(SolverNet.Deposit memory deposit) internal pure returns (bytes32) {
+        return keccak256(abi.encode(DEPOSIT_TYPEHASH, deposit.token, deposit.amount));
+    }
+
+    /**
+     * @notice Hash an array of Call structs for EIP-712 compliance.
+     * @param calls Array of calls to hash.
+     * @return hash The EIP-712 compliant hash of the calls array.
+     */
+    function hashCalls(SolverNet.Call[] memory calls) internal pure returns (bytes32) {
+        // Deterministic hash for empty array
+        if (calls.length == 0) {
+            return keccak256("");
+        }
+
+        bytes32[] memory callHashes = new bytes32[](calls.length);
+        for (uint256 i; i < calls.length; ++i) {
+            callHashes[i] = keccak256(
+                abi.encode(
+                    CALL_TYPEHASH, calls[i].target, calls[i].selector, calls[i].value, keccak256(calls[i].params)
+                )
+            );
+        }
+        return keccak256(abi.encodePacked(callHashes));
+    }
+
+    /**
+     * @notice Hash an array of TokenExpense structs for EIP-712 compliance.
+     * @param expenses Array of token expenses to hash.
+     * @return hash The EIP-712 compliant hash of the expenses array.
+     */
+    function hashTokenExpenses(SolverNet.TokenExpense[] memory expenses) internal pure returns (bytes32) {
+        // Deterministic hash for empty array
+        if (expenses.length == 0) {
+            return keccak256("");
+        }
+
+        bytes32[] memory expenseHashes = new bytes32[](expenses.length);
+        for (uint256 i; i < expenses.length; ++i) {
+            expenseHashes[i] = keccak256(
+                abi.encode(TOKEN_EXPENSE_TYPEHASH, expenses[i].spender, expenses[i].token, expenses[i].amount)
+            );
+        }
+        return keccak256(abi.encodePacked(expenseHashes));
+    }
+
+    /**
+     * @notice Generate digest for gasless order with structured OmniOrderData.
+     * @param order GaslessCrossChainOrder to hash as witness data.
+     * @param orderData Decoded OmniOrderData from order.orderData.
+     * @param inbox Inbox contract address.
+     * @return digest The EIP-712 compliant hash of the gasless order with structured data.
+     */
+    function gaslessOrderDigest(
+        IERC7683.GaslessCrossChainOrder memory order,
+        SolverNet.OmniOrderData memory orderData,
+        address inbox
+    ) internal view returns (bytes32) {
+        // Hash TokenPermissions
+        bytes32 tokenPermissionsHash =
+            keccak256(abi.encode(PERMIT2_TOKEN_PERMISSIONS_TYPEHASH, orderData.deposit.token, orderData.deposit.amount));
+
+        // Create final struct hash
+        bytes32 structHash = keccak256(
             abi.encode(
-                EIP712_GASLESS_ORDER_TYPEHASH,
-                order.originSettler,
-                order.user,
+                PERMIT2_WITNESS_TYPEHASH,
+                tokenPermissionsHash,
+                inbox,
                 order.nonce,
-                order.originChainId,
                 order.openDeadline,
-                order.fillDeadline,
-                order.orderDataType,
-                orderDataHash
+                witnessHash(order, orderData)
             )
         );
+
+        // Create EIP-712 hash
+        bytes32 hash = keccak256(abi.encodePacked("\x19\x01", permit2.DOMAIN_SEPARATOR(), structHash));
+
+        return hash;
+    }
+
+    /**
+     * @notice Generate digest for gasless order with structured OmniOrderData.
+     * @dev This function is used with calldata types for efficiency. (decoded OmniOrderData is never stored as calldata)
+     * @param order GaslessCrossChainOrder to hash as witness data.
+     * @param orderData Decoded OmniOrderData from order.orderData.
+     * @param inbox Inbox contract address.
+     * @return digest The EIP-712 compliant hash of the gasless order with structured data.
+     */
+    function gaslessOrderDigestCalldata(
+        IERC7683.GaslessCrossChainOrder calldata order,
+        SolverNet.OmniOrderData memory orderData,
+        address inbox
+    ) internal view returns (bytes32) {
+        // Hash TokenPermissions
+        bytes32 tokenPermissionsHash =
+            keccak256(abi.encode(PERMIT2_TOKEN_PERMISSIONS_TYPEHASH, orderData.deposit.token, orderData.deposit.amount));
+
+        // Create final struct hash
+        bytes32 structHash = keccak256(
+            abi.encode(
+                PERMIT2_WITNESS_TYPEHASH,
+                tokenPermissionsHash,
+                inbox,
+                order.nonce,
+                order.openDeadline,
+                witnessHashCalldata(order, orderData)
+            )
+        );
+
+        // Create EIP-712 hash
+        bytes32 hash = keccak256(abi.encodePacked("\x19\x01", permit2.DOMAIN_SEPARATOR(), structHash));
+
+        return hash;
     }
 }

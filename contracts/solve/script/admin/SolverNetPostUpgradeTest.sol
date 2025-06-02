@@ -112,7 +112,7 @@ contract SolverNetPostUpgradeTest is Test {
             orderData: abi.encode(orderData)
         });
 
-        bytes32 id = inbox.getNextOrderId(user);
+        bytes32 id = inbox.getNextOnchainOrderId(user);
         SolverNet.FillOriginData memory fillOriginData = SolverNet.FillOriginData({
             srcChainId: uint64(block.chainid),
             destChainId: uint64(block.chainid == 1 ? 10 : 1),
@@ -152,7 +152,7 @@ contract SolverNetPostUpgradeTest is Test {
             if (sameChain) {
                 ISolverNetOutbox.InboxConfig memory config = outbox.getInboxConfig(uint64(block.chainid));
                 inbox = SolverNetInbox(config.inbox);
-                orderId = inbox.getNextOrderId(user);
+                orderId = inbox.getNextOnchainOrderId(user);
                 vm.deal(user, value);
 
                 SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(0), amount: uint96(value) });

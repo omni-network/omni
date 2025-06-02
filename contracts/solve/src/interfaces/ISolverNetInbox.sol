@@ -2,19 +2,23 @@
 pragma solidity ^0.8.24;
 
 import { IOriginSettler } from "../erc7683/IOriginSettler.sol";
-import { IMessageRecipient } from "@hyperlane-xyz/core/contracts/interfaces/IMessageRecipient.sol";
 import { SolverNet } from "../lib/SolverNet.sol";
 
-interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
+interface ISolverNetInbox is IOriginSettler {
     // Validation errors
     error InvalidOrderTypehash();
     error InvalidOrderData();
-    error InvalidChainId();
+    error InvalidOriginSettler();
+    error InvalidOriginChainId();
+    error InvalidDestinationChainId();
+    error InvalidOpenDeadline();
     error InvalidFillDeadline();
     error InvalidMissingCalls();
     error InvalidExpenseToken();
     error InvalidExpenseAmount();
     error InvalidArrayLength();
+    error InvalidNonce();
+    error InvalidUser();
 
     // Open order errors
     error InvalidERC20Deposit();
@@ -144,20 +148,21 @@ interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
      * @notice Returns the order ID for the given user and nonce.
      * @param user  Address of the user.
      * @param nonce Nonce of the order.
+     * @param gasless Whether the order is gasless.
      */
-    function getOrderId(address user, uint256 nonce) external view returns (bytes32);
+    function getOrderId(address user, uint256 nonce, bool gasless) external view returns (bytes32);
 
     /**
-     * @notice Returns the next order ID for the given user.
-     * @param user Address of the user.
+     * @notice Returns the next onchain order ID for the given user.
+     * @param user Address of the user the order is opened for.
      */
-    function getNextOrderId(address user) external view returns (bytes32);
+    function getNextOnchainOrderId(address user) external view returns (bytes32);
 
     /**
-     * @notice Returns the nonce for the given user.
-     * @param user Address of the user.
+     * @notice Returns the onchain nonce for the given user.
+     * @param user Address of the user the order is opened for.
      */
-    function getUserNonce(address user) external view returns (uint256);
+    function getOnchainUserNonce(address user) external view returns (uint256);
 
     /**
      * @notice Returns the order offset of the latest order opened at this inbox.
@@ -169,6 +174,12 @@ interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
      * @param order OnchainCrossChainOrder to validate.
      */
     function validate(OnchainCrossChainOrder calldata order) external view returns (bool);
+
+    /**
+     * @dev Validate the gasless order.
+     * @param order GaslessCrossChainOrder to validate.
+     */
+    function validateFor(GaslessCrossChainOrder calldata order) external view returns (bool);
 
     /**
      * @notice Reject an open order and refund deposits.

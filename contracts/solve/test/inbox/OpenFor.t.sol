@@ -4,7 +4,7 @@ pragma solidity =0.8.24;
 import "../TestBase.sol";
 
 contract SolverNet_Inbox_OpenFor_Test is TestBase {
-    function test_v2_openFor_reverts() public {
+    function test_openFor_reverts() public {
         inbox.pauseOpen(true);
 
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
@@ -26,18 +26,18 @@ contract SolverNet_Inbox_OpenFor_Test is TestBase {
         );
         assertTrue(inbox.validateFor(order), "order should be valid");
 
-        bytes32 digest = HashLibV2.gaslessOrderDigest(order, orderData, address(inbox));
+        bytes32 digest = HashLib.gaslessOrderDigest(order, orderData, address(inbox));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPk, digest);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         // Should revert when `open` is paused
-        vm.expectRevert(ISolverNetInboxV2.IsPaused.selector);
+        vm.expectRevert(ISolverNetInbox.IsPaused.selector);
         vm.prank(user);
         inbox.openFor(order, signature, "");
 
         // Should revert if `open` and `close` are paused
         inbox.pauseAll(true);
-        vm.expectRevert(ISolverNetInboxV2.AllPaused.selector);
+        vm.expectRevert(ISolverNetInbox.AllPaused.selector);
         vm.prank(user);
         inbox.openFor(order, signature, "");
 
@@ -47,11 +47,11 @@ contract SolverNet_Inbox_OpenFor_Test is TestBase {
         orderData.deposit = SolverNet.Deposit({ token: address(0), amount: 1 ether });
         order.orderData = abi.encode(orderData);
 
-        digest = HashLibV2.gaslessOrderDigest(order, orderData, address(inbox));
+        digest = HashLib.gaslessOrderDigest(order, orderData, address(inbox));
         (v, r, s) = vm.sign(userPk, digest);
         signature = abi.encodePacked(r, s, v);
 
-        vm.expectRevert(ISolverNetInboxV2.InvalidNativeDeposit.selector);
+        vm.expectRevert(ISolverNetInbox.InvalidNativeDeposit.selector);
         vm.prank(user);
         inbox.openFor(order, signature, "");
 
@@ -59,12 +59,12 @@ contract SolverNet_Inbox_OpenFor_Test is TestBase {
         orderData.deposit = SolverNet.Deposit({ token: address(maxTransferToken), amount: type(uint96).max });
         order.orderData = abi.encode(orderData);
 
-        digest = HashLibV2.gaslessOrderDigest(order, orderData, address(inbox));
+        digest = HashLib.gaslessOrderDigest(order, orderData, address(inbox));
         (v, r, s) = vm.sign(userPk, digest);
         signature = abi.encodePacked(r, s, v);
 
         maxTransferToken.mint(user, defaultAmount);
-        vm.expectRevert(ISolverNetInboxV2.InvalidERC20Deposit.selector);
+        vm.expectRevert(ISolverNetInbox.InvalidERC20Deposit.selector);
         vm.prank(user);
         inbox.openFor(order, signature, "");
 
@@ -72,17 +72,17 @@ contract SolverNet_Inbox_OpenFor_Test is TestBase {
         orderData.deposit = SolverNet.Deposit({ token: address(feeOnTransferToken), amount: 1 ether });
         order.orderData = abi.encode(orderData);
 
-        digest = HashLibV2.gaslessOrderDigest(order, orderData, address(inbox));
+        digest = HashLib.gaslessOrderDigest(order, orderData, address(inbox));
         (v, r, s) = vm.sign(userPk, digest);
         signature = abi.encodePacked(r, s, v);
 
         fundUser(orderData, true);
-        vm.expectRevert(ISolverNetInboxV2.InvalidERC20Deposit.selector);
+        vm.expectRevert(ISolverNetInbox.InvalidERC20Deposit.selector);
         vm.prank(user);
         inbox.openFor(order, signature, "");
     }
 
-    function test_v2_openFor_succeeds() public {
+    function test_openFor_succeeds() public {
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(erc20Vault), 0, user, defaultAmount);
         SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
@@ -102,7 +102,7 @@ contract SolverNet_Inbox_OpenFor_Test is TestBase {
         );
         assertTrue(inbox.validateFor(order), "order should be valid");
 
-        bytes32 digest = HashLibV2.gaslessOrderDigest(order, orderData, address(inbox));
+        bytes32 digest = HashLib.gaslessOrderDigest(order, orderData, address(inbox));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPk, digest);
         bytes memory signature = abi.encodePacked(r, s, v);
 
@@ -122,20 +122,20 @@ contract SolverNet_Inbox_OpenFor_Test is TestBase {
 
         assertResolvedEq(resolvedOrder, resolved2);
         assertEq(orderOffset, inbox.getLatestOrderOffset(), "order offset should match contract state");
-        assertStatus(orderId, ISolverNetInboxV2.Status.Pending);
+        assertStatus(orderId, ISolverNetInbox.Status.Pending);
         assertEq(token1.balanceOf(address(inbox)), defaultAmount, "inbox should have received the deposit");
     }
 
-    function test_v2_open_hyperlane() public {
-        address impl = address(new SolverNetInboxV2(address(0), address(mailboxes[uint32(srcChainId)])));
-        inbox = SolverNetInboxV2(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
+    function test_open_hyperlane() public {
+        address impl = address(new SolverNetInbox(address(0), address(mailboxes[uint32(srcChainId)])));
+        inbox = SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
         uint256 snapshot = vm.snapshotState();
-        test_v2_openFor_reverts();
+        test_openFor_reverts();
         vm.revertToState(snapshot);
 
-        test_v2_openFor_succeeds();
+        test_openFor_succeeds();
     }
 }

@@ -16,7 +16,7 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         // `orderDataType` must be correct
         vm.expectRevert(ISolverNetInbox.InvalidOrderTypehash.selector);
         inbox.validate(order);
-        order.orderDataType = ORDER_DATA_TYPEHASH;
+        order.orderDataType = HashLib.OLD_ORDERDATA_TYPEHASH;
 
         // `orderData` must not be empty
         vm.expectRevert(ISolverNetInbox.InvalidOrderData.selector);
@@ -36,7 +36,7 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         order.orderData = abi.encode(orderData);
 
         // `destChainId` must be non-zero
-        vm.expectRevert(ISolverNetInbox.InvalidChainId.selector);
+        vm.expectRevert(ISolverNetInbox.InvalidDestinationChainId.selector);
         inbox.validate(order);
         orderData.destChainId = destChainId;
         order.orderData = abi.encode(orderData);
