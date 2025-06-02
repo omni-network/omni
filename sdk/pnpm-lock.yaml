@@ -235,6 +235,9 @@ importers:
 
   packages/test-utils:
     dependencies:
+      '@omni-network/core':
+        specifier: workspace:*
+        version: link:../core
       viem:
         specifier: 'catalog:'
         version: 2.28.1(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.7)

@@ -26,6 +26,7 @@
     "node": ">=22.x"
   },
   "dependencies": {
+    "@omni-network/core": "workspace:*",
     "viem": "catalog:"
   },
   "devDependencies": {

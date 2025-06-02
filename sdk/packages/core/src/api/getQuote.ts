@@ -5,8 +5,7 @@ import { address, hex } from '../schema/types.js'
 import type { Environment } from '../types/config.js'
 import type { Quote, Quoteable } from '../types/quote.js'
 import type { Prettify } from '../types/utils.js'
-import { getApiUrl } from '../utils/getApiUrl.js'
-import { toJSON } from '../utils/toJSON.js'
+import { getApiUrl, toJSON } from '../utils/index.js'
 
 export const quoteResponseSchema = z.object({
   deposit: z.object({

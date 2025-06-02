@@ -1,4 +1,5 @@
-import { type Hex, parseEther, toBytes, toHex } from 'viem'
+import { fillOriginDataAbi } from '@omni-network/core'
+import { type Hex, encodeAbiParameters, parseEther, toBytes, toHex } from 'viem'
 import { testAccount } from './accounts.js'
 
 const oneEth = parseEther('1')
@@ -21,24 +22,42 @@ export const testContracts = {
   outbox: '0x456',
 } as const
 
+const srcChainId = 1n
+const destChainId = 2n
+const fillDeadline = 1748953139
 export const testOrderId = toHex(toBytes(1n, { size: 32 }))
-
-export const testOriginData = '0x123456' as const
-
 export const testBytes32Addr = toHex(toBytes(testAccount.address, { size: 32 }))
+export const originData = {
+  srcChainId,
+  destChainId,
+  fillDeadline,
+  calls: [
+    {
+      target: testAccount.address,
+      selector: '0x00000000',
+      value: 9970089730807577n,
+      params: '0x',
+    },
+  ],
+  expenses: [],
+} as const
+export const encodedOriginData = encodeAbiParameters(
+  [fillOriginDataAbi],
+  [originData],
+)
 
 export const testResolvedOrder = {
   user: testAccount.address,
-  originChainId: 1n,
+  originChainId: srcChainId,
   openDeadline: 0,
-  fillDeadline: 0,
+  fillDeadline,
   orderId: testOrderId,
   maxSpent: [
     {
       token: testBytes32Addr,
       amount: oneEth,
       recipient: testBytes32Addr,
-      chainId: 1n,
+      chainId: srcChainId,
     },
   ] as readonly Transfer[],
   minReceived: [
@@ -46,14 +65,14 @@ export const testResolvedOrder = {
       token: testBytes32Addr,
       amount: oneEth,
       recipient: testBytes32Addr,
-      chainId: 1n,
+      chainId: srcChainId,
     },
   ] as readonly Transfer[],
   fillInstructions: [
     {
-      destinationChainId: 1n,
+      destinationChainId: destChainId,
       destinationSettler: testBytes32Addr,
-      originData: testOriginData,
+      originData: encodedOriginData,
     },
   ] as readonly FillInstruction[],
 } as const

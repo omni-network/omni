@@ -1,18 +1,12 @@
+import type { ResolvedOrder } from '@omni-network/core'
+import { testResolvedOrder } from '@omni-network/test-utils'
 import { waitFor } from '@testing-library/react'
-import type { Hex, Log } from 'viem'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderHook } from '../../test/index.js'
 import { useWatchDidFill } from './useWatchDidFill.js'
 
 const unwatch = vi.fn()
-const testLogs: Log[] = [
-  {
-    logIndex: 0,
-    topics: [],
-    data: '0x',
-    transactionHash: '0x123',
-  } as unknown as Log,
-]
+const txHash = '0x123'
 
 const { watchDidFill } = vi.hoisted(() => {
   return {
@@ -32,12 +26,12 @@ beforeEach(() => {
   unwatch.mockClear()
 })
 
-test('default: returns destTxHash when core api triggers onLogs callback', async () => {
+test('default: returns destTxHash when core api triggers onFill callback', async () => {
   const { result, rerender } = renderHook(
-    (orderId?: Hex) =>
+    (resolvedOrder?: ResolvedOrder) =>
       useWatchDidFill({
         destChainId: 1,
-        orderId,
+        resolvedOrder,
       }),
     { mockContractsCall: true },
   )
@@ -48,15 +42,15 @@ test('default: returns destTxHash when core api triggers onLogs callback', async
   expect(watchDidFill).not.toHaveBeenCalled()
 
   watchDidFill.mockImplementation((params) => {
-    params.onLogs(testLogs)
+    params.onFill(txHash)
     return unwatch
   })
 
-  rerender('0xOrderId')
+  rerender(testResolvedOrder)
 
   await waitFor(() => {
     expect(watchDidFill).toHaveBeenCalledTimes(1)
-    expect(result.current.destTxHash).toBe('0x123')
+    expect(result.current.destTxHash).toBe(txHash)
     expect(result.current.status).toBe('success')
   })
 
@@ -75,7 +69,7 @@ test('behaviour: error and status are set when core api triggers onError callbac
   const { result } = renderHook(() =>
     useWatchDidFill({
       destChainId: 1,
-      orderId: '0xOrderId',
+      resolvedOrder: testResolvedOrder,
     }),
   )
 
