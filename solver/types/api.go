@@ -289,3 +289,45 @@ func CheckRequestFromOrderData(srcChainID uint64, data bindings.SolverNetOrderDa
 		Calls:              CallsFromBindings(data.Calls),
 	}, nil
 }
+
+// RelayRequest is the expected request body for the /api/v1/relay endpoint.
+// This endpoint accepts gasless orders with user signatures and submits them on behalf of users.
+type RelayRequest struct {
+	// The gasless cross-chain order to be submitted
+	Order GaslessCrossChainOrder `json:"order"`
+	// User's signature authorizing the order
+	Signature hexutil.Bytes `json:"signature"`
+	// Optional filler-specific data (currently unused but part of ERC7683 spec)
+	OriginFillerData hexutil.Bytes `json:"originFillerData,omitempty"`
+}
+
+// RelayResponse is the response json for the /relay endpoint.
+type RelayResponse struct {
+	// Whether the order was successfully submitted
+	Success bool `json:"success"`
+	// Transaction hash of the submitted openFor transaction
+	TxHash common.Hash `json:"txHash,omitempty"`
+	// Order ID that was created
+	OrderID common.Hash `json:"orderId,omitempty"`
+	// Error details if submission failed
+	Error *RelayError `json:"error,omitempty"`
+}
+
+// RelayError represents an error in relay submission
+type RelayError struct {
+	Code        string `json:"code"`
+	Message     string `json:"message"`
+	Description string `json:"description,omitempty"`
+}
+
+// GaslessCrossChainOrder represents the ERC7683 gasless order structure
+type GaslessCrossChainOrder struct {
+	OriginSettler common.Address `json:"originSettler"`
+	User          common.Address `json:"user"`
+	Nonce         *hexutil.Big   `json:"nonce"`
+	OriginChainId *hexutil.Big   `json:"originChainId"`
+	OpenDeadline  uint32         `json:"openDeadline"`
+	FillDeadline  uint32         `json:"fillDeadline"`
+	OrderDataType common.Hash    `json:"orderDataType"`
+	OrderData     hexutil.Bytes  `json:"orderData"`
+}

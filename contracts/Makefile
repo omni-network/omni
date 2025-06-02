@@ -42,7 +42,8 @@ CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			test/StakingProxy.sol:StakingProxy
 
 SOLVE_CONTRACTS := ISolverNetBindings SolverNetInbox SolverNetOutbox SolverNetExecutor \
-			test/utils/MockERC20.sol:MockERC20 test/utils/MockVault.sol:MockVault SolverNetAdmin
+			test/utils/MockERC20.sol:MockERC20 test/utils/MockVault.sol:MockVault SolverNetAdmin \
+			SolverNetInboxV2
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory
 
@@ -57,8 +58,10 @@ bindings: check-abigen-version build ## Generate golang contract bindings.
 	ROOT=./xapps ./bindings/scripts/gen.sh $(XAPPS_CONTRACTS)
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
-	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetoutbox.go IERC7683FillInstruction IERC7683Output IERC7683ResolvedCrossChainOrder ISolverNetOutboxInboxConfig
 	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetinbox.go SolverNetCall SolverNetFillOriginData SolverNetTokenExpense
+	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetinboxv2.go IERC7683FillInstruction IERC7683OnchainCrossChainOrder IERC7683Output IERC7683ResolvedCrossChainOrder \
+		SolverNetCall SolverNetFillOriginData SolverNetTokenExpense
+	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetoutbox.go IERC7683FillInstruction IERC7683Output IERC7683ResolvedCrossChainOrder ISolverNetOutboxInboxConfig
 
 .PHONY: allocs
 allocs: bindings ## Generate predeploy allocations.

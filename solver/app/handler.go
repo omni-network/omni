@@ -174,6 +174,37 @@ func newTokensHandler(chains []uint64) Handler {
 	}
 }
 
+// newRelayHandler returns a handler for the /relay endpoint.
+// It validates gasless orders and signatures, then submits them via openFor.
+func newRelayHandler(relayFunc relayFunc) Handler {
+	return Handler{
+		Endpoint: endpointRelay,
+		ZeroReq:  func() any { return &types.RelayRequest{} },
+		HandleFunc: func(ctx context.Context, request any) (any, error) {
+			req, ok := request.(*types.RelayRequest)
+			if !ok {
+				return nil, errors.New("invalid request type [BUG]", "type", fmt.Sprintf("%T", request))
+			}
+
+			res, err := relayFunc(ctx, *req)
+			if r := new(RelayError); errors.As(err, &r) {
+				return types.RelayResponse{
+					Success: false,
+					Error: &types.RelayError{
+						Code:        r.Code,
+						Message:     r.Message,
+						Description: r.Description,
+					},
+				}, nil
+			} else if err != nil {
+				return types.RelayResponse{}, err
+			}
+
+			return res, nil
+		},
+	}
+}
+
 var gatewayTimeout = time.Second * 10
 
 func handlerAdapter(h Handler) http.Handler {
