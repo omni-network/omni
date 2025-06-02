@@ -15,8 +15,11 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
 	"github.com/cosmos/cosmos-sdk/types"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
@@ -235,6 +238,41 @@ func TestVerifyTx(t *testing.T) {
 				b.SetFeeGranter(authtypes.NewModuleAddress("granter"))
 			},
 			Error: "fee granter not empty",
+		},
+		{
+			Name: "memo",
+			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
+			Callback: func(b client.TxBuilder) {
+				b.SetMemo("memo")
+			},
+			Error: "memo not empty",
+		},
+		{
+			Name: "extension options",
+			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
+			Callback: func(b client.TxBuilder) {
+				extBuilder := b.(authtx.ExtensionOptionsTxBuilder)
+				extBuilder.SetExtensionOptions(&codectypes.Any{})
+			},
+			Error: "extension options not empty",
+		},
+		{
+			Name: "auth info tip",
+			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
+			Callback: func(b client.TxBuilder) {
+				ptx := b.(protoTxProvider).GetProtoTx()
+				ptx.AuthInfo.Tip = &txtypes.Tip{} //nolint:staticcheck // For testing purposes
+			},
+			Error: "proto tx tip not nil",
+		},
+		{
+			Name: "raw signatures",
+			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
+			Callback: func(b client.TxBuilder) {
+				ptx := b.(protoTxProvider).GetProtoTx()
+				ptx.Signatures = [][]byte{{}, {}}
+			},
+			Error: "proto tx signatures not empty",
 		},
 	}
 

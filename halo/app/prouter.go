@@ -15,7 +15,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 // processTimeout is the maximum time to process a proposal.
@@ -181,7 +183,38 @@ func verifyTX(tx sdk.Tx) error {
 		return errors.New("msgs v2 count mismatch")
 	}
 
+	// Convert to actual proto and verify fieds explicitly.
+	hasProtoTx, ok := tx.(protoTxProvider)
+	if !ok {
+		return errors.New("tx does not implement protoTxProvider")
+	}
+
+	ptx := hasProtoTx.GetProtoTx()
+	if len(ptx.GetSignatures()) != 0 { //nolint:nestif // Multiple checks are needed
+		return errors.New("proto tx signatures not empty")
+	} else if ptx.AuthInfo.Tip != nil {
+		return errors.New("proto tx tip not nil")
+	} else if len(ptx.AuthInfo.SignerInfos) > 0 {
+		return errors.New("proto tx signer infos not empty")
+	} else if !proto.Equal(ptx.AuthInfo.Fee, new(txtypes.Fee)) {
+		return errors.New("proto tx fee not zero")
+	} else if ptx.Body.TimeoutHeight != 0 {
+		return errors.New("proto tx timeout height not empty")
+	} else if ptx.Body.Memo != "" {
+		return errors.New("proto tx memo not empty")
+	} else if len(ptx.Body.ExtensionOptions) > 0 {
+		return errors.New("proto tx extension options not empty")
+	} else if len(ptx.Body.NonCriticalExtensionOptions) > 0 {
+		return errors.New("proto tx non-critical extension options not empty")
+	} else if len(ptx.Body.Messages) != msgsLen {
+		return errors.New("proto tx messages count mismatch")
+	}
+
 	return nil
+}
+
+type protoTxProvider interface {
+	GetProtoTx() *txtypes.Tx
 }
 
 //nolint:unparam // Explicitly return nil error
