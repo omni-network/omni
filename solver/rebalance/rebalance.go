@@ -61,25 +61,29 @@ func rebalanceCCTPOnce(
 	solver common.Address,
 ) {
 	for _, chain := range network.EVMChains() {
-		ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
-		log.Info(ctx, "Rebalancing chain")
+		func() {
+			// Lock the chain to prevent concurrent rebalancing.
+			lock(chain.ID)
+			defer unlock(chain.ID)
 
-		// First, swap surplus tokens USDC.
-		if err := swapSurplusOnce(ctx, backends, chain.ID, solver); err != nil {
-			log.Warn(ctx, "Failed to swap surplus", err)
-			continue
-		}
+			ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
+			log.Info(ctx, "Rebalancing chain")
 
-		// Then, fill deficits from surplus USDC.
-		if err := fillDeficitOnce(ctx, pricer, backends, chain.ID, solver); err != nil {
-			log.Warn(ctx, "Failed to fill deficit", err)
-			continue
-		}
+			// First, swap surplus tokens USDC.
+			if err := swapSurplusOnce(ctx, backends, chain.ID, solver); err != nil {
+				log.Warn(ctx, "Failed to swap surplus", err)
+			}
 
-		// Finally, send remaining surplus USDC to other chains.
-		if err := sendSurplusOnce(ctx, db, network, pricer, backends, chain.ID, solver); err != nil {
-			log.Warn(ctx, "Failed to send surplus", err)
-		}
+			// Then, fill deficits from surplus USDC.
+			if err := fillDeficitOnce(ctx, pricer, backends, chain.ID, solver); err != nil {
+				log.Warn(ctx, "Failed to fill deficit", err)
+			}
+
+			// Finally, send remaining surplus USDC to other chains.
+			if err := sendSurplusOnce(ctx, db, network, pricer, backends, chain.ID, solver); err != nil {
+				log.Warn(ctx, "Failed to send surplus", err)
+			}
+		}()
 	}
 }
 
