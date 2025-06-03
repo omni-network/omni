@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
@@ -93,6 +94,16 @@ func FindOrderTokenAddress(orderID solana.PublicKey) (solana.PublicKey, uint8, e
 // Generated code variant is fine, since no instruction arguments required.
 func FindInboxStateAddress() (solana.PublicKey, uint8, error) {
 	return new(Init).FindInboxStateAddress()
+}
+
+// NewInit returns a new Init instruction with the given parameters.
+func NewInit(chainID uint64, closeBuffer time.Duration, admin solana.PublicKey) (*Init, error) {
+	inboxState, _, err := FindInboxStateAddress()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewInitInstruction(chainID, int64(closeBuffer.Seconds()), inboxState, admin, system.ProgramID), nil
 }
 
 type OpenOrder struct {

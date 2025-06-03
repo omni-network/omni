@@ -15,7 +15,6 @@ import (
 	"github.com/omni-network/omni/lib/cchain/queryutil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -90,6 +89,8 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	contracts.UseStagingOmniRPC(def.Testnet.BroadcastOmniEVM().ExternalRPC)
 
+	svmErr := svmInitAsync(ctx, def)
+
 	if err = fundAnvil(ctx, def); err != nil {
 		return nil, errors.Wrap(err, "fund anvil")
 	}
@@ -123,6 +124,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	err = waitForSupportedChains(ctx, def)
 	if err != nil {
 		return nil, err
+	}
+
+	if err := <-svmErr; err != nil {
+		return nil, errors.Wrap(err, "svm init")
 	}
 
 	if cfg.PingPongN == 0 || def.Testnet.Network == netconf.Mainnet {
@@ -358,7 +363,6 @@ func checkSupportedChains(ctx context.Context, n netman.Manager) (bool, error) {
 			}
 
 			supported, err := src.Contract.IsSupportedDest(&bind.CallOpts{Context: ctx}, dest.Chain.ChainID)
-			log.Warn(ctx, "Checking supported chain", err, "src", evmchain.Name(src.Chain.ChainID), "dest", evmchain.Name(dest.Chain.ChainID), "supported", supported)
 			if err != nil {
 				return false, errors.Wrap(err, "check supported chain")
 			} else if !supported {

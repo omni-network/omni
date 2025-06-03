@@ -54,7 +54,7 @@ func run(ctx context.Context, dir string) error {
 	defer cancel()
 
 	log.Info(ctx, "Creating USDC mint...")
-	mintResp, err := svmutil.CreateMint(ctx, cl, privkey, "usdc", 6)
+	mintResp, err := svmutil.CreateMint(ctx, cl, privkey, svmutil.DevnetUSDCMint, 6)
 	if err != nil {
 		return errors.Wrap(err, "create mint")
 	}
@@ -103,10 +103,10 @@ func dumpConfig(
 		RPCAddress:   addr,
 		AuthorityKey: authorityKey.String(),
 		Mints: []mintConfig{{
-			Symbol:           mint.Symbol,
+			Symbol:           "USDC",
 			MintAccount:      mint.MintAccount.String(),
-			AuthTokenAccount: mint.AuthATA.String(),
 			Authority:        mint.Authority.PublicKey().String(),
+			AuthTokenAccount: mint.AuthATA().String(),
 		}},
 		Programs: []programConfig{{
 			Name:    program.Name,

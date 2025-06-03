@@ -18,7 +18,6 @@ import (
 
 	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
-	associatedtokenaccount "github.com/gagliardetto/solana-go/programs/associated-token-account"
 	"github.com/gagliardetto/solana-go/programs/memo"
 	"github.com/gagliardetto/solana-go/programs/token"
 	"github.com/gagliardetto/solana-go/rpc"
@@ -206,7 +205,8 @@ func TestInbox(t *testing.T) {
 
 	t.Run("init", func(t *testing.T) {
 		// Initialize inbox state
-		init := anchorinbox.NewInitInstruction(chainID, closeBuffer, inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
+		init, err := anchorinbox.NewInit(chainID, closeBuffer, privKey0.PublicKey())
+		require.NoError(t, err)
 		txSig0, err := svmutil.SendSimple(ctx, cl, privKey0, init.Build())
 		require.NoError(t, err)
 		txResp0, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig0)
@@ -241,17 +241,15 @@ func TestInbox(t *testing.T) {
 	var claimerATA solana.PublicKey
 	t.Run("mint", func(t *testing.T) {
 		// Create mint and depositor token account
-		mintResp, err = svmutil.CreateMint(ctx, cl, privKey0, "usdc", 0)
-		// mintResp = createMint(ctx, t, cl, privKey0)
+		mintResp, err = svmutil.CreateMint(ctx, cl, privKey0, svmutil.DevnetUSDCMint, 0, claimer.PublicKey(), privKey0.PublicKey())
 		require.NoError(t, err)
+		claimerATA = mintResp.ATAs[claimer.PublicKey()]
 
 		// Airdrop 1 SOL to claimer (to pay for claim)
 		txSig, err := cl.RequestAirdrop(ctx, claimer.PublicKey(), solana.LAMPORTS_PER_SOL, rpc.CommitmentConfirmed)
 		require.NoError(t, err)
 		_, err = svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.NoError(t, err)
-
-		claimerATA = ensureATA(ctx, t, cl, claimer, mintResp.MintAccount)
 	})
 
 	// Prep Open instruction
@@ -265,7 +263,7 @@ func TestInbox(t *testing.T) {
 		p.DepositAmount = depositAmount
 		p.Call.Params = tutil.RandomBytes(4)
 
-		openOrder, err = anchorinbox.NewOpenOrder(p, owner, mintResp.MintAccount, mintResp.AuthATA)
+		openOrder, err = anchorinbox.NewOpenOrder(p, owner, mintResp.MintAccount, mintResp.AuthATA())
 		require.NoError(t, err)
 
 		// Send Open instruction
@@ -316,7 +314,7 @@ func TestInbox(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, depositAmount, uint64(*bal.Value.UiAmount))
 
-		bal, err = cl.GetTokenAccountBalance(ctx, mintResp.AuthATA, rpc.CommitmentConfirmed)
+		bal, err = cl.GetTokenAccountBalance(ctx, mintResp.AuthATA(), rpc.CommitmentConfirmed)
 		require.NoError(t, err)
 		require.Equal(t, 1e9-int64(depositAmount), int64(*bal.Value.UiAmount))
 	})
@@ -377,7 +375,8 @@ func TestInbox(t *testing.T) {
 
 		bal, err := cl.GetTokenAccountBalance(ctx, claimerATA, rpc.CommitmentConfirmed)
 		require.NoError(t, err)
-		require.Equal(t, depositAmount, uint64(*bal.Value.UiAmount))
+		const mintAmount = 1e9
+		require.Equal(t, depositAmount+mintAmount, uint64(*bal.Value.UiAmount))
 
 		_, err = cl.GetTokenAccountBalance(ctx, openOrder.TokenAddress, rpc.CommitmentConfirmed)
 		require.Contains(t, errors.Format(svmutil.WrapRPCError(err, "getTokenAccountBalance")), "could not find account")
@@ -385,13 +384,13 @@ func TestInbox(t *testing.T) {
 
 	// Prep Open instruction
 	t.Run("open and close", func(t *testing.T) {
-		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount, mintResp.AuthATA)
+		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount, mintResp.AuthATA())
 		require.NoError(t, err)
 		closeOrder := anchorinbox.NewCloseInstruction(
 			openOrder.ID,
 			openOrder.StateAddress,
 			openOrder.TokenAddress,
-			mintResp.AuthATA,
+			mintResp.AuthATA(),
 			owner,
 			token.ProgramID,
 		)
@@ -426,14 +425,14 @@ func TestInbox(t *testing.T) {
 		_, err = cl.GetTokenAccountBalance(ctx, openOrder.TokenAddress, rpc.CommitmentConfirmed)
 		require.Contains(t, errors.Format(svmutil.WrapRPCError(err, "getTokenAccountBalance")), "could not find account")
 
-		bal, err := cl.GetTokenAccountBalance(ctx, mintResp.AuthATA, rpc.CommitmentConfirmed)
+		bal, err := cl.GetTokenAccountBalance(ctx, mintResp.AuthATA(), rpc.CommitmentConfirmed)
 		require.NoError(t, err)
 		require.Equal(t, 1e9-int64(depositAmount), int64(*bal.Value.UiAmount))
 	})
 
 	t.Run("open and reject", func(t *testing.T) {
 		const reason uint8 = 99
-		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount, mintResp.AuthATA)
+		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount, mintResp.AuthATA())
 		require.NoError(t, err)
 
 		// Send open instructions
@@ -461,7 +460,7 @@ func TestInbox(t *testing.T) {
 		require.Contains(t, errors.Format(svmutil.WrapRPCError(err, "getTokenAccountBalance")), "could not find account")
 
 		// Ensure deposit amount transferred back to owner
-		bal, err := cl.GetTokenAccountBalance(ctx, mintResp.AuthATA, rpc.CommitmentConfirmed)
+		bal, err := cl.GetTokenAccountBalance(ctx, mintResp.AuthATA(), rpc.CommitmentConfirmed)
 		require.NoError(t, err)
 		require.Equal(t, 1e9-int64(depositAmount), int64(*bal.Value.UiAmount))
 
@@ -487,7 +486,8 @@ func TestInbox(t *testing.T) {
 	})
 
 	t.Run("init fail", func(t *testing.T) {
-		init := anchorinbox.NewInitInstruction(chainID, closeBuffer, inboxStateAddr, privKey0.PublicKey(), solana.SystemProgramID)
+		init, err := anchorinbox.NewInit(chainID, closeBuffer, privKey0.PublicKey())
+		require.NoError(t, err)
 		txSig, err := svmutil.SendSimple(ctx, cl, privKey0, init.Build())
 		require.NoError(t, err)
 		txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
@@ -497,7 +497,7 @@ func TestInbox(t *testing.T) {
 
 	t.Run("open fail", func(t *testing.T) {
 		params := anchorinbox.OpenParams{OrderId: openOrder.ID, Nonce: openOrder.Params.Nonce}
-		open := anchorinbox.NewOpenInstruction(params, openOrder.StateAddress, privKey0.PublicKey(), mintResp.MintAccount, mintResp.AuthATA, openOrder.TokenAddress, token.ProgramID, inboxStateAddr, solana.SystemProgramID)
+		open := anchorinbox.NewOpenInstruction(params, openOrder.StateAddress, privKey0.PublicKey(), mintResp.MintAccount, mintResp.AuthATA(), openOrder.TokenAddress, token.ProgramID, inboxStateAddr, solana.SystemProgramID)
 		txSig, err := svmutil.SendSimple(ctx, cl, privKey0, open.Build())
 		require.NoError(t, err)
 		txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
@@ -557,35 +557,6 @@ func TestChainIDs(t *testing.T) {
 		t.Skip("Skip 3rd party network issues")
 	}
 	require.Equal(t, evmchain.IDSolanaTest, id)
-}
-
-// ensureATA finds or creates an associated token account.
-func ensureATA(ctx context.Context, t *testing.T, cl *rpc.Client,
-	wallet solana.PrivateKey, mintAccount solana.PublicKey,
-) solana.PublicKey {
-	t.Helper()
-	ata, _, err := solana.FindAssociatedTokenAddress(wallet.PublicKey(), mintAccount)
-	require.NoError(t, err)
-
-	_, err = cl.GetAccountInfoWithOpts(ctx, ata, &rpc.GetAccountInfoOpts{Commitment: rpc.CommitmentConfirmed})
-	if errors.Is(err, rpc.ErrNotFound) {
-		// Create it below
-	} else if err != nil {
-		require.NoError(t, err)
-	} else {
-		// Already exists
-		return ata
-	}
-
-	create := associatedtokenaccount.NewCreateInstruction(wallet.PublicKey(), wallet.PublicKey(), mintAccount)
-	txSig, err := svmutil.SendSimple(ctx, cl, wallet, create.Build())
-	require.NoError(t, err)
-
-	txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
-	require.NoError(t, err)
-	t.Logf("ATA Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
-
-	return ata
 }
 
 func ensureInboxEvent(t *testing.T, prog svmutil.Program, txRes *rpc.GetTransactionResult, expectName string, expectData any) {

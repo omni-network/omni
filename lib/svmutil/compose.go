@@ -45,7 +45,7 @@ func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Cl
 	}
 
 	for _, program := range programs {
-		if err := copyProgram(composeDir, program); err != nil {
+		if err := CopyProgram(composeDir, program); err != nil {
 			return nil, "", nil, nil, errors.Wrap(err, "copy program")
 		}
 	}
@@ -120,7 +120,7 @@ func Deploy(ctx context.Context, cl *rpc.Client, composeDir string, program Prog
 	// TODO(corver): Switch to program-v4 once 'stable' supports --program-keypair flag
 
 	args := []string{
-		"compose", "exec", "solana", // Container
+		"compose", "exec", "svm", // Container
 		"solana", "program", // Program command
 		"deploy", soFile, // Loader-v4 subcommand
 		// Args...
@@ -186,13 +186,13 @@ type sendOpts struct {
 
 func WithInstructions(instrs ...solana.Instruction) func(*sendOpts) {
 	return func(opts *sendOpts) {
-		opts.Instructions = instrs
+		opts.Instructions = append(opts.Instructions, instrs...)
 	}
 }
 
 func WithPrivateKeys(privkeys ...solana.PrivateKey) func(*sendOpts) {
 	return func(opts *sendOpts) {
-		opts.PrivateKeys = privkeys
+		opts.PrivateKeys = append(opts.PrivateKeys, privkeys...)
 	}
 }
 
@@ -244,7 +244,7 @@ func Send(ctx context.Context, cl *rpc.Client, opts ...func(*sendOpts)) (solana.
 	return txSig, nil
 }
 
-func copyProgram(composeDir string, program Program) error {
+func CopyProgram(composeDir string, program Program) error {
 	targetDir := filepath.Join(composeDir, program.Name)
 	if err := os.RemoveAll(targetDir); err != nil {
 		return errors.Wrap(err, "remove target dir", "path", targetDir)
