@@ -1,0 +1,684 @@
+{
+  "address": "AwminMpVyPSX86m3w9KWcxjovtnjwxiKZUNTDgDqrctv",
+  "metadata": {
+    "name": "solver_inbox",
+    "version": "0.0.1",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "claim",
+      "discriminator": [62, 198, 214, 193, 213, 159, 108, 210],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 114, 100, 101, 114, 95, 115, 116, 97, 116, 101]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 114, 100, 101, 114, 95, 116, 111, 107, 101, 110]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_token_account",
+          "writable": true
+        },
+        {
+          "name": "claimer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "claimer_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_id",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "close",
+      "discriminator": [98, 165, 201, 177, 108, 65, 206, 96],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 114, 100, 101, 114, 95, 115, 116, 97, 116, 101]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 114, 100, 101, 114, 95, 116, 111, 107, 101, 110]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_token_account",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_id",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "init",
+      "docs": [
+        "Initialize the inbox state",
+        "This should be called only once, preferably by the upgrade authority."
+      ],
+      "discriminator": [220, 59, 207, 236, 108, 250, 47, 100],
+      "accounts": [
+        {
+          "name": "inbox_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [105, 110, 98, 111, 120, 95, 115, 116, 97, 116, 101]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "chain_id",
+          "type": "u64"
+        },
+        {
+          "name": "close_buffer",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "mark_filled",
+      "docs": [
+        "Mark an order as filled, and set the claimable_by account.",
+        "This may only be called by the inbox admin."
+      ],
+      "discriminator": [192, 137, 170, 0, 70, 5, 127, 160],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 114, 100, 101, 114, 95, 115, 116, 97, 116, 101]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "inbox_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [105, 110, 98, 111, 120, 95, 115, 116, 97, 116, 101]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "_order_id",
+          "type": "pubkey"
+        },
+        {
+          "name": "fill_hash",
+          "type": "pubkey"
+        },
+        {
+          "name": "claimable_by",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "open",
+      "docs": ["Open a new order"],
+      "discriminator": [228, 220, 155, 71, 199, 189, 60, 45],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 114, 100, 101, 114, 95, 115, 116, 97, 116, 101]
+              },
+              {
+                "kind": "arg",
+                "path": "params.order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint_account",
+          "writable": true
+        },
+        {
+          "name": "owner_token_account",
+          "writable": true
+        },
+        {
+          "name": "order_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 114, 100, 101, 114, 95, 116, 111, 107, 101, 110]
+              },
+              {
+                "kind": "arg",
+                "path": "params.order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "inbox_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [105, 110, 98, 111, 120, 95, 115, 116, 97, 116, 101]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "OpenParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "reject",
+      "docs": [
+        "Reject an order, refunding owner closing accounts.",
+        "Only admin can reject orders."
+      ],
+      "discriminator": [135, 7, 63, 85, 131, 114, 111, 224],
+      "accounts": [
+        {
+          "name": "order_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 114, 100, 101, 114, 95, 115, 116, 97, 116, 101]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 114, 100, 101, 114, 95, 116, 111, 107, 101, 110]
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_token_account",
+          "writable": true
+        },
+        {
+          "name": "inbox_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [105, 110, 98, 111, 120, 95, 115, 116, 97, 116, 101]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_id",
+          "type": "pubkey"
+        },
+        {
+          "name": "reason",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "InboxState",
+      "discriminator": [161, 5, 9, 33, 125, 185, 63, 116]
+    },
+    {
+      "name": "OrderState",
+      "discriminator": [60, 123, 67, 162, 96, 43, 173, 225]
+    }
+  ],
+  "events": [
+    {
+      "name": "EventUpdated",
+      "discriminator": [238, 86, 17, 103, 12, 182, 141, 61]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidID",
+      "msg": "Invalid order ID"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidStatus",
+      "msg": "Invalid status"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidMint",
+      "msg": "Invalid mint"
+    },
+    {
+      "code": 6003,
+      "name": "NotClosable",
+      "msg": "Order not closable yet"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidFillHash",
+      "msg": "Invalid fill hash"
+    }
+  ],
+  "types": [
+    {
+      "name": "EVMCall",
+      "docs": [
+        "EVM call to execute on destination chain",
+        "If the call is a native transfer, `target` is the recipient address, and `selector` / `params` are empty."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "target",
+            "type": {
+              "array": ["u8", 20]
+            }
+          },
+          {
+            "name": "selector",
+            "type": {
+              "array": ["u8", 4]
+            }
+          },
+          {
+            "name": "value",
+            "type": "u128"
+          },
+          {
+            "name": "params",
+            "type": "bytes"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EVMTokenExpense",
+      "docs": [
+        "TokenExpense describes an ERC20 expense to be paid by the solver on destination chain when filling an",
+        "order. Native expenses are inferred from the calls, and are not included in the order data."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "spender",
+            "docs": [
+              "The address that will do token.transferFrom(...) on fill. Required to set allowance"
+            ],
+            "type": {
+              "array": ["u8", 20]
+            }
+          },
+          {
+            "name": "token",
+            "docs": ["The address of the token on the destination chain"],
+            "type": {
+              "array": ["u8", 20]
+            }
+          },
+          {
+            "name": "amount",
+            "docs": ["The amount of the token to spend (max == uint96)"],
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventUpdated",
+      "docs": ["Event emitted when an order is opened"],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InboxState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "chain_id",
+            "type": "u64"
+          },
+          {
+            "name": "deployed_at",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "close_buffer_secs",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OpenParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "deposit_amount",
+            "type": "u64"
+          },
+          {
+            "name": "dest_chain_id",
+            "type": "u64"
+          },
+          {
+            "name": "call",
+            "type": {
+              "defined": {
+                "name": "EVMCall"
+              }
+            }
+          },
+          {
+            "name": "expense",
+            "type": {
+              "defined": {
+                "name": "EVMTokenExpense"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "closable_at",
+            "type": "i64"
+          },
+          {
+            "name": "claimable_by",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "deposit_amount",
+            "type": "u64"
+          },
+          {
+            "name": "deposit_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "dest_chain_id",
+            "type": "u64"
+          },
+          {
+            "name": "dest_call",
+            "type": {
+              "defined": {
+                "name": "EVMCall"
+              }
+            }
+          },
+          {
+            "name": "dest_expense",
+            "type": {
+              "defined": {
+                "name": "EVMTokenExpense"
+              }
+            }
+          },
+          {
+            "name": "fill_hash",
+            "type": "pubkey"
+          },
+          {
+            "name": "reject_reason",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Status",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Invalid"
+          },
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Rejected"
+          },
+          {
+            "name": "Closed"
+          },
+          {
+            "name": "Filled"
+          },
+          {
+            "name": "Claimed"
+          }
+        ]
+      }
+    }
+  ]
+}
