@@ -63,3 +63,11 @@ This error is known to happen on a freshly installed MacBook, we are investigati
 4. Run tests again: `make e2e-ci` or any other tests using the e2e command.
 
 Please let the team know if you experienced the above issue.
+
+**CPU missing AVX support**
+
+This issue may happen when building `linux/amd64` images expecting the CPU to support AVX.
+
+1. Go to Docker Desktop's settings > General > Virtual Machine Options
+2. Select the Docker VMM option and restart Docker
+3. Try to build the images again
