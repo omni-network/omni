@@ -1,30 +1,104 @@
 ---
-slug: / # Keep this to make it the root page
-title: Welcome
-description: Documentation for the Omni SDK, SolverNet, and related concepts.
+layout: landing
 ---
 
-# Welcome
+import { HomePage } from "vocs/components";
 
-Welcome to the Omni documentation! Omni is a technology designed to make the **entire crypto ecosystem** feel like a single chain for users and developers.
+<HomePage.Root>
+  <img src="/img/Omni_Lockup_Light.png" width="400"/>
 
-This documentation is your guide to understanding and building with Omni. You'll find the resources you need to get started.
+  <HomePage.InstallPackage name="@omni-network/react @omni-network/core" type="install" />
 
-## What is Omni?
+{" "}
 
-At its core, Omni abstracts away the complexities of cross-chain interactions, enabling:
+{" "}
 
-*   **Developers** to deploy applications on a single chain while reaching users and liquidity across the entire crypto ecosystem.
-*   **Users** to interact with applications on any chain without bridging, managing gas, or switching networks.
+<HomePage.Tagline>
+  Onboard your users from any chain in 1 click
+</HomePage.Tagline>
 
-Omni's primary developer-facing product is:
+<HomePage.Description>
+  Omni is creating a world where the entire onchain economy is just 1 click away. Use the Omni SDK to bridge, swap, deposit, and bundle arbitrary actions across any chain. Powered by intents.
+</HomePage.Description>
 
-*   **SolverNet:** A frontend SDK and network enabling intent-based execution across chains.
+<HomePage.Buttons>
+  <HomePage.Button href="/introduction/welcome" variant="accent">
+    Get started
+  </HomePage.Button>
+</HomePage.Buttons>
 
-Omni is infrastructure for coordinating and settling cross-chain actions, and offers **SolverNet** as its primary product for building apps that reach users everywhere.
+<div style={{ display: 'flex', gap: '20px', marginTop: '40px', justifyContent: 'center' }}>
+  <div style={{
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #e9ecef',
+    borderRadius: '8px',
+    padding: '24px',
+    textAlign: 'center',
+    flex: '1',
+    maxWidth: '280px',
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    cursor: 'pointer'
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.transform = 'translateY(-2px)';
+    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = 'translateY(0)';
+    e.currentTarget.style.boxShadow = 'none';
+  }}
+  onClick={() => window.location.href = '/sdk/getting-started/react'}>
+    <h3 style={{ margin: '0 0 12px 0', color: '#495057', pointerEvents: 'none' }}>Get started with React</h3>
+    <p style={{ margin: 0, color: '#6c757d', fontSize: '14px', pointerEvents: 'none' }}>Build React applications powered by Omni</p>
+  </div>
 
-## The Vision: An Open Orderflow Execution Engine
+  <div style={{
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #e9ecef',
+    borderRadius: '8px',
+    padding: '24px',
+    textAlign: 'center',
+    flex: '1',
+    maxWidth: '280px',
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    cursor: 'pointer'
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.transform = 'translateY(-2px)';
+    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = 'translateY(0)';
+    e.currentTarget.style.boxShadow = 'none';
+  }}
+  onClick={() => window.location.href = '/sdk/getting-started/core'}>
+    <h3 style={{ margin: '0 0 12px 0', color: '#495057', pointerEvents: 'none' }}>Get started with Core</h3>
+    <p style={{ margin: 0, color: '#6c757d', fontSize: '14px', pointerEvents: 'none' }}>Build TS or scripts with any framework</p>
+  </div>
 
-Traditional finance relies on exclusive systems like Robinhood's Payment for Order Flow (PFoF) deals with market makers like Citadel. These opaque agreements centralize power and concentrate benefits among a select few.
+  <div style={{
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #e9ecef',
+    borderRadius: '8px',
+    padding: '24px',
+    textAlign: 'center',
+    flex: '1',
+    maxWidth: '280px',
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    cursor: 'pointer'
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.transform = 'translateY(-2px)';
+    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = 'translateY(0)';
+    e.currentTarget.style.boxShadow = 'none';
+  }}
+  onClick={() => window.open('https://github.com/omni-network/omni', '_blank')}>
+    <h3 style={{ margin: '0 0 12px 0', color: '#495057', pointerEvents: 'none' }}>Explore our Monorepo</h3>
+    <p style={{ margin: 0, color: '#6c757d', fontSize: '14px', pointerEvents: 'none' }}>Browse the full Omni codebase on GitHub</p>
+  </div>
+</div>
 
-Omni is building the open alternative: a permissionless orderflow execution engine. Anyone can participate in routing and executing cross-chain intents, ensuring users always get the best execution with full transparency. This infrastructure empowers developers, solvers, and users to build on equitable and open rails, setting the foundation for an equitable global financial system.
+</HomePage.Root>

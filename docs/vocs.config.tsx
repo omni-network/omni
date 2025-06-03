@@ -30,7 +30,7 @@ export default defineConfig({
     {
       text: 'Learn',
       items: [
-        { text: 'Welcome', link: '/' },
+        { text: 'Welcome', link: '/introduction/welcome' },
         { text: 'Omni Overview', link: '/introduction/omni-overview' },
         { text: 'What is SolverNet?', link: '/introduction/what-is-solvernet' },
         { text: 'Whitepaper', link: '/introduction/whitepaper' },
@@ -135,5 +135,9 @@ export default defineConfig({
       text: 'Build with us',
       link: 'https://tally.so/r/wAJ2EB',
     },
+    {
+      text: 'Deep Wiki',
+      link: 'https://deepwiki.com/omni-network/omni'
+    }
   ],
 });
