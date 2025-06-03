@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
@@ -127,7 +128,9 @@ func GetUSDChainDeficit(
 	for _, dep := range deps {
 		d, err := GetUSDChainDeficit(ctx, db, clients, pricer, dep, solver)
 		if err != nil {
-			return nil, errors.Wrap(err, "get deficit", "chain", evmchain.Name(dep))
+			// Forgive errors for dependent chains, continue processing.
+			log.Warn(ctx, "Failed to add dependent chain deficit, skipping.", err, "chain", evmchain.Name(dep))
+			continue
 		}
 
 		deficit = bi.Add(deficit, d)
