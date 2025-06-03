@@ -7,9 +7,11 @@ import (
 	cctpdb "github.com/omni-network/omni/lib/cctp/db"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/layerzero"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokenpricer"
+	"github.com/omni-network/omni/lib/usdt0"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -40,12 +42,19 @@ func Start(
 
 	network = newCCTPNetwork(network)
 
-	db, err := newCCTPDB(dbDir)
+	cctpDB, err := newCCTPDB(dbDir)
 	if err != nil {
 		return errors.Wrap(err, "new cctp db")
 	}
 
-	if err := cctp.MintAuditForever(ctx, db, cctpClient, network, backends, solver, solver); err != nil {
+	usdt0DB, err := newUSDT0DB(dbDir)
+	if err != nil {
+		return errors.Wrap(err, "new usdt0 db")
+	}
+
+	usdt0.MonitorSendsForever(ctx, usdt0DB, layerzero.NewClient(layerzero.MainnetAPI))
+
+	if err := cctp.MintAuditForever(ctx, cctpDB, cctpClient, network, backends, solver, solver); err != nil {
 		return errors.Wrap(err, "mint forever")
 	}
 
@@ -54,8 +63,9 @@ func Start(
 		opt(&o)
 	}
 
-	go rebalanceCCTPForever(ctx, o.interval, db, network, pricer, backends, solver)
+	go rebalanceCCTPForever(ctx, o.interval, cctpDB, network, pricer, backends, solver)
 	go rebalanceMantleForever(ctx, o.interval, backends, solver)
+	go rebalanceHyperEVMForever(ctx, o.interval, backends, solver, usdt0DB)
 
 	return nil
 }
@@ -74,6 +84,22 @@ func newCCTPDB(dbDir string) (*cctpdb.DB, error) {
 	}
 
 	return cctpdb.New(lvlDB)
+}
+
+// newUSDT0DB returns a new USDT0 DB instance based on the given directory.
+func newUSDT0DB(dbDir string) (*usdt0.DB, error) {
+	if dbDir == "" {
+		memDB := cosmosdb.NewMemDB()
+		return usdt0.NewDB(memDB)
+	}
+
+	var err error
+	lvlDB, err := cosmosdb.NewGoLevelDB("rebalance.usdt0", dbDir, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "new golevel db")
+	}
+
+	return usdt0.NewDB(lvlDB)
 }
 
 // newCCTPNetwork returns the subset of `network` that can be rebalanced via CCTP.
