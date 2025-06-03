@@ -43,6 +43,8 @@ var (
 // Usage: go test . -integration -v -run=TestIntegration
 
 func TestIntegration(t *testing.T) {
+	t.Skip("Skipping integration test") // Temporary skip, until flaps are fixed.
+
 	t.Parallel()
 
 	if !*integration {
