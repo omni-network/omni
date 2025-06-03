@@ -2,4 +2,4 @@
 "@omni-network/react": patch
 ---
 
-Pass resolvedOrder to useGetOrderStatus to so we can fetch destTxHash, and remove obselete useGetOrder from useGetOrderStatus.
+Pass resolvedOrder to useGetOrderStatus so we can fetch destTxHash, and remove obselete use of useGetOrder in useGetOrderStatus.
