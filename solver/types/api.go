@@ -294,7 +294,7 @@ func CheckRequestFromOrderData(srcChainID uint64, data bindings.SolverNetOrderDa
 // This endpoint accepts gasless orders with user signatures and submits them on behalf of users.
 type RelayRequest struct {
 	// The gasless cross-chain order to be submitted
-	Order GaslessCrossChainOrder `json:"order"`
+	Order bindings.IERC7683GaslessCrossChainOrder `json:"order"`
 	// User's signature authorizing the order
 	Signature hexutil.Bytes `json:"signature"`
 	// Optional filler-specific data (currently unused but part of ERC7683 spec)
@@ -313,21 +313,9 @@ type RelayResponse struct {
 	Error *RelayError `json:"error,omitempty"`
 }
 
-// RelayError represents an error in relay submission
+// RelayError represents an error in relay submission.
 type RelayError struct {
 	Code        string `json:"code"`
 	Message     string `json:"message"`
 	Description string `json:"description,omitempty"`
-}
-
-// GaslessCrossChainOrder represents the ERC7683 gasless order structure
-type GaslessCrossChainOrder struct {
-	OriginSettler common.Address `json:"originSettler"`
-	User          common.Address `json:"user"`
-	Nonce         *hexutil.Big   `json:"nonce"`
-	OriginChainId *hexutil.Big   `json:"originChainId"`
-	OpenDeadline  uint32         `json:"openDeadline"`
-	FillDeadline  uint32         `json:"fillDeadline"`
-	OrderDataType common.Hash    `json:"orderDataType"`
-	OrderData     hexutil.Bytes  `json:"orderData"`
 }

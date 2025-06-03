@@ -204,7 +204,7 @@ func Run(ctx context.Context, cfg Config) error {
 		newQuoteHandler(newQuoter(priceFunc)),
 		newPriceHandler(wrapPriceHandlerFunc(priceFunc)),
 		newTokensHandler(network.ChainIDs()),
-		newRelayHandler(newRelayer(inboxContracts, uniBackends, solverAddr)),
+		newRelayHandler(newRelayer(inboxContracts, uniBackends, solverAddr, addrs.SolverNetInbox)),
 	)
 	defer apiCancel()
 

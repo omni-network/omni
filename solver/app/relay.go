@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -31,18 +32,18 @@ func (e RelayError) Error() string {
 }
 
 // newRelayer creates a new relay function that can submit gasless orders on behalf of users.
-// Note: Currently uses SolverNetInbox with a plan to upgrade to SolverNetInboxV2 when available
 func newRelayer(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends unibackend.Backends,
 	solverAddr common.Address,
+	inboxAddr common.Address,
 ) relayFunc {
 	return func(ctx context.Context, req types.RelayRequest) (types.RelayResponse, error) {
 		ctx, span := tracer.Start(ctx, "relay/submit_gasless_order")
 		defer span.End()
 
 		// Extract chain ID from the order
-		chainID := req.Order.OriginChainId.ToInt().Uint64()
+		chainID := req.Order.OriginChainId.Uint64()
 
 		// Get the appropriate inbox contract
 		inbox, ok := inboxContracts[chainID]
@@ -79,6 +80,24 @@ func newRelayer(
 			}
 		}
 
+		// Validate that the signature is present
+		if len(req.Signature) == 0 {
+			return types.RelayResponse{}, RelayError{
+				Code:        "MISSING_SIGNATURE",
+				Message:     "Signature is required for gasless orders",
+				Description: "The signature field cannot be empty",
+			}
+		}
+
+		// Validate that the inbox address matches the order's origin settler
+		if req.Order.OriginSettler != inboxAddr {
+			return types.RelayResponse{}, RelayError{
+				Code:        "INVALID_SETTLER",
+				Message:     "Origin settler mismatch",
+				Description: fmt.Sprintf("Expected %s, got %s", inboxAddr.Hex(), req.Order.OriginSettler.Hex()),
+			}
+		}
+
 		txOpts, err := uniBackend.EVMBackend().BindOpts(ctx, solverAddr)
 		if err != nil {
 			return types.RelayResponse{}, RelayError{
@@ -88,7 +107,7 @@ func newRelayer(
 			}
 		}
 
-		// Submit the gasless order via openFor (placeholder for when bindings are available)
+		// Submit the gasless order via openFor
 		tx, err := inbox.OpenFor(txOpts, req.Order, req.Signature, req.OriginFillerData)
 		if err != nil {
 			return types.RelayResponse{}, RelayError{
@@ -109,7 +128,7 @@ func newRelayer(
 		}
 
 		// Extract order ID from transaction receipt
-		orderID, err := extractOrderIDFromReceipt(rec, inbox)
+		orderID, err := extractOrderIDFromReceipt(rec)
 		if err != nil {
 			log.Warn(ctx, "Failed to extract order ID from receipt", err)
 			// Don't fail the request since transaction was successful
@@ -131,17 +150,17 @@ func newRelayer(
 }
 
 // validateGaslessOrder performs basic validation on the gasless order.
-func validateGaslessOrder(order types.GaslessCrossChainOrder) error {
+func validateGaslessOrder(order bindings.IERC7683GaslessCrossChainOrder) error {
 	if order.User == (common.Address{}) {
 		return errors.New("user address cannot be zero")
 	}
 	if order.OriginSettler == (common.Address{}) {
 		return errors.New("origin settler cannot be zero")
 	}
-	if order.Nonce == nil || order.Nonce.ToInt().Cmp(big.NewInt(0)) <= 0 {
+	if order.Nonce == nil || order.Nonce.Cmp(big.NewInt(0)) <= 0 {
 		return errors.New("nonce must be positive")
 	}
-	if order.OriginChainId == nil || order.OriginChainId.ToInt().Cmp(big.NewInt(0)) <= 0 {
+	if order.OriginChainId == nil || order.OriginChainId.Cmp(big.NewInt(0)) <= 0 {
 		return errors.New("origin chain ID must be positive")
 	}
 	if order.OpenDeadline <= uint32(0) {
@@ -153,11 +172,12 @@ func validateGaslessOrder(order types.GaslessCrossChainOrder) error {
 	if len(order.OrderData) == 0 {
 		return errors.New("order data cannot be empty")
 	}
+
 	return nil
 }
 
 // extractOrderIDFromReceipt attempts to extract the order ID from the transaction receipt.
-func extractOrderIDFromReceipt(rec *ethclient.Receipt, inbox *bindings.SolverNetInbox) (common.Hash, error) {
+func extractOrderIDFromReceipt(rec *ethclient.Receipt) (common.Hash, error) {
 	// Look for the Open event in the receipt logs
 	for _, log := range rec.Logs {
 		if len(log.Topics) > 0 && log.Topics[0] == solvernet.TopicOpened {
@@ -167,5 +187,6 @@ func extractOrderIDFromReceipt(rec *ethclient.Receipt, inbox *bindings.SolverNet
 			}
 		}
 	}
+
 	return common.Hash{}, errors.New("order ID not found in transaction receipt")
 }
