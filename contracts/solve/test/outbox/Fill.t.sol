@@ -17,7 +17,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         setRoutes(ISolverNetOutbox.Provider(provider));
 
         vm.chainId(destChainId);
-        bytes32 orderId = inbox.getNextOrderId(user);
+        bytes32 orderId = inbox.getNextOnchainOrderId(user);
         SolverNet.FillOriginData memory fillData = SolverNet.FillOriginData({
             srcChainId: srcChainId,
             destChainId: srcChainId,

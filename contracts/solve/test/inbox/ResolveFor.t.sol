@@ -6,13 +6,13 @@ import "../TestBase.sol";
 contract SolverNet_Inbox_ResolveFor_Test is TestBase {
     using AddrUtils for address;
 
-    function test_v2_resolveFor_erc20Deposit_erc20Expense_succeeds() public {
+    function test_resolveFor_erc20Deposit_erc20Expense_succeeds() public {
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(erc20Vault), 0, user, defaultAmount);
         SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
         expenses[0] = getExpense(address(erc20Vault), address(token2), defaultAmount);
 
-        (SolverNet.OmniOrderData memory orderData, IERC7683.GaslessCrossChainOrder memory order) = getGaslessOrder(
+        (SolverNet.OrderData memory orderData, IERC7683.GaslessCrossChainOrder memory order) = getGaslessOrder(
             user,
             user,
             1,
@@ -66,14 +66,14 @@ contract SolverNet_Inbox_ResolveFor_Test is TestBase {
         );
     }
 
-    function test_v2_resolveFor_erc20Deposit_mixedExpenses_multicall_succeeds() public {
+    function test_resolveFor_erc20Deposit_mixedExpenses_multicall_succeeds() public {
         SolverNet.Call[] memory calls = new SolverNet.Call[](2);
         calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);
         calls[1] = getVaultCall(address(erc20Vault), 0, user, defaultAmount);
         SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
         expenses[0] = getExpense(address(erc20Vault), address(token2), defaultAmount);
 
-        (SolverNet.OmniOrderData memory orderData, IERC7683.GaslessCrossChainOrder memory order) = getGaslessOrder(
+        (SolverNet.OrderData memory orderData, IERC7683.GaslessCrossChainOrder memory order) = getGaslessOrder(
             user,
             user,
             1,
@@ -131,16 +131,16 @@ contract SolverNet_Inbox_ResolveFor_Test is TestBase {
         );
     }
 
-    function test_v2_resolveFor_hyperlane() public {
-        address impl = address(new SolverNetInboxV2(address(0), address(mailboxes[uint32(srcChainId)])));
-        inbox = SolverNetInboxV2(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
+    function test_resolveFor_hyperlane() public {
+        address impl = address(new SolverNetInbox(address(0), address(mailboxes[uint32(srcChainId)])));
+        inbox = SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
         inbox.initialize(address(this), solver);
         setRoutes(ISolverNetOutbox.Provider.Hyperlane);
 
         uint256 snapshot = vm.snapshotState();
-        test_v2_resolveFor_erc20Deposit_erc20Expense_succeeds();
+        test_resolveFor_erc20Deposit_erc20Expense_succeeds();
         vm.revertToState(snapshot);
 
-        test_v2_resolveFor_erc20Deposit_mixedExpenses_multicall_succeeds();
+        test_resolveFor_erc20Deposit_mixedExpenses_multicall_succeeds();
     }
 }

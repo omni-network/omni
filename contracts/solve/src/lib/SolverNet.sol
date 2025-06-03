@@ -30,18 +30,6 @@ library SolverNet {
     }
 
     /**
-     * @notice OmniOrderData is the same struct as OrderData, but named properly so we are fully compliant with EIP-712.
-     * @dev This is currently only used in SolverNetInboxV2.
-     */
-    struct OmniOrderData {
-        address owner;
-        uint64 destChainId;
-        Deposit deposit;
-        Call[] calls;
-        TokenExpense[] expenses;
-    }
-
-    /**
      * @notice Order is a convenience struct that fully describes an order.
      * @dev It is not written to storage, but rather built on view.
      */

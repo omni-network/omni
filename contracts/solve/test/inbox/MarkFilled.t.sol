@@ -6,7 +6,7 @@ import "../TestBase.sol";
 contract SolverNet_Inbox_MarkFilled_Test is TestBase {
     function test_markFilled_reverts() public {
         // order must be pending
-        bytes32 orderId = inbox.getOrderId(user, inbox.getUserNonce(user));
+        bytes32 orderId = inbox.getNextOnchainOrderId(user);
         vm.expectRevert(ISolverNetInbox.OrderNotPending.selector);
         inbox.markFilled(orderId, bytes32(0), address(0));
 
@@ -63,7 +63,7 @@ contract SolverNet_Inbox_MarkFilled_Test is TestBase {
         outboxes[1] = address(outbox);
         inbox.setOutboxes(chainIds, outboxes);
 
-        orderId = inbox.getOrderId(user, inbox.getUserNonce(user));
+        orderId = inbox.getNextOnchainOrderId(user);
         (orderData, order) = getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         bytes32 fillhash = fillHash(orderId, resolvedOrder.fillInstructions[0].originData);
