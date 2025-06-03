@@ -17,6 +17,36 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// Relay error codes and messages.
+const (
+	// Error codes.
+	RelayErrorInvalidOrder         = "INVALID_ORDER"
+	RelayErrorMissingSignature     = "MISSING_SIGNATURE"
+	RelayErrorUnsupportedChain     = "UNSUPPORTED_CHAIN"
+	RelayErrorBackendError         = "BACKEND_ERROR"
+	RelayErrorUnsupportedBackend   = "UNSUPPORTED_BACKEND"
+	RelayErrorInvalidOriginSettler = "INVALID_ORIGIN_SETTLER"
+	RelayErrorInvalidOrderData     = "INVALID_ORDER_DATA"
+	RelayErrorSubmissionFailed     = "SUBMISSION_FAILED"
+
+	// Error messages.
+	RelayMsgOrderValidationFailed  = "Order validation failed"
+	RelayMsgSignatureRequired      = "Signature is required for gasless orders"
+	RelayMsgChainNotSupported      = "Chain not supported for relay"
+	RelayMsgBackendFailed          = "Failed to get backend for chain"
+	RelayMsgEVMOnly                = "Only EVM chains are supported for relay"
+	RelayMsgOriginSettlerMismatch  = "Origin settler mismatch"
+	RelayMsgDecodeOrderDataFailed  = "Failed to decode order data"
+	RelayMsgConvertOrderDataFailed = "Failed to convert order data"
+	RelayMsgOrderRejected          = "Order rejected by solver"
+	RelayMsgSubmissionFailed       = "Failed to submit gasless order"
+
+	// Error descriptions.
+	RelayDescSignatureEmpty    = "The signature field cannot be empty"
+	RelayDescChainNotSupported = "The specified origin chain is not supported"
+	RelayDescEVMRequired       = "The specified chain does not have EVM support"
+)
+
 // relayFunc abstracts the relay processing function.
 type relayFunc func(ctx context.Context, req types.RelayRequest) (types.RelayResponse, error)
 
@@ -32,11 +62,13 @@ func (e RelayError) Error() string {
 }
 
 // newRelayer creates a new relay function that can submit gasless orders on behalf of users.
+// It integrates with the existing check logic to pre-validate orders before submission.
 func newRelayer(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends unibackend.Backends,
 	solverAddr common.Address,
 	inboxAddr common.Address,
+	checkFunc checkFunc,
 ) relayFunc {
 	return func(ctx context.Context, req types.RelayRequest) (types.RelayResponse, error) {
 		ctx, span := tracer.Start(ctx, "relay/submit_gasless_order")
@@ -45,86 +77,148 @@ func newRelayer(
 		// Extract chain ID from the order
 		chainID := req.Order.OriginChainId.Uint64()
 
+		// Basic validation of the gasless order structure
+		if err := validateGaslessOrder(req.Order); err != nil {
+			return types.RelayResponse{
+				Success: false,
+				Error: &types.RelayError{
+					Code:        RelayErrorInvalidOrder,
+					Message:     RelayMsgOrderValidationFailed,
+					Description: err.Error(),
+				},
+			}, nil
+		}
+
+		// Validate that the signature is present
+		if len(req.Signature) == 0 {
+			return types.RelayResponse{
+				Success: false,
+				Error: &types.RelayError{
+					Code:        RelayErrorMissingSignature,
+					Message:     RelayMsgSignatureRequired,
+					Description: RelayDescSignatureEmpty,
+				},
+			}, nil
+		}
+
 		// Get the appropriate inbox contract
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
-			return types.RelayResponse{}, RelayError{
-				Code:        "UNSUPPORTED_CHAIN",
-				Message:     "Chain not supported for relay",
-				Description: "The specified origin chain is not supported by this relay service",
-			}
+			return types.RelayResponse{
+				Success: false,
+				Error: &types.RelayError{
+					Code:        RelayErrorUnsupportedChain,
+					Message:     RelayMsgChainNotSupported,
+					Description: RelayDescChainNotSupported,
+				},
+			}, nil
 		}
 
 		// Get backend for the chain
 		uniBackend, err := backends.Backend(chainID)
 		if err != nil {
-			return types.RelayResponse{}, RelayError{
-				Code:        "BACKEND_ERROR",
-				Message:     "Failed to get backend for chain",
-				Description: err.Error(),
-			}
+			return types.RelayResponse{
+				Success: false,
+				Error: &types.RelayError{
+					Code:        RelayErrorBackendError,
+					Message:     RelayMsgBackendFailed,
+					Description: err.Error(),
+				},
+			}, nil
 		} else if !uniBackend.IsEVM() {
-			return types.RelayResponse{}, RelayError{
-				Code:        "UNSUPPORTED_BACKEND",
-				Message:     "Only EVM chains are supported for relay",
-				Description: "The specified chain does not have EVM support",
-			}
-		}
-
-		// Validate the order before submission
-		if err := validateGaslessOrder(req.Order); err != nil {
-			return types.RelayResponse{}, RelayError{
-				Code:        "INVALID_ORDER",
-				Message:     "Order validation failed",
-				Description: err.Error(),
-			}
-		}
-
-		// Validate that the signature is present
-		if len(req.Signature) == 0 {
-			return types.RelayResponse{}, RelayError{
-				Code:        "MISSING_SIGNATURE",
-				Message:     "Signature is required for gasless orders",
-				Description: "The signature field cannot be empty",
-			}
+			return types.RelayResponse{
+				Success: false,
+				Error: &types.RelayError{
+					Code:        RelayErrorUnsupportedBackend,
+					Message:     RelayMsgEVMOnly,
+					Description: RelayDescEVMRequired,
+				},
+			}, nil
 		}
 
 		// Validate that the inbox address matches the order's origin settler
 		if req.Order.OriginSettler != inboxAddr {
-			return types.RelayResponse{}, RelayError{
-				Code:        "INVALID_SETTLER",
-				Message:     "Origin settler mismatch",
-				Description: fmt.Sprintf("Expected %s, got %s", inboxAddr.Hex(), req.Order.OriginSettler.Hex()),
-			}
+			return types.RelayResponse{
+				Success: false,
+				Error: &types.RelayError{
+					Code:        RelayErrorInvalidOriginSettler,
+					Message:     RelayMsgOriginSettlerMismatch,
+					Description: fmt.Sprintf("Expected %s, got %s", inboxAddr.Hex(), req.Order.OriginSettler.Hex()),
+				},
+			}, nil
 		}
 
+		// Decode the order data
+		orderData, err := solvernet.ParseOrderData(req.Order.OrderData)
+		if err != nil {
+			return types.RelayResponse{
+				Success: false,
+				Error: &types.RelayError{
+					Code:        RelayErrorInvalidOrderData,
+					Message:     RelayMsgDecodeOrderDataFailed,
+					Description: err.Error(),
+				},
+			}, nil
+		}
+
+		// Convert to CheckRequest for order validation
+		checkReq, err := types.CheckRequestFromOrderData(chainID, orderData)
+		if err != nil {
+			return types.RelayResponse{
+				Success: false,
+				Error: &types.RelayError{
+					Code:        RelayErrorInvalidOrderData,
+					Message:     RelayMsgConvertOrderDataFailed,
+					Description: err.Error(),
+				},
+			}, nil
+		}
+
+		// types.CheckRequestFromOrderData overrides fill deadline for 1 hour from now
+		// so we need to override it with the fill deadline from the gasless order
+		checkReq.FillDeadline = req.Order.FillDeadline
+
+		// Validate the order using existing check logic
+		if err := checkFunc(ctx, checkReq); err != nil {
+			// Check if it's an order rejection vs an actual error
+			if r := new(RejectionError); errors.As(err, &r) {
+				return types.RelayResponse{
+					Success: false,
+					Error: &types.RelayError{
+						Code:        "REJECTED_" + r.Reason.String(),
+						Message:     RelayMsgOrderRejected,
+						Description: errors.Format(r.Err),
+					},
+				}, nil
+			}
+			// It's an actual error, not a rejection
+			return types.RelayResponse{}, err
+		}
+
+		// All validations passed, submit the gasless order
 		txOpts, err := uniBackend.EVMBackend().BindOpts(ctx, solverAddr)
 		if err != nil {
-			return types.RelayResponse{}, RelayError{
-				Code:        "BACKEND_ERROR",
-				Message:     "Failed to get backend for chain",
-				Description: err.Error(),
-			}
+			return types.RelayResponse{}, errors.Wrap(err, "failed to get bind opts")
 		}
 
 		// Submit the gasless order via openFor
 		tx, err := inbox.OpenFor(txOpts, req.Order, req.Signature, req.OriginFillerData)
 		if err != nil {
-			return types.RelayResponse{}, RelayError{
-				Code:        "SUBMISSION_FAILED",
-				Message:     "Failed to submit gasless order",
-				Description: errors.Format(err),
-			}
+			// Any openFor failure is treated as a submission error
+			return types.RelayResponse{
+				Success: false,
+				Error: &types.RelayError{
+					Code:        RelayErrorSubmissionFailed,
+					Message:     RelayMsgSubmissionFailed,
+					Description: errors.Format(err),
+				},
+			}, nil
 		}
 
 		// Wait for transaction confirmation
 		rec, err := uniBackend.EVMBackend().WaitMined(ctx, tx)
 		if err != nil {
-			return types.RelayResponse{}, RelayError{
-				Code:        "CONFIRMATION_FAILED",
-				Message:     "Transaction submitted but confirmation failed",
-				Description: err.Error(),
-			}
+			return types.RelayResponse{}, errors.Wrap(err, "transaction submitted but confirmation failed")
 		}
 
 		// Extract order ID from transaction receipt

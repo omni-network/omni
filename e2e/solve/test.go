@@ -473,8 +473,8 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 func testRelayAPI(ctx context.Context, solverAddr string) error {
 	scl := sclient.New(solverAddr)
 
-	// Create a minimal gasless order to test the endpoint
-	// This should fail validation but at least test that the endpoint exists
+	// Create a minimal gasless order that should be rejected for invalid values
+	// This tests that the endpoint exists and handles requests properly
 	dummyOrder := bindings.IERC7683GaslessCrossChainOrder{
 		OriginSettler: common.Address{}, // Invalid address
 		User:          common.Address{}, // Invalid address
@@ -482,36 +482,37 @@ func testRelayAPI(ctx context.Context, solverAddr string) error {
 		OriginChainId: big.NewInt(0),    // Invalid chain ID
 		OpenDeadline:  0,                // Invalid deadline
 		FillDeadline:  0,                // Invalid deadline
+		OrderDataType: common.Hash{},    // Invalid type hash
 		OrderData:     []byte{},         // Empty order data
 	}
 
 	relayReq := solver.RelayRequest{
 		Order:            dummyOrder,
-		Signature:        []byte{}, // Empty signature
+		Signature:        []byte{}, // Empty signature should be rejected
 		OriginFillerData: []byte{}, // Empty filler data
 	}
 
-	// Call the relay endpoint - should return an error but not a connection error
 	relayResp, err := scl.Relay(ctx, relayReq)
 	if err != nil {
-		// Check if it's a validation error (expected) vs connection error (unexpected)
-		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-			return errors.Wrap(err, "relay endpoint connection failed - endpoint may not exist")
-		}
-		// If it's any other error, the endpoint exists but rejected our invalid request (expected)
-		log.Debug(ctx, "Relay endpoint returned expected validation error", "error", err.Error())
-	} else {
-		// If no error, check that the response indicates failure due to validation
-		if relayResp.Success {
-			return errors.New("relay endpoint unexpectedly accepted invalid order")
-		}
-		if relayResp.Error == nil {
-			return errors.New("relay endpoint should have returned an error for invalid order")
-		}
-		log.Debug(ctx, "Relay endpoint properly rejected invalid order", "error_code", relayResp.Error.Code)
+		return errors.Wrap(err, "relay request failed unexpectedly")
 	}
 
-	log.Info(ctx, "Test /relay endpoint existence success")
+	// The request should be handled but not successful due to validation failures
+	if relayResp.Success {
+		return errors.New("relay request unexpectedly succeeded with invalid data")
+	}
+
+	// Should have an error indicating why the request failed
+	if relayResp.Error == nil {
+		return errors.New("relay request failed but no error details provided")
+	}
+
+	// Check that we got a meaningful error code
+	if relayResp.Error.Code == "" {
+		return errors.New("relay error missing error code")
+	}
+
+	log.Info(ctx, "Test /relay success, endpoint exists and handles validation")
 
 	return nil
 }

@@ -194,18 +194,28 @@ func Run(ctx context.Context, cfg Config) error {
 	callAllower := newCallAllower(network.ID, addrs.SolverNetExecutor)
 
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
-	//nolint:contextcheck // False positive, inner context is used for shutdown
-	apiChan, apiCancel := serveAPI(cfg.APIAddr,
+
+	// Build base handlers that are always available
+	checkFunc := newChecker(uniBackends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox)
+	handlers := []Handler{
 		newCheckHandler(
-			newChecker(uniBackends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
+			checkFunc,
 			newTracer(backends, solverAddr, addrs.SolverNetOutbox),
 		),
 		newContractsHandler(addrs),
 		newQuoteHandler(newQuoter(priceFunc)),
 		newPriceHandler(wrapPriceHandlerFunc(priceFunc)),
 		newTokensHandler(network.ChainIDs()),
-		newRelayHandler(newRelayer(inboxContracts, uniBackends, solverAddr, addrs.SolverNetInbox)),
-	)
+	}
+
+	// Only add relay handler for ephemeral networks
+	if network.ID.IsEphemeral() {
+		log.Debug(ctx, "Adding relay handler for ephemeral network", "network", network.ID)
+		handlers = append(handlers, newRelayHandler(newRelayer(inboxContracts, uniBackends, solverAddr, addrs.SolverNetInbox, checkFunc)))
+	}
+
+	//nolint:contextcheck // False positive, inner context is used for shutdown
+	apiChan, apiCancel := serveAPI(cfg.APIAddr, handlers...)
 	defer apiCancel()
 
 	select {
