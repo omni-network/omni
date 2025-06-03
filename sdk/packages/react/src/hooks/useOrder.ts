@@ -141,7 +141,7 @@ export function useOrder<abis extends OptionalAbis>(
   const orderStatus = useGetOrderStatus({
     srcChainId,
     destChainId: order.destChainId,
-    resolvedOrder: resolvedOrder,
+    resolvedOrder,
     didFillQueryOpts,
   })
 
