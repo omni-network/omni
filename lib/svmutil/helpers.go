@@ -20,15 +20,13 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
-var v0 uint64
-
 // AwaitConfirmedTransaction waits for a transaction to be confirmed.
 func AwaitConfirmedTransaction(ctx context.Context, cl *rpc.Client, txSig solana.Signature) (*rpc.GetTransactionResult, error) {
 	for {
 		tx, err := cl.GetTransaction(ctx, txSig, &rpc.GetTransactionOpts{
 			Encoding:                       solana.EncodingBase64,
 			Commitment:                     rpc.CommitmentConfirmed,
-			MaxSupportedTransactionVersion: &v0,
+			MaxSupportedTransactionVersion: ptr(rpc.MaxSupportedTransactionVersion0),
 		})
 		if errors.Is(err, rpc.ErrNotFound) {
 			time.Sleep(500 * time.Millisecond)

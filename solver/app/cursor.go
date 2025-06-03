@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
@@ -18,6 +19,7 @@ import (
 	"cosmossdk.io/orm/types/ormerrors"
 	db "github.com/cosmos/cosmos-db"
 	"github.com/gagliardetto/solana-go"
+	"github.com/gagliardetto/solana-go/rpc"
 )
 
 // newSolverDB returns a new DB backend based on the given directory
@@ -139,6 +141,24 @@ type dbStoreService struct {
 
 func (db dbStoreService) OpenKVStore(context.Context) store.KVStore {
 	return db.DB
+}
+
+func maybeBootstrapSVMCursor(ctx context.Context, cl *rpc.Client, cursors *cursors, chainVer xchain.ChainVersion) error {
+	// Check if cursor already bootstrapped
+	if _, ok, err := cursors.GetTxSig(ctx, chainVer); err != nil {
+		return errors.Wrap(err, "get cursor")
+	} else if ok {
+		return nil
+	}
+
+	initSig, err := anchorinbox.GetInitSig(ctx, cl)
+	if err != nil {
+		return errors.Wrap(err, "get init sig")
+	}
+
+	log.Debug(ctx, "Bootstrapping SVM cursor", "sig", initSig)
+
+	return cursors.SetTxSig(ctx, chainVer, initSig)
 }
 
 // maybeBootstrapCursor bootstraps a cursor if not present.

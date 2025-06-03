@@ -46,7 +46,7 @@ func (n Network) Verify() error {
 	return nil
 }
 
-// EVMChains returns all evm chains in the network. It excludes the omni consensus chain.
+// EVMChains returns all evm chains in the network. It excludes the omni consensus chain and svm chains.
 func (n Network) EVMChains() []Chain {
 	resp := make([]Chain, 0, len(n.Chains))
 	for _, chain := range n.Chains {
@@ -57,6 +57,18 @@ func (n Network) EVMChains() []Chain {
 		}
 
 		resp = append(resp, chain)
+	}
+
+	return resp
+}
+
+// SVMChains returns all svm chains in the network. It excludes the omni consensus chain and evm chains.
+func (n Network) SVMChains() []Chain {
+	resp := make([]Chain, 0, len(n.Chains))
+	for _, chain := range n.Chains {
+		if evmchain.IsSVM(chain.ID) {
+			resp = append(resp, chain)
+		}
 	}
 
 	return resp

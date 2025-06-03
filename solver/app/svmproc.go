@@ -1,4 +1,3 @@
-//nolint:unused // Partially integrated
 package app
 
 import (
@@ -7,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/umath"
@@ -20,6 +20,45 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
+func streamSVMForever(
+	ctx context.Context,
+	chainVer xchain.ChainVersion,
+	cl *rpc.Client,
+	cursors *cursors,
+	db *job.DB,
+	asyncWork asyncWorkFunc,
+) {
+	backoff := expbackoff.New(ctx)
+	for {
+		from, ok, err := cursors.GetTxSig(ctx, chainVer)
+		if !ok || err != nil {
+			log.Warn(ctx, "Failed reading cursor (will retry)", err)
+			backoff()
+
+			continue
+		}
+
+		callback := newSVMStreamCallback(cl, chainVer, cursors, db, asyncWork)
+
+		req := svmutil.StreamReq{
+			AfterSig:   from,
+			Account:    anchorinbox.ProgramID,
+			Commitment: rpc.CommitmentConfirmed,
+		}
+
+		log.Debug(ctx, "SVM streaming events", "after_sig", from)
+
+		err = svmutil.Stream(ctx, cl, req, callback)
+		if ctx.Err() != nil {
+			return
+		}
+
+		// If the stream fails, we backoff and retry.
+		log.Warn(ctx, "SVM stream failed (will retry)", err)
+		backoff()
+	}
+}
+
 // svmProcDeps returns the SVM-specific processor dependencies based on the provided global procdeps.
 // Specifically, it replaces the functions that interact with the SVM chain.
 func svmProcDeps(
@@ -29,7 +68,6 @@ func svmProcDeps(
 	deps procDeps,
 ) procDeps {
 	solver := svmutil.MapEVMKey(solverEVM)
-
 	evmFill := deps.Fill
 
 	deps.GetOrder = adaptSVMGetOrder(cl, outboxAddr)
@@ -58,7 +96,7 @@ func newSVMStreamCallback(
 ) svmutil.StreamCallback {
 	return func(ctx context.Context, sig *rpc.TransactionSignature) error {
 		if sig.Err != nil {
-			log.Debug(ctx, "AnchorInbox: Ignoring failed tx", "tx_err", sig.Err, "tx", sig)
+			log.Debug(ctx, "SVM: Ignoring failed tx", "tx_err", sig.Err, "tx", sig)
 			return nil // Skip failed transactions
 		}
 
@@ -71,7 +109,7 @@ func newSVMStreamCallback(
 		if err != nil {
 			return errors.Wrap(err, "filter logs")
 		} else if !ok {
-			log.Warn(ctx, "AnchorInbox: potentially skipping truncated logs [BUG]", nil, "tx", sig)
+			log.Warn(ctx, "SVM: potentially skipping truncated logs [BUG]", nil, "tx", sig)
 		}
 
 		events, err := anchorinbox.DecodeLogEvents(logMsgs)
@@ -115,10 +153,12 @@ func newSVMStreamCallback(
 			if err := asyncWork(ctx, j); err != nil {
 				return errors.Wrap(err, "async work")
 			}
+		}
 
-			if err := cursors.SetTxSig(ctx, chainVer, sig.Signature); err != nil {
-				return errors.Wrap(err, "update cursor")
-			}
+		log.Debug(ctx, "SVM: Processed events", "sig", sig.Signature, "slot", sig.Slot, "events", len(events))
+
+		if err := cursors.SetTxSig(ctx, chainVer, sig.Signature); err != nil {
+			return errors.Wrap(err, "update cursor")
 		}
 
 		return nil

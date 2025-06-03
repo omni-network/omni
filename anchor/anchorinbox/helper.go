@@ -160,6 +160,26 @@ func randU64() uint64 {
 	return binary.LittleEndian.Uint64(b[:])
 }
 
+// GetInboxState returns the inbox state account data or false if it does not exist.
+func GetInboxState(ctx context.Context, cl *rpc.Client) (InboxStateAccount, bool, error) {
+	// Find the PDA address for the inbox state account.
+	inboxState, _, err := FindInboxStateAddress()
+	if err != nil {
+		return InboxStateAccount{}, false, errors.Wrap(err, "find inbox state address")
+	}
+
+	// Decode the account data into an InboxState struct.
+	var inboxStateData InboxStateAccount
+	_, err = svmutil.GetAccountDataInto(ctx, cl, inboxState, &inboxStateData)
+	if errors.Is(err, rpc.ErrNotFound) {
+		return InboxStateAccount{}, false, nil
+	} else if err != nil {
+		return InboxStateAccount{}, false, errors.Wrap(err, "get inbox state account data")
+	}
+
+	return inboxStateData, true, nil
+}
+
 // GetOrderState retrieves the order state account data for a given order ID.
 func GetOrderState(ctx context.Context, cl *rpc.Client, orderID solana.PublicKey) (OrderStateAccount, bool, error) {
 	// Find the PDA address for the order state account.
@@ -379,4 +399,43 @@ func DecodeMetaError(res *rpc.GetTransactionResult) CustomError {
 	}
 
 	return Errors[int(m4)]
+}
+
+// GetInitSig retrieves the init instruction signature of the anchor inbox program.
+func GetInitSig(ctx context.Context, cl *rpc.Client) (solana.Signature, error) {
+	state, ok, err := GetInboxState(ctx, cl)
+	if err != nil {
+		return solana.Signature{}, errors.Wrap(err, "get inbox state")
+	} else if !ok {
+		return solana.Signature{}, errors.New("inbox state not found")
+	}
+
+	blockResp, err := cl.GetBlockWithOpts(ctx, state.DeployedAt, &rpc.GetBlockOpts{
+		TransactionDetails:             rpc.TransactionDetailsFull,
+		Rewards:                        ptr(false),
+		Commitment:                     rpc.CommitmentConfirmed,
+		MaxSupportedTransactionVersion: ptr(rpc.MaxSupportedTransactionVersion0),
+	})
+	if err != nil {
+		return solana.Signature{}, errors.Wrap(err, "get block")
+	}
+
+	for _, txMeta := range blockResp.Transactions {
+		tx, err := txMeta.GetTransaction()
+		if err != nil {
+			return solana.Signature{}, errors.Wrap(err, "get transaction")
+		}
+
+		if ok, err := tx.HasAccount(ProgramID); err != nil {
+			return solana.Signature{}, errors.Wrap(err, "has account")
+		} else if ok {
+			return tx.Signatures[0], nil
+		}
+	}
+
+	return solana.Signature{}, errors.New("no init instruction found", "slot", state.DeployedAt)
+}
+
+func ptr[A any](a A) *A {
+	return &a
 }

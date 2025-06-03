@@ -1,4 +1,4 @@
-package solvernet
+package fillhash
 
 import (
 	"encoding/hex"
@@ -38,11 +38,11 @@ func TestFillHash(t *testing.T) {
 	err = json.Unmarshal([]byte(data), &fill)
 	require.NoError(t, err)
 
-	encoded, err := encodeFillHash(OrderID(orderID), fill)
+	encoded, err := encodeFillHash([32]byte(orderID), fill)
 	require.NoError(t, err)
 	require.Equal(t, expectedEncoding, hex.EncodeToString(encoded))
 
-	fillHash, err := FillHash(OrderID(orderID), fill)
+	fillHash, err := FillHash([32]byte(orderID), fill)
 	require.NoError(t, err)
 	require.Equal(t, "0x2ce133fd27dd302588a6dd43d003fcbf195768e676ba8728b4198450a11c55c1", fillHash.Hex())
 }

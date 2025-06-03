@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"flag"
 	"testing"
-	"time"
 
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/lib/errors"
@@ -29,8 +28,6 @@ var integration = flag.Bool("integration", true, "Include integration tests")
 
 // dir is subdirectory to store the docker compose file and solana generated artifacts (ignored from repo).
 const dir = "compose"
-
-var v0 uint64
 
 func TestIntegration(t *testing.T) {
 	if !*integration {
@@ -117,19 +114,9 @@ func TestIntegration(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		require.Eventually(t, func() bool {
-			tx, err := cl.GetTransaction(ctx, txSig, &rpc.GetTransactionOpts{
-				Encoding:                       solana.EncodingBase64,
-				Commitment:                     rpc.CommitmentConfirmed,
-				MaxSupportedTransactionVersion: &v0,
-			})
-			if err != nil {
-				return false
-			}
-			t.Logf("Memo Tx: slot=%d, time=%v, sig=%v, logs=%#v", tx.Slot, tx.BlockTime, txSig, tx.Meta.LogMessages)
-
-			return true
-		}, time.Second*10, time.Second)
+		txResp, err := svmutil.AwaitConfirmedTransaction(t.Context(), cl, txSig)
+		require.NoError(t, err)
+		t.Logf("Memo Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
 
 		// Get above Memo Tx (using sender address), and assert memo contains messages.
 		txSigs, err := cl.GetSignaturesForAddressWithOpts(ctx, privKey0.PublicKey(), &rpc.GetSignaturesForAddressOpts{
@@ -169,11 +156,55 @@ func TestInbox(t *testing.T) {
 	}
 	defer stop()
 
+	// Deploy events program
+	t.Run("deploy", func(t *testing.T) {
+		tx0, err := svmutil.Deploy(ctx, cl, dir, prog)
+		tutil.RequireNoError(t, err)
+		t.Logf("Deployed inbox program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
+	})
+
+	inboxStateAddr, bump, err := anchorinbox.FindInboxStateAddress()
+	require.NoError(t, err)
+	chainID, err := svmutil.ChainID(ctx, cl)
+	require.NoError(t, err)
+
+	const closeBuffer = 0
+
+	var initSig solana.Signature
+	t.Run("init", func(t *testing.T) {
+		// Initialize inbox state
+		init, err := anchorinbox.NewInit(chainID, closeBuffer, privKey0.PublicKey())
+		require.NoError(t, err)
+		txSig0, err := svmutil.SendSimple(ctx, cl, privKey0, init.Build())
+		require.NoError(t, err)
+		txResp0, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig0)
+		require.NoError(t, err)
+		t.Logf("Init Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp0.Slot, txResp0.BlockTime, txSig0, txResp0.Meta.LogMessages)
+
+		// Get InboxState account
+		inboxState, ok, err := anchorinbox.GetInboxState(ctx, cl)
+		require.NoError(t, err)
+		require.True(t, ok)
+		// Ensure inbox state is as expected
+		expInboxState := anchorinbox.InboxStateAccount{
+			Admin:           privKey0.PublicKey(),
+			DeployedAt:      txResp0.Slot,
+			Bump:            bump,
+			ChainId:         chainID,
+			CloseBufferSecs: closeBuffer,
+		}
+		require.Equal(t, expInboxState, inboxState)
+
+		initSig, err = anchorinbox.GetInitSig(ctx, cl)
+		require.NoError(t, err)
+		require.Equal(t, txSig0, initSig)
+	})
+
 	// Start streaming program tx sigs async
 	async := make(chan solana.Signature, 1000)
 	go func() {
 		streamReq := svmutil.StreamReq{
-			FromSlot:   ptr(uint64(0)),
+			AfterSig:   initSig,
 			Account:    prog.MustPublicKey(),
 			Commitment: rpc.CommitmentConfirmed,
 		}
@@ -184,52 +215,10 @@ func TestInbox(t *testing.T) {
 			return nil
 		})
 		if err != nil {
-			t.Errorf("stream error: %v", err)
+			t.Errorf("stream error: %v", errors.Format(err))
 		}
+		close(async) // Signal end of stream
 	}()
-
-	// Deploy events program
-	t.Run("deploy", func(t *testing.T) {
-		tx0, err := svmutil.Deploy(ctx, cl, dir, prog)
-		tutil.RequireNoError(t, err)
-		t.Logf("Deployed inbox program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
-		require.Equal(t, mustFirstTxSig(tx0), <-async)
-	})
-
-	inboxStateAddr, bump, err := anchorinbox.FindInboxStateAddress()
-	require.NoError(t, err)
-	chainID, err := svmutil.ChainID(ctx, cl)
-	require.NoError(t, err)
-
-	const closeBuffer = 0
-
-	t.Run("init", func(t *testing.T) {
-		// Initialize inbox state
-		init, err := anchorinbox.NewInit(chainID, closeBuffer, privKey0.PublicKey())
-		require.NoError(t, err)
-		txSig0, err := svmutil.SendSimple(ctx, cl, privKey0, init.Build())
-		require.NoError(t, err)
-		txResp0, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig0)
-		require.NoError(t, err)
-		t.Logf("Init Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp0.Slot, txResp0.BlockTime, txSig0, txResp0.Meta.LogMessages)
-		require.Equal(t, mustFirstTxSig(txResp0), <-async)
-
-		// Get InboxState account
-		info, err := cl.GetAccountInfoWithOpts(ctx, inboxStateAddr, &rpc.GetAccountInfoOpts{Commitment: rpc.CommitmentConfirmed})
-		require.NoError(t, err)
-		inboxState := anchorinbox.InboxStateAccount{}
-		err = bin.NewBinDecoder(info.Value.Data.GetBinary()).Decode(&inboxState)
-		require.NoError(t, err)
-		// Ensure inbox state is as expected
-		expInboxState := anchorinbox.InboxStateAccount{
-			Admin:           privKey0.PublicKey(),
-			DeployedAt:      txResp0.Slot,
-			Bump:            bump,
-			ChainId:         chainID,
-			CloseBufferSecs: closeBuffer,
-		}
-		require.Equal(t, expInboxState, inboxState)
-	})
 
 	owner := privKey0.PublicKey()
 	depositAmount := uint64(1e3) // 1K tokens
@@ -273,7 +262,7 @@ func TestInbox(t *testing.T) {
 		txResp1, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig1)
 		t.Logf("Open Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp1.Slot, txResp1.BlockTime, txSig1, txResp1.Meta.LogMessages)
 		require.NoError(t, err)
-		require.Equal(t, mustFirstTxSig(txResp1), <-async)
+		assertStreamedTx(t, async, txResp1)
 
 		// Ensure updated event
 		event := anchorinbox.EventUpdated{
@@ -330,7 +319,7 @@ func TestInbox(t *testing.T) {
 		customErr := anchorinbox.DecodeMetaError(txResp2)
 		require.NoError(t, customErr)
 		require.NoError(t, err)
-		require.Equal(t, mustFirstTxSig(txResp2), <-async)
+		assertStreamedTx(t, async, txResp2)
 
 		// Ensure updated event
 		event := anchorinbox.EventUpdated{
@@ -371,7 +360,7 @@ func TestInbox(t *testing.T) {
 		txResp3, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig3)
 		require.NoError(t, err)
 		t.Logf("Claim Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp3.Slot, txResp3.BlockTime, txSig3, txResp3.Meta.LogMessages)
-		require.Equal(t, mustFirstTxSig(txResp3), <-async)
+		assertStreamedTx(t, async, txResp3)
 
 		bal, err := cl.GetTokenAccountBalance(ctx, claimerATA, rpc.CommitmentConfirmed)
 		require.NoError(t, err)
@@ -401,7 +390,7 @@ func TestInbox(t *testing.T) {
 		txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.NoError(t, err)
 		t.Logf("Open and Close Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
-		require.Equal(t, mustFirstTxSig(txResp), <-async)
+		assertStreamedTx(t, async, txResp)
 
 		orderState, ok, err := anchorinbox.GetOrderState(ctx, cl, openOrder.ID)
 		require.NoError(t, err)
@@ -442,7 +431,7 @@ func TestInbox(t *testing.T) {
 		txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.NoError(t, err)
 		t.Logf("Open Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
-		require.Equal(t, mustFirstTxSig(txResp), <-async)
+		assertStreamedTx(t, async, txResp)
 
 		rejectOrder, err := anchorinbox.NewRejectOrder(ctx, cl, privKey0.PublicKey(), openOrder.ID, reason)
 		require.NoError(t, err)
@@ -453,7 +442,7 @@ func TestInbox(t *testing.T) {
 		txResp, err = svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.NoError(t, err)
 		t.Logf("Reject Tx: slot=%d, time=%v, sig=%v, logs=%#v", txResp.Slot, txResp.BlockTime, txSig, txResp.Meta.LogMessages)
-		require.Equal(t, mustFirstTxSig(txResp), <-async)
+		assertStreamedTx(t, async, txResp)
 
 		// Ensure token account closed
 		_, err = cl.GetTokenAccountBalance(ctx, openOrder.TokenAddress, rpc.CommitmentConfirmed)
@@ -492,7 +481,7 @@ func TestInbox(t *testing.T) {
 		require.NoError(t, err)
 		txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.ErrorContains(t, err, "transaction failed")
-		require.Equal(t, mustFirstTxSig(txResp), <-async)
+		assertStreamedTx(t, async, txResp)
 	})
 
 	t.Run("open fail", func(t *testing.T) {
@@ -502,7 +491,7 @@ func TestInbox(t *testing.T) {
 		require.NoError(t, err)
 		txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.ErrorContains(t, err, "transaction failed")
-		require.Equal(t, mustFirstTxSig(txResp), <-async)
+		assertStreamedTx(t, async, txResp)
 	})
 
 	t.Run("mark filled fail", func(t *testing.T) {
@@ -511,8 +500,13 @@ func TestInbox(t *testing.T) {
 		require.NoError(t, err)
 		txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
 		require.ErrorContains(t, err, "transaction failed")
-		require.Equal(t, mustFirstTxSig(txResp), <-async)
+		assertStreamedTx(t, async, txResp)
 	})
+}
+
+func assertStreamedTx(t *testing.T, async <-chan solana.Signature, txResp *rpc.GetTransactionResult) {
+	t.Helper()
+	require.Equal(t, mustFirstTxSig(txResp).String(), (<-async).String())
 }
 
 func fillHash(t *testing.T, chainID uint64, params *anchorinbox.OpenParams, closableAt int64) solana.PublicKey {
