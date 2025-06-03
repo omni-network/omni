@@ -86,7 +86,7 @@ func newCheckHandler(checkFunc checkFunc, traceFunc traceFunc) Handler {
 					return map[string]any{"error": errors.Format(err)}
 				}
 
-				return trace
+				return trace.Map()
 			}
 
 			err := checkFunc(ctx, *req)
