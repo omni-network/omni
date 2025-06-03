@@ -1,5 +1,17 @@
 # @omni-network/react
 
+## 0.3.0
+
+### Minor Changes
+
+- d4f17ec: - Replace dependency on RPC endpoint eth_newFilter (due to not being widely supported) by switching watchDidFill to watch blocks.
+  - Includes an update to the useWatchDidFill function signature, replacing `orderId` with `resolvedOrder`.
+
+### Patch Changes
+
+- Updated dependencies [d4f17ec]
+  - @omni-network/core@0.3.0
+
 ## 0.2.2
 
 ### Patch Changes
