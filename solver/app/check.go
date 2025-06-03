@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type traceFunc func(context.Context, types.CheckRequest) (map[string]any, error)
@@ -115,7 +116,12 @@ func newTracer(backends ethbackend.Backends, solverAddr, outboxAddr common.Addre
 
 		var trace map[string]any
 		err = backend.CallContext(ctx, &trace, "debug_traceCall",
-			msg,
+			map[string]any{
+				"from":  msg.From.Hex(),
+				"to":    msg.To.Hex(),
+				"data":  hexutil.Encode(msg.Data),
+				"value": hexutil.EncodeBig(msg.Value),
+			},
 			"latest",
 			map[string]any{"tracer": "callTracer"},
 		)
