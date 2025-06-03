@@ -63,10 +63,10 @@ contract SolverNet_Inbox_ValidateFor_Test is TestBase {
         inbox.validateFor(order);
         order.orderData = hex"0420";
 
-        // `orderData` must be valid SolverNet.OmniOrderData
+        // `orderData` must be valid SolverNet.OrderData
         vm.expectRevert();
         inbox.validateFor(order);
-        SolverNet.OmniOrderData memory orderData = SolverNet.OmniOrderData({
+        SolverNet.OrderData memory orderData = SolverNet.OrderData({
             owner: address(0),
             destChainId: 0,
             deposit: SolverNet.Deposit({ token: address(0), amount: defaultAmount }),

@@ -140,7 +140,7 @@ contract TestBase is Test, TestStorage, MockHyperlaneEnvironment {
         }
     }
 
-    function fundUser(SolverNet.OmniOrderData memory orderData, bool gasless) internal {
+    function fundUser(SolverNet.OrderData memory orderData, bool gasless) internal {
         SolverNet.Deposit memory deposit = orderData.deposit;
         address token = deposit.token;
         uint96 amount = deposit.amount;
@@ -252,8 +252,8 @@ contract TestBase is Test, TestStorage, MockHyperlaneEnvironment {
         uint96 depositAmount,
         SolverNet.Call[] memory calls,
         SolverNet.TokenExpense[] memory expenses
-    ) internal view returns (SolverNet.OmniOrderData memory, IERC7683.GaslessCrossChainOrder memory) {
-        SolverNet.OmniOrderData memory orderData = SolverNet.OmniOrderData({
+    ) internal view returns (SolverNet.OrderData memory, IERC7683.GaslessCrossChainOrder memory) {
+        SolverNet.OrderData memory orderData = SolverNet.OrderData({
             owner: owner,
             destChainId: chainId,
             deposit: SolverNet.Deposit({ token: depositToken, amount: depositAmount }),

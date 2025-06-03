@@ -16,7 +16,7 @@ library HashLib {
 
     /**
      * @notice Typehash for the OmniOrderData struct.
-     * @dev Newer typehash for the OmniOrderData struct, which is replacing the deprecated OrderData struct.
+     * @dev Used for more clarity in EIP-712 signing.
      */
     bytes32 internal constant OMNIORDERDATA_TYPEHASH = keccak256(
         "OmniOrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Call(address target,bytes4 selector,uint256 value,bytes params)Deposit(address token,uint96 amount)TokenExpense(address spender,address token,uint96 amount)"
@@ -76,12 +76,12 @@ library HashLib {
     IPermit2 internal constant permit2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     /**
-     * @notice Generate witness hash for permit2 witness transfers using structured OmniOrderData.
+     * @notice Generate witness hash for permit2 witness transfers using structured OrderData.
      * @param order GaslessCrossChainOrder to hash as witness data.
-     * @param orderData Decoded OmniOrderData from order.orderData.
+     * @param orderData Decoded OrderData from order.orderData.
      * @return witnessHash The EIP-712 compliant hash of the gasless order with structured data.
      */
-    function witnessHash(IERC7683.GaslessCrossChainOrder memory order, SolverNet.OmniOrderData memory orderData)
+    function witnessHash(IERC7683.GaslessCrossChainOrder memory order, SolverNet.OrderData memory orderData)
         internal
         pure
         returns (bytes32)
@@ -102,16 +102,17 @@ library HashLib {
     }
 
     /**
-     * @notice Generate witness hash for permit2 witness transfers using structured OmniOrderData.
-     * @dev This function is used with calldata types for efficiency. (decoded OmniOrderData is never stored as calldata)
+     * @notice Generate witness hash for permit2 witness transfers using structured OrderData.
+     * @dev This function is used with calldata types for efficiency. (decoded OrderData is never stored as calldata)
      * @param order GaslessCrossChainOrder to hash as witness data.
-     * @param orderData Decoded OmniOrderData from order.orderData.
+     * @param orderData Decoded OrderData from order.orderData.
      * @return witnessHash The EIP-712 compliant hash of the gasless order with structured data.
      */
-    function witnessHashCalldata(
-        IERC7683.GaslessCrossChainOrder calldata order,
-        SolverNet.OmniOrderData memory orderData
-    ) internal pure returns (bytes32) {
+    function witnessHashCalldata(IERC7683.GaslessCrossChainOrder calldata order, SolverNet.OrderData memory orderData)
+        internal
+        pure
+        returns (bytes32)
+    {
         return keccak256(
             abi.encode(
                 GASLESS_ORDER_TYPEHASH,
@@ -128,11 +129,11 @@ library HashLib {
     }
 
     /**
-     * @notice Hash an OmniOrderData struct for EIP-712 compliance.
-     * @param orderData OmniOrderData to hash.
-     * @return hash The EIP-712 compliant hash of the OmniOrderData.
+     * @notice Hash an OrderData struct for EIP-712 compliance.
+     * @param orderData OrderData to hash.
+     * @return hash The EIP-712 compliant hash of the OrderData.
      */
-    function hashOmniOrderData(SolverNet.OmniOrderData memory orderData) internal pure returns (bytes32) {
+    function hashOmniOrderData(SolverNet.OrderData memory orderData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 OMNIORDERDATA_TYPEHASH,
@@ -197,15 +198,15 @@ library HashLib {
     }
 
     /**
-     * @notice Generate digest for gasless order with structured OmniOrderData.
+     * @notice Generate digest for gasless order with structured OrderData.
      * @param order GaslessCrossChainOrder to hash as witness data.
-     * @param orderData Decoded OmniOrderData from order.orderData.
+     * @param orderData Decoded OrderData from order.orderData.
      * @param inbox Inbox contract address.
      * @return digest The EIP-712 compliant hash of the gasless order with structured data.
      */
     function gaslessOrderDigest(
         IERC7683.GaslessCrossChainOrder memory order,
-        SolverNet.OmniOrderData memory orderData,
+        SolverNet.OrderData memory orderData,
         address inbox
     ) internal view returns (bytes32) {
         // Hash TokenPermissions
@@ -231,16 +232,16 @@ library HashLib {
     }
 
     /**
-     * @notice Generate digest for gasless order with structured OmniOrderData.
-     * @dev This function is used with calldata types for efficiency. (decoded OmniOrderData is never stored as calldata)
+     * @notice Generate digest for gasless order with structured OrderData.
+     * @dev This function is used with calldata types for efficiency. (decoded OrderData is never stored as calldata)
      * @param order GaslessCrossChainOrder to hash as witness data.
-     * @param orderData Decoded OmniOrderData from order.orderData.
+     * @param orderData Decoded OrderData from order.orderData.
      * @param inbox Inbox contract address.
      * @return digest The EIP-712 compliant hash of the gasless order with structured data.
      */
     function gaslessOrderDigestCalldata(
         IERC7683.GaslessCrossChainOrder calldata order,
-        SolverNet.OmniOrderData memory orderData,
+        SolverNet.OrderData memory orderData,
         address inbox
     ) internal view returns (bytes32) {
         // Hash TokenPermissions

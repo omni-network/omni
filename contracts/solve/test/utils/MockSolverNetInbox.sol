@@ -316,7 +316,7 @@ contract MockSolverNetInbox is
         whenNotPaused(OPEN)
         nonReentrant
     {
-        (SolverNet.OmniOrderData memory orderData, SolverNet.Order memory _order) = _validateFor(order);
+        (SolverNet.OrderData memory orderData, SolverNet.Order memory _order) = _validateFor(order);
         address user = order.user;
         bytes32 id = _getOrderId({ user: user, nonce: order.nonce, gasless: true });
 
@@ -442,7 +442,7 @@ contract MockSolverNetInbox is
     function _validateFor(GaslessCrossChainOrder calldata order)
         internal
         view
-        returns (SolverNet.OmniOrderData memory, SolverNet.Order memory)
+        returns (SolverNet.OrderData memory, SolverNet.Order memory)
     {
         _validateGaslessOrder(order);
         return _validateOrderData({
@@ -489,8 +489,8 @@ contract MockSolverNetInbox is
     }
 
     /**
-     * @dev Validate SolverNet.OmniOrderData
-     * @param orderDataBytes Undecoded SolverNet.OmniOrderData to validate
+     * @dev Validate SolverNet.OrderData
+     * @param orderDataBytes Undecoded SolverNet.OrderData to validate
      * @param fillDeadline Fill deadline of the order
      * @param user Address to override a missing order owner with
      * @param gasless Whether the order is gasless
@@ -498,11 +498,11 @@ contract MockSolverNetInbox is
     function _validateOrderData(bytes calldata orderDataBytes, uint32 fillDeadline, address user, bool gasless)
         internal
         view
-        returns (SolverNet.OmniOrderData memory, SolverNet.Order memory)
+        returns (SolverNet.OrderData memory, SolverNet.Order memory)
     {
-        SolverNet.OmniOrderData memory orderData = abi.decode(orderDataBytes, (SolverNet.OmniOrderData));
+        SolverNet.OrderData memory orderData = abi.decode(orderDataBytes, (SolverNet.OrderData));
 
-        // Validate SolverNet.OmniOrderData.Header fields
+        // Validate SolverNet.OrderData.Header fields
         if (orderData.owner == address(0)) {
             if (user == address(0)) orderData.owner = msg.sender;
             else orderData.owner = user;
@@ -517,12 +517,12 @@ contract MockSolverNetInbox is
         SolverNet.Header memory header =
             SolverNet.Header({ owner: orderData.owner, destChainId: orderData.destChainId, fillDeadline: fillDeadline });
 
-        // Validate SolverNet.OmniOrderData.Call
+        // Validate SolverNet.OrderData.Call
         SolverNet.Call[] memory calls = orderData.calls;
         if (calls.length == 0) revert InvalidMissingCalls();
         if (calls.length > MAX_ARRAY_SIZE) revert InvalidArrayLength();
 
-        // Validate SolverNet.OmniOrderData.Expenses
+        // Validate SolverNet.OrderData.Expenses
         SolverNet.TokenExpense[] memory expenses = orderData.expenses;
         if (expenses.length > MAX_ARRAY_SIZE) revert InvalidArrayLength();
         for (uint256 i; i < expenses.length; ++i) {
@@ -676,7 +676,7 @@ contract MockSolverNetInbox is
      */
     function _gaslessDeposit(
         GaslessCrossChainOrder calldata order,
-        SolverNet.OmniOrderData memory orderData,
+        SolverNet.OrderData memory orderData,
         bytes calldata signature
     ) internal {
         if (msg.value > 0) revert InvalidNativeDeposit();

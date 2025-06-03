@@ -12,7 +12,7 @@ contract SolverNet_Inbox_ResolveFor_Test is TestBase {
         SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
         expenses[0] = getExpense(address(erc20Vault), address(token2), defaultAmount);
 
-        (SolverNet.OmniOrderData memory orderData, IERC7683.GaslessCrossChainOrder memory order) = getGaslessOrder(
+        (SolverNet.OrderData memory orderData, IERC7683.GaslessCrossChainOrder memory order) = getGaslessOrder(
             user,
             user,
             1,
@@ -73,7 +73,7 @@ contract SolverNet_Inbox_ResolveFor_Test is TestBase {
         SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
         expenses[0] = getExpense(address(erc20Vault), address(token2), defaultAmount);
 
-        (SolverNet.OmniOrderData memory orderData, IERC7683.GaslessCrossChainOrder memory order) = getGaslessOrder(
+        (SolverNet.OrderData memory orderData, IERC7683.GaslessCrossChainOrder memory order) = getGaslessOrder(
             user,
             user,
             1,

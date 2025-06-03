@@ -12,7 +12,6 @@ import { SolverNet } from "../lib/SolverNet.sol";
  *      abi[method].Inputs to encode / decode one type at a time.
  */
 interface ISolverNetBindings {
-    function omniOrderData(SolverNet.OmniOrderData calldata) external view;
     function orderData(SolverNet.OrderData calldata) external view;
     function order(SolverNet.Order calldata) external view;
     function header(SolverNet.Header calldata) external view;
