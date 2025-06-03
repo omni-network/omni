@@ -216,16 +216,14 @@ test('parameters: debugValidation is passed to useValidateOrder', async () => {
   )
 })
 
-test('parameters: omniContractsQueryOpts, getOrderQueryOpts and didFillQueryOpts are passed to the relevant hooks', async () => {
+test('parameters: omniContractsQueryOpts and didFillQueryOpts are passed to the relevant hooks', async () => {
   const omniContractsQueryOpts = { staleTime: 5000 }
-  const getOrderQueryOpts = { staleTime: 1000 }
   const didFillQueryOpts = { staleTime: 2000 }
 
   const { result } = renderOrderHook({
     ...orderRequest,
     validateEnabled: false,
     omniContractsQueryOpts,
-    getOrderQueryOpts,
     didFillQueryOpts,
   })
 
@@ -238,7 +236,7 @@ test('parameters: omniContractsQueryOpts, getOrderQueryOpts and didFillQueryOpts
     expect.objectContaining({ queryOpts: omniContractsQueryOpts }),
   )
   expect(useGetOrderStatus).toHaveBeenCalledWith(
-    expect.objectContaining({ getOrderQueryOpts, didFillQueryOpts }),
+    expect.objectContaining({ didFillQueryOpts }),
   )
 })
 
