@@ -67,7 +67,9 @@ func TestIntegration(t *testing.T) {
 	network := makeNetwork(t, chains)
 	pricer := newPricer(ctx)
 
-	clients, stop := testutil.StartAnvilForks(t, ctx, rpcs, chains)
+	clients, stop := testutil.StartAnvilForks(t, ctx, rpcs,
+		// Include HyperEVM and Mantle forks / clients - they are not rebalanced, but used in chain decificit queries
+		append(chains, mustMeta(t, evmchain.IDHyperEVM), mustMeta(t, evmchain.IDMantle)))
 	defer stop()
 
 	// Stop anvil on interrupt
