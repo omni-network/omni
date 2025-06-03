@@ -8,6 +8,7 @@ import {
 } from '@omni-network/react'
 import {
   createAnvilClient,
+  inbox,
   invalidChainId,
   invalidTokenAddress,
   mockL1Chain,
@@ -265,7 +266,7 @@ describe('useOrder()', () => {
     await executeTestOrderUsingReact({ order })
   })
 
-  test('parameters: returns the trace when the debugValidation flag is enabled', async () => {
+  test('parameters: returns the trace when the debugValidation flag is enabled and the validation is successful', async () => {
     const amount = parseEther('1') / 2n
     const order = {
       srcChainId: mockL1Id,
@@ -279,6 +280,23 @@ describe('useOrder()', () => {
     const result = await executeTestOrderUsingReact({ order })
     if (result?.validation?.status !== 'accepted')
       throw new Error('Validation status should be accepted')
+    expect(result?.validation?.trace).toBeInstanceOf(Object)
+  })
+
+  test('parameters: returns the trace when the debugValidation flag is enabled and the validation is rejected', async () => {
+    const amount = parseEther('1') / 2n
+    const order = {
+      srcChainId: mockL1Id,
+      destChainId: mockL2Id,
+      expense: { token: zeroAddress, amount },
+      deposit: { token: zeroAddress, amount: parseEther('1') },
+      calls: [{ target: inbox, value: amount, data: new Uint8Array(4) }],
+      validateEnabled: true,
+      debugValidation: true,
+    }
+    const result = await executeTestOrderUsingReact({ order, rejectReason: 'DestCallReverts' })
+    if (result?.validation?.status !== 'rejected')
+      throw new Error('Validation status should be rejected')
     expect(result?.validation?.trace).toBeInstanceOf(Object)
   })
 
