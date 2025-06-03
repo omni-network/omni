@@ -21,19 +21,22 @@ import { MockHyperlaneEnvironment } from "test/utils/hyperlane/MockHyperlaneEnvi
 
 import { IERC7683 } from "src/erc7683/IERC7683.sol";
 import { SolverNet } from "src/lib/SolverNet.sol";
+import { HashLib } from "src/lib/HashLib.sol";
 
 import { Test, console2 } from "forge-std/Test.sol";
+import { TestStorage } from "./TestStorage.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
 import { Receiver } from "solady/src/accounts/Receiver.sol";
 import { FixedPointMathLib } from "solady/src/utils/FixedPointMathLib.sol";
 import { AddrUtils } from "src/lib/AddrUtils.sol";
 import { Create3 } from "core/src/deploy/Create3.sol";
+import { IPermit2, ISignatureTransfer } from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 
 /**
  * @title TestBase
  * @dev Shared test utils / fixtures.
  */
-contract TestBase is Test, MockHyperlaneEnvironment {
+contract TestBase is Test, TestStorage, MockHyperlaneEnvironment {
     using AddrUtils for address;
     using AddrUtils for bytes32;
 
@@ -52,21 +55,21 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
     MockPortal portal;
     Create3 create3;
+    IPermit2 permit2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     uint64 srcChainId = 1;
     uint64 destChainId = 2;
 
-    address user = makeAddr("user");
+    address user;
+    uint256 userPk;
+
     address solver = makeAddr("solver");
     address proxyAdmin = makeAddr("proxy-admin-owner");
 
     uint96 defaultAmount = 100 ether;
+    uint32 defaultOpenDeadline = uint32(block.timestamp + 1 minutes);
     uint32 defaultFillDeadline = uint32(block.timestamp + 1 hours);
     uint32 defaultFillBuffer = 6 hours;
-
-    bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
-        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
-    );
 
     modifier prankUser() {
         vm.startPrank(user);
@@ -77,6 +80,8 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     constructor() MockHyperlaneEnvironment(uint32(srcChainId), uint32(destChainId)) { }
 
     function setUp() public virtual {
+        (user, userPk) = makeAddrAndKey("user");
+
         token1 = new MockERC20("Token 1", "TKN1");
         token2 = new MockERC20("Token 2", "TKN2");
         maxTransferToken = new MaxTransferToken();
@@ -87,6 +92,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
         multiTokenVault = new MockMultiTokenVault();
         portal = new MockPortal();
         create3 = new Create3();
+        vm.etch(address(permit2), PERMIT2_CODE);
 
         address expectedInboxAddr = create3.getDeployed(address(this), keccak256("inbox"));
         address expectedOutboxAddr = create3.getDeployed(address(this), keccak256("outbox"));
@@ -126,9 +132,28 @@ contract TestBase is Test, MockHyperlaneEnvironment {
             if (token == address(0)) {
                 vm.deal(user, amount);
             } else {
-                vm.prank(user);
-                MockERC20(token).approve(address(inbox), type(uint256).max);
+                vm.startPrank(user);
                 MockERC20(token).mint(user, amount);
+                MockERC20(token).approve(address(inbox), type(uint256).max);
+                vm.stopPrank();
+            }
+        }
+    }
+
+    function fundUser(SolverNet.OrderData memory orderData, bool gasless) internal {
+        SolverNet.Deposit memory deposit = orderData.deposit;
+        address token = deposit.token;
+        uint96 amount = deposit.amount;
+
+        if (amount > 0) {
+            if (token == address(0)) {
+                vm.deal(user, amount);
+            } else {
+                vm.startPrank(user);
+                MockERC20(token).mint(user, amount);
+                // Gasless orders do not need approvals
+                if (!gasless) MockERC20(token).approve(address(inbox), type(uint256).max);
+                vm.stopPrank();
             }
         }
     }
@@ -185,7 +210,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     {
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(fillDeadline),
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: HashLib.OLD_ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
     }
@@ -209,7 +234,41 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: fillDeadline,
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: HashLib.OLD_ORDERDATA_TYPEHASH,
+            orderData: abi.encode(orderData)
+        });
+
+        return (orderData, order);
+    }
+
+    function getGaslessOrder(
+        address depositor,
+        address owner,
+        uint256 nonce,
+        uint64 chainId,
+        uint32 openDeadline,
+        uint32 fillDeadline,
+        address depositToken,
+        uint96 depositAmount,
+        SolverNet.Call[] memory calls,
+        SolverNet.TokenExpense[] memory expenses
+    ) internal view returns (SolverNet.OrderData memory, IERC7683.GaslessCrossChainOrder memory) {
+        SolverNet.OrderData memory orderData = SolverNet.OrderData({
+            owner: owner,
+            destChainId: chainId,
+            deposit: SolverNet.Deposit({ token: depositToken, amount: depositAmount }),
+            calls: calls,
+            expenses: expenses
+        });
+
+        IERC7683.GaslessCrossChainOrder memory order = IERC7683.GaslessCrossChainOrder({
+            originSettler: address(inbox),
+            user: depositor,
+            nonce: nonce,
+            originChainId: block.chainid,
+            openDeadline: openDeadline,
+            fillDeadline: fillDeadline,
+            orderDataType: HashLib.OMNIORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
 
@@ -243,7 +302,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: defaultFillDeadline,
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: HashLib.OLD_ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
 
@@ -282,7 +341,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: defaultFillDeadline,
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: HashLib.OLD_ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
 
@@ -339,7 +398,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: defaultFillDeadline,
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: HashLib.OLD_ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
 
