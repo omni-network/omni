@@ -66,12 +66,13 @@ Please let the team know if you experienced the above issue.
 
 **Failure to start SVM container**
 
-The SVM container may fail to start, with an error such as:
+If the e2e tests fail to run with an error such as the following:
 
 ```sh
 ERRO !! Fatal error occurred, app died !!     err="svm init: request airdrop for role account: rpc call requestAirdrop() on http://localhost:8899: Post \"http://localhost:8899\": dial tcp [::1]:8899: connect: connection refused"
 ```
 
+Check the SVM container logs for an error such as: `Incompatible CPU detected: missing AVX support`.
 This issue typically happens when using an unsupported virtual machine. To solve it:
 
 1. Go to Docker Desktop's settings > General > Virtual Machine Options
