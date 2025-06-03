@@ -1,6 +1,6 @@
 // Package umath provides some useful unsigned math functions to prevent underflows.
 // It also provides some type conversion functions to convert between different
-// integer types to prevent underflows and overflows or overflows.
+// integer types to prevent underflows and overflows.
 package umath
 
 import (

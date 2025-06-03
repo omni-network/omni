@@ -114,7 +114,7 @@ type options struct {
 type option func(*options) error
 
 // WithPublicRPCs returns an option using well known public free RPCs for all xchains.
-// This is used be default if no other option is provided.
+// This is used by default if no other option is provided.
 func WithPublicRPCs() option {
 	return func(o *options) error {
 		for name, rpc := range o.Endpoints {

@@ -2,7 +2,7 @@
 // since the native API is clunky and error-prone (since it is mutable).
 //
 // Note that it doesn't do nil-checks, that should be done by the application
-// when data enters the system as nil values aare invalid.
+// when data enters the system as nil values are invalid.
 package bi
 
 import (

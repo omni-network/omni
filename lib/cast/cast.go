@@ -1,4 +1,4 @@
-// Package cast provides save casting functions for converting between types without panicking.
+// Package cast provides safe casting functions for converting between types without panicking.
 package cast
 
 import (
@@ -52,7 +52,8 @@ func EthHash(b []byte) (common.Hash, error) {
 		return common.Hash{}, errors.New("invalid hash length", "len", len(b))
 	}
 
-	return resp, nil
+	// Convert the byte array to common.Hash explicitly.
+	return common.BytesToHash(resp[:]), nil
 }
 
 // Array32 casts a slice to an array of length 32.
@@ -91,7 +92,7 @@ func MustEthAddress(b []byte) common.Address {
 	return addr
 }
 
-// Array20 casts a slice to an array of length 32.
+// Array20 casts a slice to an array of length 20.
 func Array20[A any](slice []A) ([20]A, error) {
 	if len(slice) == 20 {
 		return [20]A(slice), nil
