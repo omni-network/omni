@@ -3,6 +3,7 @@ layout: landing
 ---
 
 import { HomePage } from "vocs/components";
+import '../styles.css';
 
 <HomePage.Root>
 
@@ -29,77 +30,20 @@ import { HomePage } from "vocs/components";
   </HomePage.Button>
 </HomePage.Buttons>
 
-<div style={{ display: 'flex', gap: '20px', marginTop: '40px', justifyContent: 'center' }}>
-  <div style={{
-    backgroundColor: '#f8f9fa',
-    border: '1px solid #e9ecef',
-    borderRadius: '8px',
-    padding: '24px',
-    textAlign: 'center',
-    flex: '1',
-    maxWidth: '280px',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    cursor: 'pointer'
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.transform = 'translateY(-2px)';
-    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.transform = 'translateY(0)';
-    e.currentTarget.style.boxShadow = 'none';
-  }}
-  onClick={() => window.location.href = '/sdk/getting-started/react'}>
-    <h3 style={{ margin: '0 0 12px 0', color: '#495057', pointerEvents: 'none' }}>Get started with React</h3>
-    <p style={{ margin: 0, color: '#6c757d', fontSize: '14px', pointerEvents: 'none' }}>Build React applications powered by Omni</p>
+<div className="feature-card">
+  <div className="feature-card-item" onClick={() => window.location.href = '/sdk/getting-started/react'}>
+    <h3 className="feature-card-title">Get started with React</h3>
+    <p className="feature-card-description">Build React applications powered by Omni</p>
   </div>
 
-  <div style={{
-    backgroundColor: '#f8f9fa',
-    border: '1px solid #e9ecef',
-    borderRadius: '8px',
-    padding: '24px',
-    textAlign: 'center',
-    flex: '1',
-    maxWidth: '280px',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    cursor: 'pointer'
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.transform = 'translateY(-2px)';
-    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.transform = 'translateY(0)';
-    e.currentTarget.style.boxShadow = 'none';
-  }}
-  onClick={() => window.location.href = '/sdk/getting-started/core'}>
-    <h3 style={{ margin: '0 0 12px 0', color: '#495057', pointerEvents: 'none' }}>Get started with Core</h3>
-    <p style={{ margin: 0, color: '#6c757d', fontSize: '14px', pointerEvents: 'none' }}>Build TS or scripts with any framework</p>
+  <div className="feature-card-item" onClick={() => window.location.href = '/sdk/getting-started/core'}>
+    <h3 className="feature-card-title">Get started with Core</h3>
+    <p className="feature-card-description">Build TS or scripts with any framework</p>
   </div>
 
-  <div style={{
-    backgroundColor: '#f8f9fa',
-    border: '1px solid #e9ecef',
-    borderRadius: '8px',
-    padding: '24px',
-    textAlign: 'center',
-    flex: '1',
-    maxWidth: '280px',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    cursor: 'pointer'
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.transform = 'translateY(-2px)';
-    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.transform = 'translateY(0)';
-    e.currentTarget.style.boxShadow = 'none';
-  }}
-  onClick={() => window.open('https://github.com/omni-network/omni', '_blank')}>
-    <h3 style={{ margin: '0 0 12px 0', color: '#495057', pointerEvents: 'none' }}>Explore our Monorepo</h3>
-    <p style={{ margin: 0, color: '#6c757d', fontSize: '14px', pointerEvents: 'none' }}>Browse the full Omni codebase on GitHub</p>
+  <div className="feature-card-item" onClick={() => window.open('https://github.com/omni-network/omni', '_blank')}>
+    <h3 className="feature-card-title">Explore our Monorepo</h3>
+    <p className="feature-card-description">Browse the full Omni codebase on GitHub</p>
   </div>
 </div>
 

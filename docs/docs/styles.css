@@ -1,3 +1,60 @@
+/* Logo theme switching */
 .logo-dark { display: none; }
 [class*="dark"] .logo-light { display: none; }
 [class*="dark"] .logo-dark { display: block; }
+
+/* Card styling */
+.feature-card {
+  display: flex;
+  gap: 20px;
+  margin-top: 40px;
+  justify-content: center;
+}
+
+.feature-card-item {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  flex: 1;
+  max-width: 280px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.feature-card-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.feature-card-title {
+  margin: 0 0 12px 0;
+  color: #495057;
+  pointer-events: none;
+}
+
+.feature-card-description {
+  margin: 0;
+  color: #6c757d;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* Dark theme styles */
+[class*="dark"] .feature-card-item {
+  background-color: #2d3748;
+  border: 1px solid #4a5568;
+}
+
+[class*="dark"] .feature-card-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+[class*="dark"] .feature-card-title {
+  color: #e2e8f0;
+}
+
+[class*="dark"] .feature-card-description {
+  color: #a0aec0;
+}
