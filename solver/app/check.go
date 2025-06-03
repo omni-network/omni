@@ -9,16 +9,18 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/unibackend"
 	"github.com/omni-network/omni/solver/types"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-type traceFunc func(context.Context, types.CheckRequest) (map[string]any, error)
+type traceFunc func(context.Context, types.CheckRequest) (types.CallTrace, error)
 type checkFunc func(context.Context, types.CheckRequest) error
 
 // newChecker returns a checkFunc that can be used to see if an order would be accepted or rejected.
@@ -87,15 +89,15 @@ func newChecker(backends unibackend.Backends, isAllowedCall callAllowFunc, price
 
 // newTracer returns a traceFunc that returns debug_traceCall of a check request.
 func newTracer(backends ethbackend.Backends, solverAddr, outboxAddr common.Address) traceFunc {
-	return func(ctx context.Context, req types.CheckRequest) (map[string]any, error) {
+	return func(ctx context.Context, req types.CheckRequest) (types.CallTrace, error) {
 		backend, err := backends.Backend(req.DestinationChainID)
 		if err != nil {
-			return nil, errors.Wrap(err, "unsupported destination chain", "chain_id", req.DestinationChainID)
+			return types.CallTrace{}, errors.Wrap(err, "unsupported destination chain", "chain_id", req.DestinationChainID)
 		}
 
 		fillOriginData, err := getFillOriginData(req)
 		if err != nil {
-			return nil, errors.Wrap(err, "pack fill origin data")
+			return types.CallTrace{}, errors.Wrap(err, "pack fill origin data")
 		}
 
 		nativeAmt := bi.Zero()
@@ -111,26 +113,30 @@ func newTracer(backends ethbackend.Backends, solverAddr, outboxAddr common.Addre
 
 		msg, err := fillCallMsg(ctx, backend, orderID, fillOriginData, nativeAmt, solverAddr, outboxAddr)
 		if err != nil {
-			return nil, errors.Wrap(err, "create call msg")
+			return types.CallTrace{}, errors.Wrap(err, "create call msg")
 		}
 
-		var trace map[string]any
-		err = backend.CallContext(ctx, &trace, "debug_traceCall",
-			map[string]any{
-				"from":  msg.From.Hex(),
-				"to":    msg.To.Hex(),
-				"data":  hexutil.Encode(msg.Data),
-				"value": hexutil.EncodeBig(msg.Value),
-			},
-			"latest",
-			map[string]any{"tracer": "callTracer"},
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "debug_traceCall")
-		}
-
-		return trace, nil
+		return debugTraceCall(ctx, backend, msg)
 	}
+}
+
+func debugTraceCall(ctx context.Context, client ethclient.Client, msg ethereum.CallMsg) (types.CallTrace, error) {
+	var trace types.CallTrace
+	err := client.CallContext(ctx, &trace, "debug_traceCall",
+		map[string]any{
+			"from":  msg.From.Hex(),
+			"to":    msg.To.Hex(),
+			"data":  hexutil.Encode(msg.Data),
+			"value": hexutil.EncodeBig(msg.Value),
+		},
+		"latest",
+		map[string]any{"tracer": "callTracer"},
+	)
+	if err != nil {
+		return types.CallTrace{}, errors.Wrap(err, "debug_traceCall")
+	}
+
+	return trace, nil
 }
 
 // getFillOriginData returns packed fill origin data for a check request.
