@@ -5,7 +5,10 @@ export default defineConfig({
   rootDir: './docs/',
   baseUrl: '/',
   description: 'Documentation for the Omni SDK, SolverNet, and related concepts.',
-  logoUrl: '/img/logo.svg',
+  logoUrl: {
+    light: '/img/Omni_Lockup_light.svg',
+    dark: '/img/Omni_Lockup_dark.svg',
+  },
   iconUrl: '/img/favicon.svg',
   ogImageUrl: 'https://docs.omni.network/img/omni-banner.png',
   editLink: {

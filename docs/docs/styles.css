@@ -1,0 +1,3 @@
+.logo-dark { display: none; }
+[class*="dark"] .logo-light { display: none; }
+[class*="dark"] .logo-dark { display: block; }
