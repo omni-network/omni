@@ -64,10 +64,16 @@ This error is known to happen on a freshly installed MacBook, we are investigati
 
 Please let the team know if you experienced the above issue.
 
-**CPU missing AVX support**
+**Failure to start SVM container**
 
-This issue may happen when building `linux/amd64` images expecting the CPU to support AVX.
+The SVM container may fail to start, with an error such as:
+
+```sh
+ERRO !! Fatal error occurred, app died !!     err="svm init: request airdrop for role account: rpc call requestAirdrop() on http://localhost:8899: Post \"http://localhost:8899\": dial tcp [::1]:8899: connect: connection refused"
+```
+
+This issue typically happens when using an unsupported virtual machine. To solve it:
 
 1. Go to Docker Desktop's settings > General > Virtual Machine Options
 2. Select the Docker VMM option and restart Docker
-3. Try to build the images again
+3. Rerun docker build: `make build-docker`
