@@ -1,3 +1,5 @@
+import { Callout } from 'vocs/components'
+
 # `validateOrder`
 
 The `validateOrder` function validates order parameters with the SolverNet server to check if an order could be handled by SolverNet.
@@ -126,6 +128,10 @@ if (validation.rejected) {
   console.error(`Validation rejected order with reason: ${validation.rejectReason} - ${validation.rejectDescription}`)
 }
 ```
+
+<Callout type="tip" title="Debug trace">
+You can use the `debug` parameter to receive a `trace` object as part of the validation response. This trace can notably be useful to [debug destination calls reverting](/guides/debugging-destination-calls/).
+</Callout>
 
 ### Server error
 

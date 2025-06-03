@@ -294,7 +294,10 @@ describe('useOrder()', () => {
       validateEnabled: true,
       debugValidation: true,
     }
-    const result = await executeTestOrderUsingReact({ order, rejectReason: 'DestCallReverts' })
+    const result = await executeTestOrderUsingReact({
+      order,
+      rejectReason: 'DestCallReverts',
+    })
     if (result?.validation?.status !== 'rejected')
       throw new Error('Validation status should be rejected')
     expect(result?.validation?.trace).toBeInstanceOf(Object)
