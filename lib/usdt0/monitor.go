@@ -14,16 +14,18 @@ func MonitorSendsForever(ctx context.Context, db *DB, client layerzero.Client) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if err := monitorSends(ctx, db, client); err != nil {
-				log.Error(ctx, "Failed to monitor sends (will retry)", err)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := monitorSends(ctx, db, client); err != nil {
+					log.Error(ctx, "Failed to monitor sends (will retry)", err)
+				}
 			}
 		}
-	}
+	}()
 }
 
 // monitorSends checks the status of all messages in the database and updates them accordingly.

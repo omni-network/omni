@@ -1,4 +1,3 @@
-//nolint:unused // WIP
 package rebalance
 
 import (
@@ -33,6 +32,7 @@ func rebalanceHyperEVMForever(
 	interval time.Duration,
 	backends ethbackend.Backends,
 	solver common.Address,
+	db *usdt0.DB,
 ) {
 	_, err := backends.Backend(evmchain.IDHyperEVM)
 	if err != nil {
@@ -40,16 +40,17 @@ func rebalanceHyperEVMForever(
 		return
 	}
 
-	ctx = log.WithCtx(ctx, "step", "hypervm")
+	ctx = log.WithCtx(ctx, "step", "hyperevm")
 
 	for {
 		start := time.Now()
-		elapsed := time.Since(start)
 
-		err := rebalanceHyperEVMOnce(ctx, backends, solver)
+		err := rebalanceHyperEVMOnce(ctx, backends, solver, db)
 		if err != nil {
 			log.Warn(ctx, "Failed to rebalance HyperVM (will retry)", err)
 		}
+
+		elapsed := time.Since(start)
 
 		// Sleep for the remaining time in the interval, if any.
 		if elapsed < interval {
@@ -63,7 +64,12 @@ func rebalanceHyperEVMOnce(
 	ctx context.Context,
 	backends ethbackend.Backends,
 	solver common.Address,
+	db *usdt0.DB,
 ) error {
+	log.Debug(ctx, "Rebalancing HyperEVM USDT0; trying lock")
+	defer lock(evmchain.IDEthereum, evmchain.IDHyperEVM)()
+	log.Info(ctx, "Rebalancing HyperEVM USDT0; locked")
+
 	ethBackend, err := backends.Backend(evmchain.IDEthereum)
 	if err != nil {
 		return errors.New("ethereum backend")
@@ -86,21 +92,20 @@ func rebalanceHyperEVMOnce(
 	}
 
 	// Check if we have enough surplus USDT on Ethereum
-	ethUSDTThresh := fundthresh.Get(ethUSDT)
-	ethUSDTBalance, err := tokenutil.BalanceOf(ctx, ethBackend, ethUSDT, solver)
+	balUSDT, err := tokenutil.BalanceOf(ctx, ethBackend, ethUSDT, solver)
 	if err != nil {
 		return errors.Wrap(err, "get usdt balance")
 	}
 
-	surplusUSDT := bi.Sub(ethUSDTBalance, ethUSDTThresh.Surplus())
+	surplusUSDT := bi.Sub(balUSDT, fundthresh.Get(ethUSDT).Surplus())
 
 	// If we have enough, send USDT right to HyperEVM
 	if bi.GTE(surplusUSDT, deficitUSDT0) {
-		return sendUSDTToHyperEVM(ctx, ethBackend, solver, deficitUSDT0)
+		return sendUSDTToHyperEVM(ctx, ethBackend, solver, deficitUSDT0, db)
 	}
 
 	// If we don't, check if we have USDC surplus to swap
-	neededUSDT := bi.Sub(deficitUSDT0, surplusUSDT)
+	needUSDT := bi.Sub(deficitUSDT0, surplusUSDT)
 
 	surplusUSDC, err := GetSurplus(ctx, ethBackend, ethUSDC, solver)
 	if err != nil {
@@ -108,23 +113,39 @@ func rebalanceHyperEVMOnce(
 	}
 
 	// Cap to available
-	toSwap := bi.Sub(surplusUSDC, neededUSDT)
+	toSwap := needUSDT
 	if bi.LT(surplusUSDC, toSwap) {
 		toSwap = surplusUSDC
 	}
 
-	// Limit to min swap
-	if bi.LT(toSwap, fundthresh.Get(ethUSDC).MinSwap()) {
+	// Enforce min/max swap limits
+	minSwap := fundthresh.Get(ethUSDC).MinSwap()
+	maxSwap := fundthresh.Get(ethUSDC).MaxSwap()
+	if bi.LT(toSwap, minSwap) {
 		return nil
 	}
+	if bi.GT(toSwap, maxSwap) {
+		toSwap = maxSwap
+	}
 
-	// Swap to USDT, send
-	_, err = uniswap.SwapFromUSDC(ctx, ethBackend, solver, ethUSDT, neededUSDT)
+	// Swap to USDT
+	_, err = uniswap.SwapFromUSDC(ctx, ethBackend, solver, ethUSDT, toSwap)
 	if err != nil {
 		return errors.Wrap(err, "swap usdc to usdt")
 	}
 
-	return sendUSDTToHyperEVM(ctx, ethBackend, solver, deficitUSDT0)
+	// Re-calc surplus, send
+	surplusUSDT, err = GetSurplus(ctx, ethBackend, ethUSDT, solver)
+	if err != nil {
+		return errors.Wrap(err, "get surplus usdt")
+	}
+
+	toSend := deficitUSDT0
+	if bi.GT(toSend, surplusUSDT) {
+		toSend = surplusUSDT
+	}
+
+	return sendUSDTToHyperEVM(ctx, ethBackend, solver, toSend, db)
 }
 
 // sendUSDTToHyperEVM sends USDT from Ethereum to HyperEVM USDT0.
@@ -133,6 +154,7 @@ func sendUSDTToHyperEVM(
 	ethBackend *ethbackend.Backend,
 	solver common.Address,
 	amount *big.Int,
+	db *usdt0.DB,
 ) error {
 	const maxSend = 10000 // 10k USDT
 	toSend := amount
@@ -152,7 +174,7 @@ func sendUSDTToHyperEVM(
 		evmchain.IDEthereum,
 		evmchain.IDHyperEVM,
 		toSend,
-		nil, // TODO: add db
+		db,
 	)
 	if err != nil {
 		return errors.Wrap(err, "deposit usdt0")

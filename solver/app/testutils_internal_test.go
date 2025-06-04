@@ -74,7 +74,7 @@ type checkTestCase struct {
 	req          types.CheckRequest
 	res          types.CheckResponse
 	testdata     bool
-	trace        map[string]any
+	trace        *types.CallTrace
 	traceErr     error
 }
 
@@ -238,18 +238,28 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 			},
 		},
 		{
-			name:  "debug trace - accepted",
-			trace: map[string]any{"test": "trace"},
-			mock:  accepted.mock,
-			req:   withDebug(accepted.req),
-			res:   withTrace(accepted.res, map[string]any{"test": "trace"}),
+			name: "debug trace - accepted",
+			trace: &types.CallTrace{
+				From:  "0x1234567890123456789012345678901234567890",
+				To:    "0x0987654321098765432109876543210987654321",
+				Data:  "0xabcdef",
+				Value: "0x1",
+			},
+			mock: accepted.mock,
+			req:  withDebug(accepted.req),
+			res:  withTrace(accepted.res, map[string]any{"test": "trace"}),
 		},
 		{
-			name:  "debug trace - rejected",
-			trace: map[string]any{"test": "trace"},
-			mock:  fillReverts.mock,
-			req:   withDebug(fillReverts.req),
-			res:   withTrace(fillReverts.res, map[string]any{"test": "trace"}),
+			name: "debug trace - rejected",
+			trace: &types.CallTrace{
+				From:  "0x1234567890123456789012345678901234567890",
+				To:    "0x0987654321098765432109876543210987654321",
+				Data:  "0xabcdef",
+				Value: "0x1",
+			},
+			mock: fillReverts.mock,
+			req:  withDebug(fillReverts.req),
+			res:  withTrace(fillReverts.res, map[string]any{"test": "trace"}),
 		},
 		{
 			name:     "debug trace - error",
@@ -658,8 +668,8 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 }
 
 // noopTracer os a no-op traceFunc.
-func noopTracer(_ context.Context, _ types.CheckRequest) (map[string]any, error) {
-	return map[string]any{}, nil
+func noopTracer(_ context.Context, _ types.CheckRequest) (types.CallTrace, error) {
+	return types.CallTrace{}, nil
 }
 
 // testBackends returns test backends / clients required for test cases above.

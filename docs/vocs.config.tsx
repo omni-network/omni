@@ -83,6 +83,10 @@ export default defineConfig({
               link: '/sdk/core/getQuote',
             },
             {
+              text: 'validateOrder',
+              link: '/sdk/core/validateOrder',
+            },
+            {
               text: 'openOrder',
               link: '/sdk/core/openOrder',
             },
@@ -121,6 +125,7 @@ export default defineConfig({
             { text: 'Cross Chain Transfers', link: '/guides/transfers' },
             { text: 'Multi-Step Deposit', link: '/guides/multistep-deposit' },
             { text: 'Contracts without onBehalfOf', link: '/guides/contracts-without-onbehalfof' },
+            { text: 'Debugging destination calls', link: '/guides/debugging-destination-calls' },
             { text: 'Symbiotic', link: '/guides/examples/symbiotic' },
             { text: 'Rocketpool', link: '/guides/examples/rocketpool' },
           ],
