@@ -22,6 +22,7 @@ const (
 	endpointCheck     = "/api/v1/check"
 	endpointPrice     = "/api/v1/price"
 	endpointTokens    = "/api/v1/tokens"
+	endpointRelay     = "/api/v1/relay"
 )
 
 // serveAPI starts the API server, returning a async error and shutdown function.

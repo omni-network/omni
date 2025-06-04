@@ -57,8 +57,8 @@ bindings: check-abigen-version build ## Generate golang contract bindings.
 	ROOT=./xapps ./bindings/scripts/gen.sh $(XAPPS_CONTRACTS)
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
-	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetoutbox.go IERC7683FillInstruction IERC7683Output IERC7683ResolvedCrossChainOrder ISolverNetOutboxInboxConfig
 	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetinbox.go SolverNetCall SolverNetFillOriginData SolverNetTokenExpense
+	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetoutbox.go IERC7683FillInstruction IERC7683Output IERC7683ResolvedCrossChainOrder ISolverNetOutboxInboxConfig
 
 .PHONY: allocs
 allocs: bindings ## Generate predeploy allocations.
