@@ -40,16 +40,17 @@ func rebalanceHyperEVMForever(
 		return
 	}
 
-	ctx = log.WithCtx(ctx, "step", "hypervm")
+	ctx = log.WithCtx(ctx, "step", "hyperevm")
 
 	for {
 		start := time.Now()
-		elapsed := time.Since(start)
 
 		err := rebalanceHyperEVMOnce(ctx, backends, solver, db)
 		if err != nil {
 			log.Warn(ctx, "Failed to rebalance HyperVM (will retry)", err)
 		}
+
+		elapsed := time.Since(start)
 
 		// Sleep for the remaining time in the interval, if any.
 		if elapsed < interval {
@@ -65,6 +66,8 @@ func rebalanceHyperEVMOnce(
 	solver common.Address,
 	db *usdt0.DB,
 ) error {
+	log.Info(ctx, "Rebalancing HyperEVM USDT0")
+
 	lock(evmchain.IDEthereum, evmchain.IDHyperEVM)
 	defer unlock(evmchain.IDEthereum, evmchain.IDHyperEVM)
 
