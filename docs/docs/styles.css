@@ -1,6 +1,14 @@
-.logo-dark { display: none; }
-[class*="dark"] .logo-light { display: none; }
-[class*="dark"] .logo-dark { display: block; }
+.logo-dark {
+  display: none;
+}
+
+[class*="dark"] .logo-light {
+  display: none;
+}
+
+[class*="dark"] .logo-dark {
+  display: block;
+}
 
 .feature-card {
   display: flex;
@@ -22,7 +30,7 @@
 
 .feature-card-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .feature-card-title {
@@ -39,12 +47,13 @@
 }
 
 [class*="dark"] .feature-card-item {
-  background-color: #2d3748;
-  border: 1px solid #4a5568;
+  background-color: rgb(18, 17, 19);
+  border: 1px solid rgb(43, 41, 45);
 }
 
 [class*="dark"] .feature-card-item:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background-color: rgb(14, 13, 15);
 }
 
 [class*="dark"] .feature-card-title {
