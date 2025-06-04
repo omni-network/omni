@@ -112,6 +112,16 @@
   },
   {
    "enabled": true,
+   "name": "Tether Zero",
+   "symbol": "USDT0",
+   "chainId": 10,
+   "address": "0x01bff41798a0bcf287b996046ca68b395dbc1071",
+   "decimals": 6,
+   "expenseMin": "0x186a0",
+   "expenseMax": "0x1d1a94a2000"
+  },
+  {
+   "enabled": true,
    "name": "Wrapped Ether",
    "symbol": "WETH",
    "chainId": 10,
@@ -199,6 +209,16 @@
    "decimals": 6,
    "expenseMin": "0x186a0",
    "expenseMax": "0x2540be400"
+  },
+  {
+   "enabled": true,
+   "name": "Tether Zero",
+   "symbol": "USDT0",
+   "chainId": 42161,
+   "address": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+   "decimals": 6,
+   "expenseMin": "0x186a0",
+   "expenseMax": "0x1d1a94a2000"
   },
   {
    "enabled": true,
