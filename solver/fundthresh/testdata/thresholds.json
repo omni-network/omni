@@ -20,6 +20,13 @@
   "surplus": "12000 USDT",
   "target": "10000 USDT"
  },
+ "arbitrum_one:USDT0": {
+  "maxSwap": "0 USDT0",
+  "min": "0 USDT0",
+  "minSwap": "0 USDT0",
+  "surplus": "inf",
+  "target": "0 USDT0"
+ },
  "arbitrum_one:WETH": {
   "maxSwap": "0 WETH",
   "min": "0 WETH",
@@ -118,6 +125,13 @@
   "surplus": "10000 HYPE",
   "target": "5000 HYPE"
  },
+ "hyper_evm:USDT0": {
+  "maxSwap": "0 USDT0",
+  "min": "500000 USDT0",
+  "minSwap": "0 USDT0",
+  "surplus": "inf",
+  "target": "2000000 USDT0"
+ },
  "mantle:MNT": {
   "maxSwap": "0 MNT",
   "min": "15000 MNT",
@@ -173,6 +187,13 @@
   "minSwap": "1000 USDT",
   "surplus": "12000 USDT",
   "target": "10000 USDT"
+ },
+ "optimism:USDT0": {
+  "maxSwap": "0 USDT0",
+  "min": "0 USDT0",
+  "minSwap": "0 USDT0",
+  "surplus": "inf",
+  "target": "0 USDT0"
  },
  "optimism:WETH": {
   "maxSwap": "0 WETH",
