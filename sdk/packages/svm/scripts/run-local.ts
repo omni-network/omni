@@ -1,10 +1,13 @@
 import { readFileSync } from 'node:fs'
-import { Program } from '@coral-xyz/anchor'
+import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor'
+import { getOrCreateAssociatedTokenAccount } from '@solana/spl-token'
 import {
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  TransactionMessage,
+  VersionedTransaction,
 } from '@solana/web3.js'
 import BN from 'bn.js'
 import bs58 from 'bs58'
@@ -16,17 +19,29 @@ const config = JSON.parse(readFileSync('/tmp/svm/config.json', 'utf8'))
 const usdcMintAccount = new PublicKey(config.mints[0].mint_account)
 console.log('USDC mint account', usdcMintAccount.toBase58())
 
-const connection = new Connection(config.rpc_address, 'confirmed')
+const connection = new Connection(config.rpc_address, {
+  commitment: 'confirmed',
+  wsEndpoint: 'ws://localhost:9900',
+})
 const keypair = Keypair.fromSecretKey(bs58.decode(config.authority_key))
 console.log('using account', keypair.publicKey.toBase58())
 
 const balance = await connection.getBalance(keypair.publicKey)
 console.log('account balance in SOL:', balance / LAMPORTS_PER_SOL)
 
-export const inboxProgram = new Program<SolverInbox>(inboxIDL as SolverInbox, {
-  connection,
-  publicKey: keypair.publicKey,
+const wallet = new Wallet(keypair)
+const provider = new AnchorProvider(connection, wallet, {
+  commitment: 'confirmed',
 })
+const inboxProgram = new Program<SolverInbox>(inboxIDL as SolverInbox, provider)
+
+const tokenAccount = await getOrCreateAssociatedTokenAccount(
+  connection,
+  keypair,
+  usdcMintAccount,
+  keypair.publicKey,
+)
+console.log('token account address', tokenAccount.address.toBase58())
 
 const openParams = await createOpenParams({
   owner: keypair.publicKey,
@@ -48,9 +63,23 @@ const openParams = await createOpenParams({
 const openInstruction = await inboxProgram.methods
   .open(openParams)
   .accounts({
-    ownerTokenAccount: keypair.publicKey,
+    ownerTokenAccount: tokenAccount.address,
     mintAccount: usdcMintAccount,
   })
   .signers([keypair])
   .instruction()
-console.log('open instruction', openInstruction)
+
+const recentBlockhash = (await connection.getLatestBlockhash()).blockhash
+console.log('recent blockhash', recentBlockhash)
+
+const messageV0 = new TransactionMessage({
+  payerKey: keypair.publicKey,
+  recentBlockhash,
+  instructions: [openInstruction],
+}).compileToV0Message()
+
+const transaction = new VersionedTransaction(messageV0)
+transaction.sign([keypair])
+
+const txId = await connection.sendTransaction(transaction)
+console.log('open transaction txId', txId)

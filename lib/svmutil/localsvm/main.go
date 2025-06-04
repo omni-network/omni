@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/svmutil"
 
@@ -63,6 +65,17 @@ func run(ctx context.Context, dir string) error {
 	_, err = svmutil.Deploy(ctx, cl, dir, prog)
 	if err != nil {
 		return errors.Wrap(err, "deploy anchor inbox program")
+	}
+
+	log.Info(ctx, "Initializing anchor inbox program...")
+	const closeBuffer = time.Second * 0 // Allow immediate closing in devnet
+	init, err := anchorinbox.NewInit(evmchain.IDSolanaLocal, closeBuffer, privkey.PublicKey())
+	if err != nil {
+		return errors.Wrap(err, "create anchor inbox init instruction")
+	}
+	_, err = svmutil.SendSimple(ctx, cl, privkey, init.Build())
+	if err != nil {
+		return err
 	}
 
 	if err := dumpConfig(ctx, dir, addr, privkey, mintResp, prog); err != nil {

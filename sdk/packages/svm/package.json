@@ -1,7 +1,7 @@
 {
   "name": "@omni-network/svm",
   "description": "SVM support for Omni Solvernet",
-  "version": "0.2.1",
+  "version": "0.0.1",
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@9.12.1",
@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
+    "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.2",
     "bn.js": "^5.2.2",
     "bs58": "^6.0.0"
