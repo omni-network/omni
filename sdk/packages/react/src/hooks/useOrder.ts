@@ -1,7 +1,6 @@
 import {
   type DidFillError,
   GetOrderError,
-  type GetOrderReturn,
   LoadContractsError,
   type OmniContracts,
   OpenError,
@@ -47,7 +46,6 @@ type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
   validateEnabled: boolean
   debugValidation?: boolean
   omniContractsQueryOpts?: QueryOpts<OmniContracts>
-  getOrderQueryOpts?: QueryOpts<GetOrderReturn>
   didFillQueryOpts?: QueryOpts<boolean>
 }
 
@@ -106,7 +104,6 @@ export function useOrder<abis extends OptionalAbis>(
     validateEnabled,
     debugValidation,
     omniContractsQueryOpts,
-    getOrderQueryOpts,
     didFillQueryOpts,
     ...order
   } = params
@@ -144,8 +141,7 @@ export function useOrder<abis extends OptionalAbis>(
   const orderStatus = useGetOrderStatus({
     srcChainId,
     destChainId: order.destChainId,
-    orderId: resolvedOrder?.orderId,
-    getOrderQueryOpts,
+    resolvedOrder,
     didFillQueryOpts,
   })
 

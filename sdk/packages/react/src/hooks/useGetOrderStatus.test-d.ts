@@ -3,6 +3,7 @@ import type {
   OrderStatus,
   WatchDidFillError,
 } from '@omni-network/core'
+import { testResolvedOrder } from '@omni-network/test-utils'
 import type { Hex } from 'viem'
 import { expectTypeOf, test } from 'vitest'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
@@ -22,7 +23,7 @@ test('type: useGetOrderStatus', () => {
   const result2 = useGetOrderStatus({
     srcChainId: 1,
     destChainId: 2,
-    orderId: '0x123' as const,
+    resolvedOrder: testResolvedOrder,
   })
 
   expectTypeOf(result2).toEqualTypeOf<{

@@ -31,7 +31,6 @@ function Component() {
 | `validateEnabled`   | `boolean`                            | No       | Defaults to `true`. Enables pre-validation of the order with Omni. Use this to validate your calls. Recommended to set based on `quote.isSuccess`.                    |
 | `debugValidation` | `boolean` | No  | Whether to return the debug `trace` in the validation result or not (default) |
 | `omniContractsQueryOpts`      | `UseQueryOptions<OmniContracts>`  | No       | React query options for loading the Omni contracts addresses, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
-| `getOrderQueryOpts`           | `UseQueryOptions<GetOrderReturn>` | No       | React query options for loading the order, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
 | `didFillQueryOpts`            | `UseQueryOptions<boolean>`        | No       | React query options for loading the filled status of the order, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
 
 ## Types
