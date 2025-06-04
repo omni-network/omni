@@ -48,3 +48,7 @@ export class AccountRequiredError extends BaseError {
 export class AbortError extends BaseError {
   override name = 'AbortError' as const
 }
+
+export class GetRejectionError extends BaseError {
+  override name = 'GetRejectionError' as const
+}

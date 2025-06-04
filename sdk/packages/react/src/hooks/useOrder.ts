@@ -1,6 +1,7 @@
 import {
   type DidFillError,
   GetOrderError,
+  type GetRejectionError,
   LoadContractsError,
   type OmniContracts,
   OpenError,
@@ -8,6 +9,7 @@ import {
   type Order,
   type OrderStatus,
   type ParseOpenEventError,
+  type Rejection,
   type SendOrderReturn,
   TxReceiptError,
   ValidateOrderError,
@@ -37,6 +39,7 @@ import {
   useOmniContracts,
 } from './useOmniContracts.js'
 import { useParseOpenEvent } from './useParseOpenEvent.js'
+import { useRejection } from './useRejection.js'
 import {
   type UseValidateOrderResult,
   useValidateOrder,
@@ -47,6 +50,7 @@ type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
   debugValidation?: boolean
   omniContractsQueryOpts?: QueryOpts<OmniContracts>
   didFillQueryOpts?: QueryOpts<boolean>
+  rejectionQueryOpts?: QueryOpts<Rejection, GetRejectionError>
 }
 
 type MutationError = LoadContractsError | NoClientError | WriteContractErrorType
@@ -85,6 +89,7 @@ type UseOrderReturnType = {
   isReady: boolean
   txMutation: MutationResult
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
+  rejection?: Rejection
 }
 
 type UseOrderStatus =
@@ -105,6 +110,7 @@ export function useOrder<abis extends OptionalAbis>(
     debugValidation,
     omniContractsQueryOpts,
     didFillQueryOpts,
+    rejectionQueryOpts,
     ...order
   } = params
   const srcChainId = order.srcChainId ?? useChainId()
@@ -143,6 +149,14 @@ export function useOrder<abis extends OptionalAbis>(
     destChainId: order.destChainId,
     resolvedOrder,
     didFillQueryOpts,
+  })
+
+  const rejection = useRejection({
+    orderId: resolvedOrder?.orderId,
+    fromBlock: wait.data?.blockNumber,
+    enabled: wait.status === 'success' && orderStatus.status === 'rejected',
+    srcChainId: order.srcChainId,
+    queryOpts: rejectionQueryOpts,
   })
 
   const status = deriveStatus(
@@ -185,6 +199,7 @@ export function useOrder<abis extends OptionalAbis>(
     isReady: !!inboxAddress,
     txMutation,
     waitForTx: wait,
+    rejection: rejection.data ?? undefined,
   }
 }
 

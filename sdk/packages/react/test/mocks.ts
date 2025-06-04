@@ -57,12 +57,11 @@ export function createMockQueryResult<TData = never>(
   return result as UseQueryResult<TData>
 }
 
-export function createMockWaitForTransactionReceiptResult<
-  TResult extends ReturnType<typeof useWaitForTransactionReceipt> = never,
->(
-  overrides?: Partial<UseWaitForTransactionReceiptReturn<TResult['data']>>,
-): UseWaitForTransactionReceiptReturn<TResult['data']> {
+export function createMockWaitForTransactionReceiptResult<TData = unknown>(
+  overrides?: Partial<UseWaitForTransactionReceiptReturn<TData>>,
+): UseWaitForTransactionReceiptReturn<TData> {
   return {
+    data: undefined as TData,
     isError: false,
     isPending: false,
     isSuccess: true,
@@ -82,7 +81,6 @@ export function createMockWaitForTransactionReceiptResult<
     isInitialLoading: false,
     isRefetching: false,
     status: 'success',
-    data: '0xTxHash',
     isPaused: false,
     refetch: vi.fn(),
     fetchStatus: 'idle' as const,
@@ -90,5 +88,5 @@ export function createMockWaitForTransactionReceiptResult<
     promise: Promise.resolve(),
     error: null,
     ...overrides,
-  }
+  } as UseWaitForTransactionReceiptReturn<TData>
 }

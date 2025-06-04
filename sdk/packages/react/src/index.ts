@@ -8,6 +8,7 @@ export { useGetOrder } from './hooks/useGetOrder.js'
 export { useGetOrderStatus } from './hooks/useGetOrderStatus.js'
 export { useParseOpenEvent } from './hooks/useParseOpenEvent.js'
 export { useWatchDidFill } from './hooks/useWatchDidFill.js'
+export { useRejection } from './hooks/useRejection.js'
 
 ////// PROVIDER //////
 export { OmniProvider, useOmniContext } from './context/omni.js'
