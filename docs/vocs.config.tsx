@@ -109,6 +109,10 @@ export default defineConfig({
               text: 'watchDidFill',
               link: '/sdk/core/watchDidFill',
             },
+            {
+              text: 'getRejection',
+              link: '/sdk/core/getRejection',
+            },
           ],
         },
         {

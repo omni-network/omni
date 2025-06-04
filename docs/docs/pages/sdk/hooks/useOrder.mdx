@@ -32,6 +32,7 @@ function Component() {
 | `debugValidation` | `boolean` | No  | Whether to return the debug `trace` in the validation result or not (default) |
 | `omniContractsQueryOpts`      | `UseQueryOptions<OmniContracts>`  | No       | React query options for loading the Omni contracts addresses, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
 | `didFillQueryOpts`            | `UseQueryOptions<boolean>`        | No       | React query options for loading the filled status of the order, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
+| `rejectionQueryOpts`            | `UseQueryOptions<Rejection, GetRejectionError>`        | No       | React query options for parsing the logs of the rejection event, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
 
 ## Types
 
@@ -121,9 +122,9 @@ You can use the `debugValidation` parameter to receive a `trace` object as part 
 Contains error information if `status` is `'error'`.
 
 ### isReady
+`boolean`
 
 `true` when the hook is initialized and ready to attempt opening the order (status is `'ready'`). Does *not* imply validation passed.
-
 
 ### txMutation
 `UseMutationResult<...>`
@@ -144,6 +145,11 @@ The hash of the destination chain transaction that filled the order.
 `UseWaitForTransactionReceiptReturnType`
 
 The result object from `wagmi`'s `useWaitForTransactionReceipt` for the opening transaction.
+
+### rejection
+`{ rejectReason: string, txHash: Hex } | undefined`
+
+If an order is rejected (by the solver), this rejection will contain the reject reason and the txHash of the Reject tx - read more [`here`](/sdk/core/getRejection).
 
 ### isValidated
 `boolean`
