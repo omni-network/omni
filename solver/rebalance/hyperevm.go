@@ -66,10 +66,9 @@ func rebalanceHyperEVMOnce(
 	solver common.Address,
 	db *usdt0.DB,
 ) error {
-	log.Info(ctx, "Rebalancing HyperEVM USDT0")
-
-	lock(evmchain.IDEthereum, evmchain.IDHyperEVM)
-	defer unlock(evmchain.IDEthereum, evmchain.IDHyperEVM)
+	log.Debug(ctx, "Rebalancing HyperEVM USDT0; trying lock")
+	defer lock(evmchain.IDEthereum, evmchain.IDHyperEVM)()
+	log.Info(ctx, "Rebalancing HyperEVM USDT0; locked")
 
 	ethBackend, err := backends.Backend(evmchain.IDEthereum)
 	if err != nil {

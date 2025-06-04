@@ -62,12 +62,10 @@ func rebalanceCCTPOnce(
 ) {
 	for _, chain := range network.EVMChains() {
 		func() {
-			// Lock the chain to prevent concurrent rebalancing.
-			lock(chain.ID)
-			defer unlock(chain.ID)
-
 			ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
-			log.Info(ctx, "Rebalancing chain")
+			log.Debug(ctx, "Rebalancing chain; trying lock")
+			defer lock(chain.ID)() // Lock the chain to prevent concurrent rebalancing.
+			log.Info(ctx, "Rebalancing chain; locked")
 
 			// First, swap surplus tokens USDC.
 			if err := swapSurplusOnce(ctx, backends, chain.ID, solver); err != nil {
