@@ -3,7 +3,6 @@ package svmutil
 import (
 	"context"
 	"slices"
-	"strconv"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -16,18 +15,9 @@ import (
 
 // StreamReq defines which transactions to stream.
 type StreamReq struct {
-	FromSlot   *uint64          // Inclusive if not nil
 	AfterSig   solana.Signature // Exclusive
 	Account    solana.PublicKey
 	Commitment rpc.CommitmentType
-}
-
-func (r StreamReq) FormatFromSlot() string {
-	if r.FromSlot == nil {
-		return "nil"
-	}
-
-	return strconv.FormatUint(*r.FromSlot, 10)
 }
 
 // StreamCallback abstracts the logic that handles a stream of transaction signatures.
@@ -35,8 +25,8 @@ func (r StreamReq) FormatFromSlot() string {
 type StreamCallback func(ctx context.Context, sig *rpc.TransactionSignature) error
 
 func Stream(ctx context.Context, cl *rpc.Client, req StreamReq, callback StreamCallback) error {
-	if req.FromSlot == nil && req.AfterSig.IsZero() {
-		return errors.New("neither FromSlot nor AfterSig provided")
+	if req.AfterSig.IsZero() {
+		return errors.New("zero AfterSig")
 	}
 
 	// Max backoff of 3s
@@ -47,13 +37,6 @@ func Stream(ctx context.Context, cl *rpc.Client, req StreamReq, callback StreamC
 	var prev *rpc.TransactionSignature
 
 	for ctx.Err() == nil {
-		latest, err := cl.GetSlot(ctx, req.Commitment)
-		if ctx.Err() != nil {
-			return nil //nolint:nilerr // As per API, return nil on context cancel.
-		} else if err != nil {
-			return WrapRPCError(err, "getSlot")
-		}
-
 		sigs, err := allSigsForAccount(ctx, cl, req)
 		if ctx.Err() != nil {
 			return nil //nolint:nilerr // As per API, return nil on context cancel.
@@ -61,7 +44,6 @@ func Stream(ctx context.Context, cl *rpc.Client, req StreamReq, callback StreamC
 			return WrapRPCError(err, "getSignaturesForAddress")
 		} else if len(sigs) == 0 {
 			// No sigs found between from* and latest
-			req.FromSlot = &latest
 			backoff()
 
 			continue
@@ -69,9 +51,7 @@ func Stream(ctx context.Context, cl *rpc.Client, req StreamReq, callback StreamC
 
 		for _, sig := range sigs {
 			// Sanity checks
-			if req.FromSlot != nil && sig.Slot < *req.FromSlot {
-				return errors.New("signature slot is less than fromSlot [BUG]", "sig_slot", sig.Slot, "from_slot", *req.FromSlot)
-			} else if req.AfterSig == sig.Signature {
+			if req.AfterSig == sig.Signature {
 				return errors.New("signature is equal to afterSig [BUG]")
 			} else if prev != nil && sig.BlockTime != nil && *prev.BlockTime > *sig.BlockTime {
 				return errors.New("block time is less than prev [BUG]")
@@ -92,7 +72,6 @@ func Stream(ctx context.Context, cl *rpc.Client, req StreamReq, callback StreamC
 
 		// Update cursor (prev always non-nil at this point)
 		req.AfterSig = prev.Signature
-		req.FromSlot = &prev.Slot
 		reset()
 	}
 
@@ -115,24 +94,15 @@ func allSigsForAccount(ctx context.Context, cl *rpc.Client, req StreamReq) ([]*r
 			return nil, WrapRPCError(err, "getSignaturesForAddress", "page", i)
 		}
 
-		// Drop sigs that are older than FromSlot
-		var selected []*rpc.TransactionSignature
-		for _, sig := range sigs {
-			if req.FromSlot != nil && sig.Slot < *req.FromSlot {
-				continue
-			}
-			selected = append(selected, sig)
-		}
-
 		// Sigs are in descending order (newer to older, so we need to reverse them and prepend to resp)
-		slices.Reverse(selected)
-		resp = append(selected, resp...)
+		slices.Reverse(sigs)
+		resp = append(sigs, resp...)
 
-		if len(selected) < limit {
+		if len(sigs) < limit {
 			break
 		}
 
-		before = selected[0].Signature
+		before = sigs[0].Signature
 	}
 
 	return resp, nil

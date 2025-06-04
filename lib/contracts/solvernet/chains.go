@@ -3,18 +3,20 @@ package solvernet
 import (
 	"context"
 
+	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
+	"github.com/gagliardetto/solana-go/rpc"
 )
 
 // hlChains define solvernet chains secured by hyperlane.
@@ -51,7 +53,7 @@ var hlChains = map[netconf.ID][]uint64{
 
 var trustedChains = map[netconf.ID][]uint64{
 	netconf.Devnet: {
-		// evmchain.IDSolanaLocal,
+		evmchain.IDSolanaLocal,
 	},
 	netconf.Staging: {
 		// evmchain.IDSolanaTest,
@@ -128,15 +130,6 @@ func FilterByEndpoints(endpoints xchain.RPCEndpoints) func(netconf.ID, netconf.C
 	}
 }
 
-// FilterByBackends returns an HL chain selector that excludes chains not in backends.
-// Useful when needing to deploy contracts to configured backends.
-func FilterByBackends(backends ethbackend.Backends) func(netconf.ID, netconf.Chain) bool {
-	return func(_ netconf.ID, chain netconf.Chain) bool {
-		_, err := backends.Backend(chain.ID)
-		return err == nil
-	}
-}
-
 // FilterByContracts returns an HL chain selector that excludes chains without inbox contracts deployed.
 // Note this also excludes chains without endpoints, or with any other error fetching inbox DeployedAt.
 func FilterByContracts(ctx context.Context, endpoints xchain.RPCEndpoints) func(netconf.ID, netconf.Chain) bool {
@@ -144,6 +137,11 @@ func FilterByContracts(ctx context.Context, endpoints xchain.RPCEndpoints) func(
 		endpoint, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		if err != nil {
 			return false
+		}
+
+		if evmchain.IsSVM(chain.ID) {
+			_, ok, _ := anchorinbox.GetInboxState(ctx, rpc.New(endpoint))
+			return ok
 		}
 
 		ethCl, err := ethclient.DialContext(ctx, chain.Name, endpoint)

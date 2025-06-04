@@ -6,7 +6,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/bi"
-	"github.com/omni-network/omni/lib/contracts/solvernet"
+	"github.com/omni-network/omni/lib/contracts/solvernet/fillhash"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/umath"
 
@@ -51,7 +51,7 @@ func FillHash(
 		},
 	}
 
-	resp, err := solvernet.FillHash(orderID, fillData)
+	resp, err := fillhash.FillHash(orderID, fillData)
 	if err != nil {
 		return common.Hash{}, errors.Wrap(err, "encode fill data")
 	}
