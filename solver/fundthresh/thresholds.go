@@ -226,6 +226,13 @@ var (
 			target:  10_000,
 			surplus: 20_000,
 		},
+
+		// HYPE
+		mustToken(evmchain.IDHyperEVM, tokens.HYPE): {
+			min:     1_000,
+			target:  5_000,
+			surplus: 10_000,
+		},
 	}
 )
 
