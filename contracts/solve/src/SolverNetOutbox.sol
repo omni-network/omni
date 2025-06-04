@@ -269,9 +269,13 @@ contract SolverNetOutbox is
 
         for (uint256 i; i < fillData.calls.length; ++i) {
             SolverNet.Call memory call = fillData.calls[i];
-            _executor.execute{ value: call.value }(
-                call.target, call.value, abi.encodePacked(call.selector, call.params)
-            );
+
+            // Only pass data if selector is non-zero. Else, we'd send non-empty calldata 0x00000000,
+            // and revert on native transfers to contracts with just receive().
+            bytes memory data;
+            if (call.selector != bytes4(0)) data = abi.encodePacked(call.selector, call.params);
+
+            _executor.execute{ value: call.value }(call.target, call.value, data);
             unchecked {
                 totalNativeValue += call.value;
             }
