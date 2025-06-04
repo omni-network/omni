@@ -112,7 +112,7 @@ contract SolverNetPostUpgradeTest is Test {
             orderData: abi.encode(orderData)
         });
 
-        bytes32 id = inbox.getNextOnchainOrderId(user);
+        bytes32 id = ISolverNetInboxTemp(address(inbox)).getNextOrderId(user);
         SolverNet.FillOriginData memory fillOriginData = SolverNet.FillOriginData({
             srcChainId: uint64(block.chainid),
             destChainId: uint64(block.chainid == 1 ? 10 : 1),
@@ -152,7 +152,7 @@ contract SolverNetPostUpgradeTest is Test {
             if (sameChain) {
                 ISolverNetOutbox.InboxConfig memory config = outbox.getInboxConfig(uint64(block.chainid));
                 inbox = SolverNetInbox(config.inbox);
-                orderId = inbox.getNextOnchainOrderId(user);
+                orderId = ISolverNetInboxTemp(address(inbox)).getNextOrderId(user);
                 vm.deal(user, value);
 
                 SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(0), amount: uint96(value) });
@@ -211,4 +211,8 @@ contract SolverNetPostUpgradeTest is Test {
             assertEq(milady.ownerOf(i + 1), user, "nft should be owned by user");
         }
     }
+}
+
+interface ISolverNetInboxTemp {
+    function getNextOrderId(address user) external view returns (bytes32);
 }
