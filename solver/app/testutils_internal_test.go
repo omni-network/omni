@@ -173,7 +173,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 	}
 }
 
-func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
+func checkTestCases(t *testing.T, solver, outbox common.Address) []checkTestCase {
 	t.Helper()
 
 	var tests []checkTestCase
@@ -267,6 +267,69 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 			mock:     fillReverts.mock,
 			req:      withDebug(fillReverts.req),
 			res:      withTraceErr(fillReverts.res, errors.New("trace error")),
+		},
+		{
+			name: "same chain - debug_traceCall success",
+			req: types.CheckRequest{
+				SourceChainID:      evmchain.IDHolesky,
+				DestinationChainID: evmchain.IDHolesky,
+				Calls:              []types.Call{{Value: ether(1)}},
+				Expenses:           []types.Expense{{Amount: ether(1)}},
+				Deposit:            types.AddrAmt{Amount: depositFor(t, ether(1))},
+			},
+			res: types.CheckResponse{
+				Accepted: true,
+			},
+			mock: func(clients MockClients) {
+				client := clients.Client(t, evmchain.IDHolesky)
+				mockNativeBalance(t, client, solver, bi.Ether(2))
+
+				// error on first eth_call (did fill check)
+				mockFill(t, client, outbox, true)
+
+				// return OrderNotPending error on debug trace
+				mockDebugTrace(t, client,
+					types.CallTrace{
+						Calls: []types.CallTrace{{
+							// OrderNotPending - success
+							Output: "0xba254946",
+						}},
+					},
+					nil,
+				)
+			},
+		},
+		{
+			name: "same chain - debug_traceCall reject",
+			req: types.CheckRequest{
+				SourceChainID:      evmchain.IDHolesky,
+				DestinationChainID: evmchain.IDHolesky,
+				Calls:              []types.Call{{Value: ether(1)}},
+				Expenses:           []types.Expense{{Amount: ether(1)}},
+				Deposit:            types.AddrAmt{Amount: depositFor(t, ether(1))},
+			},
+			res: types.CheckResponse{
+				Rejected:     true,
+				RejectReason: types.RejectDestCallReverts.String(),
+			},
+			mock: func(clients MockClients) {
+				client := clients.Client(t, evmchain.IDHolesky)
+				mockNativeBalance(t, client, solver, bi.Ether(2))
+
+				// error on first eth_call (did fill check)
+				mockFill(t, client, outbox, true)
+
+				// return OrderNotPending error on debug trace
+				mockDebugTrace(t, client,
+					types.CallTrace{
+						Calls: []types.CallTrace{{
+							// Not OrderNotPending - reject
+							Output: "0xaaaaaaaaa",
+						}},
+					},
+					nil,
+				)
+			},
 		},
 	}
 
@@ -746,6 +809,22 @@ func mockERC20Balance(t *testing.T, client *mock.MockClient, token common.Addres
 	msg := newCallMatcher("ERC20.balanceOf", token, erc20ABI.Methods["balanceOf"].ID)
 
 	client.EXPECT().CallContract(ctx, msg, nil).Return(abiEncodeBig(t, balance), nil).AnyTimes()
+}
+
+func mockDebugTrace(t *testing.T, client *mock.MockClient, trace types.CallTrace, err error) {
+	t.Helper()
+
+	ctx := gomock.Any()
+	result := gomock.Any() // result is set through pointer
+	method := "debug_traceCall"
+	msg := gomock.Any()
+	block := "latest"
+	options := map[string]any{"tracer": "callTracer"}
+
+	client.EXPECT().CallContext(ctx, result, method, msg, block, options).SetArg(
+		1, // result
+		trace,
+	).Return(err).AnyTimes()
 }
 
 // mockERC20Allowance mocks an ERC20.allowance(...)

@@ -249,7 +249,7 @@ func checkFill(
 
 	return &RejectionError{
 		Reason: types.RejectDestCallReverts,
-		Err:    errors.Wrap(err, "call contract", "return_data", output, "solidity_err", solvernet.DetectCustomError(err)),
+		Err:    errors.New("call contract", "return_data", output, "solidity_err", solvernet.DetectCustomError(errors.New(output))),
 	}
 }
 
