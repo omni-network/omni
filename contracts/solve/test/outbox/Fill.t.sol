@@ -3,6 +3,7 @@ pragma solidity =0.8.24;
 
 import "../TestBase.sol";
 import { Refunder } from "test/utils/Refunder.sol";
+import { Receiver as ReceiverOnly } from "test/utils/Receiver.sol";
 
 contract SolverNet_Outbox_Fill_Test is TestBase {
     Refunder internal refunder;
@@ -293,5 +294,34 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(erc20Vault.balances(user), defaultAmount, "vault deposit balance after");
         assertEq(token2.balanceOf(address(erc20Vault)), defaultAmount, "vault token2 balance after");
         assertEq(token2.allowance(address(outbox), address(outbox.executor())), 0, "outbox token2 allowance after");
+    }
+
+    // @dev Test that a native transfer fill to a contract with only `receive()` succeeds.
+    function test_fill_receive_succeeds() public {
+        vm.chainId(destChainId);
+
+        address receiver = address(new ReceiverOnly());
+
+        SolverNet.FillOriginData memory fillData = SolverNet.FillOriginData({
+            srcChainId: srcChainId,
+            destChainId: destChainId,
+            fillDeadline: uint32(block.timestamp + 1),
+            calls: new SolverNet.Call[](1),
+            expenses: new SolverNet.TokenExpense[](0)
+        });
+
+        // 1 ETH transfer to the receiver
+        fillData.calls[0] = SolverNet.Call({ target: receiver, value: 1 ether, selector: bytes4(0), params: bytes("") });
+
+        bytes32 orderId = bytes32(uint256(1234));
+        uint256 fillFee = outbox.fillFee(abi.encode(fillData));
+
+        // Fill order
+        vm.deal(solver, 1 ether + fillFee);
+        vm.prank(solver);
+        outbox.fill{ value: 1 ether + fillFee }(orderId, abi.encode(fillData), abi.encode(solver));
+
+        // Assert received
+        assertEq(receiver.balance, 1 ether, "receiver should have received 1 ether");
     }
 }
