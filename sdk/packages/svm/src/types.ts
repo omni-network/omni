@@ -1,12 +1,14 @@
+import type BN from 'bn.js'
+
 export type EvmCall = {
-  target: Uint8Array // 20 bytes (EVM address)
-  selector: Uint8Array // 4 bytes
-  value: bigint // u128
-  params: Uint8Array // variable length
+  target: Array<number> // 20 bytes (EVM address)
+  selector: Array<number> // 4 bytes
+  value: BN // u128
+  params: Buffer // variable length
 }
 
 export type EvmTokenExpense = {
-  spender: Uint8Array // 20 bytes (EVM address)
-  token: Uint8Array // 20 bytes (EVM address)
-  amount: bigint // u128
+  spender: Array<number> // 20 bytes (EVM address)
+  token: Array<number> // 20 bytes (EVM address)
+  amount: BN // u128
 }

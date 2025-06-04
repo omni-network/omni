@@ -1,12 +1,11 @@
-export function bytesFromU64(n: bigint): Uint8Array {
-  const buffer = new ArrayBuffer(8)
-  const view = new DataView(buffer)
-  view.setBigUint64(0, n, true) // little endian
-  return new Uint8Array(buffer)
+import BN from 'bn.js'
+
+export function bytesFromU64(n: BN): Uint8Array {
+  return new Uint8Array(n.toArray('le', 8))
 }
 
-export function bytesToU64(bytes: Uint8Array): bigint {
-  return new DataView(bytes.buffer).getBigUint64(0, true) // little endian
+export function bytesToU64(bytes: Uint8Array): BN {
+  return new BN(bytes, 'le')
 }
 
 export async function digestSHA256(
@@ -29,6 +28,6 @@ export function randomBytes(length: number): Uint8Array {
   return buffer
 }
 
-export function randomU64(): bigint {
+export function randomU64(): BN {
   return bytesToU64(randomBytes(8))
 }

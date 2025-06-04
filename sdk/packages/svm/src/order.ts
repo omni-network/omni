@@ -1,10 +1,11 @@
 import { PublicKey } from '@solana/web3.js'
+import type BN from 'bn.js'
 import type { EvmCall, EvmTokenExpense } from './types.js'
 import { bytesFromU64, digestSHA256, randomU64 } from './utils.js'
 
 export async function createOrderId(
   owner: PublicKey,
-  nonce: bigint,
+  nonce: BN,
 ): Promise<PublicKey> {
   const bytes = await digestSHA256(owner.toBuffer(), bytesFromU64(nonce))
   return new PublicKey(bytes)
@@ -12,18 +13,18 @@ export async function createOrderId(
 
 export type OpenParams = {
   orderId: PublicKey
-  nonce: bigint // u64
-  depositAmount: bigint // u64
-  destChainId: bigint // u64
+  nonce: BN // u64
+  depositAmount: BN // u64
+  destChainId: BN // u64
   call: EvmCall
   expense: EvmTokenExpense
 }
 
 export type CreateParams = {
   owner: PublicKey
-  nonce?: bigint
-  depositAmount: bigint
-  destChainId: bigint
+  nonce?: BN
+  depositAmount: BN
+  destChainId: BN
   call: EvmCall
   expense: EvmTokenExpense
 }
