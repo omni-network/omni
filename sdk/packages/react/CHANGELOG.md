@@ -1,5 +1,11 @@
 # @omni-network/react
 
+## 0.3.1
+
+### Patch Changes
+
+- 3f8d985: Pass resolvedOrder to useGetOrderStatus so we can fetch destTxHash, and remove obselete use of useGetOrder in useGetOrderStatus.
+
 ## 0.3.0
 
 ### Minor Changes
