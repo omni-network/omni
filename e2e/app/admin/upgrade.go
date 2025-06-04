@@ -383,7 +383,7 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, _ netconf.Network, c c
 		return errors.Wrap(err, "get addrs")
 	}
 
-	initializer, err := solverNetInboxInitializer(addrs.SolverNetOutbox)
+	initializer, err := solverNetInboxInitializer()
 	if err != nil {
 		return errors.Wrap(err, "pack initializer")
 	}
@@ -432,7 +432,7 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, network netconf.Netwo
 		})
 	}
 
-	initializer, err := solverNetOutboxInitializer(chainIDs, inboxes)
+	initializer, err := solverNetOutboxInitializer()
 	if err != nil {
 		return errors.Wrap(err, "pack initializer")
 	}
@@ -524,12 +524,12 @@ func upgradeSolverNetAll(ctx context.Context, s shared, network netconf.Network,
 		portal = common.Address{}
 	}
 
-	inboxInitializer, err := solverNetInboxInitializer(addrs.SolverNetOutbox)
+	inboxInitializer, err := solverNetInboxInitializer()
 	if err != nil {
 		return errors.Wrap(err, "pack inbox initializer")
 	}
 
-	outboxInitializer, err := solverNetOutboxInitializer(chainIDs, inboxes)
+	outboxInitializer, err := solverNetOutboxInitializer()
 	if err != nil {
 		return errors.Wrap(err, "pack outbox initializer")
 	}

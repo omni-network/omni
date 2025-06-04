@@ -412,26 +412,16 @@ func dedup(strs []string) []string {
 	return res
 }
 
-func solverNetInboxInitializer(outbox common.Address) ([]byte, error) {
-	var inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
+func solverNetInboxInitializer() ([]byte, error) {
+	// var inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
 	// TODO: replace if re-initialization is required
-	initializer, err := inboxABI.Pack("initializeV2", outbox)
-	if err != nil {
-		return nil, errors.Wrap(err, "pack initializer")
-	}
-
-	return initializer, nil
+	return []byte{}, nil
 }
 
-func solverNetOutboxInitializer(chainIDs []uint64, configs []bindings.ISolverNetOutboxInboxConfig) ([]byte, error) {
-	var outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
+func solverNetOutboxInitializer() ([]byte, error) {
+	// var outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
 	// TODO: replace if re-initialization is required
-	initializer, err := outboxABI.Pack("initializeV2", chainIDs, configs)
-	if err != nil {
-		return nil, errors.Wrap(err, "pack initializer")
-	}
-
-	return initializer, nil
+	return []byte{}, nil
 }
 
 func solverNetExecutorInitializer() ([]byte, error) {
