@@ -8,6 +8,8 @@ description: How to debug destination calls reverting.
 
 When validating orders using the Omni SDK, the SolverNet API may reject orders by returning a `DestCallReverts` rejection reason, indicating a call fails to execute on the destination chain.
 
+This error is a bit opaque. To figure out why the call is reverting, you can use the `debug` option in order validation. When `debug=true`, you'll receive a full call trace in the validation response.
+
 :::code-group
 
 ```ts [Core]
