@@ -3,6 +3,8 @@ sidebar_position: 2
 title: useOrder
 ---
 
+import { Callout } from 'vocs/components'
+
 ## Usage
 
 `import { useOrder } from '@omni-network/react'`
@@ -109,6 +111,10 @@ The result of the pre-validation check if `validateEnabled` is true.
   rejectDescription?: string
 }
 `
+
+<Callout type="tip" title="Debug trace">
+You can use the `debugValidation` parameter to receive a `trace` object as part of the validation response. This trace can notably be useful to [debug destination calls reverting](/guides/debugging-destination-calls/).
+</Callout>
 
 ### error
 `Error | undefined`
