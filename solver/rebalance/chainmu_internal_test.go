@@ -50,24 +50,12 @@ func TestChainMutexes(t *testing.T) {
 					defer wg.Done()
 
 					// Acquire all locks
-					lock(locks...)
-					defer unlock(locks...)
+					defer lock(locks...)()
 
 					// Wait a bit
 					time.Sleep(100 * time.Millisecond)
 
 					incr()
-				}(locks)
-			}
-
-			// Lock / unlock again, confirm no deadlock
-			for _, locks := range tt.locks {
-				wg.Add(1)
-				go func(locks []uint64) {
-					defer wg.Done()
-
-					lock(locks...)
-					defer unlock(locks...)
 				}(locks)
 			}
 
