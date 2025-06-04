@@ -38,7 +38,7 @@ func TestCheck(t *testing.T) {
 	require.NoError(t, err)
 	outbox := addrs.SolverNetOutbox
 
-	for _, tt := range checkTestCases(t, solver) {
+	for _, tt := range checkTestCases(t, solver, outbox) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 			uniBackends := unibackend.EVMBackends(backends)
