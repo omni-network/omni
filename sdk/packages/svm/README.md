@@ -4,7 +4,7 @@
 
 The Omni SDK contains APIs for interfacing with Omni SolverNet, your gateway to any transaction, on any chain.
 
-Note - given we're in alpha, we're still making improvements, particularly on e2e type safety, testing, and documentation. If you have any feedback or requests, please reach out to us (telegram below).
+TODO: SVM-specific description
 
 ## Documentation
 
