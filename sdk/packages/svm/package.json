@@ -21,8 +21,7 @@
     "build": "pnpm clean && pnpm build:ts",
     "build:ts": "tsc -p tsconfig.build.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "coverage": "vitest run --coverage",
-    "test": "vitest run"
+    "coverage": "vitest run --coverage"
   },
   "files": ["dist/**", "src/**", "!dist/**/*.tsbuildinfo"],
   "engines": {
