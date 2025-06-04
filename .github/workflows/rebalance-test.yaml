@@ -33,4 +33,4 @@ jobs:
             exit 0
           fi
 
-          go test ./solver/rebalance -integration -v -run=TestIntegration
+          go test ./solver/rebalance -integration -v -run='TestIntegration|TestRebalanceHyperEVMOnce'

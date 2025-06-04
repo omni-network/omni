@@ -16,6 +16,14 @@ var (
 	}
 )
 
+func OFTByChain(chainID uint64) common.Address {
+	if addr, ok := oftByChain[chainID]; ok {
+		return addr
+	}
+
+	return common.Address{}
+}
+
 func addr(hex string) common.Address {
 	return common.HexToAddress(hex)
 }
