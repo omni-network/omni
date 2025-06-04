@@ -440,6 +440,16 @@
   "symbol": "mETH"
  },
  {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 999,
+  "coingeckoId": "hyperliquid",
+  "isMock": false,
+  "maxSpend": "100 HYPE",
+  "minSpend": "0.001 HYPE",
+  "name": "Hyperliquid",
+  "symbol": "HYPE"
+ },
+ {
   "address": "0x6319df7c227e34B967C1903A08a698A3cC43492B",
   "chainId": 84532,
   "coingeckoId": "wrapped-steth",
