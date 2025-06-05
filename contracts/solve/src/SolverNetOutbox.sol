@@ -219,6 +219,7 @@ contract SolverNetOutbox is
      */
     modifier withExpenses(SolverNet.TokenExpense[] memory expenses) {
         // transfer from solver, approve spenders
+        uint256[] memory balances = new uint256[](expenses.length);
         for (uint256 i; i < expenses.length; ++i) {
             SolverNet.TokenExpense memory expense = expenses[i];
             address spender = expense.spender;
@@ -228,6 +229,9 @@ contract SolverNetOutbox is
             token.safeTransferFrom(msg.sender, address(_executor), amount);
             // We remotely set token approvals on executor so we don't need to reprocess Call expenses there.
             if (spender != address(0)) _executor.approve(token, spender, amount);
+
+            // Log executor token balances to check deltas later against expenses
+            balances[i] = token.balanceOf(address(_executor));
         }
 
         _;
@@ -243,6 +247,9 @@ contract SolverNetOutbox is
             address token = expense.token;
             uint256 tokenBalance = token.balanceOf(address(_executor));
 
+            // revert if order spends less than 50% of what solver was directed to spend
+            // otherwise, refund the remainder to the solver
+            if (balances[i] - tokenBalance < expense.amount / 2) revert InsufficientSpend();
             if (tokenBalance > 0) {
                 address spender = expense.spender;
                 if (spender != address(0)) _executor.tryRevokeApproval(token, spender);
