@@ -124,7 +124,7 @@ func Send(
 			SrcChainID:  srcChainID,
 			DestChainID: destChainID,
 			Amount:      amount,
-			Status:      layerzero.MsgStatusUnknown,
+			Status:      layerzero.MsgStatusConfirming,
 		}
 
 		if err := db.InsertMsg(ctx, msg); err != nil {
