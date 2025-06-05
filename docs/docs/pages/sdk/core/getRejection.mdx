@@ -1,0 +1,79 @@
+import { Callout } from 'vocs/components'
+
+# `getRejection`
+
+<Callout type="warning" title="Note">
+This API should only be called if the order status is - `rejected`
+</Callout>
+
+The `getRejection` function will filter logs on the inbox contract in the block range between the `fromBlock` block number - `latest`. Logs are filtered for a `Rejected` event with an argument matching the specified `orderId. It return the reject reason and tx hash of the rejection.
+
+Rejections can typically be avoided by validating orders via our solver API (see the [`validateOrder` function](/sdk/core/validateOrder)). However, for the best UX, we've offered this api to present reject reasons to your users if a rejection were to occur.
+
+## Usage
+
+`import { getRejection } from '@omni-network/core'`
+
+```tsx
+import { getRejection } from '@omni-network/core'
+
+const { rejectReason, txHash } = await getRejection({
+  // ... params
+});
+```
+
+## Reject Reasons
+
+The `rejectReason` is returned as a string for you already, but below are the possible reasons.
+
+```typescript
+export const rejectReasons = {
+  0: 'None',
+  1: 'Destination call reverts',
+  2: 'Invalid deposit',
+  3: 'Invalid expense',
+  4: 'Insufficient deposit',
+  5: 'Solver has insufficient inventory',
+  6: 'Unsupported deposit',
+  7: 'Unsupported expense',
+  8: 'Unsupported destination chain',
+  9: 'Unsupported source chain',
+  11: 'Expense over max',
+  12: 'Expense under min',
+  13: 'Call not allowed',
+}
+```
+
+## Parameters
+
+| Prop              | Type                                   | Required | Description                                                                                                                                |
+| -------------     | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `client`          | `Client`                               | Yes      | The `viem` client used to send the transaction. This client must have an `account` attached to it.  |
+| `inboxAddress`    | `Hex`                               | Yes      | The address of the inbox contract, retrieved using the [`getContracts`](/sdk/core/getContracts) function.  |
+| `orderId`         | `Hex`                          | Yes      | Order identifier defined on a [`ResolvedOrder`](/sdk/core/waitForOrderOpen#resolvedorder) |
+| `fromBlock`       | `bigint`                               | Yes      | The first block to begin filtering for a `Rejected` event. We recommend to use the block number the `open` transaction belonged to (returned by `sendOrder` or `generateOrder`)  |
+
+## Return
+
+### rejectReason
+`string | undefined`
+
+The reason the order was rejected.
+
+### txHash
+`Hex | undefined`
+
+The hash of the transaction that rejected the order.
+
+## Example
+
+```ts
+import { getRejection } from '@omni-network/core'
+
+const { txHash, rejectReason } = await getRejection({
+  client: viemWalletClient,
+  inboxAddress: contracts.inbox,
+  orderId: resolvedOrder.orderId,
+  fromBlock: 1n
+})
+```
