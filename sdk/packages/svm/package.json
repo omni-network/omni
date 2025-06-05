@@ -17,6 +17,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
+    "codama": "ts-node scripts/create-codama-client.ts",
     "local": "ts-node scripts/run-local.ts",
     "build": "pnpm clean && pnpm build:ts",
     "build:ts": "tsc -p tsconfig.build.json",
@@ -32,10 +33,16 @@
     "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.2",
     "bn.js": "^5.2.2",
-    "bs58": "^6.0.0"
+    "bs58": "^6.0.0",
+    "solana-kite": "^1.4.0"
   },
   "devDependencies": {
+    "@codama/nodes-from-anchor": "^1.2.0",
+    "@codama/renderers": "^1.0.23",
     "@types/bn.js": "^5.1.6",
+    "@types/node": "^22.15.29",
+    "codama": "^1.3.0",
+    "recast": "^0.23.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
     "vite": "^6.2.6",

@@ -578,7 +578,9 @@ describe('useRejection()', () => {
     await waitFor(() => {
       expect(watchDidFillHook.result.current.status).toBe('success')
       expect(watchDidFillHook.result.current.data?.txHash).toBeDefined()
-      expect(watchDidFillHook.result.current.data?.rejectReason).toBe('Unsupported destination chain')
+      expect(watchDidFillHook.result.current.data?.rejectReason).toBe(
+        'Unsupported destination chain',
+      )
     })
   })
 })
