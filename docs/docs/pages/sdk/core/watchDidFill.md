@@ -18,9 +18,9 @@ const { unwatch, status, destTxHash } = await watchDidFill({
 
 | Prop              | Type                                   | Required | Description                                                                                                                                |
 | -------------     | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `client`          | `Client`                               | Yes      | Chain ID of the destination chain (where the action occurs and the `expense` is spent on behalf of the user).  |
-| `outboxAddress`   | `number`                               | Yes      | The address of the inbox contract, retrieved using the [`getContracts` function](/sdk/core/getContracts).  |
-| `orderId`         | `0x${string}`                          | Yes      | Order identifier defined on a [`ResolvedOrder`](/sdk/core/waitForOrderOpen#resolvedorder) |
+| `client`          | `Client`                               | Yes      | The `viem` client used to send the transaction. This client must have an `account` attached to it.  |
+| `outboxAddress`   | `Hex`                               | Yes      | The address of the outbox contract, retrieved using the [`getContracts` function](/sdk/core/getContracts).  |
+| `orderId`         | `Hex`                          | Yes      | Order identifier defined on a [`ResolvedOrder`](/sdk/core/waitForOrderOpen#resolvedorder) |
 | `onFill`          | `(txHash: Hex) => void`                | Yes      | Callback that'll be invoked with the destination tx hash that emitted the `Filled` event.  |
 | `pollingInterval` | `number`                               | No       | Polling interval in milliseconds, defaults to the `client` polling interval.  |
 | `onError`         | `(error: Error) => void`               | No       | Optional callback that'll be invoked when an error occurs. |
