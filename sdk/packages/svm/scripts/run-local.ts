@@ -1,70 +1,109 @@
-// import { readFileSync } from 'node:fs'
-// import { AnchorProvider, Wallet } from '@coral-xyz/anchor'
-// import { getOrCreateAssociatedTokenAccount } from '@solana/spl-token'
-// import {
-//   Connection,
-//   Keypair,
-//   LAMPORTS_PER_SOL,
-//   PublicKey,
-//   VersionedTransaction,
-// } from '@solana/web3.js'
-// import BN from 'bn.js'
-// import bs58 from 'bs58'
-// import { createOpenMessage } from '../dist/esm/index.js'
+import { readFileSync } from 'node:fs'
+import {
+  TOKEN_PROGRAM_ADDRESS,
+  findAssociatedTokenPda,
+} from '@solana-program/token'
+import {
+  address,
+  appendTransactionMessageInstruction,
+  createKeyPairSignerFromBytes,
+  createSolanaRpc,
+  createTransactionMessage,
+  getAddressEncoder,
+  getProgramDerivedAddress,
+  pipe,
+  sendTransactionWithoutConfirmingFactory,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  signTransactionMessageWithSigners,
+} from '@solana/kit'
+import bs58 from 'bs58'
+import { getOrderId, inboxClient, randomU64 } from '../dist/esm/index.js'
+import type { inboxClient as InboxClient } from '../dist/types/index.js'
 
-// const config = JSON.parse(readFileSync('/tmp/svm/config.json', 'utf8'))
+const config = JSON.parse(readFileSync('/tmp/svm/config.json', 'utf8'))
+const usdcMint = config.mints[0]
 
-// const usdcMintAccount = new PublicKey(config.mints[0].mint_account)
-// console.log('USDC mint account', usdcMintAccount.toBase58())
+const usdcMintAccount = address(usdcMint.mint_account)
+console.log('USDC mint account:', usdcMintAccount)
 
-// const connection = new Connection(config.rpc_address, 'confirmed')
-// const keypair = Keypair.fromSecretKey(bs58.decode(config.authority_key))
-// console.log('using account', keypair.publicKey.toBase58())
+const signer = await createKeyPairSignerFromBytes(
+  bs58.decode(config.authority_key),
+)
+console.log('using EOA account:', signer.address)
 
-// const balance = await connection.getBalance(keypair.publicKey)
-// console.log('account balance in SOL:', balance / LAMPORTS_PER_SOL)
+const rpc = createSolanaRpc(config.rpc_address)
 
-// const wallet = new Wallet(keypair)
-// const provider = new AnchorProvider(connection, wallet, {
-//   commitment: 'confirmed',
-// })
+const balance = await rpc.getBalance(signer.address).send()
+console.log('EOA account balance in lamports:', balance.value)
 
-// const tokenAccount = await getOrCreateAssociatedTokenAccount(
-//   connection,
-//   keypair,
-//   usdcMintAccount,
-//   keypair.publicKey,
-// )
-// console.log('token account address', tokenAccount.address.toBase58())
+const nonce = randomU64()
+const orderId = await getOrderId(signer.address, nonce)
+console.log('orderId:', orderId)
 
-// const message = await createOpenMessage({
-//   provider,
-//   order: {
-//     owner: keypair.publicKey,
-//     depositAmount: new BN(1000),
-//     destChainId: new BN(1),
-//     call: {
-//       target: new Array(20).fill(0),
-//       selector: new Array(4).fill(0),
-//       value: new BN(0),
-//       params: Buffer.from([]),
-//     },
-//     expense: {
-//       spender: new Array(20).fill(0),
-//       token: new Array(20).fill(0),
-//       amount: new BN(0),
-//     },
-//   },
-//   ownerTokenAccount: tokenAccount.address,
-//   mintAccount: usdcMintAccount,
-// })
+const [ownerTokenAccount] = await findAssociatedTokenPda({
+  owner: signer.address,
+  mint: usdcMintAccount,
+  tokenProgram: TOKEN_PROGRAM_ADDRESS,
+})
 
-// const transaction = new VersionedTransaction(message)
-// transaction.sign([keypair])
+const programAddress = address(inboxClient.SOLVER_INBOX_PROGRAM_ADDRESS)
+const addressEncoder = getAddressEncoder()
+const encodedOrderId = addressEncoder.encode(orderId)
+const textEncoder = new TextEncoder()
 
-// const txId = await connection.sendTransaction(transaction)
-// console.log('open transaction txId', txId)
+const [orderTokenAccount] = await getProgramDerivedAddress({
+  programAddress,
+  seeds: [textEncoder.encode('order_token'), encodedOrderId],
+})
 
-import { inboxClient } from '../dist/esm/index.js'
+const [orderState] = await getProgramDerivedAddress({
+  programAddress,
+  seeds: [textEncoder.encode('order_state'), encodedOrderId],
+})
 
-console.log(inboxClient)
+const openInput: InboxClient.OpenAsyncInput = {
+  owner: signer,
+  orderId,
+  orderState,
+  mintAccount: usdcMintAccount,
+  orderTokenAccount,
+  ownerTokenAccount,
+  nonce,
+  destChainId: 1n,
+  depositAmount: 1000n,
+  call: {
+    target: new Uint8Array(20), // EVM address
+    selector: new Uint8Array(4), // EVM selector
+    value: 0n,
+    params: new Uint8Array(0),
+  },
+  expense: {
+    spender: new Uint8Array(20), // EVM address
+    token: new Uint8Array(20), // EVM address
+    amount: 1000n,
+  },
+}
+
+const openOrderInstruction =
+  await inboxClient.getOpenInstructionAsync(openInput)
+console.log('open order instruction:', openOrderInstruction)
+
+const recentBlockhash = await rpc.getLatestBlockhash().send()
+console.log('recent blockhash:', recentBlockhash)
+
+const transactionMessage = pipe(
+  createTransactionMessage({ version: 0 }),
+  (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+  (tx) =>
+    setTransactionMessageLifetimeUsingBlockhash(recentBlockhash.value, tx),
+  (tx) => appendTransactionMessageInstruction(openOrderInstruction, tx),
+)
+console.log('transaction message:', transactionMessage)
+
+const signedTransaction =
+  await signTransactionMessageWithSigners(transactionMessage)
+console.log('signed transaction:', signedTransaction)
+
+const sendTransaction = sendTransactionWithoutConfirmingFactory({ rpc })
+await sendTransaction(signedTransaction, { commitment: 'confirmed' })

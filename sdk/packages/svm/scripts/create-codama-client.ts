@@ -68,8 +68,7 @@ async function generateClient(
 ): Promise<void> {
   const idl = JSON.parse(await readFile(idlPath, 'utf8'))
   const codama = createFromRoot(rootNodeFromAnchor(idl))
-  const visitor = renderJavaScriptVisitor(clientPath, {})
-  await codama.accept(visitor)
+  await codama.accept(renderJavaScriptVisitor(clientPath))
   await rewriteExtensions(clientPath)
 }
 

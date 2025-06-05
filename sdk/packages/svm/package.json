@@ -30,11 +30,11 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
+    "@solana-program/token": "^0.5.1",
     "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.2",
     "bn.js": "^5.2.2",
-    "bs58": "^6.0.0",
-    "solana-kite": "^1.4.0"
+    "bs58": "^6.0.0"
   },
   "devDependencies": {
     "@codama/nodes-from-anchor": "^1.2.0",
