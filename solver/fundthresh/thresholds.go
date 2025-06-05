@@ -222,9 +222,16 @@ var (
 
 		// USDT0
 		mustToken(evmchain.IDHyperEVM, tokens.USDT0): {
+			min:     500_000,
+			target:  2_000_000,
+			surplus: inf,
+		},
+
+		// HYPE
+		mustToken(evmchain.IDHyperEVM, tokens.HYPE): {
 			min:     1_000,
-			target:  10_000,
-			surplus: 20_000,
+			target:  5_000,
+			surplus: 10_000,
 		},
 	}
 )

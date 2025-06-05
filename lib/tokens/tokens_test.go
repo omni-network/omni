@@ -111,6 +111,13 @@ func TestGenTokens(t *testing.T) {
 		// mETH
 		meth(evmchain.IDEthereum, addr("0xd5f7838f5c461feff7fe49ea5ebaf7728bb0adfa")),
 		meth(evmchain.IDMantle, addr("0xcDA86A272531e8640cD7F1a92c01839911B90bb0")),
+
+		// HYPE
+		tokens.Token{
+			Asset:      tokens.HYPE,
+			ChainID:    evmchain.IDHyperEVM,
+			ChainClass: tokens.ClassMainnet,
+		},
 	)
 
 	for _, mock := range e2e.MockTokens() {

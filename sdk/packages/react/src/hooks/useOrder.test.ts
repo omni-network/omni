@@ -11,6 +11,7 @@ import {
 import { useOrder } from './useOrder.js'
 
 const {
+  useRejection,
   useValidateOrder,
   useGetOrderStatus,
   useOmniContracts,
@@ -20,6 +21,7 @@ const {
   getConnectorClient,
 } = vi.hoisted(() => {
   return {
+    useRejection: vi.fn(),
     useValidateOrder: vi.fn(),
     useParseOpenEvent: vi.fn(),
     useGetOrderStatus: vi.fn(),
@@ -84,11 +86,21 @@ vi.mock('./useParseOpenEvent.js', async () => {
   }
 })
 
+vi.mock('./useRejection.js', async () => {
+  return {
+    useRejection,
+  }
+})
+
 beforeEach(() => {
   vi.spyOn(core, 'sendOrder').mockResolvedValue('0xTxHash')
   useParseOpenEvent.mockReturnValue({
     resolvedOrder,
     error: null,
+  })
+  useRejection.mockReturnValue({
+    data: undefined,
+    status: 'success',
   })
   useGetOrderStatus.mockReturnValue({
     status: 'not-found',
@@ -177,7 +189,9 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
   })
 
   useWaitForTransactionReceipt.mockImplementation(() =>
-    createMockWaitForTransactionReceiptResult(),
+    createMockWaitForTransactionReceiptResult({
+      data: { txHash: '0xTxHash' },
+    }),
   )
 
   useGetOrderStatus.mockReturnValue({
@@ -187,7 +201,7 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
   rerender({ validateEnabled: true })
 
   await waitFor(() => {
-    expect(result.current.waitForTx.data).toBe('0xTxHash')
+    expect(result.current.waitForTx.data).toEqual({ txHash: '0xTxHash' })
     expect(result.current.waitForTx.isSuccess).toBe(true)
     expect(result.current.isOpen).toBe(true)
   })
@@ -500,5 +514,52 @@ test('behaviour: open rejects when inbox contract not loaded', async () => {
 
   await waitFor(() => {
     expect(result.current.txMutation.isError).toBe(true)
+  })
+})
+
+test('behaviour: fetches rejection data when order is rejected and we have a block number', async () => {
+  const rejection = {
+    txHash:
+      '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+    rejectReason: 'Insufficient deposit',
+  }
+
+  useRejection.mockReturnValue({
+    data: rejection,
+    status: 'success',
+  })
+
+  const { result, rerender } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: false,
+  })
+
+  useWaitForTransactionReceipt.mockImplementation(() =>
+    createMockWaitForTransactionReceiptResult({
+      isSuccess: true,
+      status: 'success',
+      data: { blockNumber: 12345n },
+    }),
+  )
+
+  result.current.open()
+
+  useGetOrderStatus.mockReturnValue({
+    status: 'rejected',
+  })
+
+  rerender()
+
+  await waitFor(() => {
+    expect(result.current.status).toBe('rejected')
+    expect(result.current.rejection).toEqual(rejection)
+  })
+
+  expect(useRejection).toHaveBeenCalledWith({
+    orderId: resolvedOrder.orderId,
+    fromBlock: 12345n,
+    enabled: true,
+    srcChainId: orderRequest.srcChainId,
+    queryOpts: undefined,
   })
 })

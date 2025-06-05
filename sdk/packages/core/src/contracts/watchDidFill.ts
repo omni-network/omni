@@ -14,8 +14,6 @@ export type WatchDidFillParams = {
   onError?: (error: Error) => void
 }
 
-export type WatchDidFillReturn = () => void
-
 export function watchDidFill({
   client,
   outboxAddress,

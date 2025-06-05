@@ -237,6 +237,31 @@ export const inboxABI = [
     ],
     name: 'Open',
   },
+  {
+    type: 'event',
+    name: 'Rejected',
+    inputs: [
+      {
+        name: 'id',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'by',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'reason',
+        type: 'uint8',
+        indexed: true,
+        internalType: 'uint8',
+      },
+    ],
+    anonymous: false,
+  },
 ] as const
 
 export const outboxABI = [

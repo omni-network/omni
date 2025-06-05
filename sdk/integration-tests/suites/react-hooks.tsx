@@ -4,6 +4,7 @@ import {
   useOmniContracts,
   useParseOpenEvent,
   useQuote,
+  useRejection,
   useValidateOrder,
 } from '@omni-network/react'
 import {
@@ -530,5 +531,54 @@ describe.concurrent('useOmniAssets()', () => {
     expect(asset.expenseMax).toBeTypeOf('bigint')
     expect(asset.expenseMin).toBeGreaterThan(0n)
     expect(asset.expenseMax).toBeGreaterThan(0n)
+  })
+})
+
+describe('useRejection()', () => {
+  test('default: returns the rejection tx hash and reason', async () => {
+    const renderHook = createRenderHook()
+
+    const orderParams = {
+      deposit: { token: zeroAddress, amount: parseEther('2') },
+      expense: { token: zeroAddress, amount: parseEther('1') },
+      calls: [{ target: testAccount.address, value: parseEther('1') }],
+      srcChainId: mockL2Id,
+      // invalid chain id to trigger a rejection
+      destChainId: 999999,
+      validateEnabled: true,
+    }
+
+    const orderRef = useOrderRef(orderParams)
+
+    await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
+    await waitFor(() =>
+      expect(orderRef.current?.validation?.status).toBe('rejected'),
+    )
+
+    act(() => {
+      orderRef.current?.open()
+    })
+
+    await waitFor(
+      () => {
+        expect(orderRef.current?.waitForTx.status).toBe('success')
+        expect(orderRef.current?.waitForTx.data?.blockNumber).toBeDefined()
+      },
+      { timeout: 20_000 },
+    )
+
+    const watchDidFillHook = renderHook(() => {
+      return useRejection({
+        srcChainId: mockL2Id,
+        orderId: orderRef.current?.orderId,
+        fromBlock: orderRef.current?.waitForTx.data?.blockNumber,
+      })
+    })
+
+    await waitFor(() => {
+      expect(watchDidFillHook.result.current.status).toBe('success')
+      expect(watchDidFillHook.result.current.data?.txHash).toBeDefined()
+      expect(watchDidFillHook.result.current.data?.rejectReason).toBe('Unsupported destination chain')
+    })
   })
 })

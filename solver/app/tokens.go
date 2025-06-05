@@ -24,6 +24,8 @@ var (
 		tokens.WETH:   true,
 		tokens.METH:   true,
 		tokens.MNT:    true,
+		tokens.HYPE:   true,
+		tokens.USDT0:  true,
 	}
 
 	// minSafeETH is the minimum amount of ETH the solver can leave itself with post-fill,
@@ -110,7 +112,7 @@ var (
 		tokens.USDT: {
 			tokens.ClassMainnet: {
 				MinSpend: bi.Dec6(0.1),    // 0.1 USDT
-				MaxSpend: bi.Dec6(10_000), // 10 USDT
+				MaxSpend: bi.Dec6(10_000), // 10k USDT
 			},
 		},
 		tokens.WETH: {
@@ -129,6 +131,18 @@ var (
 			tokens.ClassMainnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 MNT
 				MaxSpend: bi.Ether(1000),  // 1000 MNT
+			},
+		},
+		tokens.HYPE: {
+			tokens.ClassMainnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 HYPE
+				MaxSpend: bi.Ether(100),   // 100 HYPE
+			},
+		},
+		tokens.USDT0: {
+			tokens.ClassMainnet: {
+				MinSpend: bi.Dec6(0.1),       // 0.1 USDT0
+				MaxSpend: bi.Dec6(2_000_000), // 2M USDT0
 			},
 		},
 	}
