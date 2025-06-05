@@ -567,7 +567,7 @@ describe('useRejection()', () => {
       { timeout: 20_000 },
     )
 
-    const watchDidFillHook = renderHook(() => {
+    const rejectionHook = renderHook(() => {
       return useRejection({
         srcChainId: mockL2Id,
         orderId: orderRef.current?.orderId,
@@ -576,9 +576,9 @@ describe('useRejection()', () => {
     })
 
     await waitFor(() => {
-      expect(watchDidFillHook.result.current.status).toBe('success')
-      expect(watchDidFillHook.result.current.data?.txHash).toBeDefined()
-      expect(watchDidFillHook.result.current.data?.rejectReason).toBe('Unsupported destination chain')
-    })
+      expect(rejectionHook.result.current.status).toBe('success')
+      expect(rejectionHook.result.current.data?.txHash).toBeDefined()
+      expect(rejectionHook.result.current.data?.rejectReason).toBe('Unsupported destination chain')
+    }, { timeout: 20_000 })
   })
 })
