@@ -1,14 +1,16 @@
-import { useOrder, useQuote } from '@omni-network/react'
+import { useOrder, useQuote, useRejection } from '@omni-network/react'
 import { formatEther, parseEther, zeroAddress } from 'viem'
-import { baseSepolia, holesky } from 'viem/chains'
+import { baseSepolia, holesky, mainnet } from 'viem/chains'
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
 
 function App() {
+  const account = useAccount()
   return (
     <>
       <Account />
-      <Quote />
-      <Order />
+      {account?.address && <Quote />}
+      {account?.address && <Order />}
+      {account?.address && <Rejection />}
     </>
   )
 }
@@ -111,80 +113,161 @@ function Order() {
     validateEnabled: !!account?.address,
   })
 
+  if (!account) return
+
   return (
     <div>
       <h2>Order</h2>
-      {account?.address ? (
+      <h4>Swap .1 eth from base sepolia to holesky</h4>
+      <div>chainId: {account.chainId}</div>
+      {expectedSrcChainId !== account.chainId && (
         <>
-          <h4>Swap .1 eth from base sepolia to holesky</h4>
-          <div>chainId: {account.chainId}</div>
-          {expectedSrcChainId !== account.chainId && (
-            <>
-              <div>
-                <div>wrong chain</div>
-                <button
-                  onClick={() => switchChain({ chainId: expectedSrcChainId })}
-                  type="button"
-                >
-                  Switch chain
-                </button>
-              </div>
-              <br />
-            </>
-          )}
-          <div>validation: {order.validation?.status}</div>
-          <div>status: {order.status}</div>
           <div>
-            src chain tx hash:{''}
-            {order.txHash && (
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                href={`https://sepolia.basescan.org/tx/${encodeURIComponent(
-                  order.txHash,
-                )}`}
-              >
-                <code>{order.txHash}</code>
-              </a>
-            )}
+            <div>wrong chain</div>
+            <button
+              onClick={() => switchChain({ chainId: expectedSrcChainId })}
+              type="button"
+            >
+              Switch chain
+            </button>
           </div>
-          <div>
-            isError: <code>{JSON.stringify(order.isError)}</code>
-          </div>
-          <div>
-            error: <pre>{order.error?.message}</pre>
-          </div>
-          <div>
-            orderId: <code>{order.orderId}</code>
-          </div>
-          <div>
-            destTxHash:{' '}
-            {order.destTxHash && (
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                href={`https://holesky.etherscan.io/tx/${encodeURIComponent(
-                  order.destTxHash,
-                )}`}
-              >
-                <code>{order.destTxHash}</code>
-              </a>
-            )}
-          </div>
-          <button
-            onClick={() => order.open()}
-            disabled={
-              order.validation?.status !== 'accepted' ||
-              expectedSrcChainId !== account.chainId
-            }
-            type="button"
-          >
-            Swap
-          </button>
+          <br />
         </>
-      ) : (
-        <div>Please connect wallet...</div>
       )}
+      <div>validation: {order.validation?.status}</div>
+      <div>status: {order.status}</div>
+      <div>
+        src chain tx hash:{''}
+        {order.txHash && (
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href={`https://sepolia.basescan.org/tx/${encodeURIComponent(
+              order.txHash,
+            )}`}
+          >
+            <code>{order.txHash}</code>
+          </a>
+        )}
+      </div>
+      <div>
+        isError: <code>{JSON.stringify(order.isError)}</code>
+      </div>
+      <div>
+        error: <pre>{order.error?.message}</pre>
+      </div>
+      <div>
+        orderId: <code>{order.orderId}</code>
+      </div>
+      <div>
+        destTxHash:{' '}
+        {order.destTxHash && (
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href={`https://holesky.etherscan.io/tx/${encodeURIComponent(
+              order.destTxHash,
+            )}`}
+          >
+            <code>{order.destTxHash}</code>
+          </a>
+        )}
+      </div>
+      <button
+        onClick={() => order.open()}
+        disabled={
+          order.validation?.status !== 'accepted' ||
+          expectedSrcChainId !== account.chainId
+        }
+        type="button"
+      >
+        Swap
+      </button>
+    </div>
+  )
+}
+
+function Rejection() {
+  const expectedSrcChainId = baseSepolia.id
+  const account = useAccount()
+  const { switchChain } = useSwitchChain()
+  const order = useOrder({
+    owner: account?.address,
+    srcChainId: baseSepolia.id,
+    destChainId: mainnet.id,
+    deposit: { amount: parseEther('0.1') },
+    expense: {
+      amount: parseEther('0.099'),
+      spender: zeroAddress,
+    },
+    calls: [{ target: account.address ?? '0x', value: parseEther('0.099') }],
+    validateEnabled: !!account?.address,
+  })
+  const rejection = useRejection({
+    srcChainId: baseSepolia.id,
+    orderId: order.orderId,
+    fromBlock: order?.waitForTx?.data?.blockNumber ?? undefined,
+  })
+
+  if (!account) return
+
+  return (
+    <div>
+      <h2>Rejection</h2>
+      <h4>Swap from testnet to mainnet to trigger a rejection</h4>
+      <div>chainId: {account.chainId}</div>
+      {expectedSrcChainId !== account.chainId && (
+        <>
+          <div>
+            <div>wrong chain</div>
+            <button
+              onClick={() => switchChain({ chainId: expectedSrcChainId })}
+              type="button"
+            >
+              Switch chain
+            </button>
+          </div>
+          <br />
+        </>
+      )}
+      <div>validation: {order.validation?.status}</div>
+      <div>status: {order.status}</div>
+      <div>
+        src chain tx hash:{''}
+        {order.txHash && (
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href={`https://sepolia.basescan.org/tx/${encodeURIComponent(
+              order.txHash,
+            )}`}
+          >
+            <code>{order.txHash}</code>
+          </a>
+        )}
+      </div>
+      <div>reject reason: {rejection.data?.rejectReason}</div>
+      <div>
+        reject tx:{' '}
+        {rejection.data?.txHash && (
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href={`https://sepolia.basescan.org/tx/${encodeURIComponent(
+              rejection.data.txHash,
+            )}`}
+          >
+            <code>{rejection.data.txHash}</code>
+          </a>
+        )}
+      </div>
+      <button
+        onClick={() => order.open()}
+        disabled={expectedSrcChainId !== account.chainId}
+        type="button"
+      >
+        Swap
+      </button>
     </div>
   )
 }
