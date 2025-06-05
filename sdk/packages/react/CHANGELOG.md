@@ -1,5 +1,13 @@
 # @omni-network/react
 
+## 0.3.2
+
+### Patch Changes
+
+- fecf07b: Introduce getRejection core action and corresponding react hook. This propagates the tx hash of the reject event log and the reject reason.
+- Updated dependencies [fecf07b]
+  - @omni-network/core@0.3.1
+
 ## 0.3.1
 
 ### Patch Changes
