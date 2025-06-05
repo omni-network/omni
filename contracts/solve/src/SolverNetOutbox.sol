@@ -219,15 +219,27 @@ contract SolverNetOutbox is
      */
     modifier withExpenses(SolverNet.TokenExpense[] memory expenses) {
         // transfer from solver, approve spenders
+        uint96[] memory originalExpenses = new uint96[](expenses.length);
         for (uint256 i; i < expenses.length; ++i) {
             SolverNet.TokenExpense memory expense = expenses[i];
             address spender = expense.spender;
             address token = expense.token;
-            uint256 amount = expense.amount;
+            uint96 amount = expense.amount;
+            originalExpenses[i] = amount;
 
-            token.safeTransferFrom(msg.sender, address(_executor), amount);
             // We remotely set token approvals on executor so we don't need to reprocess Call expenses there.
             if (spender != address(0)) _executor.approve(token, spender, amount);
+
+            // only transfer necessary tokens based on executor's existing balance and adjust expense accordingly
+            uint256 tokenBalance = token.balanceOf(address(_executor));
+            if (tokenBalance > 0) {
+                unchecked {
+                    expenses[i].amount = tokenBalance < amount ? amount - uint96(tokenBalance) : 0;
+                    amount = tokenBalance < amount ? amount - uint96(tokenBalance) : 0;
+                }
+            }
+
+            if (amount > 0) token.safeTransferFrom(msg.sender, address(_executor), amount);
         }
 
         _;
@@ -241,11 +253,17 @@ contract SolverNetOutbox is
         for (uint256 i; i < expenses.length; ++i) {
             SolverNet.TokenExpense memory expense = expenses[i];
             address token = expense.token;
-            uint256 tokenBalance = token.balanceOf(address(_executor));
+            uint96 amount = expense.amount;
+            expenses[i].amount = originalExpenses[i]; // restore original expense for proper fill hash
 
             // Revert if order doesn't spend at least half of what solver was directed to spend.
             // Otherwise, return the remainder to the solver.
-            if (tokenBalance > expense.amount / 2) revert InsufficientSpend();
+            // Despite possibly adjusting expense earlier, compare token balance to original expense to reduce reverts.
+            // If the solver didn't have to spend any tokens, skip this check.
+            uint256 tokenBalance = token.balanceOf(address(_executor));
+            if (amount > 0 && tokenBalance > originalExpenses[i] / 2) revert InsufficientSpend();
+
+            // Despite possibly adjusting expense earlier, still transfer executor balance back to solver.
             if (tokenBalance > 0) {
                 address spender = expense.spender;
                 if (spender != address(0)) _executor.tryRevokeApproval(token, spender);

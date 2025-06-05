@@ -342,4 +342,136 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         // Assert received
         assertEq(receiver.balance, 1 ether, "receiver should have received 1 ether");
     }
+
+    function test_fill_erc20_partialExecutorBalance_succeeds(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(3)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
+        (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
+            getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
+        assertTrue(inbox.validate(order), "order should be valid");
+
+        vm.chainId(srcChainId);
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        vm.chainId(destChainId);
+        uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
+        bytes32 fillHash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
+        fundSolver(orderData, fillFee);
+
+        // fund executor with defaultAmount - 1 of token2
+        token2.mint(address(outbox.executor()), defaultAmount - 1);
+
+        // simple check to make sure the correct event type is emitted
+        if (provider == 1) {
+            vm.expectEmit(false, false, false, false, address(portal));
+            emit IOmniPortal.XMsg(0, 0, 0, address(0), address(0), bytes(""), 0, 0);
+        } else if (provider == 2) {
+            vm.expectEmit(false, false, false, false, address(mailboxes[uint32(destChainId)]));
+            emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
+        } else {
+            vm.expectEmit(true, true, true, true, address(outbox));
+            emit ISolverNetOutbox.Filled(resolvedOrder.orderId, fillHash, solver);
+        }
+
+        vm.prank(solver);
+        outbox.fill{ value: fillFee }(
+            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
+        );
+
+        assertEq(token2.balanceOf(address(outbox)), 0, "outbox token2 balance after");
+        assertEq(token2.balanceOf(address(outbox.executor())), 0, "executor token2 balance after");
+        assertEq(token2.balanceOf(solver), defaultAmount - 1, "solver token2 balance after");
+        assertEq(erc20Vault.balances(user), defaultAmount, "vault deposit balance after");
+        assertEq(token2.balanceOf(address(erc20Vault)), defaultAmount, "vault token2 balance after");
+    }
+
+    function test_fill_erc20_fullExecutorBalance_succeeds(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(3)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
+        (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
+            getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
+        assertTrue(inbox.validate(order), "order should be valid");
+
+        vm.chainId(srcChainId);
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        vm.chainId(destChainId);
+        uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
+        bytes32 fillHash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
+        fundSolver(orderData, fillFee);
+
+        // fund executor with defaultAmount of token2
+        token2.mint(address(outbox.executor()), defaultAmount);
+
+        // simple check to make sure the correct event type is emitted
+        if (provider == 1) {
+            vm.expectEmit(false, false, false, false, address(portal));
+            emit IOmniPortal.XMsg(0, 0, 0, address(0), address(0), bytes(""), 0, 0);
+        } else if (provider == 2) {
+            vm.expectEmit(false, false, false, false, address(mailboxes[uint32(destChainId)]));
+            emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
+        } else {
+            vm.expectEmit(true, true, true, true, address(outbox));
+            emit ISolverNetOutbox.Filled(resolvedOrder.orderId, fillHash, solver);
+        }
+
+        vm.prank(solver);
+        outbox.fill{ value: fillFee }(
+            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
+        );
+
+        assertEq(token2.balanceOf(address(outbox)), 0, "outbox token2 balance after");
+        assertEq(token2.balanceOf(address(outbox.executor())), 0, "executor token2 balance after");
+        assertEq(token2.balanceOf(solver), defaultAmount, "solver token2 balance after");
+        assertEq(erc20Vault.balances(user), defaultAmount, "vault deposit balance after");
+        assertEq(token2.balanceOf(address(erc20Vault)), defaultAmount, "vault token2 balance after");
+    }
+
+    function test_fill_erc20_excessExecutorBalance_succeeds(uint8 provider) public {
+        provider = uint8(bound(provider, uint8(1), uint8(3)));
+        setRoutes(ISolverNetOutbox.Provider(provider));
+
+        (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
+            getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
+        assertTrue(inbox.validate(order), "order should be valid");
+
+        vm.chainId(srcChainId);
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        vm.chainId(destChainId);
+        uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
+        bytes32 fillHash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
+        fundSolver(orderData, fillFee);
+
+        // fund executor with defaultAmount * 2 of token2
+        token2.mint(address(outbox.executor()), defaultAmount * 2);
+
+        // simple check to make sure the correct event type is emitted
+        if (provider == 1) {
+            vm.expectEmit(false, false, false, false, address(portal));
+            emit IOmniPortal.XMsg(0, 0, 0, address(0), address(0), bytes(""), 0, 0);
+        } else if (provider == 2) {
+            vm.expectEmit(false, false, false, false, address(mailboxes[uint32(destChainId)]));
+            emit IMailbox.Dispatch(address(0), 0, bytes32(0), bytes(""));
+        } else {
+            vm.expectEmit(true, true, true, true, address(outbox));
+            emit ISolverNetOutbox.Filled(resolvedOrder.orderId, fillHash, solver);
+        }
+
+        vm.prank(solver);
+        outbox.fill{ value: fillFee }(
+            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
+        );
+
+        assertEq(token2.balanceOf(address(outbox)), 0, "outbox token2 balance after");
+        assertEq(token2.balanceOf(address(outbox.executor())), 0, "executor token2 balance after");
+        assertEq(token2.balanceOf(solver), defaultAmount * 2, "solver token2 balance after");
+        assertEq(erc20Vault.balances(user), defaultAmount, "vault deposit balance after");
+        assertEq(token2.balanceOf(address(erc20Vault)), defaultAmount, "vault token2 balance after");
+    }
 }
