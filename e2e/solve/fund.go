@@ -13,8 +13,12 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/tokenutil"
+	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/solver/rebalance"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
@@ -116,6 +120,71 @@ func setSolverAccountNativeBalance(ctx context.Context, chainID uint64, backends
 	if err := anvil.FundAccounts(ctx, ethCl, amt, solver); err != nil {
 		return errors.Wrap(err, "set solver account balance failed")
 	}
+
+	return nil
+}
+
+// Mainnet ops wallet.
+const opsWallet = "0x79Ef4d1224a055Ad4Ee5e2226d0cb3720d929AE7"
+
+// FundOpsFromSolver funds the operations wallet from the solver wallet.
+func FundOpsFromSolver(
+	ctx context.Context,
+	network netconf.Network,
+	endpoints xchain.RPCEndpoints,
+	token tokens.Token,
+	amount *big.Int,
+) error {
+	solverKey, err := eoa.PrivateKey(ctx, network.ID, eoa.RoleSolver)
+	if err != nil {
+		return errors.Wrap(err, "private key")
+	}
+
+	backends, err := ethbackend.BackendsFromNetwork(ctx, network, endpoints, solverKey)
+	if err != nil {
+		return errors.Wrap(err, "backends")
+	}
+
+	backend, err := backends.Backend(token.ChainID)
+	if err != nil {
+		return errors.Wrap(err, "backend")
+	}
+
+	solverAddr := crypto.PubkeyToAddress(solverKey.PublicKey)
+	opsAddr := common.HexToAddress(opsWallet)
+
+	// On mainnet, require amount requested < available surplus
+	// Restricted to mainnet because testnet tokens do not have surplus thresholds
+	if network.ID == netconf.Mainnet {
+		surplus, err := rebalance.GetSurplus(ctx, backend, token, solverAddr)
+		if err != nil {
+			return errors.Wrap(err, "get surplus")
+		}
+
+		if bi.GT(amount, surplus) {
+			return errors.New("requested amount exceeds available surplus",
+				"requested", token.FormatAmt(amount),
+				"available", token.FormatAmt(surplus))
+		}
+	}
+
+	receipt, err := tokenutil.Transfer(
+		ctx,
+		backend,
+		token,
+		solverAddr,
+		opsAddr,
+		amount,
+	)
+	if err != nil {
+		return errors.Wrap(err, "transfer")
+	}
+
+	log.Info(ctx, "Funded ops from solver",
+		"solver", solverAddr,
+		"ops", opsAddr,
+		"amount", token.FormatAmt(amount),
+		"tx", receipt.TxHash)
 
 	return nil
 }

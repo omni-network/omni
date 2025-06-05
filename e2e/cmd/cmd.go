@@ -13,9 +13,12 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/xbridge"
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/spf13/cobra"
 )
@@ -98,6 +101,7 @@ func New() *cobra.Command {
 		newSetSolverNetRoutesCmd(&def),
 		newHyperliquidUseBigBlocksCmd(&defCfg),
 		fundAccounts(&def),
+		newFundOpsFromSolverCmd(&def),
 	)
 
 	return cmd
@@ -411,6 +415,58 @@ func newHyperliquidUseBigBlocksCmd(cfg *app.DefinitionConfig) *cobra.Command {
 
 	cmd.Flags().StringVar((*string)(&networkID), "network", "", "Network ID to use for Hyperliquid big blocks")
 	_ = cmd.MarkFlagRequired("network")
+
+	return cmd
+}
+
+func newFundOpsFromSolverCmd(def *app.Definition) *cobra.Command {
+	var (
+		tokenSymbol string
+		chainName   string
+		amount      float64
+	)
+
+	cmd := &cobra.Command{
+		Use:   "fund-ops-from-solver",
+		Short: "Funds operations wallet from the solver",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
+
+			chain, ok := evmchain.MetadataByName(chainName)
+			if !ok {
+				return errors.New("unknown chain", "name", chainName)
+			}
+
+			token, ok := tokens.BySymbol(chain.ChainID, tokenSymbol)
+			if !ok {
+				return errors.New("unknown token", "symbol", tokenSymbol, "chain", chainName)
+			}
+
+			network, err := networkFromDef(ctx, *def)
+			if err != nil {
+				return errors.Wrap(err, "network from def")
+			}
+
+			endpoints := app.ExternalEndpoints(*def)
+
+			endpoints, err = app.AddSolverEndpoints(ctx, network.ID, endpoints, def.Cfg.RPCOverrides)
+			if err != nil {
+				return errors.Wrap(err, "add solver endpoints")
+			}
+
+			network = solvernet.AddNetwork(ctx, network, solvernet.FilterByEndpoints(endpoints))
+
+			return solve.FundOpsFromSolver(ctx, network, endpoints, token, token.F64ToAmt(amount))
+		},
+	}
+
+	cmd.Flags().StringVar(&tokenSymbol, "token", "", "Token symbol to fund (e.g. USDC, ETH)")
+	cmd.Flags().StringVar(&chainName, "chain", "", "Chain name to fund on (e.g. ethereum, optimism)")
+	cmd.Flags().Float64Var(&amount, "amount", 0, "Amount to fund in canonical units (e.g 1 USDC, 1 ETH)")
+
+	_ = cmd.MarkFlagRequired("token")
+	_ = cmd.MarkFlagRequired("chain")
+	_ = cmd.MarkFlagRequired("amount")
 
 	return cmd
 }
