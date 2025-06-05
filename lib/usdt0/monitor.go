@@ -2,15 +2,18 @@ package usdt0
 
 import (
 	"context"
+	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/layerzero"
 	"github.com/omni-network/omni/lib/log"
 )
 
 // MonitorSendsForever monitors USDT0 sends in db, logging and udpating their status.
-func MonitorSendsForever(ctx context.Context, db *DB, client layerzero.Client) {
+func MonitorSendsForever(ctx context.Context, db *DB, client layerzero.Client, chainIDs []uint64) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
@@ -20,7 +23,7 @@ func MonitorSendsForever(ctx context.Context, db *DB, client layerzero.Client) {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				if err := monitorSends(ctx, db, client); err != nil {
+				if err := monitorSends(ctx, db, client, chainIDs); err != nil {
 					log.Error(ctx, "Failed to monitor sends (will retry)", err)
 				}
 			}
@@ -29,17 +32,15 @@ func MonitorSendsForever(ctx context.Context, db *DB, client layerzero.Client) {
 }
 
 // monitorSends checks the status of all messages in the database and updates them accordingly.
-func monitorSends(ctx context.Context, db *DB, client layerzero.Client) error {
+func monitorSends(ctx context.Context, db *DB, client layerzero.Client, chainIDs []uint64) error {
 	// Get all messages that are not in a final state
-	msgs, err := db.GetMsgs(ctx, FilterMsgByStatus(
-		layerzero.MsgStatusUnknown,
-		layerzero.MsgStatusInFlight,
-		layerzero.MsgStatusConfirming,
-		layerzero.MsgStatusPayloadStored,
-	))
+	msgs, err := db.GetMsgs(ctx, FilterMsgByStatus(nonFinalStatuses()...))
 	if err != nil {
 		return errors.Wrap(err, "get msgs")
 	}
+
+	gaugePending(chainIDs, msgs)
+	guageOldest(ctx, msgs, db)
 
 	for _, msg := range msgs {
 		ctx := log.WithCtx(ctx,
@@ -108,4 +109,111 @@ func monitorSend(ctx context.Context, db *DB, client layerzero.Client, msg MsgSe
 	}
 
 	return nil
+}
+
+func isPending(status layerzero.MsgStatus) bool {
+	for _, s := range nonFinalStatuses() {
+		if status == s {
+			return true
+		}
+	}
+
+	return false
+}
+
+func nonFinalStatuses() []layerzero.MsgStatus {
+	return []layerzero.MsgStatus{
+		layerzero.MsgStatusConfirming,
+		layerzero.MsgStatusInFlight,
+		layerzero.MsgStatusPayloadStored,
+	}
+}
+
+// 'pending' includes any non-final statuses: INFLIGHT, CONFIRMING, PAYLOAD_STORED.
+func gaugePending(chainIDs []uint64, msgs []MsgSend) {
+	// reset all routes
+	for _, src := range chainIDs {
+		for _, dst := range chainIDs {
+			usdt0Pending.WithLabelValues(evmchain.Name(src), evmchain.Name(dst)).Set(0)
+			msgsPending.WithLabelValues(evmchain.Name(src), evmchain.Name(dst)).Set(0)
+		}
+	}
+
+	type route struct {
+		src string
+		dst string
+	}
+
+	type inflight struct {
+		msgs int
+		amt  *big.Int
+	}
+
+	values := make(map[route]inflight)
+
+	for _, msg := range msgs {
+		// only consider pending
+		if !isPending(msg.Status) {
+			continue
+		}
+
+		src := evmchain.Name(msg.SrcChainID)
+		dst := evmchain.Name(msg.DestChainID)
+
+		r := route{src, dst}
+
+		v, ok := values[r]
+		if !ok {
+			values[r] = inflight{
+				msgs: 1,
+				amt:  msg.Amount,
+			}
+
+			continue
+		}
+
+		v.msgs++
+		v.amt = bi.Add(v.amt, msg.Amount)
+		values[r] = v
+	}
+
+	for r, v := range values {
+		usdt0Pending.WithLabelValues(r.src, r.dst).Set(float64(v.amt.Uint64()))
+		msgsPending.WithLabelValues(r.src, r.dst).Set(float64(v.msgs))
+	}
+}
+
+// guageOldest sets the oldest msg metric.
+func guageOldest(ctx context.Context, msgs []MsgSend, db *DB) {
+	gauge := func() error {
+		oldestByStatus := make(map[layerzero.MsgStatus]time.Time)
+
+		for _, msg := range msgs {
+			createdAt, err := db.GetMsgCreatedAt(ctx, msg.TxHash)
+			if err != nil {
+				return errors.Wrap(err, "get msg created at", "tx_hash", msg.TxHash)
+			}
+
+			oldest, ok := oldestByStatus[msg.Status]
+			if !ok || createdAt.Before(oldest) {
+				oldestByStatus[msg.Status] = createdAt
+			}
+		}
+
+		for _, status := range nonFinalStatuses() {
+			createdAt, ok := oldestByStatus[status]
+			if !ok {
+				oldestMsg.WithLabelValues(status.String()).Set(0)
+				continue
+			}
+
+			oldestMsg.WithLabelValues(status.String()).Set(float64(time.Since(createdAt).Seconds()))
+		}
+
+		return nil
+	}
+
+	if err := gauge(); err != nil {
+		log.Warn(ctx, "Failed gauging oldest messages", err)
+	}
 }

@@ -91,7 +91,7 @@ func TestSendUSDT0(t *testing.T) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	usdt0.MonitorSendsForever(ctx, db, lzClient)
+	usdt0.MonitorSendsForever(ctx, db, lzClient, []uint64{srcChainID, dstChainID})
 
 	// Send USDT0
 	receipt, err := usdt0.Send(ctx, srcBackend, user, srcChainID, dstChainID, amount, db)

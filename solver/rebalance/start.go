@@ -40,19 +40,19 @@ func Start(
 		return errors.Wrap(err, "monitor forever")
 	}
 
+	usdt0DB, err := newUSDT0DB(dbDir)
+	if err != nil {
+		return errors.Wrap(err, "new usdt0 db")
+	}
+
+	usdt0.MonitorSendsForever(ctx, usdt0DB, layerzero.NewClient(layerzero.MainnetAPI), network.ChainIDs())
+
 	network = newCCTPNetwork(network)
 
 	cctpDB, err := newCCTPDB(dbDir)
 	if err != nil {
 		return errors.Wrap(err, "new cctp db")
 	}
-
-	usdt0DB, err := newUSDT0DB(dbDir)
-	if err != nil {
-		return errors.Wrap(err, "new usdt0 db")
-	}
-
-	usdt0.MonitorSendsForever(ctx, usdt0DB, layerzero.NewClient(layerzero.MainnetAPI))
 
 	if err := cctp.MintAuditForever(ctx, cctpDB, cctpClient, network, backends, solver, solver); err != nil {
 		return errors.Wrap(err, "mint forever")
