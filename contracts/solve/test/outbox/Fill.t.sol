@@ -87,6 +87,24 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.expectRevert(ISolverNetOutbox.AlreadyFilled.selector);
         outbox.fill{ value: fillFee }(orderId, fillDataBytes, fillerData);
         vm.stopPrank();
+
+        // `fill` cannot be called if the order uses less than half of what the solver was directed to spend
+        (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
+            getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
+        orderData.calls[0].params = abi.encode(user, (defaultAmount / 2) - 1);
+        order.orderData = abi.encode(orderData);
+        assertTrue(inbox.validate(order), "order should be valid");
+
+        vm.chainId(srcChainId);
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        vm.chainId(destChainId);
+        fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
+        fundSolver(orderData, fillFee);
+        vm.prank(solver);
+        vm.expectRevert(ISolverNetOutbox.InsufficientSpend.selector);
+        outbox.fill{ value: fillFee }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, fillerData);
     }
 
     function test_fill_nativeExpense_succeeds(uint8 provider) public {

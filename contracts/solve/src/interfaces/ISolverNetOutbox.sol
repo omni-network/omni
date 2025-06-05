@@ -10,6 +10,7 @@ interface ISolverNetOutbox is IDestinationSettler {
     error InvalidConfig();
     error WrongDestChain();
     error InsufficientFee();
+    error InsufficientSpend();
     error InvalidSettlement();
     error FillDeadlinePassed();
     error InvalidArrayLength();

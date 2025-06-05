@@ -243,6 +243,9 @@ contract SolverNetOutbox is
             address token = expense.token;
             uint256 tokenBalance = token.balanceOf(address(_executor));
 
+            // Revert if order doesn't spend at least half of what solver was directed to spend.
+            // Otherwise, return the remainder to the solver.
+            if (tokenBalance > expense.amount / 2) revert InsufficientSpend();
             if (tokenBalance > 0) {
                 address spender = expense.spender;
                 if (spender != address(0)) _executor.tryRevokeApproval(token, spender);
