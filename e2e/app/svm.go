@@ -75,7 +75,7 @@ func svmInit(ctx context.Context, def Definition) error {
 	}
 
 	log.Debug(ctx, "SVM: Initializing anchorinbox program")
-	const closeBuffer = time.Second * 0 // Allow immediate closing in devnet
+	const closeBuffer = time.Second * 60 // Allow 60s for fills on devnet
 	init, err := anchorinbox.NewInit(svmChain.ChainID, closeBuffer, roleKeys[eoa.RoleSolver].PublicKey())
 	if err != nil {
 		return errors.Wrap(err, "create anchorinbox init instruction")

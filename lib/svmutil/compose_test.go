@@ -252,7 +252,7 @@ func TestInbox(t *testing.T) {
 		p.DepositAmount = depositAmount
 		p.Call.Params = tutil.RandomBytes(4)
 
-		openOrder, err = anchorinbox.NewOpenOrder(p, owner, mintResp.MintAccount, mintResp.AuthATA())
+		openOrder, err = anchorinbox.NewOpenOrder(p, owner, mintResp.MintAccount)
 		require.NoError(t, err)
 
 		// Send Open instruction
@@ -373,7 +373,7 @@ func TestInbox(t *testing.T) {
 
 	// Prep Open instruction
 	t.Run("open and close", func(t *testing.T) {
-		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount, mintResp.AuthATA())
+		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount)
 		require.NoError(t, err)
 		closeOrder := anchorinbox.NewCloseInstruction(
 			openOrder.ID,
@@ -421,7 +421,7 @@ func TestInbox(t *testing.T) {
 
 	t.Run("open and reject", func(t *testing.T) {
 		const reason uint8 = 99
-		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount, mintResp.AuthATA())
+		openOrder, err := anchorinbox.NewOpenOrder(anchorinbox.OpenParams{DepositAmount: depositAmount}, owner, mintResp.MintAccount)
 		require.NoError(t, err)
 
 		// Send open instructions

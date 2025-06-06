@@ -120,7 +120,12 @@ type OpenOrder struct {
 // and includes inbox pda accounts.
 //
 // Note that OpenParams Nonce and OrderID will be generated if omitted.
-func NewOpenOrder(params OpenParams, owner, mint, ownerToken solana.PublicKey) (OpenOrder, error) {
+func NewOpenOrder(params OpenParams, owner, mint solana.PublicKey) (OpenOrder, error) {
+	ownerToken, _, err := solana.FindAssociatedTokenAddress(owner, mint)
+	if err != nil {
+		return OpenOrder{}, errors.Wrap(err, "find owner ata")
+	}
+
 	for params.Nonce == 0 {
 		params.Nonce = randU64()
 	}
@@ -136,12 +141,12 @@ func NewOpenOrder(params OpenParams, owner, mint, ownerToken solana.PublicKey) (
 		return OpenOrder{}, err
 	}
 
-	inboxAddr, _, err := FindInboxStateAddress()
+	inboxState, _, err := FindInboxStateAddress()
 	if err != nil {
 		return OpenOrder{}, err
 	}
 
-	open := NewOpenInstruction(params, orderState, owner, mint, ownerToken, orderToken, token.ProgramID, inboxAddr, system.ProgramID)
+	open := NewOpenInstruction(params, orderState, owner, mint, ownerToken, orderToken, token.ProgramID, inboxState, system.ProgramID)
 
 	return OpenOrder{
 		Open:         open,
@@ -410,14 +415,11 @@ func GetInitSig(ctx context.Context, cl *rpc.Client) (solana.Signature, error) {
 		return solana.Signature{}, errors.New("inbox state not found")
 	}
 
-	blockResp, err := cl.GetBlockWithOpts(ctx, state.DeployedAt, &rpc.GetBlockOpts{
-		TransactionDetails:             rpc.TransactionDetailsFull,
-		Rewards:                        ptr(false),
-		Commitment:                     rpc.CommitmentConfirmed,
-		MaxSupportedTransactionVersion: ptr(rpc.MaxSupportedTransactionVersion0),
-	})
+	blockResp, ok, err := svmutil.GetBlock(ctx, cl, state.DeployedAt, rpc.TransactionDetailsFull)
 	if err != nil {
 		return solana.Signature{}, errors.Wrap(err, "get block")
+	} else if !ok {
+		return solana.Signature{}, errors.New("no deployed_at block", "slot", state.DeployedAt)
 	}
 
 	for _, txMeta := range blockResp.Transactions {
@@ -434,8 +436,4 @@ func GetInitSig(ctx context.Context, cl *rpc.Client) (solana.Signature, error) {
 	}
 
 	return solana.Signature{}, errors.New("no init instruction found", "slot", state.DeployedAt)
-}
-
-func ptr[A any](a A) *A {
-	return &a
 }

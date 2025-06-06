@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	"github.com/omni-network/omni/lib/tracer"
@@ -53,7 +54,7 @@ func newRejection(reason types.RejectReason, err error) *RejectionError {
 // It returns false if the request should be accepted.
 // Errors are unexpected and refer to internal problems.
 //
-// It will return true if the order has rleady been filled. DidFill check
+// It will return true if the order has already been filled. DidFill check
 // should be made before calling ShouldReject.
 func newShouldRejector(
 	backends unibackend.Backends,
@@ -127,7 +128,7 @@ func newShouldRejector(
 			return types.RejectNone, false, err
 		}
 
-		return r.Reason, true, nil
+		return r.Reason, true, err
 	}
 }
 
@@ -270,7 +271,7 @@ func fillCallMsg(
 	// xcall fee
 	fee, err := outbox.FillFee(&bind.CallOpts{Context: ctx}, fillOriginData)
 	if err != nil {
-		return ethereum.CallMsg{}, errors.Wrap(err, "get fulfill fee")
+		return ethereum.CallMsg{}, errors.Wrap(err, "get fulfill fee", "custom", solvernet.DetectCustomError(err))
 	}
 
 	fillCallData, err := solvernet.PackFillCalldata(orderID, fillOriginData)
@@ -372,8 +373,9 @@ func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend unibackend
 		// TODO: for native tokens, even if we have enough, we don't want to
 		// spend out whole balance. we'll need to keep some for gas
 		if bi.LT(bal, bi.Add(expense.Amount, minSafe)) {
-			return newRejection(types.RejectInsufficientInventory, errors.New("insufficient balance",
+			return newRejection(types.RejectInsufficientInventory, errors.New("insufficient solver balance",
 				"balance", expense.Token.FormatAmt(bal),
+				"chain", evmchain.Name(expense.Token.ChainID),
 				"expense", expense,
 			))
 		}

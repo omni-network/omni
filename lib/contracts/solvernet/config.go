@@ -154,10 +154,8 @@ func Provider(srcChainID, destChainID uint64) (uint8, bool) {
 		return ProviderNone, false
 	}
 
-	if IsTrusted(destChainID) {
+	if IsTrusted(srcChainID) || IsTrusted(destChainID) {
 		return ProviderTrusted, true
-	} else if IsTrusted(srcChainID) {
-		return ProviderNone, false // Trusted chains are only destinations for now.
 	}
 
 	if srcChainID == destChainID {

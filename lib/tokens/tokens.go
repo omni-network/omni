@@ -106,9 +106,15 @@ func ByAsset(chainID uint64, asset Asset) (Token, bool) {
 	return Token{}, false
 }
 
-// Native is an alias for ByAddress with the native token address.
+// Native is an alias for ByUniAddress with the native/zero token address.
 func Native(chainID uint64) (Token, bool) {
-	return ByAddress(chainID, NativeAddr)
+	for _, t := range tokens {
+		if t.ChainID == chainID && t.UniAddress().IsZero() {
+			return t, true
+		}
+	}
+
+	return Token{}, false
 }
 
 // ByAddress returns the token with the given address and chain ID.

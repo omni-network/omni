@@ -570,6 +570,15 @@ func networkFromDef(def Definition) netconf.Network {
 		chains = append(chains, newChain(anvil.Chain))
 	}
 
+	// Add SVM chains
+	for _, svm := range def.Testnet.SVMChains {
+		chains = append(chains, netconf.Chain{
+			ID:          svm.ChainID,
+			Name:        svm.Name,
+			BlockPeriod: svm.BlockPeriod,
+		})
+	}
+
 	return netconf.Network{
 		ID:     def.Testnet.Network,
 		Chains: chains,

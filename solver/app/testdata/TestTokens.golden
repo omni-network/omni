@@ -480,6 +480,16 @@
   "symbol": "HYPE"
  },
  {
+  "address": "6AfTP38VbvM3gxMRy8ubvb7NbhzhjVB8VGMy2uBby1pY",
+  "chainId": 352,
+  "coingeckoId": "usd-coin",
+  "isMock": true,
+  "maxSpend": "10 USDC",
+  "minSpend": "0.1 USDC",
+  "name": "USD Coin",
+  "symbol": "USDC"
+ },
+ {
   "address": "0x6319df7c227e34B967C1903A08a698A3cC43492B",
   "chainId": 84532,
   "coingeckoId": "wrapped-steth",

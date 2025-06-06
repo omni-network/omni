@@ -70,7 +70,11 @@ func TestShouldReject(t *testing.T) {
 			}
 
 			reason, reject, err := shouldReject(t.Context(), tt.order)
-			require.NoError(t, err)
+			if tt.reject {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 			require.Equal(t, tt.reason, reason, "expected reject reason %s, got %s", tt.reason, reason)
 			require.Equal(t, tt.reject, reject, "expected reject %s, got %s", tt.reject, reject)
 

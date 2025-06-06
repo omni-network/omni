@@ -63,7 +63,7 @@ func TestSwapToFromUSDC(t *testing.T) {
 	eth1k := bi.Ether(1_000)
 	tutil.RequireNoError(t, anvil.FundAccounts(ctx, ethCl, eth1k, swapper))
 	tutil.RequireNoError(t, anvil.FundERC20(ctx, ethCl, wstETH.Address, eth1k, swapper))
-	tutil.RequireNoError(t, anvil.FundL1USDT(ctx, ethCl, usdt.Address, bi.Dec6(1000), swapper))
+	tutil.RequireNoError(t, anvil.FundERC20(ctx, ethCl, usdt.Address, bi.Dec6(1000), swapper))
 
 	tests := []struct {
 		name     string

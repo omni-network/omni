@@ -336,6 +336,20 @@ func (n Network) StreamsBetween(srcChainID uint64, dstChainID uint64) []xchain.S
 	return resp
 }
 
+func (n Network) CoreChains() []Chain {
+	var resp []Chain
+	for _, chain := range n.Chains {
+		if evmchain.IsSVM(chain.ID) {
+			continue // Skip non-core chains.
+		}
+		// TODO(corver): Also exclude HL chains
+
+		resp = append(resp, chain)
+	}
+
+	return resp
+}
+
 // Chain defines the configuration of an execution chain that supports
 // the Omni cross chain protocol. This is most supported Rollup EVMs, but
 // also the Omni EVM, and the Omni Consensus chain.

@@ -68,7 +68,7 @@ func run(ctx context.Context, dir string) error {
 	}
 
 	log.Info(ctx, "Initializing anchor inbox program...")
-	const closeBuffer = time.Second * 0 // Allow immediate closing in devnet
+	const closeBuffer = time.Minute // Allow 1min for devent fills
 	init, err := anchorinbox.NewInit(evmchain.IDSolanaLocal, closeBuffer, privkey.PublicKey())
 	if err != nil {
 		return errors.Wrap(err, "create anchor inbox init instruction")

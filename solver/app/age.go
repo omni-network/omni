@@ -9,10 +9,15 @@ import (
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/lib/unibackend"
+
+	"github.com/gagliardetto/solana-go/rpc"
 )
 
 const (
@@ -30,7 +35,7 @@ type cacheVal struct {
 
 type destFilledAge func(ctx context.Context, dstChainID uint64, dstHeight uint64, order Order) slog.Attr
 
-func newAgeCache(backends ethbackend.Backends) *ageCache {
+func newAgeCache(backends unibackend.Backends) *ageCache {
 	return &ageCache{
 		createdAts: make(map[solvernet.OrderID]cacheVal),
 		backends:   backends,
@@ -41,28 +46,37 @@ func newAgeCache(backends ethbackend.Backends) *ageCache {
 // Since on-chain state doesn't contain "created_height", a cache is used.
 type ageCache struct {
 	mu         sync.Mutex
-	backends   ethbackend.Backends
+	backends   unibackend.Backends
 	createdAts map[solvernet.OrderID]cacheVal
 }
 
-func (a *ageCache) blockMeta(ctx context.Context, chainID uint64, height uint64) (string, time.Time, error) {
+func (a *ageCache) blockTime(ctx context.Context, chainID uint64, height uint64) (time.Time, error) {
 	backend, err := a.backends.Backend(chainID)
 	if err != nil {
-		return "", time.Time{}, err
+		return time.Time{}, err
 	}
 
-	header, err := backend.HeaderByNumber(ctx, bi.N(height))
+	if backend.IsSVM() {
+		block, ok, err := svmutil.GetBlock(ctx, backend.SVMClient(), height, rpc.TransactionDetailsNone)
+		if err != nil {
+			return time.Time{}, svmutil.WrapRPCError(err, "getBlock")
+		} else if !ok {
+			return time.Time{}, errors.New("block not found", "height", height)
+		}
+
+		return block.BlockTime.Time(), nil
+	}
+
+	header, err := backend.EVMBackend().HeaderByNumber(ctx, bi.N(height))
 	if err != nil {
-		return "", time.Time{}, err
+		return time.Time{}, err
 	}
 	timeI64, err := umath.ToInt64(header.Time)
 	if err != nil {
-		return "", time.Time{}, err
+		return time.Time{}, err
 	}
 
-	name, _ := backend.Chain()
-
-	return name, time.Unix(timeI64, 0), nil
+	return time.Unix(timeI64, 0), nil
 }
 
 // InstrumentAge instruments the age of an order event.
@@ -97,7 +111,7 @@ func (a *ageCache) InstrumentDestFilled(ctx context.Context, dstChainID uint64, 
 }
 
 func (a *ageCache) instrumentUnsafe(ctx context.Context, chainID uint64, height uint64, orderID OrderID, status string) (slog.Attr, error) {
-	chainName, timestamp, err := a.blockMeta(ctx, chainID, height)
+	timestamp, err := a.blockTime(ctx, chainID, height)
 	if err != nil {
 		return slog.Attr{}, err
 	}
@@ -119,7 +133,7 @@ func (a *ageCache) instrumentUnsafe(ctx context.Context, chainID uint64, height 
 	}
 
 	age := timestamp.Sub(v.CreatedAt)
-	orderAge.WithLabelValues(chainName, status).Observe(age.Seconds())
+	orderAge.WithLabelValues(evmchain.Name(chainID), status).Observe(age.Seconds())
 
 	// Remove from cache once final status is reached
 	if status == solvernet.StatusRejected.String() ||
