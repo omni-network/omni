@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
@@ -100,12 +101,20 @@ func debugOrderPrice(ctx context.Context, priceFunc priceFunc, order Order) {
 	}
 
 	depositAmt := pendingData.MinReceived[0].Amount
+	if bi.IsZero(depositAmt) {
+		return
+	}
+
 	depositTkn, ok := tokenByAddr32(order.SourceChainID, pendingData.MinReceived[0].Token)
 	if !ok {
 		return
 	}
 
 	expenseAmt := pendingData.MaxSpent[0].Amount
+	if bi.IsZero(expenseAmt) {
+		return
+	}
+
 	expenseTkn, ok := tokenByAddr32(pendingData.DestinationChainID, pendingData.MaxSpent[0].Token)
 	if !ok {
 		return

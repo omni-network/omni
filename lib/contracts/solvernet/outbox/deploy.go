@@ -181,6 +181,18 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 			Provider: provider,
 		})
 	}
+	for _, dest := range network.SVMChains() {
+		provider, ok := solvernet.Provider(chainID.Uint64(), dest.ID)
+		if !ok {
+			continue
+		}
+
+		chainIDs = append(chainIDs, dest.ID)
+		inboxes = append(inboxes, bindings.ISolverNetOutboxInboxConfig{
+			Inbox:    cfg.Inbox,
+			Provider: provider,
+		})
+	}
 
 	txOpts, err = backend.BindOpts(ctx, cfg.Owner)
 	if err != nil {

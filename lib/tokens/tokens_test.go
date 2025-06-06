@@ -13,11 +13,13 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/gagliardetto/solana-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -118,6 +120,9 @@ func TestGenTokens(t *testing.T) {
 			ChainID:    evmchain.IDHyperEVM,
 			ChainClass: tokens.ClassMainnet,
 		},
+
+		// SVM mints/tokens
+		svm(evmchain.IDSolanaLocal, tokens.USDC, svmutil.DevnetUSDCMint.PublicKey()),
 	)
 
 	for _, mock := range e2e.MockTokens() {
@@ -224,6 +229,20 @@ func omniERC20(network netconf.ID) tokens.Token {
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    contracts.TokenAddr(network),
+	}
+}
+
+func svm(chainID uint64, asset tokens.Asset, address solana.PublicKey) tokens.Token {
+	return tokens.Token{
+		Asset:   asset,
+		ChainID: chainID,
+		ChainClass: map[uint64]tokens.ChainClass{
+			evmchain.IDSolanaLocal: tokens.ClassDevent,
+			evmchain.IDSolanaTest:  tokens.ClassTestnet,
+			evmchain.IDSolana:      tokens.ClassMainnet,
+		}[chainID],
+		SVMAddress: address,
+		IsMock:     chainID == evmchain.IDSolanaLocal,
 	}
 }
 

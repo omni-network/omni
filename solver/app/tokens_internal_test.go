@@ -101,7 +101,7 @@ func TestTokens(t *testing.T) {
 		golden = append(golden, map[string]any{
 			"name":        tkn.Name,
 			"symbol":      tkn.Symbol,
-			"address":     tkn.Address.Hex(),
+			"address":     tkn.UniAddress().String(),
 			"maxSpend":    tkn.FormatAmt(bounds.MaxSpend),
 			"minSpend":    tkn.FormatAmt(bounds.MinSpend),
 			"chainId":     tkn.ChainID,

@@ -42,6 +42,19 @@ func TestSolver(t *testing.T) {
 	})
 }
 
+func TestSolverSVM(t *testing.T) {
+	t.Parallel()
+	skipFunc := func(manifest types.Manifest) bool {
+		return !manifest.AllE2ETests
+	}
+	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
+		t.Helper()
+
+		err := solve.TestSVM(ctx, deps.Testnet)
+		tutil.RequireNoError(t, err)
+	})
+}
+
 func testContractsAPI(ctx context.Context, t *testing.T, solverAddr string) {
 	t.Helper()
 

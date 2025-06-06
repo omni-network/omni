@@ -109,7 +109,7 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 			})
 	}
 
-	results, cancel := forkjoin.NewWithInputs(ctx, streamReceipts, network.Chains)
+	results, cancel := forkjoin.NewWithInputs(ctx, streamReceipts, network.CoreChains())
 
 	return func() error {
 		log.Debug(ctx, "Checking receipts")

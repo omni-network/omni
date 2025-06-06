@@ -162,3 +162,22 @@ func FilterDataLogs(logs []string, program solana.PublicKey) ([]string, bool, er
 
 	return filtered, len(stack) == 0, nil
 }
+
+// GetBlock is a convenience function returning the block for the given slot,
+// or false if no block found for the slot,
+// or and error.
+func GetBlock(ctx context.Context, cl *rpc.Client, slot uint64, details rpc.TransactionDetailsType) (*rpc.GetBlockResult, bool, error) {
+	block, err := cl.GetBlockWithOpts(ctx, slot, &rpc.GetBlockOpts{
+		TransactionDetails:             details,
+		Rewards:                        ptr(false),
+		Commitment:                     rpc.CommitmentConfirmed,
+		MaxSupportedTransactionVersion: ptr(rpc.MaxSupportedTransactionVersion0),
+	})
+	if errors.Is(err, rpc.ErrNotConfirmed) {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, WrapRPCError(err, "getBlock")
+	}
+
+	return block, true, nil
+}

@@ -60,7 +60,7 @@ func Stream(ctx context.Context, cl *rpc.Client, req StreamReq, callback StreamC
 			}
 			prev = sig
 
-			ctx := log.WithCtx(ctx, "slot", sig.Slot, log.Hex7("sig", sig.Signature[:]))
+			ctx := log.WithCtx(ctx, "slot", sig.Slot, "sig", sig.Signature.String()[:7])
 
 			err := callback(ctx, sig)
 			if ctx.Err() != nil {

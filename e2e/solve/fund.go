@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
@@ -35,35 +36,52 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 	if err != nil {
 		return err
 	}
+	usdcOnMockL1, err := Find(evmchain.IDMockL1, tokens.USDC.Symbol)
+	if err != nil {
+		return err
+	}
+	usdcOnMockL2, err := Find(evmchain.IDMockL2, tokens.USDC.Symbol)
+	if err != nil {
+		return err
+	}
 
 	// erc20 tokens to fund solver with on devnet. useful for solvernet development when forking public networks
 	toFund := []struct {
 		chainID uint64
 		addr    common.Address
 	}{
-		// holesky wstETH
-		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
-		// holesky stETH
-		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")},
 		// devnet wstETH
 		{chainID: evmchain.IDMockL1, addr: wstETHOnMockL1},
 		{chainID: evmchain.IDMockL2, addr: wstETHOnMockL2},
+		// devnet USDC
+		{chainID: evmchain.IDMockL1, addr: usdcOnMockL1},
+		{chainID: evmchain.IDMockL2, addr: usdcOnMockL2},
 	}
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 	eth1m := bi.Ether(1_000_000)
 
 	for _, tkn := range toFund {
-		ethCl, ok := backends.Clients()[tkn.chainID]
-		if !ok {
-			continue
+		backend, err := backends.Backend(tkn.chainID)
+		if err != nil {
+			return err
 		}
 
-		// if devnet is not forking the public chain tkn is deployed on, this sets
-		// storage on an unused address, which is fine
-		err := anvil.FundERC20(ctx, ethCl, tkn.addr, eth1m, solver)
+		merc20, err := bindings.NewMockERC20(tkn.addr, backend)
 		if err != nil {
-			return errors.Wrap(err, "fund tkn failed", "chain_id", tkn.chainID, "addr", tkn.addr)
+			return errors.Wrap(err, "new mock erc20")
+		}
+
+		txOpts, err := backend.BindOpts(ctx, solver)
+		if err != nil {
+			return err
+		}
+
+		tx, err := merc20.Mint(txOpts, solver, eth1m)
+		if err != nil {
+			return errors.Wrap(err, "mint token")
+		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+			return errors.Wrap(err, "wait for mint tx")
 		}
 	}
 
@@ -92,14 +110,26 @@ func maybeFundERC20Flowgen(ctx context.Context, network netconf.ID, backends eth
 	eth1m := bi.Ether(1_000_000)
 
 	for _, tkn := range toFund {
-		ethCl, ok := backends.Clients()[tkn.chainID]
-		if !ok {
-			continue
+		backend, err := backends.Backend(tkn.chainID)
+		if err != nil {
+			return err
 		}
 
-		err := anvil.FundERC20(ctx, ethCl, tkn.addr, eth1m, flowgen)
+		merc20, err := bindings.NewMockERC20(tkn.addr, backend)
 		if err != nil {
-			return errors.Wrap(err, "fund tkn failed", "chain_id", tkn.chainID, "addr", tkn.addr)
+			return errors.Wrap(err, "new mock erc20")
+		}
+
+		txOpts, err := backend.BindOpts(ctx, flowgen)
+		if err != nil {
+			return err
+		}
+
+		tx, err := merc20.Mint(txOpts, flowgen, eth1m)
+		if err != nil {
+			return errors.Wrap(err, "mint token")
+		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+			return errors.Wrap(err, "wait for mint tx")
 		}
 
 		log.Debug(ctx, "Funded flowgen", "chain", tkn.chainID, "address", flowgen, "token_address", tkn.addr)

@@ -2,11 +2,14 @@ package app
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -51,6 +54,16 @@ func svmInit(ctx context.Context, def Definition) error {
 		roleAccounts = append(roleAccounts, key.PublicKey())
 	}
 
+	const exCount = 5
+	var exKeys []solana.PrivateKey
+	for _, key := range anvil.ExternalAccounts {
+		exKeys = append(exKeys, svmutil.MapEVMKey(key))
+		roleAccounts = append(roleAccounts, svmutil.MapEVMKey(key).PublicKey())
+		if len(exKeys) >= exCount {
+			break
+		}
+	}
+
 	log.Debug(ctx, "SVM: Requesting role airdrops")
 	// Fund all roles with SOL
 	fundAmount := solana.LAMPORTS_PER_SOL * 1e6 // 1M SOL in lamports
@@ -75,13 +88,17 @@ func svmInit(ctx context.Context, def Definition) error {
 	}
 
 	log.Debug(ctx, "SVM: Initializing anchorinbox program")
-	const closeBuffer = time.Second * 0 // Allow immediate closing in devnet
+	const closeBuffer = time.Second * 60 // Allow 60s for fills on devnet
 	init, err := anchorinbox.NewInit(svmChain.ChainID, closeBuffer, roleKeys[eoa.RoleSolver].PublicKey())
 	if err != nil {
 		return errors.Wrap(err, "create anchorinbox init instruction")
 	}
 	_, err = svmutil.SendSimple(ctx, cl, roleKeys[eoa.RoleSolver], init.Build())
 	if err != nil {
+		return err
+	}
+
+	if err := dumpSVMConfig(ctx, svmDir, svmChain.ExternalRPC, exKeys, mintResp, anchorinbox.Program()); err != nil {
 		return err
 	}
 
@@ -110,4 +127,58 @@ func svmRoleKeys(ctx context.Context, network netconf.ID, chainID uint64) (map[e
 	}
 
 	return keys, nil
+}
+
+func dumpSVMConfig(
+	ctx context.Context,
+	dir string,
+	addr string,
+	wallets []solana.PrivateKey,
+	mint svmutil.CreateMintResp,
+	program svmutil.Program) error {
+	type mintConfig struct {
+		Symbol    string `json:"symbol"`
+		Mint      string `json:"account"`
+		Authority string `json:"authority_key"`
+	}
+	type programConfig struct {
+		Name    string `json:"name"`
+		Account string `json:"account"`
+	}
+
+	var wl []string
+	for _, w := range wallets {
+		wl = append(wl, w.String())
+	}
+
+	config := struct {
+		RPCAddress string          `json:"rpc_address"`
+		Mints      []mintConfig    `json:"mints"`
+		Programs   []programConfig `json:"programs"`
+		Wallets    []string        `json:"wallet_keys"`
+	}{
+		RPCAddress: addr,
+		Wallets:    wl,
+		Mints: []mintConfig{{
+			Symbol:    "USDC",
+			Mint:      mint.MintAccount.String(),
+			Authority: mint.Authority.String(),
+		}},
+		Programs: []programConfig{{
+			Name:    program.Name,
+			Account: program.MustPublicKey().String(),
+		}},
+	}
+	content, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, "marshal config")
+	}
+	configFile := filepath.Join(dir, "config.json")
+	if err := os.WriteFile(configFile, content, 0644); err != nil {
+		return errors.Wrap(err, "write config file")
+	}
+
+	log.Info(ctx, "Dumped SVM config file", "file", configFile)
+
+	return nil
 }

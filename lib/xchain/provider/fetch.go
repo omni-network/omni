@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
@@ -225,6 +226,10 @@ func (p *Provider) GetSubmittedCursor(
 func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xchain.Block, bool, error) {
 	ctx, span := tracer.Start(ctx, spanName("get_block"))
 	defer span.End()
+
+	if evmchain.IsSVM(req.ChainID) {
+		return xchain.Block{}, false, errors.New("svm chains are not supported")
+	}
 
 	//nolint:nestif // Not so bad
 	if req.ChainID == p.cChainID {

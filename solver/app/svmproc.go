@@ -155,7 +155,7 @@ func newSVMStreamCallback(
 			}
 		}
 
-		log.Debug(ctx, "SVM: Processed events", "sig", sig.Signature, "slot", sig.Slot, "events", len(events))
+		log.Debug(ctx, "SVM: Processed events", "events", len(events))
 
 		if err := cursors.SetTxSig(ctx, chainVer, sig.Signature); err != nil {
 			return errors.Wrap(err, "update cursor")

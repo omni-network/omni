@@ -53,11 +53,11 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 		// maybeReject rejects orders if necessary, logging and counting them, returning true if rejected.
 		maybeReject := func() (bool, error) {
 			reason, reject, err := deps.ShouldReject(ctx, order)
-			if err != nil {
+			if !reject && err != nil {
 				return false, errors.Wrap(err, "should reject")
-			} else if !reject {
+			} else if !reject /* && err == nil */ {
 				return false, nil
-			}
+			} /* else reject && err != nil */
 
 			log.InfoErr(ctx, "Rejecting order", err, "reason", reason)
 

@@ -169,7 +169,7 @@ func newFiller(
 		// xcall fee
 		fee, err := outbox.FillFee(callOpts, pendingData.FillOriginData)
 		if err != nil {
-			return errors.Wrap(err, "get fulfill fee")
+			return errors.Wrap(err, "get fulfill fee", "custom", solvernet.DetectCustomError(err))
 		}
 
 		txOpts.Value = bi.Add(nativeValue, fee)

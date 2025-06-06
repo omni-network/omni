@@ -31,10 +31,7 @@ func TestApp_Hash(t *testing.T) {
 
 		require.Eventually(t, func() bool {
 			status, err := client.Status(ctx)
-			require.NoError(t, err)
-			require.NotZero(t, status.SyncInfo.LatestBlockHeight)
-
-			return status.SyncInfo.LatestBlockHeight >= requestedHeight
+			return err == nil && status.SyncInfo.LatestBlockHeight >= requestedHeight
 		}, 5*time.Second, 500*time.Millisecond)
 
 		block, err := client.Block(ctx, &requestedHeight)

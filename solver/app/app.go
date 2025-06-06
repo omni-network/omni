@@ -356,7 +356,7 @@ func startProcessingEvents(
 
 	callAllower := newCallAllower(network.ID, addrs.SolverNetExecutor)
 
-	ageCache := newAgeCache(ethBackends)
+	ageCache := newAgeCache(backends)
 	go monitorAgeCacheForever(ctx, network, ageCache)
 
 	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, ageCache.InstrumentDestFilled)

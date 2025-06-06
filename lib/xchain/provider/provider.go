@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -136,6 +137,8 @@ func (p *Provider) stream(
 	chain, ok := p.network.Chain(req.ChainID)
 	if !ok {
 		return errors.New("unknown chain ID")
+	} else if evmchain.IsSVM(chain.ID) {
+		return errors.New("svm chains are not supported")
 	}
 
 	chainVersionName := p.network.ChainVersionName(xchain.ChainVersion{ID: req.ChainID, ConfLevel: req.ConfLevel})
@@ -223,6 +226,8 @@ func (p *Provider) stream(
 func (p *Provider) getEVMChain(chainID uint64) (netconf.Chain, ethclient.Client, error) {
 	if chainID == p.cChainID {
 		return netconf.Chain{}, nil, errors.New("consensus chain not supported")
+	} else if evmchain.IsSVM(chainID) {
+		return netconf.Chain{}, nil, errors.New("svm chains are not supported")
 	}
 
 	chain, ok := p.network.Chain(chainID)
