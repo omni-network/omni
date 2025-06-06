@@ -1,25 +1,14 @@
 import { readFileSync } from 'node:fs'
 import {
-  TOKEN_PROGRAM_ADDRESS,
-  findAssociatedTokenPda,
-} from '@solana-program/token'
-import {
   address,
-  appendTransactionMessageInstruction,
   createKeyPairSignerFromBytes,
   createSolanaRpc,
-  createTransactionMessage,
-  getAddressEncoder,
-  getProgramDerivedAddress,
-  pipe,
   sendTransactionWithoutConfirmingFactory,
-  setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   signTransactionMessageWithSigners,
 } from '@solana/kit'
 import bs58 from 'bs58'
-import { getOrderId, inboxClient, randomU64 } from '../dist/esm/index.js'
-import type { inboxClient as InboxClient } from '../dist/types/index.js'
+import { createOpenOrderTransactionMessage } from '../dist/esm/index.js'
 
 const config = JSON.parse(readFileSync('/tmp/svm/config.json', 'utf8'))
 const usdcMint = config.mints[0]
@@ -37,39 +26,9 @@ const rpc = createSolanaRpc(config.rpc_address)
 const balance = await rpc.getBalance(signer.address).send()
 console.log('EOA account balance in lamports:', balance.value)
 
-const nonce = randomU64()
-const orderId = await getOrderId(signer.address, nonce)
-console.log('orderId:', orderId)
-
-const [ownerTokenAccount] = await findAssociatedTokenPda({
-  owner: signer.address,
-  mint: usdcMintAccount,
-  tokenProgram: TOKEN_PROGRAM_ADDRESS,
-})
-
-const programAddress = address(inboxClient.SOLVER_INBOX_PROGRAM_ADDRESS)
-const addressEncoder = getAddressEncoder()
-const encodedOrderId = addressEncoder.encode(orderId)
-const textEncoder = new TextEncoder()
-
-const [orderTokenAccount] = await getProgramDerivedAddress({
-  programAddress,
-  seeds: [textEncoder.encode('order_token'), encodedOrderId],
-})
-
-const [orderState] = await getProgramDerivedAddress({
-  programAddress,
-  seeds: [textEncoder.encode('order_state'), encodedOrderId],
-})
-
-const openInput: InboxClient.OpenAsyncInput = {
+const orderTransactionMessage = await createOpenOrderTransactionMessage({
   owner: signer,
-  orderId,
-  orderState,
-  mintAccount: usdcMintAccount,
-  orderTokenAccount,
-  ownerTokenAccount,
-  nonce,
+  mint: usdcMintAccount,
   destChainId: 1n,
   depositAmount: 1000n,
   call: {
@@ -83,21 +42,15 @@ const openInput: InboxClient.OpenAsyncInput = {
     token: new Uint8Array(20), // EVM address
     amount: 1000n,
   },
-}
-
-const openOrderInstruction =
-  await inboxClient.getOpenInstructionAsync(openInput)
-console.log('open order instruction:', openOrderInstruction)
+})
+console.log('order transaction message:', orderTransactionMessage)
 
 const recentBlockhash = await rpc.getLatestBlockhash().send()
 console.log('recent blockhash:', recentBlockhash)
 
-const transactionMessage = pipe(
-  createTransactionMessage({ version: 0 }),
-  (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-  (tx) =>
-    setTransactionMessageLifetimeUsingBlockhash(recentBlockhash.value, tx),
-  (tx) => appendTransactionMessageInstruction(openOrderInstruction, tx),
+const transactionMessage = setTransactionMessageLifetimeUsingBlockhash(
+  recentBlockhash.value,
+  orderTransactionMessage,
 )
 console.log('transaction message:', transactionMessage)
 

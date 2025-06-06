@@ -1,14 +1,5 @@
 import type { ReadonlyUint8Array } from '@solana/kit'
-
-export function bytesFromU64(n: bigint): Uint8Array {
-  const bytes = new Uint8Array(8)
-  new DataView(bytes.buffer).setBigUint64(0, n, true) // little endian
-  return bytes
-}
-
-export function bytesToU64(bytes: Uint8Array): bigint {
-  return new DataView(bytes.buffer).getBigUint64(0, true) // little endian
-}
+import { decodeU64 } from './codecs.js'
 
 export async function digestSHA256(
   ...inputs: Array<Uint8Array | ReadonlyUint8Array>
@@ -31,5 +22,5 @@ export function randomBytes(length: number): Uint8Array {
 }
 
 export function randomU64(): bigint {
-  return bytesToU64(randomBytes(8))
+  return decodeU64(randomBytes(8))
 }

@@ -1,9 +1,4 @@
-import { type AnchorProvider, Program } from '@coral-xyz/anchor'
-import type { SolverInbox } from './idl/solver_inbox.js'
-// import inboxIDL from './idl/solver_inbox.json' with { type: 'json' }
+import { address } from '@solana/kit'
+import { SOLVER_INBOX_PROGRAM_ADDRESS } from './__generated__/inbox/index.js'
 
-export type InboxProgram = Program<SolverInbox>
-
-export function createInboxProgram(provider: AnchorProvider): InboxProgram {
-  return new Program<SolverInbox>({} as SolverInbox, provider)
-}
+export const inboxProgramAddress = address(SOLVER_INBOX_PROGRAM_ADDRESS)
