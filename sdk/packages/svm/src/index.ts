@@ -1,6 +1,7 @@
 export type {
   EVMCallArgs,
   EVMTokenExpenseArgs,
+  OpenInstruction,
 } from './__generated__/inbox/index.js'
 export * from './codecs.js'
 export * from './crypto.js'

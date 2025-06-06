@@ -11,6 +11,7 @@ import {
 import {
   type EVMCallArgs,
   type EVMTokenExpenseArgs,
+  type OpenInstruction,
   getOpenInstructionAsync,
 } from './__generated__/inbox/index.js'
 import {
@@ -80,7 +81,7 @@ export type OpenOrderInstructionParams = {
 
 export async function getOpenOrderInstruction(
   params: OpenOrderInstructionParams,
-) {
+): Promise<OpenInstruction> {
   const {
     owner,
     mint,
