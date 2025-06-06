@@ -120,10 +120,10 @@
  },
  "hyper_evm:HYPE": {
   "maxSwap": "0 HYPE",
-  "min": "1000 HYPE",
+  "min": "500 HYPE",
   "minSwap": "0 HYPE",
-  "surplus": "10000 HYPE",
-  "target": "5000 HYPE"
+  "surplus": "inf",
+  "target": "1000 HYPE"
  },
  "hyper_evm:USDT0": {
   "maxSwap": "0 USDT0",
