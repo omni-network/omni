@@ -26,15 +26,18 @@ import { getTokenAccount } from './token.js'
 const orderTokenSeed = textEncoder.encode('order_token')
 const orderStateSeed = textEncoder.encode('order_state')
 
+export async function getOrderIdBytes(
+  owner: Address,
+  nonce: bigint,
+): Promise<Uint8Array> {
+  return await digestSHA256(addressEncoder.encode(owner), encodeU64(nonce))
+}
+
 export async function getOrderId(
   owner: Address,
   nonce: bigint,
 ): Promise<Address> {
-  const bytes = await digestSHA256(
-    addressEncoder.encode(owner),
-    encodeU64(nonce),
-  )
-  return addressDecoder.decode(bytes)
+  return addressDecoder.decode(await getOrderIdBytes(owner, nonce))
 }
 
 export async function getInboxDerivedAddress(
@@ -53,9 +56,10 @@ export type OrderAccounts = {
 }
 
 export async function getOrderAccounts(
-  orderId: Address,
+  orderId: Address | Uint8Array | ReadonlyUint8Array,
 ): Promise<OrderAccounts> {
-  const orderIdSeed = addressEncoder.encode(orderId)
+  const orderIdSeed =
+    typeof orderId === 'string' ? addressEncoder.encode(orderId) : orderId
   const [orderState, orderTokenAccount] = await Promise.all([
     getInboxDerivedAddress([orderStateSeed, orderIdSeed]),
     getInboxDerivedAddress([orderTokenSeed, orderIdSeed]),
@@ -85,14 +89,14 @@ export async function getOpenOrderInstruction(
     ...rest
   } = params
   const nonce = maybeNonce ?? randomU64()
-  const orderId = await getOrderId(owner.address, nonce)
+  const orderIdBytes = await getOrderIdBytes(owner.address, nonce)
   const [orderAccounts, ownerTokenAccount] = await Promise.all([
-    getOrderAccounts(orderId),
+    getOrderAccounts(orderIdBytes),
     maybeOwnerTokenAccount ?? getTokenAccount({ owner: owner.address, mint }),
   ])
   return await getOpenInstructionAsync({
     owner,
-    orderId,
+    orderId: addressDecoder.decode(orderIdBytes),
     nonce,
     mintAccount: mint,
     ownerTokenAccount,
