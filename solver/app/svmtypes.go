@@ -156,6 +156,18 @@ func markFilledSVMOrder(
 	claimableBy solana.PublicKey,
 	orderID OrderID,
 ) error {
+	// Ensure order status
+	status, ok, err := anchorinbox.GetOrderState(ctx, cl, solana.PublicKey(orderID))
+	if err != nil {
+		return err
+	} else if !ok {
+		return errors.New("order not found")
+	} else if status.Status == anchorinbox.StatusFilled || status.Status == anchorinbox.StatusClaimed {
+		return nil // Order is already filled or claimed, no need to mark it again.
+	} else if status.Status != anchorinbox.StatusPending {
+		return errors.New("order is not pending", "status", status.Status)
+	}
+
 	mark, err := anchorinbox.NewMarkFilledOrder(ctx, cl, claimableBy, admin.PublicKey(), solana.PublicKey(orderID))
 	if err != nil {
 		return err

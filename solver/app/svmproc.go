@@ -69,17 +69,33 @@ func svmProcDeps(
 ) procDeps {
 	solver := svmutil.MapEVMKey(solverEVM)
 	evmFill := deps.Fill
+	evmDidFill := deps.DidFill
 
 	deps.GetOrder = adaptSVMGetOrder(cl, outboxAddr)
 	deps.Reject = adaptSVMReject(cl, solver)
 	deps.Claim = adaptSVMClaim(cl, solver)
+
+	// TODO(corver): Move this markfill to dedicated outbox event processor.
 	deps.Fill = func(ctx context.Context, order Order) error {
 		if err := evmFill(ctx, order); err != nil {
 			return err
 		}
 
-		// TODO(corver): Move this to dedicated outbox event processor.
 		return markFilledSVMOrder(ctx, cl, solver, solver.PublicKey(), order.ID)
+	}
+	deps.DidFill = func(ctx context.Context, order Order) (bool, error) {
+		if didFill, err := evmDidFill(ctx, order); err != nil {
+			return false, err
+		} else if !didFill {
+			return false, nil
+		}
+
+		// if outbox filled, ensure we marked it on inbox since SVM is trusted.
+		if err := markFilledSVMOrder(ctx, cl, solver, solver.PublicKey(), order.ID); err != nil {
+			return false, err
+		}
+
+		return true, nil
 	}
 
 	return deps
