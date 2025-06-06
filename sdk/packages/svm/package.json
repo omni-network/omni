@@ -1,5 +1,6 @@
 {
   "name": "@omni-network/svm",
+  "private": true,
   "description": "SVM support for Omni Solvernet",
   "version": "0.0.1",
   "type": "module",
