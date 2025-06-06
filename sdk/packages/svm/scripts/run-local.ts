@@ -1,85 +1,62 @@
 import { readFileSync } from 'node:fs'
-import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor'
-import { getOrCreateAssociatedTokenAccount } from '@solana/spl-token'
 import {
-  Connection,
-  Keypair,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  TransactionMessage,
-  VersionedTransaction,
-} from '@solana/web3.js'
-import BN from 'bn.js'
+  address,
+  createKeyPairSignerFromBytes,
+  createSolanaRpc,
+  sendTransactionWithoutConfirmingFactory,
+  setTransactionMessageLifetimeUsingBlockhash,
+  signTransactionMessageWithSigners,
+} from '@solana/kit'
 import bs58 from 'bs58'
-import { createOpenParams, inboxIDL } from '../dist/esm/index.js'
-import type { SolverInbox } from '../dist/types/index.js'
+import { createOpenOrderTransactionMessage } from '../dist/esm/index.js'
 
 const config = JSON.parse(readFileSync('/tmp/svm/config.json', 'utf8'))
+const usdcMint = config.mints[0]
 
-const usdcMintAccount = new PublicKey(config.mints[0].mint_account)
-console.log('USDC mint account', usdcMintAccount.toBase58())
+const usdcMintAccount = address(usdcMint.mint_account)
+console.log('USDC mint account:', usdcMintAccount)
 
-const connection = new Connection(config.rpc_address, {
-  commitment: 'confirmed',
-  wsEndpoint: 'ws://localhost:9900',
-})
-const keypair = Keypair.fromSecretKey(bs58.decode(config.authority_key))
-console.log('using account', keypair.publicKey.toBase58())
-
-const balance = await connection.getBalance(keypair.publicKey)
-console.log('account balance in SOL:', balance / LAMPORTS_PER_SOL)
-
-const wallet = new Wallet(keypair)
-const provider = new AnchorProvider(connection, wallet, {
-  commitment: 'confirmed',
-})
-const inboxProgram = new Program<SolverInbox>(inboxIDL as SolverInbox, provider)
-
-const tokenAccount = await getOrCreateAssociatedTokenAccount(
-  connection,
-  keypair,
-  usdcMintAccount,
-  keypair.publicKey,
+const signer = await createKeyPairSignerFromBytes(
+  bs58.decode(config.authority_key),
 )
-console.log('token account address', tokenAccount.address.toBase58())
+console.log('using EOA account:', signer.address)
 
-const openParams = await createOpenParams({
-  owner: keypair.publicKey,
-  depositAmount: new BN(1000),
-  destChainId: new BN(1),
+const rpc = createSolanaRpc(config.rpc_address)
+
+const balance = await rpc.getBalance(signer.address).send()
+console.log('EOA account balance in lamports:', balance.value)
+
+const orderTransactionMessage = await createOpenOrderTransactionMessage({
+  owner: signer,
+  mint: usdcMintAccount,
+  destChainId: 1n,
+  depositAmount: 1000n,
   call: {
-    target: new Array(20).fill(0),
-    selector: new Array(4).fill(0),
-    value: new BN(0),
-    params: Buffer.from([]),
+    target: new Uint8Array(20), // EVM address
+    selector: new Uint8Array(4), // EVM selector
+    value: 0n,
+    params: new Uint8Array(0),
   },
   expense: {
-    spender: new Array(20).fill(0),
-    token: new Array(20).fill(0),
-    amount: new BN(0),
+    spender: new Uint8Array(20), // EVM address
+    token: new Uint8Array(20), // EVM address
+    amount: 1000n,
   },
 })
+console.log('order transaction message:', orderTransactionMessage)
 
-const openInstruction = await inboxProgram.methods
-  .open(openParams)
-  .accounts({
-    ownerTokenAccount: tokenAccount.address,
-    mintAccount: usdcMintAccount,
-  })
-  .signers([keypair])
-  .instruction()
+const recentBlockhash = await rpc.getLatestBlockhash().send()
+console.log('recent blockhash:', recentBlockhash)
 
-const recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-console.log('recent blockhash', recentBlockhash)
+const transactionMessage = setTransactionMessageLifetimeUsingBlockhash(
+  recentBlockhash.value,
+  orderTransactionMessage,
+)
+console.log('transaction message:', transactionMessage)
 
-const messageV0 = new TransactionMessage({
-  payerKey: keypair.publicKey,
-  recentBlockhash,
-  instructions: [openInstruction],
-}).compileToV0Message()
+const signedTransaction =
+  await signTransactionMessageWithSigners(transactionMessage)
+console.log('signed transaction:', signedTransaction)
 
-const transaction = new VersionedTransaction(messageV0)
-transaction.sign([keypair])
-
-const txId = await connection.sendTransaction(transaction)
-console.log('open transaction txId', txId)
+const sendTransaction = sendTransactionWithoutConfirmingFactory({ rpc })
+await sendTransaction(signedTransaction, { commitment: 'confirmed' })

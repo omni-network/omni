@@ -575,10 +575,15 @@ describe('useRejection()', () => {
       })
     })
 
-    await waitFor(() => {
-      expect(rejectionHook.result.current.status).toBe('success')
-      expect(rejectionHook.result.current.data?.txHash).toBeDefined()
-      expect(rejectionHook.result.current.data?.rejectReason).toBe('Unsupported destination chain')
-    }, { timeout: 20_000 })
+    await waitFor(
+      () => {
+        expect(rejectionHook.result.current.status).toBe('success')
+        expect(rejectionHook.result.current.data?.txHash).toBeDefined()
+        expect(rejectionHook.result.current.data?.rejectReason).toBe(
+          'Unsupported destination chain',
+        )
+      },
+      { timeout: 20_000 },
+    )
   })
 })

@@ -1,15 +1,8 @@
-import BN from 'bn.js'
-
-export function bytesFromU64(n: BN): Uint8Array {
-  return new Uint8Array(n.toArray('le', 8))
-}
-
-export function bytesToU64(bytes: Uint8Array): BN {
-  return new BN(bytes, 'le')
-}
+import type { ReadonlyUint8Array } from '@solana/kit'
+import { decodeU64 } from './codecs.js'
 
 export async function digestSHA256(
-  ...inputs: Array<Uint8Array>
+  ...inputs: Array<Uint8Array | ReadonlyUint8Array>
 ): Promise<Uint8Array> {
   const length = inputs.reduce((acc, input) => acc + input.length, 0)
   const data = new Uint8Array(length)
@@ -23,11 +16,11 @@ export async function digestSHA256(
 }
 
 export function randomBytes(length: number): Uint8Array {
-  const buffer = new Uint8Array(length)
-  crypto.getRandomValues(buffer)
-  return buffer
+  const bytes = new Uint8Array(length)
+  crypto.getRandomValues(bytes)
+  return bytes
 }
 
-export function randomU64(): BN {
-  return bytesToU64(randomBytes(8))
+export function randomU64(): bigint {
+  return decodeU64(randomBytes(8))
 }
