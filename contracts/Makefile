@@ -42,7 +42,8 @@ CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			test/StakingProxy.sol:StakingProxy
 
 SOLVE_CONTRACTS := ISolverNetBindings SolverNetInbox SolverNetOutbox SolverNetExecutor \
-			test/utils/MockERC20.sol:MockERC20 test/utils/MockVault.sol:MockVault SolverNetAdmin
+			test/utils/MockERC20.sol:MockERC20 test/utils/MockVault.sol:MockVault SolverNetAdmin \
+			IPermit2
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory
 

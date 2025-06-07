@@ -20,6 +20,7 @@ import (
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
+	"github.com/omni-network/omni/solver/app"
 	sclient "github.com/omni-network/omni/solver/client"
 	solver "github.com/omni-network/omni/solver/types"
 
@@ -42,12 +43,26 @@ type TestOrder struct {
 	RejectReason  string
 }
 
-func isDepositTokenInvalid(o TestOrder) bool {
-	return o.Deposit.Token == invalidTokenAddress
+// TestGaslessOrder represents a gasless order for testing.
+// Note: The sponsor/relayer who submits the transaction is not tracked here as they just pay gas.
+type TestGaslessOrder struct {
+	User              common.Address // The depositor (pays via Permit2 signature) - maps to order.user
+	Owner             common.Address // The order owner (gets refunds if canceled/rejected) - maps to orderData.owner. If address(0), defaults to User
+	Nonce             uint64
+	OpenDeadline      time.Time
+	FillDeadline      time.Time
+	DestChainID       uint64
+	SourceChainID     uint64
+	Expenses          []solvernet.Expense
+	Calls             []solvernet.Call
+	Deposit           solvernet.Deposit
+	ShouldReject      bool
+	RejectReason      string
+	RequiresSignature bool
 }
 
-func isDepositTokenEmpty(o TestOrder) bool {
-	return o.Deposit.Token == zeroAddr
+func isDepositTokenInvalid(o TestOrder) bool {
+	return o.Deposit.Token == invalidTokenAddress
 }
 
 func srcAndDestChainAreSame(o TestOrder) bool {
@@ -75,22 +90,47 @@ func Test(ctx context.Context, network netconf.Network, backends ethbackend.Back
 
 	orders := makeOrders() //nolint:contextcheck // Not critical code
 
-	if err := mintAndApproveAll(ctx, backends, orders); err != nil {
-		return errors.Wrap(err, "mint all")
+	gaslessOrders := makeGaslessOrders() //nolint:contextcheck // Not critical code
+
+	// Test check API with regular orders
+	if err := testCheckAPI(ctx, backends, testOrdersToOrderLike(orders), solverAddr); err != nil {
+		return errors.Wrap(err, "test check api onchain")
 	}
 
-	if err := testCheckAPI(ctx, backends, orders, solverAddr); err != nil {
-		return errors.Wrap(err, "test check api")
+	// Test check API with gasless orders using the new CheckRequest conversion
+	if err := testCheckAPIGasless(ctx, backends, gaslessOrders, solverAddr); err != nil {
+		return errors.Wrap(err, "test check api gasless")
 	}
 
 	if err := testRelayAPI(ctx, solverAddr); err != nil {
 		return errors.Wrap(err, "test relay api")
 	}
 
-	tracker, err := openAll(ctx, backends, orders)
-	if err != nil {
-		return errors.Wrap(err, "open all")
+	// Create unified tracker for all orders
+	tracker := newOrderTracker()
+
+	// Mint and approve tokens for all regular orders
+	if err := mintAndApproveAll(ctx, backends, testOrdersToOrderLike(orders)); err != nil {
+		return errors.Wrap(err, "mint all onchain")
 	}
+
+	// Open regular orders and add to tracker
+	if err := openAllToTracker(ctx, backends, orders, tracker); err != nil {
+		return errors.Wrap(err, "open all regular orders")
+	}
+
+	// Mint and approve tokens for all gasless orders
+	if err := mintAndApproveAll(ctx, backends, testGaslessOrdersToOrderLike(gaslessOrders)); err != nil {
+		return errors.Wrap(err, "mint all gasless")
+	}
+
+	// Open gasless orders via relay API and add to same tracker
+	if err := openAllGaslessToTracker(ctx, backends, gaslessOrders, solverAddr, tracker); err != nil {
+		return errors.Wrap(err, "open all gasless orders")
+	}
+
+	// Mark all orders as tracked
+	tracker.AllTracked()
 
 	xprov := xprovider.New(network, backends.Clients(), nil)
 
@@ -165,6 +205,62 @@ func Test(ctx context.Context, network netconf.Network, backends ethbackend.Back
 			return nil
 		}
 	}
+}
+
+// openAllToTracker opens regular orders and adds them directly to the provided tracker.
+func openAllToTracker(ctx context.Context, backends ethbackend.Backends, orders []TestOrder, tracker *orderTracker) error {
+	var eg errgroup.Group
+	for _, order := range orders {
+		eg.Go(func() error {
+			if isInvalidExpense(order) || isSrcChainInvalid(order) || isDepositTokenInvalid(order) || srcAndDestChainAreSame(order) || isInsufficientInventory(order) {
+				return nil
+			}
+
+			id, err := openOrder(ctx, backends, order)
+			if err != nil {
+				return err
+			}
+
+			tracker.TrackOrder(id, order)
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "open onchain orders")
+	}
+
+	return nil
+}
+
+// openAllGaslessToTracker opens gasless orders via relay API and adds them directly to the provided tracker.
+func openAllGaslessToTracker(ctx context.Context, backends ethbackend.Backends, orders []TestGaslessOrder, solverAddr string, tracker *orderTracker) error {
+	var eg errgroup.Group
+	for _, order := range orders {
+		eg.Go(func() error {
+			// Skip orders that should be rejected due to validation or backend issues
+			if isInvalidExpenseGasless(order) || isSrcChainInvalidGasless(order) || isDepositTokenInvalidGasless(order) ||
+				srcAndDestChainAreSameGasless(order) || isInsufficientInventoryGasless(order) || isRelayerErrorGasless(order) || isInvalidOpenDeadlineGasless(order) || isInvalidFillDeadlineGasless(order) {
+				return nil
+			}
+
+			id, err := openGaslessOrder(ctx, backends, order, solverAddr)
+			if err != nil {
+				return err
+			}
+
+			tracker.TrackOrder(id, order)
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "open gasless orders")
+	}
+
+	return nil
 }
 
 func makeOrders() []TestOrder {
@@ -372,35 +468,374 @@ func makeOrders() []TestOrder {
 	return orders
 }
 
-func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrder) (*orderTracker, error) {
-	tracker := newOrderTracker()
+// makeGaslessOrders creates a collection of gasless test orders similar to makeOrders.
+// These orders are designed to test the relayer functionality and gasless order flow.
+//
+//nolint:maintidx // Just a test function that generates many test cases
+func makeGaslessOrders() []TestGaslessOrder {
+	user := anvil.DevAccount8()
+	var orders []TestGaslessOrder
 
-	var eg errgroup.Group
-	for _, order := range orders {
-		eg.Go(func() error {
-			if isInvalidExpense(order) || isSrcChainInvalid(order) || isDepositTokenInvalid(order) || srcAndDestChainAreSame(order) || isInsufficientInventory(order) {
-				return nil
+	// Helper function to generate unique nonces
+	nextNonce := uint64(1000) // Start at 1000 to avoid conflicts with any existing tests
+	getNonce := func() uint64 {
+		nextNonce++
+		return nextNonce
+	}
+
+	// Craft valid order params
+	defaultExpenseAmount := bi.Ether(1)
+	defaultSrcToken := mustTokenByAsset(evmchain.IDMockL1, tokens.OMNI) // Source token for deposit
+	defaultDstToken := mustTokenByAsset(evmchain.IDMockL2, tokens.ETH)  // Native ETH destination
+	defaultDepositAmount := mustDepositAmount(defaultExpenseAmount, defaultSrcToken, defaultDstToken)
+
+	// ERC20 swaps (gasless orders only support ERC20 deposits)
+	{
+		gaslessSwapOrder := func(addr common.Address, srcChain uint64, srcAsset tokens.Asset, dstChain uint64, dstAsset tokens.Asset) TestGaslessOrder {
+			// Use appropriate amount based on destination token decimals
+			var amount *big.Int
+			if dstAsset == tokens.USDC || dstAsset == tokens.USDT || dstAsset == tokens.USDT0 {
+				amount = bi.Dec6(2) // 2 tokens with 6 decimals (2 USDC/USDT)
+			} else {
+				amount = bi.Ether(2) // 2 tokens with 18 decimals (2 ETH/OMNI)
 			}
+			srcToken := mustTokenByAsset(srcChain, srcAsset)
+			dstToken := mustTokenByAsset(dstChain, dstAsset)
+			expense, call := expenseAndCall(amount, dstToken, addr)
+			depositAmount := mustDepositAmount(amount, srcToken, dstToken)
 
-			id, err := openOrder(ctx, backends, order)
-			if err != nil {
-				return err
+			return TestGaslessOrder{
+				User:          addr,
+				Owner:         addr, // Most common case: user is also the order owner
+				Nonce:         getNonce(),
+				OpenDeadline:  time.Now().Add(30 * time.Minute), // 30 min to open
+				FillDeadline:  time.Now().Add(1 * time.Hour),    // 1 hour to fill
+				DestChainID:   dstChain,
+				SourceChainID: srcChain,
+				Expenses:      expense,
+				Calls:         call,
+				Deposit: solvernet.Deposit{
+					Token:  srcToken.Address,
+					Amount: depositAmount,
+				},
+				RequiresSignature: true,
 			}
+		}
 
-			tracker.TrackOrder(id, order)
+		orders = append(orders,
+			gaslessSwapOrder(user, evmchain.IDMockL1, tokens.OMNI, evmchain.IDOmniDevnet, tokens.OMNI), // OMNI -> OMNI (no fee)
+			gaslessSwapOrder(user, evmchain.IDMockL1, tokens.USDC, evmchain.IDMockL2, tokens.ETH),      // USDC -> ETH
+			gaslessSwapOrder(user, evmchain.IDMockL1, tokens.OMNI, evmchain.IDMockL1, tokens.USDC),     // same chain swap
+		)
+	}
 
-			return nil
+	// ERC20 OMNI -> native OMNI orders (bridging)
+	{
+		gaslessOmniBridgeOrder := func(addr common.Address, expense *big.Int, deposit solvernet.Deposit, rejectReason string) TestGaslessOrder {
+			return TestGaslessOrder{
+				User:              addr,
+				Owner:             addr, // User is also the order owner
+				Nonce:             getNonce(),
+				OpenDeadline:      time.Now().Add(30 * time.Minute),
+				FillDeadline:      time.Now().Add(1 * time.Hour),
+				SourceChainID:     evmchain.IDMockL1,
+				DestChainID:       evmchain.IDOmniDevnet,
+				Expenses:          []solvernet.Expense{},             // NO native expenses - contract rejects expenses with token==address(0)
+				Calls:             nativeTransferCall(expense, addr), // Native value goes in call.value
+				Deposit:           deposit,
+				ShouldReject:      rejectReason != "",
+				RejectReason:      rejectReason,
+				RequiresSignature: true,
+			}
+		}
+
+		expense := bi.Ether(5) // Smaller amount for gasless test
+		orders = append(orders,
+			gaslessOmniBridgeOrder(user, expense, erc20Deposit(expense, addrs.Token), ""),
+			gaslessOmniBridgeOrder(user, expense, unsupportedERC20Deposit(expense), solver.RejectUnsupportedDeposit.String()),
+		)
+	}
+
+	// Invalid gasless order cases
+	{
+		// Bad source chain
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     invalidChainID,
+			DestChainID:       evmchain.IDMockL1,
+			Expenses:          []solvernet.Expense{}, // NO native expenses
+			Calls:             nativeTransferCall(bi.Wei(1), user),
+			Deposit:           erc20Deposit(bi.Wei(1), zeroAddr),
+			ShouldReject:      true,
+			RejectReason:      solver.RejectUnsupportedSrcChain.String(),
+			RequiresSignature: true,
+		})
+
+		// Bad destination chain
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       invalidChainID,
+			Expenses:          []solvernet.Expense{}, // NO native expenses
+			Calls:             nativeTransferCall(bi.Wei(1), user),
+			Deposit:           erc20Deposit(bi.Wei(1), zeroAddr),
+			ShouldReject:      true,
+			RejectReason:      solver.RejectUnsupportedDestChain.String(),
+			RequiresSignature: true,
+		})
+
+		// Invalid expense (out of bounds) - this will be caught by check endpoint
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       evmchain.IDMockL2,
+			Expenses:          []solvernet.Expense{},                   // NO native expenses
+			Calls:             nativeTransferCall(bi.Ether(100), user), // Way over max in call value
+			Deposit:           erc20Deposit(defaultDepositAmount, addrs.Token),
+			ShouldReject:      true,
+			RejectReason:      solver.RejectExpenseOverMax.String(), // Check endpoint validation
+			RequiresSignature: true,
+		})
+
+		// Invalid open deadline (already expired)
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(-1 * time.Hour), // Already expired
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       evmchain.IDMockL2,
+			Expenses:          []solvernet.Expense{}, // NO native expenses
+			Calls:             nativeTransferCall(defaultExpenseAmount, user),
+			Deposit:           erc20Deposit(defaultDepositAmount, addrs.Token),
+			ShouldReject:      true,
+			RejectReason:      solver.RejectInvalidDeposit.String(), // Use check API rejection reason
+			RequiresSignature: true,
+		})
+
+		// Invalid fill deadline (before open deadline)
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(1 * time.Hour),
+			FillDeadline:      time.Now().Add(30 * time.Minute), // Before open deadline
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       evmchain.IDMockL2,
+			Expenses:          []solvernet.Expense{}, // NO native expenses
+			Calls:             nativeTransferCall(defaultExpenseAmount, user),
+			Deposit:           erc20Deposit(defaultDepositAmount, addrs.Token),
+			ShouldReject:      true,
+			RejectReason:      solver.RejectInvalidDeposit.String(), // Use check API rejection reason
+			RequiresSignature: true,
+		})
+
+		// Unsupported expense token (matching onchain test)
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       evmchain.IDMockL2,
+			Expenses:          unsupportedExpense(bi.Wei(1)),
+			Calls:             nativeTransferCall(bi.Wei(1), user),
+			Deposit:           erc20Deposit(defaultDepositAmount, addrs.Token),
+			ShouldReject:      true,
+			RejectReason:      solver.RejectUnsupportedExpense.String(),
+			RequiresSignature: true,
+		})
+
+		// Invalid native expense (should be rejected by contract - expenses cannot have token==address(0))
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       evmchain.IDMockL2,
+			Expenses:          nativeExpense(validETHSpend), // Contract rejects native expenses
+			Calls:             nativeTransferCall(validETHSpend, user),
+			Deposit:           erc20Deposit(defaultDepositAmount, addrs.Token),
+			ShouldReject:      true,
+			RejectReason:      solver.RejectInvalidExpense.String(),
+			RequiresSignature: true,
+		})
+
+		// Multiple native expenses (should be rejected - same reason as above)
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       evmchain.IDMockL2,
+			Expenses:          multipleNativeExpenses(validETHSpend), // Contract rejects native expenses
+			Calls:             nativeTransferCall(validETHSpend, user),
+			Deposit:           erc20Deposit(defaultDepositAmount, addrs.Token),
+			ShouldReject:      true,
+			RejectReason:      solver.RejectInvalidExpense.String(),
+			RequiresSignature: true,
+		})
+
+		// Multiple ERC20 expenses (valid in contract, but solver may reject)
+		dstToken := mustTokenByAsset(evmchain.IDMockL2, tokens.USDC)   // Valid token on destination chain
+		validAmount := bi.Dec6(2)                                      // 2 USDC (appropriate amount for 6-decimal token)
+		validExpense, _ := expenseAndCall(validAmount, dstToken, user) // Get valid single expense
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       evmchain.IDMockL2,
+			Expenses:          append(validExpense, validExpense[0]), // Duplicate the valid expense to create multiple
+			Calls:             nativeTransferCall(validETHSpend, user),
+			Deposit:           erc20Deposit(defaultDepositAmount, addrs.Token),
+			ShouldReject:      true,
+			RejectReason:      solver.RejectInvalidExpense.String(),
+			RequiresSignature: true,
+		})
+
+		// Dest call reverts (matching onchain test)
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       evmchain.IDMockL2,
+			Expenses:          []solvernet.Expense{},
+			Calls:             contractCallWithInvalidCallData(),
+			Deposit:           erc20Deposit(defaultDepositAmount, addrs.Token),
+			ShouldReject:      true,
+			RejectReason:      solver.RejectDestCallReverts.String(),
+			RequiresSignature: true,
+		})
+
+		// Insufficient inventory for native expense
+		srcTokenL2 := mustTokenByAsset(evmchain.IDMockL2, tokens.USDC) // Valid token on source chain (MockL2)
+		largeAmount := bi.Ether(2.5)                                   // Amount larger than solver inventory but below max limit (3 ETH) to trigger insufficient inventory
+		largeDepositAmount := mustDepositAmount(largeAmount, srcTokenL2, mustTokenByAsset(evmchain.IDMockL1, tokens.ETH))
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             user,
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL2,
+			DestChainID:       evmchain.IDMockL1,
+			Expenses:          []solvernet.Expense{},
+			Calls:             nativeTransferCall(largeAmount, user),                // Large native value in call to exceed inventory
+			Deposit:           erc20Deposit(largeDepositAmount, srcTokenL2.Address), // Use token that exists on source chain
+			ShouldReject:      true,
+			RejectReason:      solver.RejectInsufficientInventory.String(),
+			RequiresSignature: true,
 		})
 	}
 
-	if err := eg.Wait(); err != nil {
-		return nil, errors.Wrap(err, "wait group")
+	// Valid ERC20 transfer orders
+	{
+		erc20TransferOrder := func(addr common.Address, srcToken, dstToken tokens.Token, expense *big.Int, rejectReason string) TestGaslessOrder {
+			depositAmount := mustDepositAmount(expense, srcToken, dstToken)
+			return TestGaslessOrder{
+				User:          addr,
+				Owner:         addr,
+				Nonce:         getNonce(),
+				OpenDeadline:  time.Now().Add(30 * time.Minute),
+				FillDeadline:  time.Now().Add(1 * time.Hour),
+				SourceChainID: evmchain.IDMockL1,
+				DestChainID:   evmchain.IDMockL2,
+				Expenses:      []solvernet.Expense{{Token: dstToken.Address, Amount: expense}},
+				Calls: func() []solvernet.Call {
+					call, err := erc20Call(dstToken, expense, addr)
+					if err != nil {
+						panic(err)
+					}
+
+					return call
+				}(),
+				Deposit: solvernet.Deposit{
+					Token:  srcToken.Address,
+					Amount: depositAmount,
+				},
+				ShouldReject:      rejectReason != "",
+				RejectReason:      rejectReason,
+				RequiresSignature: true,
+			}
+		}
+
+		srcToken := mustTokenByAsset(evmchain.IDMockL1, tokens.USDC)
+		dstToken := mustTokenByAsset(evmchain.IDMockL2, tokens.USDC)
+		validExpense := bi.Dec6(1) // 1 USDC (6 decimals)
+
+		orders = append(orders,
+			erc20TransferOrder(user, srcToken, dstToken, validExpense, ""),
+		)
 	}
 
-	// Mark all orders as tracked
-	tracker.AllTracked()
+	// Sponsored transaction example (User != Owner)
+	{
+		sponsor := anvil.DevAccount9() // Different account as the sponsor/owner
 
-	return tracker, nil
+		// Sponsored order where user pays deposit but sponsor owns the order
+		orders = append(orders, TestGaslessOrder{
+			User:              user,    // User pays the deposit via Permit2
+			Owner:             sponsor, // Sponsor owns the order and gets refunds
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       evmchain.IDMockL2,
+			Expenses:          nativeExpense(defaultExpenseAmount),
+			Calls:             nativeTransferCall(defaultExpenseAmount, sponsor), // Transfer to sponsor
+			Deposit:           erc20Deposit(defaultDepositAmount, addrs.Token),
+			ShouldReject:      false,
+			RejectReason:      "",
+			RequiresSignature: true,
+		})
+	}
+
+	// Test address(0) owner fallback behavior
+	{
+		// When Owner is address(0), the contract should default it to User
+		// This tests the fallback logic in _validateOrderData
+		orders = append(orders, TestGaslessOrder{
+			User:              user,
+			Owner:             zeroAddr, // address(0) - should default to User in contract
+			Nonce:             getNonce(),
+			OpenDeadline:      time.Now().Add(30 * time.Minute),
+			FillDeadline:      time.Now().Add(1 * time.Hour),
+			SourceChainID:     evmchain.IDMockL1,
+			DestChainID:       evmchain.IDMockL2,
+			Expenses:          nativeExpense(defaultExpenseAmount),
+			Calls:             nativeTransferCall(defaultExpenseAmount, user), // Transfer to user since they'll become owner
+			Deposit:           erc20Deposit(defaultDepositAmount, addrs.Token),
+			ShouldReject:      false,
+			RejectReason:      "",
+			RequiresSignature: true,
+		})
+	}
+
+	return orders
 }
 
 func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrder) ([32]byte, error) {
@@ -412,35 +847,28 @@ func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrde
 	}, solvernet.WithFillDeadline(order.FillDeadline))
 }
 
-func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []TestOrder, solverAddr string) error {
+func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []OrderLike, solverAddr string) error {
 	scl := sclient.New(solverAddr)
 
 	for i, order := range orders {
 		// If this order requires balance draining, do it before test logic.
-		if isInsufficientInventory(order) {
+		if isInsufficientInventoryForOrderLike(order) {
 			// Drain solver native balance.
-			if err := setSolverAccountNativeBalance(ctx, order.DestChainID, backends, bi.Zero()); err != nil {
+			if err := setSolverAccountNativeBalance(ctx, order.GetDestChainID(), backends, bi.Zero()); err != nil {
 				return errors.Wrap(err, "drain solver account failed")
 			}
 		}
 
-		checkReq := solver.CheckRequest{
-			FillDeadline:       uint32(order.FillDeadline.Unix()), //nolint:gosec // this is fine for tests
-			SourceChainID:      order.SourceChainID,
-			DestinationChainID: order.DestChainID,
-			Expenses:           expensesFromBindings(order.Expenses),
-			Calls:              callsFromBindings(order.Calls),
-			Deposit:            addrAmtFromDeposit(order.Deposit),
-		}
+		checkReq := orderLikeToCheckRequest(order)
 
 		checkResp, err := scl.Check(ctx, checkReq)
 		if err != nil {
 			return errors.Wrap(err, "check request")
 		}
 
-		if checkResp.Rejected != order.ShouldReject {
+		if checkResp.Rejected != order.GetShouldReject() {
 			return errors.New("unexpected rejection",
-				"expected", order.ShouldReject,
+				"expected", order.GetShouldReject(),
 				"actual", checkResp.Rejected,
 				"reason", checkResp.RejectReason,
 				"description", checkResp.RejectDescription,
@@ -448,16 +876,108 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 			)
 		}
 
-		if checkResp.RejectReason != order.RejectReason {
-			return errors.New("unexpected reject reason", "expected", order.RejectReason, "actual", checkResp.RejectReason)
+		if checkResp.RejectReason != order.GetRejectReason() {
+			return errors.New("unexpected reject reason", "expected", order.GetRejectReason(), "actual", checkResp.RejectReason)
 		}
 
-		if checkResp.Accepted && order.ShouldReject {
+		if checkResp.Accepted && order.GetShouldReject() {
 			return errors.New("accepted but should reject")
 		}
 
 		// Refund solver native balance after test logic.
-		if isInsufficientInventory(order) {
+		if isInsufficientInventoryForOrderLike(order) {
+			eth1m := bi.Ether(1_000_000)
+			if err := setSolverAccountNativeBalance(ctx, order.GetDestChainID(), backends, eth1m); err != nil {
+				return errors.Wrap(err, "refund solver account failed")
+			}
+		}
+	}
+
+	log.Info(ctx, "Test /check success")
+
+	return nil
+}
+
+// testCheckAPIGasless tests the check API with gasless orders by converting them to CheckRequest format.
+func testCheckAPIGasless(ctx context.Context, backends ethbackend.Backends, gaslessOrders []TestGaslessOrder, solverAddr string) error {
+	scl := sclient.New(solverAddr)
+
+	for i, order := range gaslessOrders {
+		log.Info(ctx, "Checking gasless order via check API", "order_idx", i)
+
+		// If this order requires balance draining, do it before test logic.
+		if isInsufficientInventoryGasless(order) {
+			// Drain solver native balance.
+			if err := setSolverAccountNativeBalance(ctx, order.DestChainID, backends, bi.Zero()); err != nil {
+				return errors.Wrap(err, "drain solver account failed")
+			}
+		}
+
+		// Create order data in the same format as used in openGaslessOrder
+		orderData := bindings.SolverNetOrderData{
+			Owner:       order.Owner,
+			DestChainId: order.DestChainID,
+			Deposit:     order.Deposit,
+			Calls:       solvernet.CallsToBindings(order.Calls),
+			Expenses:    solvernet.FilterNativeExpenses(order.Expenses), // Filter native expenses for gasless orders
+		}
+
+		// Special case: for testing native expense validation, don't filter
+		if order.RejectReason == solver.RejectInvalidExpense.String() {
+			// Check if this is testing native expense validation specifically
+			hasNativeExpenses := false
+			for _, exp := range order.Expenses {
+				if exp.Token == (common.Address{}) {
+					hasNativeExpenses = true
+					break
+				}
+			}
+			if hasNativeExpenses {
+				orderData.Expenses = order.Expenses // Don't filter so solver can validate
+			}
+		}
+
+		// Create gasless order structure (simulating what OpenGaslessOrder would create)
+		gaslessOrder := bindings.IERC7683GaslessCrossChainOrder{
+			User:          order.User,
+			Nonce:         new(big.Int).SetUint64(order.Nonce),
+			OpenDeadline:  uint32(order.OpenDeadline.Unix()),
+			FillDeadline:  uint32(order.FillDeadline.Unix()),
+			OriginChainId: new(big.Int).SetUint64(order.SourceChainID),
+			// We don't need the other fields for validation
+		}
+
+		// Convert to check request using the new helper function
+		req, err := solver.CheckRequestFromGaslessOrder(gaslessOrder, orderData)
+		if err != nil {
+			return errors.Wrap(err, "gasless order to check request", "order_idx", i)
+		}
+
+		// Add debug flag
+		req.Debug = true
+
+		// Make the check request
+		checkResp, err := scl.Check(ctx, req)
+		if err != nil {
+			return errors.Wrap(err, "check api request", "order_idx", i)
+		}
+
+		// Validate response matches expected behavior
+		if order.ShouldReject {
+			if checkResp.Accepted {
+				return errors.New("unexpected acceptance", "expected", false, "actual", true, "order_idx", i)
+			}
+			if checkResp.RejectReason != order.GetRejectReason() {
+				return errors.New("unexpected reject reason", "expected", order.GetRejectReason(), "actual", checkResp.RejectReason, "order_idx", i)
+			}
+		} else {
+			if checkResp.Rejected {
+				return errors.New("unexpected rejection", "expected", false, "actual", true, "reason", checkResp.RejectReason, "description", checkResp.RejectDescription, "order_idx", i)
+			}
+		}
+
+		// Refund solver native balance after test logic.
+		if isInsufficientInventoryGasless(order) {
 			eth1m := bi.Ether(1_000_000)
 			if err := setSolverAccountNativeBalance(ctx, order.DestChainID, backends, eth1m); err != nil {
 				return errors.Wrap(err, "refund solver account failed")
@@ -465,7 +985,7 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 		}
 	}
 
-	log.Info(ctx, "Test /check success")
+	log.Info(ctx, "Test /check gasless success")
 
 	return nil
 }
@@ -578,4 +1098,121 @@ func mustDepositAmount(expenseAmount *big.Int, srcToken tokens.Token, dstToken t
 	sprice = sprice.WithFeeBips(30)
 
 	return sprice.ToDeposit(expenseAmount)
+}
+
+// Helper functions for gasless order skip logic.
+func isInvalidExpenseGasless(o TestGaslessOrder) bool {
+	// Skip gasless orders with native expenses
+	for _, expense := range o.Expenses {
+		if expense.Token == zeroAddr {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isSrcChainInvalidGasless(o TestGaslessOrder) bool {
+	return o.SourceChainID == invalidChainID
+}
+
+func isDepositTokenInvalidGasless(o TestGaslessOrder) bool {
+	return o.Deposit.Token == invalidTokenAddress || o.Deposit.Token == zeroAddr // Also skip native deposits for gasless orders
+}
+
+func srcAndDestChainAreSameGasless(o TestGaslessOrder) bool {
+	return o.SourceChainID == o.DestChainID
+}
+
+func isInsufficientInventoryGasless(o TestGaslessOrder) bool {
+	return o.RejectReason == solver.RejectInsufficientInventory.String()
+}
+
+func isRelayerErrorGasless(o TestGaslessOrder) bool {
+	return o.RejectReason == app.RelayErrorMissingSignature ||
+		o.RejectReason == app.RelayErrorInvalidOrder ||
+		o.RejectReason == app.RelayErrorUnsupportedChain ||
+		o.RejectReason == app.RelayErrorInvalidOriginSettler
+}
+
+func isInvalidOpenDeadlineGasless(o TestGaslessOrder) bool {
+	// Skip gasless orders with open deadlines in the past
+	return o.OpenDeadline.Before(time.Now())
+}
+
+func isInvalidFillDeadlineGasless(o TestGaslessOrder) bool {
+	// Skip gasless orders where fill deadline is not after open deadline
+	return !o.FillDeadline.After(o.OpenDeadline)
+}
+
+// openGaslessOrder opens a single gasless order via the relay API.
+func openGaslessOrder(ctx context.Context, backends ethbackend.Backends, order TestGaslessOrder, solverAddr string) ([32]byte, error) {
+	// Get the user's private key
+	userKey, ok := anvil.PrivateKey(order.User)
+	if !ok {
+		return [32]byte{}, errors.New("user private key not found", "user", order.User.Hex())
+	}
+
+	// Create order data
+	orderData := bindings.SolverNetOrderData{
+		Owner:       order.Owner,
+		DestChainId: order.DestChainID,
+		Deposit:     order.Deposit,
+		Calls:       solvernet.CallsToBindings(order.Calls),
+		Expenses:    solvernet.FilterNativeExpenses(order.Expenses), // Filter native expenses for gasless orders
+	}
+
+	// Get the actual solver Ethereum address (not the URL)
+	solverEthAddr := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
+
+	// Prepare gasless order and signature
+	gaslessOrder, signature, err := solvernet.OpenGaslessOrder(
+		ctx,
+		netconf.Devnet,
+		order.SourceChainID,
+		backends,
+		userKey,
+		orderData,
+		solvernet.WithGaslessOpenDeadline(order.OpenDeadline),
+		solvernet.WithGaslessFillDeadline(order.FillDeadline),
+		solvernet.WithGaslessNonce(new(big.Int).SetUint64(order.Nonce)),
+		solvernet.WithSolverAddr(solverEthAddr),
+	)
+	if err != nil {
+		return [32]byte{}, errors.Wrap(err, "prepare gasless order")
+	}
+
+	// Skip signature if not required (for testing error cases)
+	if !order.RequiresSignature {
+		signature = []byte{} // Empty signature should be rejected by relayer
+	}
+
+	// Create relay request
+	relayReq := solver.RelayRequest{
+		Order:            gaslessOrder,
+		Signature:        signature,
+		OriginFillerData: []byte{}, // Empty for now
+	}
+
+	// Submit via relay API (solverAddr is the URL for the API)
+	client := sclient.New(solverAddr)
+	relayResp, err := client.Relay(ctx, relayReq)
+	if err != nil {
+		return [32]byte{}, errors.Wrap(err, "relay request failed")
+	}
+
+	// Check if the relay was successful
+	if !relayResp.Success {
+		if relayResp.Error != nil {
+			return [32]byte{}, errors.New("relay request rejected",
+				"code", relayResp.Error.Code,
+				"message", relayResp.Error.Message,
+				"description", relayResp.Error.Description)
+		}
+
+		return [32]byte{}, errors.New("relay request failed with no error details")
+	}
+
+	// Extract order ID from response
+	return relayResp.OrderID, nil
 }

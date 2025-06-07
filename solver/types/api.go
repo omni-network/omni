@@ -35,6 +35,8 @@ type JSONError struct {
 // To support multiple order types with this api (e.g. EVM -> Solana, Solana -> EVM)
 // we'd need a more generic request / response format that discriminates on
 // order type hash.
+//
+// Extended to support gasless order validation with optional fields.
 type CheckRequest struct {
 	SourceChainID      uint64    `json:"sourceChainId"`
 	DestinationChainID uint64    `json:"destChainId"`
@@ -43,6 +45,12 @@ type CheckRequest struct {
 	Expenses           []Expense `json:"expenses"`
 	Deposit            AddrAmt   `json:"deposit"`
 	Debug              bool      `json:"debug"`
+
+	// Optional fields for gasless order validation
+	// If present, gasless order validation logic will be applied
+	OpenDeadline *uint32         `json:"openDeadline,omitempty"` // For gasless orders only
+	User         *common.Address `json:"user,omitempty"`         // For gasless orders only
+	Nonce        *uint64         `json:"nonce,omitempty"`        // For gasless orders only
 }
 
 // CheckResponse is the response json for the /check endpoint.
@@ -287,6 +295,45 @@ func CheckRequestFromOrderData(srcChainID uint64, data bindings.SolverNetOrderDa
 		Deposit:            AddrAmt(data.Deposit),
 		Expenses:           expenses,
 		Calls:              CallsFromBindings(data.Calls),
+	}, nil
+}
+
+// CheckRequestFromGaslessOrder creates a CheckRequest from a gasless order and its order data.
+// This enables gasless orders to be validated via the /check endpoint.
+func CheckRequestFromGaslessOrder(order bindings.IERC7683GaslessCrossChainOrder, data bindings.SolverNetOrderData) (CheckRequest, error) {
+	expenses := ExpensesFromBindings(data.Expenses)
+
+	// Add native calls as expenses.
+	// Note this is inconsistent with OpenOrder where native calls MUST NOT be included as expenses.
+	for _, call := range data.Calls {
+		if call.Value == nil || bi.IsZero(call.Value) {
+			continue
+		}
+		expenses = append(expenses, Expense{
+			// TODO(corver): What should spender be?
+			Amount: bi.Clone(call.Value),
+		})
+	}
+
+	// Convert uint64 nonce to *uint64 for optional field
+	var nonce *uint64
+	if order.Nonce != nil {
+		n := order.Nonce.Uint64()
+		nonce = &n
+	}
+
+	return CheckRequest{
+		SourceChainID:      order.OriginChainId.Uint64(),
+		DestinationChainID: data.DestChainId,
+		FillDeadline:       order.FillDeadline,
+		Deposit:            AddrAmt(data.Deposit),
+		Expenses:           expenses,
+		Calls:              CallsFromBindings(data.Calls),
+
+		// Gasless order specific fields
+		OpenDeadline: &order.OpenDeadline,
+		User:         &order.User,
+		Nonce:        nonce,
 	}, nil
 }
 

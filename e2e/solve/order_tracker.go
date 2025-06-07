@@ -21,27 +21,51 @@ func (k orderKey) SrcChain() string {
 
 type orderTracker struct {
 	mu      sync.Mutex
-	orders  map[orderKey]TestOrder
+	orders  map[orderKey]OrderLike
 	status  map[orderKey]solvernet.OrderStatus
 	tracked bool // tracked indicates when orders have been tracked. This prevents accidental misuse of the orderTracker API.
 }
 
 func newOrderTracker() *orderTracker {
 	return &orderTracker{
-		orders: make(map[orderKey]TestOrder),
+		orders: make(map[orderKey]OrderLike),
 		status: make(map[orderKey]solvernet.OrderStatus),
 	}
 }
 
-func (t *orderTracker) TrackOrder(id solvernet.OrderID, order TestOrder) {
+// TrackOrder adds an order to the tracker. Works with any OrderLike type (TestOrder, TestGaslessOrder, etc.)
+func (t *orderTracker) TrackOrder(id solvernet.OrderID, order OrderLike) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.tracked {
 		panic("all orders already tracked [BUG]")
 	}
 
-	key := orderKey{orderID: id, srcChainID: order.SourceChainID}
+	key := orderKey{orderID: id, srcChainID: order.GetSourceChainID()}
 	t.orders[key] = order
+}
+
+// Merge merges another orderTracker into this one.
+func (t *orderTracker) Merge(other *orderTracker) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if t.tracked {
+		panic("all orders already tracked [BUG]")
+	}
+
+	other.mu.Lock()
+	defer other.mu.Unlock()
+
+	// Copy orders from other tracker
+	for key, order := range other.orders {
+		t.orders[key] = order
+	}
+
+	// Copy status from other tracker
+	for key, status := range other.status {
+		t.status[key] = status
+	}
 }
 
 func (t *orderTracker) AllTracked() {
@@ -83,7 +107,7 @@ func (t *orderTracker) Remaining() (int, error) {
 			continue
 		}
 
-		if order.ShouldReject {
+		if order.GetShouldReject() {
 			if status == solvernet.StatusFilled || status == solvernet.StatusClaimed {
 				return 0, errors.New("order should have been rejected", "order_id", key.orderID, "src_chain_id", key.srcChainID, "status", status)
 			}
@@ -94,7 +118,7 @@ func (t *orderTracker) Remaining() (int, error) {
 			}
 		}
 
-		if !order.ShouldReject {
+		if !order.GetShouldReject() {
 			if status == solvernet.StatusRejected {
 				return 0, errors.New("order should have been filled", "order_id", key.orderID, "src_chain_id", key.srcChainID, "status", status)
 			}

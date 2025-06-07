@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/bi"
@@ -27,6 +28,11 @@ type checkFunc func(context.Context, types.CheckRequest) error
 // It is the logic behind the /check endpoint.
 func newChecker(backends unibackend.Backends, isAllowedCall callAllowFunc, priceFunc priceFunc, solverAddr, outboxAddr common.Address) checkFunc {
 	return func(ctx context.Context, req types.CheckRequest) error {
+		// Validate gasless order specific fields if present
+		if err := validateGaslessFields(req); err != nil {
+			return err
+		}
+
 		if _, err := backends.Backend(req.SourceChainID); err != nil {
 			return newRejection(types.RejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
 		}
@@ -271,3 +277,36 @@ func parseTokenAmt(srcChainID uint64, dep types.AddrAmt) (TokenAmt, error) {
 }
 
 func isNative(e types.Expense) bool { return e.Token == tokens.NativeAddr }
+
+// validateGaslessFields validates gasless order specific fields when they are present.
+// Returns rejection errors for validation failures.
+func validateGaslessFields(req types.CheckRequest) error {
+	// If any gasless fields are present, validate them all
+	if req.OpenDeadline != nil || req.User != nil || req.Nonce != nil {
+		// Basic validation similar to validateGaslessOrder in relay.go
+		if req.User != nil && *req.User == (common.Address{}) {
+			return newRejection(types.RejectInvalidDeposit, errors.New("user address cannot be zero"))
+		}
+
+		if req.Nonce != nil && *req.Nonce == 0 {
+			return newRejection(types.RejectInvalidDeposit, errors.New("nonce must be positive"))
+		}
+
+		if req.OpenDeadline != nil {
+			if *req.OpenDeadline <= uint32(0) {
+				return newRejection(types.RejectInvalidDeposit, errors.New("open deadline must be positive"))
+			}
+			// Check if the open deadline has already expired
+			if *req.OpenDeadline < uint32(time.Now().Unix()) {
+				return newRejection(types.RejectInvalidDeposit, errors.New("open deadline has already expired"))
+			}
+
+			// Validate that fill deadline is after open deadline
+			if req.FillDeadline <= *req.OpenDeadline {
+				return newRejection(types.RejectInvalidDeposit, errors.New("fill deadline must be after open deadline"))
+			}
+		}
+	}
+
+	return nil
+}

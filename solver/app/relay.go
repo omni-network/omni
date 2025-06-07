@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
@@ -185,7 +186,7 @@ func newRelayer(
 				return types.RelayResponse{
 					Success: false,
 					Error: &types.RelayError{
-						Code:        "REJECTED_" + r.Reason.String(),
+						Code:        r.Reason.String(),
 						Message:     RelayMsgOrderRejected,
 						Description: errors.Format(r.Err),
 					},
@@ -259,6 +260,10 @@ func validateGaslessOrder(order bindings.IERC7683GaslessCrossChainOrder) error {
 	}
 	if order.OpenDeadline <= uint32(0) {
 		return errors.New("open deadline must be positive")
+	}
+	// Check if the open deadline has already expired
+	if order.OpenDeadline < uint32(time.Now().Unix()) {
+		return errors.New("open deadline has already expired")
 	}
 	if order.FillDeadline <= order.OpenDeadline {
 		return errors.New("fill deadline must be after open deadline")

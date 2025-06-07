@@ -3,6 +3,7 @@ package solve
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/bi"
@@ -36,6 +37,95 @@ var (
 		2,
 	)
 )
+
+// OrderLike defines common interface for order types that need minting and approval.
+type OrderLike interface {
+	GetSourceChainID() uint64
+	GetDepositPayer() common.Address // The account that needs tokens minted and approved
+	GetDeposit() solvernet.Deposit
+
+	// Methods needed for testCheckAPI
+	GetFillDeadline() time.Time
+	GetDestChainID() uint64
+	GetExpenses() []solvernet.Expense
+	GetCalls() []solvernet.Call
+	GetShouldReject() bool
+	GetRejectReason() string
+}
+
+// Implement OrderLike for TestOrder.
+func (o TestOrder) GetSourceChainID() uint64 {
+	return o.SourceChainID
+}
+
+func (o TestOrder) GetDepositPayer() common.Address {
+	return o.Owner // For regular orders, owner pays the deposit (owner is the sender in tests)
+}
+
+func (o TestOrder) GetDeposit() solvernet.Deposit {
+	return o.Deposit
+}
+
+func (o TestOrder) GetFillDeadline() time.Time {
+	return o.FillDeadline
+}
+
+func (o TestOrder) GetDestChainID() uint64 {
+	return o.DestChainID
+}
+
+func (o TestOrder) GetExpenses() []solvernet.Expense {
+	return o.Expenses
+}
+
+func (o TestOrder) GetCalls() []solvernet.Call {
+	return o.Calls
+}
+
+func (o TestOrder) GetShouldReject() bool {
+	return o.ShouldReject
+}
+
+func (o TestOrder) GetRejectReason() string {
+	return o.RejectReason
+}
+
+// Implement OrderLike for TestGaslessOrder.
+func (o TestGaslessOrder) GetSourceChainID() uint64 {
+	return o.SourceChainID
+}
+
+func (o TestGaslessOrder) GetDepositPayer() common.Address {
+	return o.User // For gasless orders, user pays the deposit via Permit2
+}
+
+func (o TestGaslessOrder) GetDeposit() solvernet.Deposit {
+	return o.Deposit
+}
+
+func (o TestGaslessOrder) GetFillDeadline() time.Time {
+	return o.FillDeadline
+}
+
+func (o TestGaslessOrder) GetDestChainID() uint64 {
+	return o.DestChainID
+}
+
+func (o TestGaslessOrder) GetExpenses() []solvernet.Expense {
+	return o.Expenses
+}
+
+func (o TestGaslessOrder) GetCalls() []solvernet.Call {
+	return o.Calls
+}
+
+func (o TestGaslessOrder) GetShouldReject() bool {
+	return o.ShouldReject
+}
+
+func (o TestGaslessOrder) GetRejectReason() string {
+	return o.RejectReason
+}
 
 func mustAddrs(network netconf.ID) contracts.Addresses {
 	addrs, err := contracts.GetAddresses(context.Background(), network)
@@ -129,15 +219,42 @@ func nativeDeposit(amt *big.Int) solvernet.Deposit {
 	return solvernet.Deposit{Amount: amt}
 }
 
-func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrder) error {
+func isDepositTokenEmptyForOrderLike(deposit solvernet.Deposit) bool {
+	return deposit.Token == zeroAddr
+}
+
+func isDepositTokenInvalidForOrderLike(deposit solvernet.Deposit) bool {
+	return deposit.Token == invalidTokenAddress
+}
+
+// Helper functions to convert specific order types to OrderLike slices.
+func testOrdersToOrderLike(orders []TestOrder) []OrderLike {
+	result := make([]OrderLike, len(orders))
+	for i, order := range orders {
+		result[i] = order
+	}
+
+	return result
+}
+
+func testGaslessOrdersToOrderLike(orders []TestGaslessOrder) []OrderLike {
+	result := make([]OrderLike, len(orders))
+	for i, order := range orders {
+		result[i] = order
+	}
+
+	return result
+}
+
+func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders []OrderLike) error {
 	var eg errgroup.Group
 	for _, order := range orders {
 		eg.Go(func() error {
-			token, _ := tokens.ByAddress(order.SourceChainID, order.Deposit.Token)
+			token, _ := tokens.ByAddress(order.GetSourceChainID(), order.GetDeposit().Token)
 
 			if err := mintAndApprove(ctx, backends, order); err != nil {
 				return errors.Wrap(err, "mint and approve",
-					"chain", evmchain.Name(order.SourceChainID),
+					"chain", evmchain.Name(order.GetSourceChainID()),
 					"token", token,
 				)
 			}
@@ -153,13 +270,15 @@ func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders
 	return nil
 }
 
-func mintAndApprove(ctx context.Context, backends ethbackend.Backends, order TestOrder) error {
-	if isDepositTokenEmpty(order) || isDepositTokenInvalid(order) {
+func mintAndApprove(ctx context.Context, backends ethbackend.Backends, order OrderLike) error {
+	deposit := order.GetDeposit()
+
+	if isDepositTokenEmptyForOrderLike(deposit) || isDepositTokenInvalidForOrderLike(deposit) {
 		// native, nothing to do
 		return nil
 	}
 
-	backend, err := backends.Backend(order.SourceChainID)
+	backend, err := backends.Backend(order.GetSourceChainID())
 	if err != nil {
 		return errors.Wrap(err, "get backend")
 	}
@@ -169,17 +288,18 @@ func mintAndApprove(ctx context.Context, backends ethbackend.Backends, order Tes
 		return errors.Wrap(err, "get addrs")
 	}
 
-	txOpts, err := backend.BindOpts(ctx, order.Owner)
+	depositPayer := order.GetDepositPayer()
+	txOpts, err := backend.BindOpts(ctx, depositPayer)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}
 
-	contract, err := bindings.NewMockERC20(order.Deposit.Token, backend)
+	contract, err := bindings.NewMockERC20(deposit.Token, backend)
 	if err != nil {
 		return errors.Wrap(err, "bind contract")
 	}
 
-	tx, err := contract.Mint(txOpts, order.Owner, order.Deposit.Amount)
+	tx, err := contract.Mint(txOpts, depositPayer, deposit.Amount)
 	if err != nil {
 		return errors.Wrap(err, "mint tx")
 	}
@@ -222,4 +342,21 @@ func expensesFromBindings(expenses []solvernet.Expense) []solver.Expense {
 	}
 
 	return resp
+}
+
+// Helper functions for OrderLike interface to support testCheckAPI logic.
+func isInsufficientInventoryForOrderLike(order OrderLike) bool {
+	return order.GetRejectReason() == solver.RejectInsufficientInventory.String()
+}
+
+// Helper function to convert OrderLike to solver.CheckRequest.
+func orderLikeToCheckRequest(order OrderLike) solver.CheckRequest {
+	return solver.CheckRequest{
+		FillDeadline:       uint32(order.GetFillDeadline().Unix()),
+		SourceChainID:      order.GetSourceChainID(),
+		DestinationChainID: order.GetDestChainID(),
+		Expenses:           expensesFromBindings(order.GetExpenses()),
+		Calls:              callsFromBindings(order.GetCalls()),
+		Deposit:            addrAmtFromDeposit(order.GetDeposit()),
+	}
 }
