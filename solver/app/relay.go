@@ -185,7 +185,7 @@ func newRelayer(
 				return types.RelayResponse{
 					Success: false,
 					Error: &types.RelayError{
-						Code:        "REJECTED_" + r.Reason.String(),
+						Code:        r.Reason.String(),
 						Message:     RelayMsgOrderRejected,
 						Description: errors.Format(r.Err),
 					},
