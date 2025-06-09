@@ -11,7 +11,7 @@ import { Secp256k1 } from "src/libraries/Secp256k1.sol";
  */
 contract Distribution_Test is Test {
     /// @dev Matches Distribution.Withdraw event
-    event Withdraw(address indexed delegator, address indexed validator);
+    event Withdraw(address indexed delegator, address indexed validator, uint256 amount);
 
     address owner;
     address validator;
@@ -34,7 +34,7 @@ contract Distribution_Test is Test {
         vm.deal(owner, fee);
         vm.prank(owner);
         vm.expectEmit();
-        emit Withdraw(owner, validator);
+        emit Withdraw(owner, validator, fee);
         distribution.withdraw{ value: fee }(validator);
     }
 }

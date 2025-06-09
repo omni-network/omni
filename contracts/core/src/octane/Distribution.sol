@@ -17,7 +17,7 @@ contract Distribution {
      * @param delegator     (MsgWithdraw.delegator_addr) The address of the delegator
      * @param validator     (MsgWithdraw.validator_addr) The address of the validator with a delegation
      */
-    event Withdraw(address indexed delegator, address indexed validator);
+    event Withdraw(address indexed delegator, address indexed validator, uint256 amount);
 
     /**
      * @notice The address to burn fees to
@@ -37,7 +37,7 @@ contract Distribution {
      */
     function withdraw(address validator) external payable {
         _burnFee();
-        emit Withdraw(msg.sender, validator);
+        emit Withdraw(msg.sender, validator, msg.value);
     }
 
     /**
