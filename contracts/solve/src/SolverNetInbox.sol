@@ -652,7 +652,7 @@ contract SolverNetInbox is
                     calls: calls,
                     expenses: expenses
                 })
-            )
+                )
         });
 
         return fillInstructions;
