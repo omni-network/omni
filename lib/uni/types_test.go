@@ -23,8 +23,12 @@ func TestAddressJSON(t *testing.T) {
 		addr uni.Address
 	}{
 		{
+			name: "zero",
+			addr: uni.Address{},
+		},
+		{
 			name: "evm",
-			addr: uni.EVMAddress(common.HexToAddress("0x012345678901234567890123456789abcdeabcde")),
+			addr: uni.MustHexToAddress("0x012345678901234567890123456789abcdeabcde"),
 		},
 		{
 			name: "evm_zero",
@@ -32,7 +36,7 @@ func TestAddressJSON(t *testing.T) {
 		},
 		{
 			name: "svm",
-			addr: uni.SVMAddress(solana.MustPublicKeyFromBase58("H9eDjRw7UKFDzzts4jK7hmc2chKL2z4cuA8bU1xDnuRA")),
+			addr: uni.MustBase58ToAddress("H9eDjRw7UKFDzzts4jK7hmc2chKL2z4cuA8bU1xDnuRA"),
 		},
 		{
 			name: "svm_zero",

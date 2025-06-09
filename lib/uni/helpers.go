@@ -35,3 +35,12 @@ func MustHexToAddress(hex string) Address {
 
 	return addr
 }
+
+func MustBase58ToAddress(base58 string) Address {
+	addr, err := Base58ToAddress(base58)
+	if err != nil {
+		panic(err)
+	}
+
+	return addr
+}
