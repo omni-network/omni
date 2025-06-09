@@ -609,7 +609,7 @@ contract SolverNetInboxV2 is OwnableRoles, ReentrancyGuard, Initializable, Deplo
                     calls: calls,
                     expenses: expenses
                 })
-            )
+                )
         });
 
         return fillInstructions;

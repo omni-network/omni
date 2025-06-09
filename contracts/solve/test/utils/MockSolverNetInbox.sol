@@ -595,7 +595,7 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
                     calls: calls,
                     expenses: expenses
                 })
-            )
+                )
         });
 
         return fillInstructions;
