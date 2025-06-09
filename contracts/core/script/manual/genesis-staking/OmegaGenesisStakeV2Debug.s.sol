@@ -4,7 +4,6 @@ pragma solidity 0.8.24;
 
 import { Script, console2 } from "forge-std/Script.sol";
 import { CompleteMerkle } from "murky/src/CompleteMerkle.sol";
-import { LibString } from "solady/src/utils/LibString.sol";
 
 import { ICreateX } from "createx/src/ICreateX.sol";
 import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
