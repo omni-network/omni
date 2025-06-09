@@ -26,7 +26,6 @@ import {
   type Config,
   type UseWaitForTransactionReceiptReturnType,
   type UseWriteContractReturnType,
-  useChainId,
   useConfig,
   useWaitForTransactionReceipt,
 } from 'wagmi'
@@ -113,7 +112,6 @@ export function useOrder<abis extends OptionalAbis>(
     rejectionQueryOpts,
     ...order
   } = params
-  const srcChainId = order.srcChainId ?? useChainId()
   const config = useConfig()
   const contractsResult = useOmniContracts({
     queryOpts: omniContractsQueryOpts,
@@ -123,7 +121,7 @@ export function useOrder<abis extends OptionalAbis>(
   const txMutation = useMutation<SendOrderReturn, MutationError>({
     mutationFn: async () => {
       const client = await getConnectorClient(config, {
-        chainId: srcChainId,
+        chainId: order.srcChainId,
       })
       if (inboxAddress == null) {
         throw new LoadContractsError(
@@ -145,7 +143,7 @@ export function useOrder<abis extends OptionalAbis>(
   })
 
   const orderStatus = useGetOrderStatus({
-    srcChainId,
+    srcChainId: order.srcChainId,
     destChainId: order.destChainId,
     resolvedOrder,
     didFillQueryOpts,
