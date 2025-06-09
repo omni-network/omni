@@ -96,7 +96,7 @@ func instrumentHandler(endpoint string, handler http.Handler) http.Handler {
 		defer span.End()
 		traceID := span.SpanContext().TraceID()
 
-		ctx = log.WithCtx(ctx, log.Hex7("tid", traceID[:]))
+		ctx = log.WithCtx(ctx, "endpoint", endpoint, log.Hex7("tid", traceID[:]))
 		r = r.WithContext(ctx)
 
 		handler.ServeHTTP(iw, r)
@@ -107,7 +107,6 @@ func instrumentHandler(endpoint string, handler http.Handler) http.Handler {
 
 		ip, typ := clientIP(r)
 		log.Debug(ctx, "Served API request",
-			"endpoint", endpoint,
 			"status", iw.StatusCode(),
 			"latency_millis", latency.Milliseconds(),
 			"client_ip", ip,

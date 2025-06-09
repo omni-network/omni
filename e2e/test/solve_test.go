@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/umath"
+	sclient "github.com/omni-network/omni/solver/client"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -35,11 +36,21 @@ func TestSolver(t *testing.T) {
 
 		ensureSolverAPILive(t, deps.SolverAddr)
 		testContractsAPI(ctx, t, deps.SolverAddr)
+		testTokensEndpoint(ctx, t, deps)
 		testSolverApprovals(ctx, t, deps)
 
 		err := solve.Test(ctx, deps.Network, deps.Backends, deps.SolverAddr)
 		tutil.RequireNoError(t, err)
 	})
+}
+
+func testTokensEndpoint(ctx context.Context, t *testing.T, deps NetworkDeps) {
+	t.Helper()
+	tokenResp, err := sclient.New(deps.SolverAddr).Tokens(ctx)
+	require.NoError(t, err)
+
+	count := len(deps.Network.Chains)
+	require.Len(t, tokenResp.Tokens, count, "expected %d tokens, got %d", count, len(tokenResp.Tokens))
 }
 
 func TestSolverSVM(t *testing.T) {

@@ -17,6 +17,7 @@ const (
 	endpointQuote = "/api/v1/quote"
 	endpointPrice = "/api/v1/price"
 	endpointRelay = "/api/v1/relay"
+	endpointToken = "/api/v1/tokens" //nolint:gosec // Not a secret
 )
 
 // New creates a new solver Client.
@@ -90,10 +91,25 @@ func (c Client) Relay(ctx context.Context, req types.RelayRequest) (types.RelayR
 	return res, nil
 }
 
+// Tokens calls the tokens API endpoint to retrieve the list of supported tokens.
+func (c Client) Tokens(ctx context.Context) (types.TokensResponse, error) {
+	var res types.TokensResponse
+
+	if err := c.do(ctx, endpointToken, nil, &res); err != nil {
+		return types.TokensResponse{}, err
+	}
+
+	return res, nil
+}
+
 func (c Client) do(ctx context.Context, endpoint string, req any, res any) error {
-	body, err := json.Marshal(req)
-	if err != nil {
-		return errors.Wrap(err, "marshal request")
+	var body []byte
+	if req != nil {
+		var err error
+		body, err = json.Marshal(req)
+		if err != nil {
+			return errors.Wrap(err, "marshal request")
+		}
 	}
 
 	c.debugReqBody(body)
