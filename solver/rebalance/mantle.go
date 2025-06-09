@@ -62,6 +62,10 @@ func rebalanceMantleOnce(
 	backends ethbackend.Backends,
 	solver common.Address,
 ) error {
+	log.Debug(ctx, "Rebalancing Mantle USDC; trying lock")
+	defer lock(evmchain.IDEthereum, evmchain.IDMantle)()
+	log.Info(ctx, "Rebalancing Mantle USDC; locked")
+
 	l1USDC := ethereumUSDC
 	l2USDC := mantleUSDC
 

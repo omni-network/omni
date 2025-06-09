@@ -28,6 +28,7 @@ type Testnet struct {
 	OmniEVMs     []OmniEVM
 	AnvilChains  []AnvilChain
 	PublicChains []PublicChain
+	SVMChains    []SVMChain
 	Perturb      map[string][]Perturb
 
 	SolverInternalAddr string
@@ -302,4 +303,10 @@ func (c PublicChain) NextRPCAddress() string {
 	}
 
 	return strings.TrimSpace(c.rpcAddresses[int(i)%l])
+}
+
+type SVMChain struct {
+	evmchain.Metadata
+	InternalRPC string // For JSON-RPC queries from solver
+	ExternalRPC string // For JSON-RPC queries from e2e app.
 }

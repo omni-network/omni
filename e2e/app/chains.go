@@ -20,7 +20,7 @@ func AddSolverEndpoints(ctx context.Context, networkID netconf.ID, endpoints xch
 	log.Debug(ctx, "Adding solver endpoints", "network", networkID, "endpoints", endpoints, "rpc_overrides", rpcOverrides)
 
 	// extend endpoints w/ hl chains
-	for _, chain := range solvernet.HLChains(networkID) {
+	for _, chain := range solvernet.Chains(networkID) {
 		meta, ok := evmchain.MetadataByID(chain.ID)
 		if !ok {
 			return xchain.RPCEndpoints{}, errors.New("unknown chain", "chain_id", chain.ID)
@@ -49,7 +49,7 @@ func AddSolverNetworkAndBackends(ctx context.Context, network netconf.Network, e
 		return netconf.Network{}, ethbackend.Backends{}, errors.Wrap(err, "get endpoints")
 	}
 
-	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByEndpoints(endpoints))
+	network = solvernet.AddNetwork(ctx, network, solvernet.FilterByEndpoints(endpoints))
 
 	var backends ethbackend.Backends
 	if network.ID == netconf.Devnet {
@@ -75,9 +75,9 @@ func AddSolverNetworkAndBackends(ctx context.Context, network netconf.Network, e
 	return network, backends, nil
 }
 
-// HLNetworkFromDef returns the network configuration from the definition.
+// SolverNetworkFromDef returns the network configuration from the definition.
 // Note that this does not panic as it does in definition.go by manually setting portal addresses without deploy height.
-func HLNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, error) {
+func SolverNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, error) {
 	var chains []netconf.Chain
 
 	addrs, err := contracts.GetAddresses(ctx, def.Testnet.Network)
@@ -86,7 +86,7 @@ func HLNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, err
 	}
 
 	newChain := func(chain types.EVMChain) netconf.Chain {
-		if solvernet.IsHLOnly(chain.ChainID) {
+		if solvernet.IsSolverOnly(chain.ChainID) {
 			return netconf.Chain{
 				ID:          chain.ChainID,
 				Name:        chain.Name,
@@ -121,6 +121,14 @@ func HLNetworkFromDef(ctx context.Context, def Definition) (netconf.Network, err
 	// Add all anvil chains
 	for _, anvil := range def.Testnet.AnvilChains {
 		chains = append(chains, newChain(anvil.Chain))
+	}
+
+	for _, svm := range def.Testnet.SVMChains {
+		chains = append(chains, netconf.Chain{
+			ID:          svm.ChainID,
+			Name:        svm.Name,
+			BlockPeriod: svm.BlockPeriod,
+		})
 	}
 
 	return netconf.Network{

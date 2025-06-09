@@ -161,6 +161,26 @@ services:
       test:
         ipv4_address: 10.186.73.203
 
+  svm:
+    labels:
+      e2e: true
+    container_name: svm
+    image:  anzaxyz/agave:stable
+    platform: linux/amd64
+    ulimits:
+      nofile:
+        soft: 1000000
+        hard: 1000000
+    ports:
+      - 8899:8899
+    volumes:
+      - ./svm:/root/.config/solana/
+    logging:
+          driver: local
+    networks:
+      test:
+        ipv4_address: 10.186.73.204
+
   prometheus:
     labels:
       e2e: true

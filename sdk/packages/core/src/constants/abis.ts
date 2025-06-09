@@ -237,6 +237,31 @@ export const inboxABI = [
     ],
     name: 'Open',
   },
+  {
+    type: 'event',
+    name: 'Rejected',
+    inputs: [
+      {
+        name: 'id',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'by',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'reason',
+        type: 'uint8',
+        indexed: true,
+        internalType: 'uint8',
+      },
+    ],
+    anonymous: false,
+  },
 ] as const
 
 export const outboxABI = [
@@ -292,3 +317,31 @@ export const executorABI = [
   },
   { type: 'error', inputs: [], name: 'CallFailed' },
 ] as const
+
+export const fillOriginDataAbi = {
+  type: 'tuple',
+  components: [
+    { name: 'srcChainId', type: 'uint64' },
+    { name: 'destChainId', type: 'uint64' },
+    { name: 'fillDeadline', type: 'uint32' },
+    {
+      name: 'calls',
+      type: 'tuple[]',
+      components: [
+        { name: 'target', type: 'address' },
+        { name: 'selector', type: 'bytes4' },
+        { name: 'value', type: 'uint256' },
+        { name: 'params', type: 'bytes' },
+      ],
+    },
+    {
+      name: 'expenses',
+      type: 'tuple[]',
+      components: [
+        { name: 'spender', type: 'address' },
+        { name: 'token', type: 'address' },
+        { name: 'amount', type: 'uint96' },
+      ],
+    },
+  ],
+} as const

@@ -5,7 +5,10 @@ export default defineConfig({
   rootDir: './docs/',
   baseUrl: '/',
   description: 'Documentation for the Omni SDK, SolverNet, and related concepts.',
-  logoUrl: '/img/logo.svg',
+  logoUrl: {
+    light: '/img/Omni_Lockup_light.svg',
+    dark: '/img/Omni_Lockup_dark.svg',
+  },
   iconUrl: '/img/favicon.svg',
   ogImageUrl: 'https://docs.omni.network/img/omni-banner.png',
   editLink: {
@@ -30,7 +33,7 @@ export default defineConfig({
     {
       text: 'Learn',
       items: [
-        { text: 'Welcome', link: '/' },
+        { text: 'Welcome', link: '/introduction/welcome' },
         { text: 'Omni Overview', link: '/introduction/omni-overview' },
         { text: 'What is SolverNet?', link: '/introduction/what-is-solvernet' },
         { text: 'Whitepaper', link: '/introduction/whitepaper' },
@@ -83,6 +86,10 @@ export default defineConfig({
               link: '/sdk/core/getQuote',
             },
             {
+              text: 'validateOrder',
+              link: '/sdk/core/validateOrder',
+            },
+            {
               text: 'openOrder',
               link: '/sdk/core/openOrder',
             },
@@ -121,6 +128,7 @@ export default defineConfig({
             { text: 'Cross Chain Transfers', link: '/guides/transfers' },
             { text: 'Multi-Step Deposit', link: '/guides/multistep-deposit' },
             { text: 'Contracts without onBehalfOf', link: '/guides/contracts-without-onbehalfof' },
+            { text: 'Debugging destination calls', link: '/guides/debugging-destination-calls' },
             { text: 'Symbiotic', link: '/guides/examples/symbiotic' },
             { text: 'Rocketpool', link: '/guides/examples/rocketpool' },
           ],
@@ -135,5 +143,9 @@ export default defineConfig({
       text: 'Build with us',
       link: 'https://tally.so/r/wAJ2EB',
     },
+    {
+      text: 'Deep Wiki',
+      link: 'https://deepwiki.com/omni-network/omni'
+    }
   ],
 });

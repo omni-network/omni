@@ -61,25 +61,27 @@ func rebalanceCCTPOnce(
 	solver common.Address,
 ) {
 	for _, chain := range network.EVMChains() {
-		ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
-		log.Info(ctx, "Rebalancing chain")
+		func() {
+			ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
+			log.Debug(ctx, "Rebalancing chain; trying lock")
+			defer lock(chain.ID)() // Lock the chain to prevent concurrent rebalancing.
+			log.Info(ctx, "Rebalancing chain; locked")
 
-		// First, swap surplus tokens USDC.
-		if err := swapSurplusOnce(ctx, backends, chain.ID, solver); err != nil {
-			log.Warn(ctx, "Failed to swap surplus", err)
-			continue
-		}
+			// First, swap surplus tokens USDC.
+			if err := swapSurplusOnce(ctx, backends, chain.ID, solver); err != nil {
+				log.Warn(ctx, "Failed to swap surplus", err)
+			}
 
-		// Then, fill deficits from surplus USDC.
-		if err := fillDeficitOnce(ctx, pricer, backends, chain.ID, solver); err != nil {
-			log.Warn(ctx, "Failed to fill deficit", err)
-			continue
-		}
+			// Then, fill deficits from surplus USDC.
+			if err := fillDeficitOnce(ctx, pricer, backends, chain.ID, solver); err != nil {
+				log.Warn(ctx, "Failed to fill deficit", err)
+			}
 
-		// Finally, send remaining surplus USDC to other chains.
-		if err := sendSurplusOnce(ctx, db, network, pricer, backends, chain.ID, solver); err != nil {
-			log.Warn(ctx, "Failed to send surplus", err)
-		}
+			// Finally, send remaining surplus USDC to other chains.
+			if err := sendSurplusOnce(ctx, db, network, pricer, backends, chain.ID, solver); err != nil {
+				log.Warn(ctx, "Failed to send surplus", err)
+			}
+		}()
 	}
 }
 
@@ -205,7 +207,7 @@ func swapSurplusOnce(
 		return errors.Wrap(err, "get backend")
 	}
 
-	for _, token := range TokensByChain(chainID) {
+	for _, token := range SwappableTokensByChain(chainID) {
 		if token.Is(tokens.USDC) { // Already USDC, skip.
 			continue
 		}
@@ -275,7 +277,7 @@ func fillDeficitOnce(
 		return errors.Wrap(err, "get backend")
 	}
 
-	for _, token := range TokensByChain(chainID) {
+	for _, token := range SwappableTokensByChain(chainID) {
 		if token.Is(tokens.USDC) { // Already USDC, skip.
 			continue
 		}

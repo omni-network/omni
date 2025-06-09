@@ -143,18 +143,16 @@ func setupChainHL(ctx context.Context, s shared, c netconf.Chain) (chain, error)
 		return chain{}, errors.Wrap(err, "get addresses")
 	}
 
-	if solvernet.IsHLOnly(evmchain.ChainID) {
-		return chain{
-			EVMChain:    evmchain,
-			RPCEndpoint: rpc,
-		}, nil
-	}
-
-	return chain{
+	chain := chain{
 		EVMChain:      evmchain,
 		PortalAddress: addrs.Portal,
 		RPCEndpoint:   rpc,
-	}, nil
+	}
+	if solvernet.IsHLOnly(evmchain.ChainID) {
+		chain.PortalAddress = common.Address{}
+	}
+
+	return chain, nil
 }
 
 // getEVMChain returns the EVMChain for a given netconf chain, with special handling for the Omni EVM.
@@ -230,11 +228,11 @@ func (s shared) runHL(ctx context.Context, def app.Definition, fn func(context.C
 		return errors.Wrap(err, "add hl endpoints")
 	}
 
-	network, err := app.HLNetworkFromDef(ctx, def)
+	network, err := app.SolverNetworkFromDef(ctx, def)
 	if err != nil {
 		return errors.Wrap(err, "network from def")
 	}
-	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, _s.endpoints))
+	network = solvernet.AddNetwork(ctx, network, solvernet.FilterByContracts(ctx, _s.endpoints))
 
 	for _, _chain := range network.EVMChains() {
 		if s.cfg.Chain != "" && s.cfg.Chain != _chain.Name {
@@ -414,26 +412,16 @@ func dedup(strs []string) []string {
 	return res
 }
 
-func solverNetInboxInitializer(outbox common.Address) ([]byte, error) {
-	var inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
+func solverNetInboxInitializer() ([]byte, error) {
+	// var inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
 	// TODO: replace if re-initialization is required
-	initializer, err := inboxABI.Pack("initializeV2", outbox)
-	if err != nil {
-		return nil, errors.Wrap(err, "pack initializer")
-	}
-
-	return initializer, nil
+	return []byte{}, nil
 }
 
-func solverNetOutboxInitializer(chainIDs []uint64, configs []bindings.ISolverNetOutboxInboxConfig) ([]byte, error) {
-	var outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
+func solverNetOutboxInitializer() ([]byte, error) {
+	// var outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
 	// TODO: replace if re-initialization is required
-	initializer, err := outboxABI.Pack("initializeV2", chainIDs, configs)
-	if err != nil {
-		return nil, errors.Wrap(err, "pack initializer")
-	}
-
-	return initializer, nil
+	return []byte{}, nil
 }
 
 func solverNetExecutorInitializer() ([]byte, error) {

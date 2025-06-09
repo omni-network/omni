@@ -1,23 +1,14 @@
 import { WatchDidFillError } from '@omni-network/core'
+import { testResolvedOrder } from '@omni-network/test-utils'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderHook } from '../../test/index.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 
-const { useGetOrder, useInboxStatus, useWatchDidFill, useDidFill } = vi.hoisted(
-  () => {
-    return {
-      useGetOrder: vi.fn(),
-      useInboxStatus: vi.fn(),
-      useWatchDidFill: vi.fn(),
-      useDidFill: vi.fn(),
-    }
-  },
-)
-
-vi.mock('./useGetOrder.js', async () => {
-  const actual = await vi.importActual('./useGetOrder.js')
+const { useInboxStatus, useWatchDidFill, useDidFill } = vi.hoisted(() => {
   return {
-    useGetOrder: useGetOrder.mockReturnValue(actual.useGetOrder),
+    useInboxStatus: vi.fn(),
+    useWatchDidFill: vi.fn(),
+    useDidFill: vi.fn(),
   }
 })
 
@@ -59,7 +50,7 @@ const renderGetOrderStatusHook = () => {
       useGetOrderStatus({
         destChainId: 1,
         srcChainId: 2,
-        orderId: '0x123',
+        resolvedOrder: testResolvedOrder,
       }),
     {
       mockContractsCall: true,
@@ -99,8 +90,7 @@ test('default: transitions status through order lifecycle', async () => {
   expect(result.current.destTxHash).toBe('0x123')
 })
 
-test('parameters: getOrderQueryOpts and didFillQueryOpts are passed to useGetOrder and useDidFill', async () => {
-  const getOrderQueryOpts = { staleTime: 1000 }
+test('parameters: didFillQueryOpts are passed to useDidFill', async () => {
   const didFillQueryOpts = { staleTime: 2000 }
 
   renderHook(
@@ -108,8 +98,7 @@ test('parameters: getOrderQueryOpts and didFillQueryOpts are passed to useGetOrd
       useGetOrderStatus({
         destChainId: 1,
         srcChainId: 2,
-        orderId: '0x123',
-        getOrderQueryOpts,
+        resolvedOrder: testResolvedOrder,
         didFillQueryOpts,
       }),
     {
@@ -117,9 +106,6 @@ test('parameters: getOrderQueryOpts and didFillQueryOpts are passed to useGetOrd
     },
   )
 
-  expect(useGetOrder).toHaveBeenCalledWith(
-    expect.objectContaining({ queryOpts: getOrderQueryOpts }),
-  )
   expect(useDidFill).toHaveBeenCalledWith(
     expect.objectContaining({ queryOpts: didFillQueryOpts }),
   )

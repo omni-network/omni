@@ -24,10 +24,13 @@ jobs:
           ARB_RPC: ${{ secrets.ARB_RPC }}
           OP_RPC: ${{ secrets.OP_RPC }}
           BASE_RPC: ${{ secrets.BASE_RPC }}
+          HYPER_EVM_RPC: ${{ secrets.HYPER_EVM_RPC }}
+          MANTLE_RPC: ${{ secrets.MANTLE_RPC }}
+          COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
         run: |
           if [ -z "$ETH_RPC" ]; then
             echo "Secrets not available - skipping."
             exit 0
           fi
 
-          go test ./solver/rebalance -integration -v -run=TestIntegration
+          go test ./solver/rebalance -integration -v -run='TestIntegration|TestRebalanceHyperEVMOnce'

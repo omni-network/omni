@@ -1,0 +1,44 @@
+{
+  "name": "@omni-network/svm",
+  "description": "SVM support for Omni Solvernet",
+  "version": "0.0.1",
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@9.12.1",
+  "sideEffects": false,
+  "main": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "local": "ts-node scripts/run-local.ts",
+    "build": "pnpm clean && pnpm build:ts",
+    "build:ts": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "coverage": "vitest run --coverage"
+  },
+  "files": ["dist/**", "src/**", "!dist/**/*.tsbuildinfo"],
+  "engines": {
+    "node": ">=22.x"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.2",
+    "bn.js": "^5.2.2",
+    "bs58": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.2.6",
+    "vitest": "^3.0.7"
+  }
+}

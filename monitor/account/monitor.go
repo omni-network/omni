@@ -38,7 +38,7 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 		}
 
 		for _, account := range accounts {
-			if !solvernet.IsHLRole(account.Role) && solvernet.IsHLOnly(chain.ID) {
+			if solvernet.SkipRole(chain.ID, account.Role) {
 				// Do not monitor non-HL roles on HL-only chains
 				continue
 			}

@@ -264,7 +264,7 @@ type ExecuteTestOrderUsingReactParams = {
 
 export async function executeTestOrderUsingReact(
   params: ExecuteTestOrderUsingReactParams,
-): Promise<void> {
+): Promise<ReturnType<typeof useOrder>> {
   const { account, order, rejectReason } = params
   const orderRef = useOrderRef(order, account)
 
@@ -282,7 +282,7 @@ export async function executeTestOrderUsingReact(
       throw new Error('Rejection expected')
     expect(orderRef.current?.validation?.status).toBe('rejected')
     expect(orderRef.current?.validation?.rejectReason).toBe(rejectReason)
-    return
+    return orderRef.current
   }
 
   expect(orderRef.current?.validation?.status).toBe('accepted')
@@ -317,6 +317,8 @@ export async function executeTestOrderUsingReact(
     expect(orderRef.current?.isTxPending).toBe(false)
     expect(orderRef.current?.status).toBe('filled')
   }, waitForOpts)
+
+  return orderRef.current
 }
 
 export function assertResolvedOrder(

@@ -64,11 +64,9 @@ func TestSnapshot(t *testing.T) {
 	var surpluses []tokenAmt
 
 	// Log all token balances w/ surplus/deficit
-	for _, token := range rebalance.Tokens() {
+	for _, token := range tokens.All() {
 		client, ok := clients[token.ChainID]
 		if !ok {
-			// Some clients, such as Mantle, are not included
-			// TODO(kevin): support mantle client
 			continue
 		}
 

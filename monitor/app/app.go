@@ -64,10 +64,10 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	// Create hyperlane network and ETH clients to iteratively migrate monitor logic to
-	hlNetwork := solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, cfg.RPCEndpoints))
+	// Create solver network and ETH clients to iteratively migrate monitor logic to
+	solvNetwork := solvernet.AddNetwork(ctx, network, solvernet.FilterByContracts(ctx, cfg.RPCEndpoints))
 
-	hlEthClients, err := initializeEthClients(ctx, hlNetwork.EVMChains(), cfg.RPCEndpoints)
+	solvEthClients, err := initializeEthClients(ctx, solvNetwork.EVMChains(), cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func Run(ctx context.Context, cfg Config) error {
 		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
 	}
 
-	if err := account.StartMonitoring(ctx, hlNetwork, hlEthClients); err != nil {
+	if err := account.StartMonitoring(ctx, solvNetwork, solvEthClients); err != nil {
 		return errors.Wrap(err, "start account monitor")
 	}
 

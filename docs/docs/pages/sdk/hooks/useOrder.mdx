@@ -5,14 +5,6 @@ title: useOrder
 
 import { Callout } from 'vocs/components'
 
-# `useOrder`
-
-After obtaining a valid quote with [`useQuote`](/sdk/hooks/useQuote), the `useOrder` hook is used to execute the actual cross-chain transaction via Omni SolverNet. It takes the details confirmed in the quote, validates them, and provides a function (`open`) to initiate the process and monitor its status.
-
-<Callout type="warning" title="Note">
-Fetching the destination chain transaction hash may fail if you're using a public RPC provider. Internally, we use viems watchContractEvent to listen for the `Fill` event, but this isn't reliable when working with public RPCs. It's strongly recommended to use a private RPC provider anyway, to prevent instability or rate limiting issues.
-</Callout>
-
 ## Usage
 
 `import { useOrder } from '@omni-network/react'`
@@ -37,8 +29,8 @@ function Component() {
 | `expense`           | `Expense`  | Yes      | Describes the asset, amount, and spender on the destination chain (paid by the solver) - taken from `quote.expense`.            |
 | `calls`             | `Call[]`                             | Yes      | An array of contract calls to be executed on the destination chain by the solver.                                                     |
 | `validateEnabled`   | `boolean`                            | No       | Defaults to `true`. Enables pre-validation of the order with Omni. Use this to validate your calls. Recommended to set based on `quote.isSuccess`.                    |
+| `debugValidation` | `boolean` | No  | Whether to return the debug `trace` in the validation result or not (default) |
 | `omniContractsQueryOpts`      | `UseQueryOptions<OmniContracts>`  | No       | React query options for loading the Omni contracts addresses, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
-| `getOrderQueryOpts`           | `UseQueryOptions<GetOrderReturn>` | No       | React query options for loading the order, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
 | `didFillQueryOpts`            | `UseQueryOptions<boolean>`        | No       | React query options for loading the filled status of the order, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
 
 ## Types
@@ -118,6 +110,10 @@ The result of the pre-validation check if `validateEnabled` is true.
   rejectDescription?: string
 }
 `
+
+<Callout type="tip" title="Debug trace">
+You can use the `debugValidation` parameter to receive a `trace` object as part of the validation response. This trace can notably be useful to [debug destination calls reverting](/guides/debugging-destination-calls/).
+</Callout>
 
 ### error
 `Error | undefined`

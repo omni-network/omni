@@ -1,14 +1,11 @@
 import {
   DidFillError,
-  type GetOrderReturn,
   type InboxStatus,
   type OrderStatus,
   WatchDidFillError,
 } from '@omni-network/core'
-import type { Hex } from 'viem'
 import type { QueryOpts } from './types.js'
 import { useDidFill } from './useDidFill.js'
-import { useGetOrder } from './useGetOrder.js'
 import { useInboxStatus } from './useInboxStatus.js'
 import type { useParseOpenEvent } from './useParseOpenEvent.js'
 import { useWatchDidFill } from './useWatchDidFill.js'
@@ -16,43 +13,30 @@ import { useWatchDidFill } from './useWatchDidFill.js'
 type UseGetOrderStatusParams = {
   srcChainId?: number
   destChainId: number
-  orderId?: Hex
   resolvedOrder?: ReturnType<typeof useParseOpenEvent>['resolvedOrder']
-  getOrderQueryOpts?: QueryOpts<GetOrderReturn>
   didFillQueryOpts?: QueryOpts<boolean>
 }
 
 export function useGetOrderStatus({
   srcChainId,
   destChainId,
-  orderId,
   resolvedOrder,
-  getOrderQueryOpts,
   didFillQueryOpts,
 }: UseGetOrderStatusParams) {
-  // if resolved order is passed, we don't need to fetch the order
-  const getOrder = useGetOrder({
-    chainId: srcChainId,
-    orderId,
-    enabled: !resolvedOrder,
-    queryOpts: getOrderQueryOpts,
-  })
-
-  const resolved = resolvedOrder ?? getOrder.data?.[0]
   const inboxStatus = useInboxStatus({
-    orderId,
+    orderId: resolvedOrder?.orderId,
     chainId: srcChainId,
   })
 
   const didFill = useDidFill({
     destChainId,
-    resolvedOrder: resolved,
+    resolvedOrder,
     queryOpts: didFillQueryOpts,
   })
 
   const watchDidFill = useWatchDidFill({
     destChainId,
-    orderId,
+    resolvedOrder,
   })
 
   const status = deriveStatus(inboxStatus, didFill, watchDidFill)

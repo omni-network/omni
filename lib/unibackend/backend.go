@@ -20,6 +20,17 @@ func (b Backends) Backend(chainID uint64) (Backend, error) {
 	return resp, nil
 }
 
+func (b Backends) EVMBackends() ethbackend.Backends {
+	resp := make(map[uint64]*ethbackend.Backend)
+	for _, backend := range b {
+		if backend.IsEVM() {
+			resp[backend.chainID] = backend.EVMBackend()
+		}
+	}
+
+	return ethbackend.BackendsFrom(resp)
+}
+
 func EVMBackends(backends ethbackend.Backends) Backends {
 	resp := make(Backends)
 	for _, backend := range backends.All() {

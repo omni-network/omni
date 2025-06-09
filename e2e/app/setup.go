@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/geth"
@@ -28,6 +29,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/xchain"
 	monapp "github.com/omni-network/omni/monitor/app"
 	relayapp "github.com/omni-network/omni/relayer/app"
@@ -55,7 +57,7 @@ const (
 
 // Setup sets up the testnet configuration.
 //
-
+//nolint:gocyclo // Just many steps
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
@@ -215,11 +217,26 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		}
 	}
 
+	if err := svmProgramSetup(def.Testnet); err != nil {
+		return errors.Wrap(err, "setup svm chains")
+	}
+
 	if err := def.Infra.Setup(); err != nil {
 		return errors.Wrap(err, "setup provider")
 	}
 
 	return nil
+}
+
+// svmProgramSetup copies the SVM programs and keys to the testnet directory.
+func svmProgramSetup(testnet types.Testnet) error {
+	if len(testnet.SVMChains) == 0 {
+		return nil
+	}
+
+	dir := filepath.Join(testnet.Dir, "svm")
+
+	return svmutil.CopyProgram(dir, anchorinbox.Program())
 }
 
 // writeAnvilState writes the embedded /static/el-anvil-state.json
@@ -519,7 +536,7 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 	}
 
 	// Extend endpoints with non-manifest HL chains, passed in via rpc overrides.
-	for _, chain := range solvernet.HLChains(def.Testnet.Network) {
+	for _, chain := range solvernet.Chains(def.Testnet.Network) {
 		rpc, ok := def.Cfg.RPCOverrides[chain.Name]
 		if !ok {
 			continue
@@ -592,7 +609,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	}
 
 	// Extend endpoints with non-manifest HL chains, passed in via rpc overrides.
-	for _, chain := range solvernet.HLChains(def.Testnet.Network) {
+	for _, chain := range solvernet.Chains(def.Testnet.Network) {
 		rpc, ok := def.Cfg.RPCOverrides[chain.Name]
 		if !ok {
 			continue

@@ -25,7 +25,7 @@ const saneMaxOmni = 60420 // Maximum amount of OMNI to fund (in ether OMNI).
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
 func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool) error {
-	network, err := HLNetworkFromDef(ctx, def)
+	network, err := SolverNetworkFromDef(ctx, def)
 	if err != nil {
 		return errors.Wrap(err, "get hl network")
 	}
@@ -87,7 +87,7 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 		)
 
 		for _, account := range accounts {
-			if solvernet.IsHLOnly(chain.ID) && !solvernet.IsHLRole(account.Role) {
+			if solvernet.SkipRole(chain.ID, account.Role) {
 				log.Info(ctx, "Skipping non-solvernet role on HL chain", "chain", chain.Name, "role", account.Role, "address", account.Address)
 				continue
 			}

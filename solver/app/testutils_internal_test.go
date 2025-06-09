@@ -74,7 +74,7 @@ type checkTestCase struct {
 	req          types.CheckRequest
 	res          types.CheckResponse
 	testdata     bool
-	trace        map[string]any
+	trace        *types.CallTrace
 	traceErr     error
 }
 
@@ -173,7 +173,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 	}
 }
 
-func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
+func checkTestCases(t *testing.T, solver, outbox common.Address) []checkTestCase {
 	t.Helper()
 
 	var tests []checkTestCase
@@ -238,18 +238,28 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 			},
 		},
 		{
-			name:  "debug trace - accepted",
-			trace: map[string]any{"test": "trace"},
-			mock:  accepted.mock,
-			req:   withDebug(accepted.req),
-			res:   withTrace(accepted.res, map[string]any{"test": "trace"}),
+			name: "debug trace - accepted",
+			trace: &types.CallTrace{
+				From:  "0x1234567890123456789012345678901234567890",
+				To:    "0x0987654321098765432109876543210987654321",
+				Data:  "0xabcdef",
+				Value: "0x1",
+			},
+			mock: accepted.mock,
+			req:  withDebug(accepted.req),
+			res:  withTrace(accepted.res, map[string]any{"test": "trace"}),
 		},
 		{
-			name:  "debug trace - rejected",
-			trace: map[string]any{"test": "trace"},
-			mock:  fillReverts.mock,
-			req:   withDebug(fillReverts.req),
-			res:   withTrace(fillReverts.res, map[string]any{"test": "trace"}),
+			name: "debug trace - rejected",
+			trace: &types.CallTrace{
+				From:  "0x1234567890123456789012345678901234567890",
+				To:    "0x0987654321098765432109876543210987654321",
+				Data:  "0xabcdef",
+				Value: "0x1",
+			},
+			mock: fillReverts.mock,
+			req:  withDebug(fillReverts.req),
+			res:  withTrace(fillReverts.res, map[string]any{"test": "trace"}),
 		},
 		{
 			name:     "debug trace - error",
@@ -257,6 +267,69 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 			mock:     fillReverts.mock,
 			req:      withDebug(fillReverts.req),
 			res:      withTraceErr(fillReverts.res, errors.New("trace error")),
+		},
+		{
+			name: "same chain - debug_traceCall success",
+			req: types.CheckRequest{
+				SourceChainID:      evmchain.IDHolesky,
+				DestinationChainID: evmchain.IDHolesky,
+				Calls:              []types.Call{{Value: ether(1)}},
+				Expenses:           []types.Expense{{Amount: ether(1)}},
+				Deposit:            types.AddrAmt{Amount: depositFor(t, ether(1))},
+			},
+			res: types.CheckResponse{
+				Accepted: true,
+			},
+			mock: func(clients MockClients) {
+				client := clients.Client(t, evmchain.IDHolesky)
+				mockNativeBalance(t, client, solver, bi.Ether(2))
+
+				// error on first eth_call (did fill check)
+				mockFill(t, client, outbox, true)
+
+				// return OrderNotPending error on debug trace
+				mockDebugTrace(t, client,
+					types.CallTrace{
+						Calls: []types.CallTrace{{
+							// OrderNotPending - success
+							Output: "0xba254946",
+						}},
+					},
+					nil,
+				)
+			},
+		},
+		{
+			name: "same chain - debug_traceCall reject",
+			req: types.CheckRequest{
+				SourceChainID:      evmchain.IDHolesky,
+				DestinationChainID: evmchain.IDHolesky,
+				Calls:              []types.Call{{Value: ether(1)}},
+				Expenses:           []types.Expense{{Amount: ether(1)}},
+				Deposit:            types.AddrAmt{Amount: depositFor(t, ether(1))},
+			},
+			res: types.CheckResponse{
+				Rejected:     true,
+				RejectReason: types.RejectDestCallReverts.String(),
+			},
+			mock: func(clients MockClients) {
+				client := clients.Client(t, evmchain.IDHolesky)
+				mockNativeBalance(t, client, solver, bi.Ether(2))
+
+				// error on first eth_call (did fill check)
+				mockFill(t, client, outbox, true)
+
+				// return OrderNotPending error on debug trace
+				mockDebugTrace(t, client,
+					types.CallTrace{
+						Calls: []types.CallTrace{{
+							// Not OrderNotPending - reject
+							Output: "0xaaaaaaaaa",
+						}},
+					},
+					nil,
+				)
+			},
 		},
 	}
 
@@ -412,6 +485,15 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: 1234567,
+			},
+		},
+		{
+			name:   "unsupported dest chain - no route",
+			reason: types.RejectUnsupportedDestChain,
+			reject: true,
+			order: testOrder{
+				srcChainID: evmchain.IDSepolia,   // Hyperlane only chain
+				dstChainID: evmchain.IDOmniOmega, // Core only
 			},
 		},
 		{
@@ -649,8 +731,8 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 }
 
 // noopTracer os a no-op traceFunc.
-func noopTracer(_ context.Context, _ types.CheckRequest) (map[string]any, error) {
-	return map[string]any{}, nil
+func noopTracer(_ context.Context, _ types.CheckRequest) (types.CallTrace, error) {
+	return types.CallTrace{}, nil
 }
 
 // testBackends returns test backends / clients required for test cases above.
@@ -727,6 +809,22 @@ func mockERC20Balance(t *testing.T, client *mock.MockClient, token common.Addres
 	msg := newCallMatcher("ERC20.balanceOf", token, erc20ABI.Methods["balanceOf"].ID)
 
 	client.EXPECT().CallContract(ctx, msg, nil).Return(abiEncodeBig(t, balance), nil).AnyTimes()
+}
+
+func mockDebugTrace(t *testing.T, client *mock.MockClient, trace types.CallTrace, err error) {
+	t.Helper()
+
+	ctx := gomock.Any()
+	result := gomock.Any() // result is set through pointer
+	method := "debug_traceCall"
+	msg := gomock.Any()
+	block := "latest"
+	options := map[string]any{"tracer": "callTracer"}
+
+	client.EXPECT().CallContext(ctx, result, method, msg, block, options).SetArg(
+		1, // result
+		trace,
+	).Return(err).AnyTimes()
 }
 
 // mockERC20Allowance mocks an ERC20.allowance(...)

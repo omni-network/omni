@@ -9,6 +9,7 @@ build: # Build localnet/devnet solver programs
 	# Copy the compiled artefacts to localnet
 	cp ./target/idl/solver_inbox.json ./localnet/solver_inbox.json
 	cp ./target/deploy/solver_inbox.so ./localnet/solver_inbox.so
+	cp ./target/types/solver_inbox.ts ./localnet/solver_inbox.ts
 	# Generate go bindings
 	solana-anchor-go -src=./target/idl/solver_inbox.json -pkg=anchorinbox -dst=./anchorinbox -remove-account-suffix
 	# Fix go bindings (replace .ParamsOrderId with .Params.OrderId)

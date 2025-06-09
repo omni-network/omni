@@ -89,6 +89,8 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	contracts.UseStagingOmniRPC(def.Testnet.BroadcastOmniEVM().ExternalRPC)
 
+	svmErr := svmInitAsync(ctx, def)
+
 	if err = fundAnvil(ctx, def); err != nil {
 		return nil, errors.Wrap(err, "fund anvil")
 	}
@@ -122,6 +124,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	err = waitForSupportedChains(ctx, def)
 	if err != nil {
 		return nil, err
+	}
+
+	if err := <-svmErr; err != nil {
+		return nil, errors.Wrap(err, "svm init")
 	}
 
 	if cfg.PingPongN == 0 || def.Testnet.Network == netconf.Mainnet {

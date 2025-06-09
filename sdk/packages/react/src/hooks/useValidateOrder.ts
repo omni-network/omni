@@ -30,10 +30,12 @@ type ValidationRejected = Validation & {
   status: 'rejected'
   rejectReason: string
   rejectDescription: string
+  trace?: Record<string, unknown>
 }
 
 type ValidationAccepted = Validation & {
   status: 'accepted'
+  trace?: Record<string, unknown>
 }
 
 type ValidationError = Validation & {
@@ -79,7 +81,9 @@ const useResult = (
   useMemo(() => {
     if (q.isError) return { status: 'error', error: q.error }
     if (q.isPending) return { status: 'pending' }
-    if (isAcceptedRes(q.data)) return { status: 'accepted' }
+    if (isAcceptedRes(q.data)) {
+      return { status: 'accepted', trace: q.data.trace ?? undefined }
+    }
     if (isRejectedRes(q.data)) {
       return {
         status: 'rejected',
@@ -87,6 +91,7 @@ const useResult = (
         rejectReason: q.data.rejectReason ?? 'Unknown reason',
         rejectDescription:
           q.data.rejectDescription ?? 'No description provided',
+        trace: q.data.trace ?? undefined,
       }
     }
 

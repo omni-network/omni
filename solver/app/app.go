@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"net/http"
 	"net/http/pprof"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -79,8 +81,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	network = solvernet.AddHLNetwork(ctx, network, solvernet.FilterByContracts(ctx, cfg.RPCEndpoints))
-	log.Debug(ctx, "Hyperlane network initialized", "network", network.ID, "chain_ids", network.ChainIDs())
+	network = solvernet.AddNetwork(ctx, network, solvernet.FilterByContracts(ctx, cfg.RPCEndpoints))
 
 	if cfg.SolverPrivKey == "" {
 		return errors.New("private key not set")
@@ -98,6 +99,15 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 	backends.StartIdleConnectionClosing(ctx)
 	uniBackends := unibackend.EVMBackends(backends)
+
+	// Add SVM backends if any
+	for _, svmChain := range network.SVMChains() {
+		endpoint, err := cfg.RPCEndpoints.ByNameOrID(svmChain.Name, svmChain.ID)
+		if err != nil {
+			return err
+		}
+		uniBackends[svmChain.ID] = unibackend.SVMBackend(rpc.New(endpoint), svmChain.ID)
+	}
 
 	xprov := xprovider.New(network, backends.Clients(), nil)
 
@@ -127,6 +137,36 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "get contract addresses")
 	}
 
+	// Create inbox contracts early so they can be used by both event processing and relay
+	inboxChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetInbox)
+	if err != nil {
+		return errors.Wrap(err, "detect inbox chains")
+	}
+
+	inboxContracts := make(map[uint64]*bindings.SolverNetInbox)
+	for _, chain := range inboxChains {
+		name := network.ChainName(chain)
+		log.Debug(ctx, "Using inbox contract", "chain", name, "address", addrs.SolverNetInbox.Hex())
+
+		backend, err := backends.Backend(chain)
+		if err != nil {
+			return err
+		}
+
+		inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
+		if err != nil {
+			return errors.Wrap(err, "create inbox contract", "chain", name)
+		}
+		inboxContracts[chain] = inbox
+
+		// Initialize cursors for each chain
+		chainVer := chainVerFromID(network.ID, chain)
+		loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
+		if err := maybeBootstrapCursor(loopCtx, inbox, cursors, chainVer); err != nil {
+			return err
+		}
+	}
+
 	if err := approveOutboxes(ctx, network, backends, solverAddr); err != nil {
 		return errors.Wrap(err, "approve outboxes")
 	}
@@ -136,7 +176,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	go monitorPricesForever(ctx, priceFunc)
 
-	err = startProcessingEvents(ctx, network, xprov, jobDB, backends, solverAddr, addrs, cursors, pricer, priceFunc)
+	err = startProcessingEvents(ctx, network, xprov, jobDB, uniBackends, privKey, addrs, cursors, pricer, priceFunc, inboxContracts)
 	if err != nil {
 		return errors.Wrap(err, "start event streams")
 	}
@@ -154,17 +194,28 @@ func Run(ctx context.Context, cfg Config) error {
 	callAllower := newCallAllower(network.ID, addrs.SolverNetExecutor)
 
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
-	//nolint:contextcheck // False positive, inner context is used for shutdown
-	apiChan, apiCancel := serveAPI(cfg.APIAddr,
+
+	// Build base handlers that are always available
+	checkFunc := newChecker(uniBackends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox)
+	handlers := []Handler{
 		newCheckHandler(
-			newChecker(uniBackends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
+			checkFunc,
 			newTracer(backends, solverAddr, addrs.SolverNetOutbox),
 		),
 		newContractsHandler(addrs),
 		newQuoteHandler(newQuoter(priceFunc)),
 		newPriceHandler(wrapPriceHandlerFunc(priceFunc)),
 		newTokensHandler(network.ChainIDs()),
-	)
+	}
+
+	// Only add relay handler for ephemeral networks
+	if network.ID.IsEphemeral() {
+		log.Debug(ctx, "Adding relay handler for ephemeral network", "network", network.ID)
+		handlers = append(handlers, newRelayHandler(newRelayer(inboxContracts, uniBackends, solverAddr, addrs.SolverNetInbox, checkFunc)))
+	}
+
+	//nolint:contextcheck // False positive, inner context is used for shutdown
+	apiChan, apiCancel := serveAPI(cfg.APIAddr, handlers...)
 	defer apiCancel()
 
 	select {
@@ -235,42 +286,18 @@ func startProcessingEvents(
 	network netconf.Network,
 	xprov xchain.Provider,
 	jobDB *job.DB,
-	backends ethbackend.Backends,
-	solverAddr common.Address,
+	backends unibackend.Backends,
+	solverKey *ecdsa.PrivateKey,
 	addrs contracts.Addresses,
 	cursors *cursors,
 	pricer tokenpricer.Pricer,
 	priceFunc priceFunc,
+	inboxContracts map[uint64]*bindings.SolverNetInbox,
 ) error {
-	inboxChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetInbox)
-	if err != nil {
-		return errors.Wrap(err, "detect inbox chains")
-	}
+	solverAddr := ethcrypto.PubkeyToAddress(solverKey.PublicKey)
+	ethBackends := backends.EVMBackends()
 
-	inboxContracts := make(map[uint64]*bindings.SolverNetInbox)
-	for _, chain := range inboxChains {
-		name := network.ChainName(chain)
-		log.Debug(ctx, "Using inbox contract", "chain", name, "address", addrs.SolverNetInbox.Hex())
-
-		backend, err := backends.Backend(chain)
-		if err != nil {
-			return err
-		}
-
-		inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
-		if err != nil {
-			return errors.Wrap(err, "create inbox contract", "chain", name)
-		}
-		inboxContracts[chain] = inbox
-
-		chainVer := chainVerFromID(network.ID, chain)
-		loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
-		if err := maybeBootstrapCursor(loopCtx, inbox, cursors, chainVer); err != nil {
-			return err
-		}
-	}
-
-	outboxChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetOutbox)
+	outboxChains, err := detectContractChains(ctx, network, ethBackends, addrs.SolverNetOutbox)
 	if err != nil {
 		return errors.Wrap(err, "detect outbox chains")
 	}
@@ -280,7 +307,7 @@ func startProcessingEvents(
 		name := network.ChainName(chain)
 		log.Debug(ctx, "Using outbox contract", "chain", name, "address", addrs.SolverNetOutbox.Hex())
 
-		backend, err := backends.Backend(chain)
+		backend, err := ethBackends.Backend(chain)
 		if err != nil {
 			return err
 		}
@@ -329,21 +356,19 @@ func startProcessingEvents(
 
 	callAllower := newCallAllower(network.ID, addrs.SolverNetExecutor)
 
-	ageCache := newAgeCache(backends)
+	ageCache := newAgeCache(ethBackends)
 	go monitorAgeCacheForever(ctx, network, ageCache)
 
 	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, ageCache.InstrumentDestFilled)
 	updatePnL := newUpdatePnLFunc(pricer, network.ChainName)
 
-	uniBackends := unibackend.EVMBackends(backends)
-
 	deps := procDeps{
 		GetOrder:          newOrderGetter(inboxContracts),
-		ShouldReject:      newShouldRejector(uniBackends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
+		ShouldReject:      newShouldRejector(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
 		DidFill:           newDidFiller(outboxContracts),
-		Reject:            newRejector(inboxContracts, uniBackends, solverAddr, updatePnL),
-		Fill:              newFiller(outboxContracts, uniBackends, solverAddr, addrs.SolverNetOutbox, filledPnL),
-		Claim:             newClaimer(inboxContracts, uniBackends, solverAddr, updatePnL),
+		Reject:            newRejector(inboxContracts, backends, solverAddr, updatePnL),
+		Fill:              newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
+		Claim:             newClaimer(inboxContracts, backends, solverAddr, updatePnL),
 		ChainName:         network.ChainName,
 		ProcessorName:     procName,
 		TargetName:        targetName,
@@ -351,10 +376,20 @@ func startProcessingEvents(
 		DebugPendingOrder: debugFunc,
 	}
 
-	// Create all event processing functions per chain
+	// Create all event processing functions per EVM chain
 	procs := make(map[uint64]eventProcFunc)
-	for _, chainID := range inboxChains {
+	for chainID := range inboxContracts {
 		procs[chainID] = newEventProcFunc(deps, chainID)
+	}
+
+	// Create event processing functions for SVM chains
+	for _, svmChain := range network.SVMChains() {
+		backend, err := backends.Backend(svmChain.ID)
+		if err != nil {
+			return err
+		}
+		svmDeps := svmProcDeps(backend.SVMClient(), addrs.SolverNetOutbox, solverKey, deps)
+		procs[svmChain.ID] = newEventProcFunc(svmDeps, svmChain.ID)
 	}
 
 	// Create the async worker function
@@ -373,10 +408,24 @@ func startProcessingEvents(
 	}
 
 	// Start streaming events for all chains
-	for _, chainID := range inboxChains {
+	for chainID := range inboxContracts {
 		chainVer := chainVerFromID(network.ID, chainID)
 		loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
 		go streamEventsForever(loopCtx, chainVer, xprov, cursors, addrs.SolverNetInbox, jobDB, asyncWork)
+	}
+
+	// Start streaming events for all SVM chains
+	for _, svmChain := range network.SVMChains() {
+		backend, err := backends.Backend(svmChain.ID)
+		if err != nil {
+			return err
+		}
+		chainVer := chainVerFromID(network.ID, svmChain.ID)
+		loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
+		if err := maybeBootstrapSVMCursor(loopCtx, backend.SVMClient(), cursors, chainVer); err != nil {
+			return errors.Wrap(err, "bootstrap SVM cursor")
+		}
+		go streamSVMForever(loopCtx, chainVer, backend.SVMClient(), cursors, jobDB, asyncWork)
 	}
 
 	return nil

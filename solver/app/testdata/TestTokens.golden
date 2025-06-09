@@ -270,6 +270,36 @@
   "symbol": "USDT"
  },
  {
+  "address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+  "chainId": 42161,
+  "coingeckoId": "usdt0",
+  "isMock": false,
+  "maxSpend": "2000000 USDT0",
+  "minSpend": "0.1 USDT0",
+  "name": "Tether Zero",
+  "symbol": "USDT0"
+ },
+ {
+  "address": "0x01bFF41798a0BcF287b996046Ca68b395DbC1071",
+  "chainId": 10,
+  "coingeckoId": "usdt0",
+  "isMock": false,
+  "maxSpend": "2000000 USDT0",
+  "minSpend": "0.1 USDT0",
+  "name": "Tether Zero",
+  "symbol": "USDT0"
+ },
+ {
+  "address": "0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb",
+  "chainId": 999,
+  "coingeckoId": "usdt0",
+  "isMock": false,
+  "maxSpend": "2000000 USDT0",
+  "minSpend": "0.1 USDT0",
+  "name": "Tether Zero",
+  "symbol": "USDT0"
+ },
+ {
   "address": "0x36E66fbBce51e4cD5bd3C62B637Eb411b18949D4",
   "chainId": 1,
   "coingeckoId": "omni-network",
@@ -348,6 +378,106 @@
   "minSpend": "0.001 wstETH",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
+ },
+ {
+  "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  "chainId": 1,
+  "coingeckoId": "weth",
+  "isMock": false,
+  "maxSpend": "3 WETH",
+  "minSpend": "0.001 WETH",
+  "name": "Wrapped Ether",
+  "symbol": "WETH"
+ },
+ {
+  "address": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  "chainId": 42161,
+  "coingeckoId": "weth",
+  "isMock": false,
+  "maxSpend": "3 WETH",
+  "minSpend": "0.001 WETH",
+  "name": "Wrapped Ether",
+  "symbol": "WETH"
+ },
+ {
+  "address": "0x4200000000000000000000000000000000000006",
+  "chainId": 8453,
+  "coingeckoId": "weth",
+  "isMock": false,
+  "maxSpend": "3 WETH",
+  "minSpend": "0.001 WETH",
+  "name": "Wrapped Ether",
+  "symbol": "WETH"
+ },
+ {
+  "address": "0x4200000000000000000000000000000000000006",
+  "chainId": 10,
+  "coingeckoId": "weth",
+  "isMock": false,
+  "maxSpend": "3 WETH",
+  "minSpend": "0.001 WETH",
+  "name": "Wrapped Ether",
+  "symbol": "WETH"
+ },
+ {
+  "address": "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111",
+  "chainId": 5000,
+  "coingeckoId": "weth",
+  "isMock": false,
+  "maxSpend": "3 WETH",
+  "minSpend": "0.001 WETH",
+  "name": "Wrapped Ether",
+  "symbol": "WETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 5000,
+  "coingeckoId": "mantle",
+  "isMock": false,
+  "maxSpend": "1000 MNT",
+  "minSpend": "0.001 MNT",
+  "name": "Mantle",
+  "symbol": "MNT"
+ },
+ {
+  "address": "0x3c3a81e81dc49A522A592e7622A7E711c06bf354",
+  "chainId": 1,
+  "coingeckoId": "mantle",
+  "isMock": false,
+  "maxSpend": "1000 MNT",
+  "minSpend": "0.001 MNT",
+  "name": "Mantle",
+  "symbol": "MNT"
+ },
+ {
+  "address": "0xd5F7838F5C461fefF7FE49ea5ebaF7728bB0ADfa",
+  "chainId": 1,
+  "coingeckoId": "mantle-staked-ether",
+  "isMock": false,
+  "maxSpend": "3 mETH",
+  "minSpend": "0.001 mETH",
+  "name": "mETH",
+  "symbol": "mETH"
+ },
+ {
+  "address": "0xcDA86A272531e8640cD7F1a92c01839911B90bb0",
+  "chainId": 5000,
+  "coingeckoId": "mantle-staked-ether",
+  "isMock": false,
+  "maxSpend": "3 mETH",
+  "minSpend": "0.001 mETH",
+  "name": "mETH",
+  "symbol": "mETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 999,
+  "coingeckoId": "hyperliquid",
+  "isMock": false,
+  "maxSpend": "100 HYPE",
+  "minSpend": "0.001 HYPE",
+  "name": "Hyperliquid",
+  "symbol": "HYPE"
  },
  {
   "address": "0x6319df7c227e34B967C1903A08a698A3cC43492B",

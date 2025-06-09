@@ -83,6 +83,10 @@ func Test(ctx context.Context, network netconf.Network, backends ethbackend.Back
 		return errors.Wrap(err, "test check api")
 	}
 
+	if err := testRelayAPI(ctx, solverAddr); err != nil {
+		return errors.Wrap(err, "test relay api")
+	}
+
 	tracker, err := openAll(ctx, backends, orders)
 	if err != nil {
 		return errors.Wrap(err, "open all")
@@ -462,6 +466,53 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 	}
 
 	log.Info(ctx, "Test /check success")
+
+	return nil
+}
+
+func testRelayAPI(ctx context.Context, solverAddr string) error {
+	scl := sclient.New(solverAddr)
+
+	// Create a minimal gasless order that should be rejected for invalid values
+	// This tests that the endpoint exists and handles requests properly
+	dummyOrder := bindings.IERC7683GaslessCrossChainOrder{
+		OriginSettler: common.Address{}, // Invalid address
+		User:          common.Address{}, // Invalid address
+		Nonce:         big.NewInt(0),    // Invalid nonce
+		OriginChainId: big.NewInt(0),    // Invalid chain ID
+		OpenDeadline:  0,                // Invalid deadline
+		FillDeadline:  0,                // Invalid deadline
+		OrderDataType: common.Hash{},    // Invalid type hash
+		OrderData:     []byte{},         // Empty order data
+	}
+
+	relayReq := solver.RelayRequest{
+		Order:            dummyOrder,
+		Signature:        []byte{}, // Empty signature should be rejected
+		OriginFillerData: []byte{}, // Empty filler data
+	}
+
+	relayResp, err := scl.Relay(ctx, relayReq)
+	if err != nil {
+		return errors.Wrap(err, "relay request failed unexpectedly")
+	}
+
+	// The request should be handled but not successful due to validation failures
+	if relayResp.Success {
+		return errors.New("relay request unexpectedly succeeded with invalid data")
+	}
+
+	// Should have an error indicating why the request failed
+	if relayResp.Error == nil {
+		return errors.New("relay request failed but no error details provided")
+	}
+
+	// Check that we got a meaningful error code
+	if relayResp.Error.Code == "" {
+		return errors.New("relay error missing error code")
+	}
+
+	log.Info(ctx, "Test /relay success, endpoint exists and handles validation")
 
 	return nil
 }

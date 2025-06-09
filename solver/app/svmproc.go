@@ -1,11 +1,12 @@
-//nolint:unused // Partially integrated
 package app
 
 import (
 	"context"
+	"crypto/ecdsa"
 
 	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/umath"
@@ -19,22 +20,74 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 )
 
-// svmProcDeps returns the SVM-specific processor dependencies.
+func streamSVMForever(
+	ctx context.Context,
+	chainVer xchain.ChainVersion,
+	cl *rpc.Client,
+	cursors *cursors,
+	db *job.DB,
+	asyncWork asyncWorkFunc,
+) {
+	backoff := expbackoff.New(ctx)
+	for {
+		from, ok, err := cursors.GetTxSig(ctx, chainVer)
+		if !ok || err != nil {
+			log.Warn(ctx, "Failed reading cursor (will retry)", err)
+			backoff()
+
+			continue
+		}
+
+		callback := newSVMStreamCallback(cl, chainVer, cursors, db, asyncWork)
+
+		req := svmutil.StreamReq{
+			AfterSig:   from,
+			Account:    anchorinbox.ProgramID,
+			Commitment: rpc.CommitmentConfirmed,
+		}
+
+		log.Debug(ctx, "SVM streaming events", "after_sig", from)
+
+		err = svmutil.Stream(ctx, cl, req, callback)
+		if ctx.Err() != nil {
+			return
+		}
+
+		// If the stream fails, we backoff and retry.
+		log.Warn(ctx, "SVM stream failed (will retry)", err)
+		backoff()
+	}
+}
+
+// svmProcDeps returns the SVM-specific processor dependencies based on the provided global procdeps.
 // Specifically, it replaces the functions that interact with the SVM chain.
 func svmProcDeps(
 	cl *rpc.Client,
 	outboxAddr common.Address,
-	solver solana.PrivateKey,
+	solverEVM *ecdsa.PrivateKey,
 	deps procDeps,
 ) procDeps {
+	solver := svmutil.MapEVMKey(solverEVM)
+	evmFill := deps.Fill
+
 	deps.GetOrder = adaptSVMGetOrder(cl, outboxAddr)
 	deps.Reject = adaptSVMReject(cl, solver)
 	deps.Claim = adaptSVMClaim(cl, solver)
+	deps.Fill = func(ctx context.Context, order Order) error {
+		if err := evmFill(ctx, order); err != nil {
+			return err
+		}
+
+		// TODO(corver): Move this to dedicated outbox event processor.
+		return markFilledSVMOrder(ctx, cl, solver, solver.PublicKey(), order.ID)
+	}
 
 	return deps
 }
 
-func NewSVMStreamCallback(
+// newSVMStreamCallback returns stream handler for anchor inbox events.
+// It starts async jobs for each valid event.
+func newSVMStreamCallback(
 	cl *rpc.Client,
 	chainVer xchain.ChainVersion,
 	cursors *cursors,
@@ -42,20 +95,26 @@ func NewSVMStreamCallback(
 	asyncWork asyncWorkFunc,
 ) svmutil.StreamCallback {
 	return func(ctx context.Context, sig *rpc.TransactionSignature) error {
+		if sig.Err != nil {
+			log.Debug(ctx, "SVM: Ignoring failed tx", "tx_err", sig.Err, "tx", sig)
+			return nil // Skip failed transactions
+		}
+
 		txResp, err := svmutil.AwaitConfirmedTransaction(ctx, cl, sig.Signature)
-		if customErr := anchorinbox.DecodeMetaError(txResp); customErr != nil {
-			log.Warn(ctx, "AnchorInbox: Ignoring failed tx", customErr, "tx", sig)
-			return nil
-		} else if err != nil {
+		if err != nil {
 			return errors.Wrap(err, "get tx")
 		}
 
-		events, err := anchorinbox.DecodeEvents(txResp, anchorinbox.ProgramID, func([]solana.PublicKey) (map[solana.PublicKey]solana.PublicKeySlice, error) {
-			return nil, errors.New("address lookup not supported")
-		})
+		logMsgs, ok, err := svmutil.FilterDataLogs(txResp.Meta.LogMessages, anchorinbox.ProgramID)
 		if err != nil {
-			log.Warn(ctx, "AnchorInbox: ignoring decode events failure tx", err, "tx", sig)
-			return nil
+			return errors.Wrap(err, "filter logs")
+		} else if !ok {
+			log.Warn(ctx, "SVM: potentially skipping truncated logs [BUG]", nil, "tx", sig)
+		}
+
+		events, err := anchorinbox.DecodeLogEvents(logMsgs)
+		if err != nil {
+			return errors.Wrap(err, "decode events")
 		}
 
 		for i, event := range events {
@@ -94,10 +153,12 @@ func NewSVMStreamCallback(
 			if err := asyncWork(ctx, j); err != nil {
 				return errors.Wrap(err, "async work")
 			}
+		}
 
-			if err := cursors.SetTxSig(ctx, chainVer, sig.Signature); err != nil {
-				return errors.Wrap(err, "update cursor")
-			}
+		log.Debug(ctx, "SVM: Processed events", "sig", sig.Signature, "slot", sig.Slot, "events", len(events))
+
+		if err := cursors.SetTxSig(ctx, chainVer, sig.Signature); err != nil {
+			return errors.Wrap(err, "update cursor")
 		}
 
 		return nil

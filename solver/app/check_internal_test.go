@@ -38,7 +38,7 @@ func TestCheck(t *testing.T) {
 	require.NoError(t, err)
 	outbox := addrs.SolverNetOutbox
 
-	for _, tt := range checkTestCases(t, solver) {
+	for _, tt := range checkTestCases(t, solver, outbox) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 			uniBackends := unibackend.EVMBackends(backends)
@@ -46,11 +46,15 @@ func TestCheck(t *testing.T) {
 			callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return !tt.disallowCall }
 			handler := handlerAdapter(newCheckHandler(
 				newChecker(uniBackends, callAllower, priceFunc, solver, outbox),
-				func(ctx context.Context, req types.CheckRequest) (map[string]any, error) {
+				func(ctx context.Context, req types.CheckRequest) (types.CallTrace, error) {
 					require.True(t, tt.req.Debug)
 					require.True(t, tt.trace == nil || tt.traceErr == nil)
 
-					return tt.trace, tt.traceErr
+					if tt.trace == nil {
+						return types.CallTrace{}, tt.traceErr
+					}
+
+					return *tt.trace, tt.traceErr
 				},
 			))
 
@@ -87,7 +91,7 @@ func TestCheck(t *testing.T) {
 			require.Equal(t, tt.res.Accepted, res.Accepted)
 
 			if tt.req.Debug && tt.trace != nil {
-				require.Equal(t, tt.trace, res.Trace)
+				require.Equal(t, tt.trace.Map(), res.Trace)
 			}
 
 			if tt.req.Debug && tt.traceErr != nil {

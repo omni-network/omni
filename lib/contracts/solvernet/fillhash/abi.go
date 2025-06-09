@@ -1,4 +1,4 @@
-package solvernet
+package fillhash
 
 import (
 	"crypto/sha256"
@@ -27,7 +27,7 @@ const (
 
 // FillHash returns the fill hash for the given order and fill data.
 func FillHash(
-	orderID OrderID,
+	orderID [32]byte,
 	fillData bindings.SolverNetFillOriginData,
 ) (common.Hash, error) {
 	encoded, err := encodeFillHash(orderID, fillData)
@@ -57,7 +57,7 @@ func EncodeFillData(
 }
 
 // This is equivalent to: abi.encode(orderId, fillOriginData);.
-func encodeFillHash(orderID OrderID, fillData bindings.SolverNetFillOriginData) ([]byte, error) {
+func encodeFillHash(orderID [32]byte, fillData bindings.SolverNetFillOriginData) ([]byte, error) {
 	for _, expense := range fillData.Expenses {
 		if bi.GT(expense.Amount, umath.MaxUint96) {
 			return nil, errors.New("expense amount too large")

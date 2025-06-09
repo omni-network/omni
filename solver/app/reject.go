@@ -72,6 +72,11 @@ func newShouldRejector(
 
 		// Internal logic just return errors (convert them to rejections below)
 		err = func(ctx context.Context, order Order) error {
+			_, ok := solvernet.Provider(order.SourceChainID, pendingData.DestinationChainID)
+			if !ok {
+				return newRejection(types.RejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", pendingData.DestinationChainID))
+			}
+
 			backend, err := backends.Backend(pendingData.DestinationChainID)
 			if err != nil {
 				return newRejection(types.RejectUnsupportedDestChain, err)
@@ -209,25 +214,43 @@ func checkFill(
 	}
 
 	returnData, err := client.CallContract(ctx, msg, nil)
-	if err != nil {
-		solErr := solvernet.DetectCustomError(err)
+	if err == nil {
+		return nil // No revert, fill will not revert.
+	}
 
-		if sameChain && solErr == "inbox::OrderNotPending" {
-			// For same chain orders, the fill will revert when the order is
-			// "not pending" (not opened, already filled, etc). We use random
-			// IDs to check fills - these will always revert with
-			// OrderNotPending. So for the purpose of a "check", getting this
-			// error means the fill will succeed.
-			return nil
-		}
-
+	if !sameChain {
 		return &RejectionError{
 			Reason: types.RejectDestCallReverts,
-			Err:    errors.Wrap(err, "call contract", "return_data", hexutil.Encode(returnData), "solidity_err", solErr),
+			Err:    errors.Wrap(err, "call contract", "return_data", hexutil.Encode(returnData), "solidity_err", solvernet.DetectCustomError(err)),
 		}
 	}
 
-	return nil
+	// For same chain orders, the fill will revert when the order is
+	// "not pending" (not opened, already filled, etc). We use random
+	// IDs to check fills - these will always revert with OrderNotPending.
+	// Quicknode RPCs do not return the error in an eth_call, so we need to debug_traceCall.
+
+	trace, err := debugTraceCall(ctx, client, msg)
+	if err != nil {
+		return err
+	}
+
+	if len(trace.Calls) == 0 || trace.Calls[0].Output == "" {
+		return errors.New("call contract", "return_data", hexutil.Encode(returnData), "solidity_err", "no output")
+	}
+
+	output := trace.Calls[0].Output
+
+	const notPendingErr = "0xba254946"
+	if output == notPendingErr {
+		// OrderNotPending, fill will not revert.
+		return nil
+	}
+
+	return &RejectionError{
+		Reason: types.RejectDestCallReverts,
+		Err:    errors.New("call contract", "return_data", output, "solidity_err", solvernet.DetectCustomError(errors.New(output))),
+	}
 }
 
 // fillCallMsg returns the ethereum.CallMsg or an order fill.

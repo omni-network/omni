@@ -1,7 +1,7 @@
 import {
   type DidFillError,
   GetOrderError,
-  type GetOrderReturn,
+  type GetRejectionError,
   LoadContractsError,
   type OmniContracts,
   OpenError,
@@ -9,6 +9,7 @@ import {
   type Order,
   type OrderStatus,
   type ParseOpenEventError,
+  type Rejection,
   type SendOrderReturn,
   TxReceiptError,
   ValidateOrderError,
@@ -38,6 +39,7 @@ import {
   useOmniContracts,
 } from './useOmniContracts.js'
 import { useParseOpenEvent } from './useParseOpenEvent.js'
+import { useRejection } from './useRejection.js'
 import {
   type UseValidateOrderResult,
   useValidateOrder,
@@ -47,8 +49,8 @@ type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
   validateEnabled: boolean
   debugValidation?: boolean
   omniContractsQueryOpts?: QueryOpts<OmniContracts>
-  getOrderQueryOpts?: QueryOpts<GetOrderReturn>
   didFillQueryOpts?: QueryOpts<boolean>
+  rejectionQueryOpts?: QueryOpts<Rejection, GetRejectionError>
 }
 
 type MutationError = LoadContractsError | NoClientError | WriteContractErrorType
@@ -87,6 +89,7 @@ type UseOrderReturnType = {
   isReady: boolean
   txMutation: MutationResult
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
+  rejection?: Rejection
 }
 
 type UseOrderStatus =
@@ -106,8 +109,8 @@ export function useOrder<abis extends OptionalAbis>(
     validateEnabled,
     debugValidation,
     omniContractsQueryOpts,
-    getOrderQueryOpts,
     didFillQueryOpts,
+    rejectionQueryOpts,
     ...order
   } = params
   const srcChainId = order.srcChainId ?? useChainId()
@@ -144,9 +147,16 @@ export function useOrder<abis extends OptionalAbis>(
   const orderStatus = useGetOrderStatus({
     srcChainId,
     destChainId: order.destChainId,
-    orderId: resolvedOrder?.orderId,
-    getOrderQueryOpts,
+    resolvedOrder,
     didFillQueryOpts,
+  })
+
+  const rejection = useRejection({
+    orderId: resolvedOrder?.orderId,
+    fromBlock: wait.data?.blockNumber,
+    enabled: wait.status === 'success' && orderStatus.status === 'rejected',
+    srcChainId: order.srcChainId,
+    queryOpts: rejectionQueryOpts,
   })
 
   const status = deriveStatus(
@@ -189,6 +199,7 @@ export function useOrder<abis extends OptionalAbis>(
     isReady: !!inboxAddress,
     txMutation,
     waitForTx: wait,
+    rejection: rejection.data ?? undefined,
   }
 }
 

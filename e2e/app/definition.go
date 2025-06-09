@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/e2e/vmcompose"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -384,6 +385,11 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		return types.Testnet{}, err
 	}
 
+	svms, err := svmChains(manifest)
+	if err != nil {
+		return types.Testnet{}, err
+	}
+
 	solverInst := infd.Instances["solver"]
 	solverInternalIP := solverInst.IPAddress.String()
 	if infd.Provider == docker.ProviderName {
@@ -399,6 +405,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		OmniEVMs:           omniEVMS,
 		AnvilChains:        anvils,
 		PublicChains:       publics,
+		SVMChains:          svms,
 		Perturb:            manifest.Perturb,
 		SolverInternalAddr: solverInternalAddr,
 		SolverExternalAddr: solverExternalAddr,
@@ -441,6 +448,32 @@ func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.Public
 	return publics, nil
 }
 
+func svmChains(manifest types.Manifest) ([]types.SVMChain, error) {
+	var resp []types.SVMChain
+	for _, name := range manifest.SVMChains {
+		if manifest.Network != netconf.Devnet {
+			return nil, errors.New("svm chains are only supported on devnet")
+		}
+
+		meta, ok := evmchain.MetadataByName(name)
+		if !ok {
+			return nil, errors.New("unknown SVM chain", "name", name)
+		}
+
+		resp = append(resp, types.SVMChain{
+			Metadata:    meta,
+			InternalRPC: "http://svm:8899",
+			ExternalRPC: "http://localhost:8899",
+		})
+	}
+
+	if len(resp) > 1 {
+		return nil, errors.New("only one SVM chain")
+	}
+
+	return resp, nil
+}
+
 // externalEndpoints returns the evm rpc endpoints for access from inside the
 // docker network.
 func internalEndpoints(def Definition, nodePrefix string) xchain.RPCEndpoints {
@@ -460,6 +493,11 @@ func internalEndpoints(def Definition, nodePrefix string) xchain.RPCEndpoints {
 	// Add all anvil chains
 	for _, anvil := range def.Testnet.AnvilChains {
 		endpoints[anvil.Chain.Name] = anvil.InternalRPC
+	}
+
+	// Add SVM chains
+	for _, svm := range def.Testnet.SVMChains {
+		endpoints[svm.Name] = svm.InternalRPC
 	}
 
 	return endpoints
@@ -485,6 +523,11 @@ func ExternalEndpoints(def Definition) xchain.RPCEndpoints {
 	// Add all anvil chains
 	for _, anvil := range def.Testnet.AnvilChains {
 		endpoints[anvil.Chain.Name] = anvil.ExternalRPC
+	}
+
+	// Add SVM chains
+	for _, svm := range def.Testnet.SVMChains {
+		endpoints[svm.Name] = svm.ExternalRPC
 	}
 
 	return endpoints

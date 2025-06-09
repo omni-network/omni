@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/layerzero"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
@@ -26,13 +27,14 @@ func Send(
 	srcChainID uint64,
 	destChainID uint64,
 	amount *big.Int,
+	db *DB,
 ) (*ethclient.Receipt, error) {
 	oftAddr, ok := oftByChain[srcChainID]
 	if !ok {
 		return nil, errors.New("no oft", "chain_id", srcChainID)
 	}
 
-	destEID, ok := eidByChain[destChainID]
+	destEID, ok := layerzero.EIDByChain(destChainID)
 	if !ok {
 		return nil, errors.New("no eid", "chain_id", destChainID)
 	}
@@ -64,9 +66,10 @@ func Send(
 	}
 
 	params := SendParam{
-		DstEid:   destEID,
-		To:       toBz32(user),
-		AmountLD: amount,
+		DstEid:      destEID,
+		To:          toBz32(user),
+		AmountLD:    amount,
+		MinAmountLD: bi.Zero(),
 	}
 
 	_, _, oftReceipt, err := oft.QuoteOFT(&bind.CallOpts{Context: ctx}, params)
@@ -74,12 +77,18 @@ func Send(
 		return nil, errors.Wrap(err, "quote oft")
 	}
 
-	// TODO: check amount received, require within acceptable range
 	params.MinAmountLD = oftReceipt.AmountReceivedLD
 
 	fee, err := oft.QuoteSend(&bind.CallOpts{Context: ctx}, params, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "quote send")
+	}
+
+	// Protection against USDT0 fees, can relax if needed
+	if bi.LT(params.AmountLD, params.MinAmountLD) {
+		return nil, errors.New("amount received is less than amount sent",
+			"amount_received", oftReceipt.AmountReceivedLD,
+			"amount_sent", oftReceipt.AmountSentLD)
 	}
 
 	txOpts, err := backend.BindOpts(ctx, user)
@@ -106,6 +115,22 @@ func Send(
 		"received", dstToken.FormatAmt(oftReceipt.AmountReceivedLD),
 		"fee", srcNativeTkn.FormatAmt(fee.NativeFee),
 		"tx", receipt.TxHash)
+
+	// Track message in DB if provided
+	if db != nil {
+		msg := MsgSend{
+			TxHash:      receipt.TxHash,
+			BlockHeight: receipt.BlockNumber.Uint64(),
+			SrcChainID:  srcChainID,
+			DestChainID: destChainID,
+			Amount:      amount,
+			Status:      layerzero.MsgStatusUnknown,
+		}
+
+		if err := db.InsertMsg(ctx, msg); err != nil {
+			log.Error(ctx, "Failed to insert message", err, "tx", receipt.TxHash)
+		}
+	}
 
 	return receipt, nil
 }

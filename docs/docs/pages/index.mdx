@@ -1,30 +1,52 @@
 ---
-slug: / # Keep this to make it the root page
-title: Welcome
-description: Documentation for the Omni SDK, SolverNet, and related concepts.
+layout: landing
 ---
 
-# Welcome
+import { HomePage } from "vocs/components";
+import '../styles.css';
 
-Welcome to the Omni documentation! Omni is a technology designed to make the **entire crypto ecosystem** feel like a single chain for users and developers.
+<HomePage.Root>
 
-This documentation is your guide to understanding and building with Omni. You'll find the resources you need to get started.
+  <img src="/img/Omni_Lockup_light.svg" className="logo-light" width="400" />
+  <img src="/img/Omni_Lockup_dark.svg" className="logo-dark" width="400" />
 
-## What is Omni?
+<HomePage.Tagline>
+  Onboard your users from any chain in 1 click
+</HomePage.Tagline>
 
-At its core, Omni abstracts away the complexities of cross-chain interactions, enabling:
+  <HomePage.InstallPackage name="@omni-network/react @omni-network/core" type="install" />
 
-*   **Developers** to deploy applications on a single chain while reaching users and liquidity across the entire crypto ecosystem.
-*   **Users** to interact with applications on any chain without bridging, managing gas, or switching networks.
+{" "}
 
-Omni's primary developer-facing product is:
+{" "}
 
-*   **SolverNet:** A frontend SDK and network enabling intent-based execution across chains.
 
-Omni is infrastructure for coordinating and settling cross-chain actions, and offers **SolverNet** as its primary product for building apps that reach users everywhere.
 
-## The Vision: An Open Orderflow Execution Engine
+<HomePage.Description>
+  Omni is creating a world where the entire onchain economy is just 1 click away. Use the Omni SDK to bridge, swap, deposit, and bundle arbitrary actions across any chain. Powered by intents.
+</HomePage.Description>
 
-Traditional finance relies on exclusive systems like Robinhood's Payment for Order Flow (PFoF) deals with market makers like Citadel. These opaque agreements centralize power and concentrate benefits among a select few.
+<HomePage.Buttons>
+  <HomePage.Button href="/introduction/welcome" variant="accent">
+    Get started
+  </HomePage.Button>
+</HomePage.Buttons>
 
-Omni is building the open alternative: a permissionless orderflow execution engine. Anyone can participate in routing and executing cross-chain intents, ensuring users always get the best execution with full transparency. This infrastructure empowers developers, solvers, and users to build on equitable and open rails, setting the foundation for an equitable global financial system.
+<div className="feature-card">
+  <div className="feature-card-item" onClick={() => window.location.href = '/sdk/getting-started/react'}>
+    <h3 className="feature-card-title">Get started with React</h3>
+    <p className="feature-card-description">Build React applications powered by Omni</p>
+  </div>
+
+  <div className="feature-card-item" onClick={() => window.location.href = '/sdk/getting-started/core'}>
+    <h3 className="feature-card-title">Get started with Core</h3>
+    <p className="feature-card-description">Build scripts or TS apps with any framework</p>
+  </div>
+
+  <div className="feature-card-item" onClick={() => window.open('https://github.com/omni-network/omni', '_blank')}>
+    <h3 className="feature-card-title">Explore our Monorepo</h3>
+    <p className="feature-card-description">Browse the full Omni codebase on GitHub</p>
+  </div>
+</div>
+
+</HomePage.Root>

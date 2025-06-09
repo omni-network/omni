@@ -102,9 +102,22 @@ func TestGenTokens(t *testing.T) {
 		weth(evmchain.IDArbitrumOne, addr("0x82af49447d8a07e3bd95bd0d56f35241523fbab1")),
 		weth(evmchain.IDBase, addr("0x4200000000000000000000000000000000000006")),
 		weth(evmchain.IDOptimism, addr("0x4200000000000000000000000000000000000006")),
+		weth(evmchain.IDMantle, addr("0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111")),
 
 		// MNT
-		nativeMNT(evmchain.IDMantle),
+		mntNative(evmchain.IDMantle),
+		mntERC20(evmchain.IDEthereum, addr("0x3c3a81e81dc49a522a592e7622a7e711c06bf354")),
+
+		// mETH
+		meth(evmchain.IDEthereum, addr("0xd5f7838f5c461feff7fe49ea5ebaf7728bb0adfa")),
+		meth(evmchain.IDMantle, addr("0xcDA86A272531e8640cD7F1a92c01839911B90bb0")),
+
+		// HYPE
+		tokens.Token{
+			Asset:      tokens.HYPE,
+			ChainID:    evmchain.IDHyperEVM,
+			ChainClass: tokens.ClassMainnet,
+		},
 	)
 
 	for _, mock := range e2e.MockTokens() {
@@ -176,12 +189,30 @@ func nativeOMNI(chainID uint64) tokens.Token {
 	}
 }
 
-func nativeMNT(chainID uint64) tokens.Token {
+func mntNative(chainID uint64) tokens.Token {
 	return tokens.Token{
 		Asset:      tokens.MNT,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    tokens.NativeAddr,
+	}
+}
+
+func mntERC20(chainID uint64, addr common.Address) tokens.Token {
+	return tokens.Token{
+		Asset:      tokens.MNT,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    addr,
+	}
+}
+
+func meth(chainID uint64, addr common.Address) tokens.Token {
+	return tokens.Token{
+		Asset:      tokens.METH,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    addr,
 	}
 }
 

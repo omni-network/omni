@@ -16,6 +16,7 @@ const (
 	endpointCheck = "/api/v1/check"
 	endpointQuote = "/api/v1/quote"
 	endpointPrice = "/api/v1/price"
+	endpointRelay = "/api/v1/relay"
 )
 
 // New creates a new solver Client.
@@ -73,6 +74,17 @@ func (c Client) Price(ctx context.Context, req types.PriceRequest) (types.Price,
 
 	if err := c.do(ctx, endpointPrice, req, &res); err != nil {
 		return types.Price{}, err
+	}
+
+	return res, nil
+}
+
+// Relay calls the relay API endpoint to submit a gasless order on behalf of a user.
+func (c Client) Relay(ctx context.Context, req types.RelayRequest) (types.RelayResponse, error) {
+	var res types.RelayResponse
+
+	if err := c.do(ctx, endpointRelay, req, &res); err != nil {
+		return types.RelayResponse{}, err
 	}
 
 	return res, nil

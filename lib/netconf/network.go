@@ -1,6 +1,8 @@
 package netconf
 
 import (
+	"sort"
+
 	"github.com/omni-network/omni/lib/errors"
 )
 
@@ -87,6 +89,10 @@ func All() []ID {
 			resp = append(resp, id)
 		}
 	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i] < resp[j]
+	})
 
 	return resp
 }

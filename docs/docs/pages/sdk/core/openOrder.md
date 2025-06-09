@@ -2,9 +2,9 @@
 
 The `openOrder` function implements a common flow to open an order on a SolverNet inbox contract, by combining single-purpose functions:
 
-1. Validating the order, using [`validateOrder`](/sdk/core/validateOrder.md)
-2. Sending the order transaction, using [`sendOrder`](/sdk/core/sendOrder.mdx)
-3. Waiting for the order to be open on the blockchain, using [`waitForOrderOpen`](/sdk/core/waitForOrderOpen.md)
+1. Validating the order, using [`validateOrder`](/sdk/core/validateOrder)
+2. Sending the order transaction, using [`sendOrder`](/sdk/core/sendOrder)
+3. Waiting for the order to be open on the blockchain, using [`waitForOrderOpen`](/sdk/core/waitForOrderOpen)
 
 ## Usage
 

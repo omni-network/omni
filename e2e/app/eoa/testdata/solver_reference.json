@@ -35,6 +35,9 @@
    "ETH": {
     "min": "20 ETH"
    },
+   "MNT": {
+    "min": "0 MNT"
+   },
    "OMNI": {
     "min": "0 OMNI"
    },
@@ -46,6 +49,9 @@
    },
    "WETH": {
     "min": "0 WETH"
+   },
+   "mETH": {
+    "min": "0 mETH"
    },
    "stETH": {
     "min": "0 stETH"

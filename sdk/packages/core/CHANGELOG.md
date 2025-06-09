@@ -1,5 +1,20 @@
 # @omni-network/core
 
+## 0.3.0
+
+### Minor Changes
+
+- d4f17ec: - Replace dependency on RPC endpoint eth_newFilter (due to not being widely supported) by switching watchDidFill to watch blocks.
+  - Includes an update to the watchDidFill function signature, replacing `onLogs` with `onFill`.
+  - Includes an update to the `generateOrder` function signature, requiring `outboxAddress` to be passed in.
+  - Use `watchDidFill` in `generateOrder`, to propagate the destTxHash.
+
+## 0.2.1
+
+### Patch Changes
+
+- 60b097a: add support for debug flag in order validation call
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,4 +1,3 @@
-//nolint:unused // Partially integrated
 package app
 
 import (
@@ -8,6 +7,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
+	"github.com/omni-network/omni/lib/contracts/solvernet/fillhash"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/solver/types"
@@ -59,7 +59,7 @@ func svmGetOrder(ctx context.Context, cl *rpc.Client, outboxAddr common.Address,
 		return Order{}, false, err
 	}
 
-	encoded, err := solvernet.EncodeFillData(fillData)
+	encoded, err := fillhash.EncodeFillData(fillData)
 	if err != nil {
 		return Order{}, false, err
 	}
@@ -149,7 +149,7 @@ func rejectSVMOrder(
 	return nil
 }
 
-func MarkFilledSVMOrder(
+func markFilledSVMOrder(
 	ctx context.Context,
 	cl *rpc.Client,
 	admin solana.PrivateKey,

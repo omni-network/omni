@@ -16,7 +16,7 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         // `orderDataType` must be correct
         vm.expectRevert(ISolverNetInbox.InvalidOrderTypehash.selector);
         inbox.validate(order);
-        order.orderDataType = ORDER_DATA_TYPEHASH;
+        order.orderDataType = HashLib.OLD_ORDERDATA_TYPEHASH;
 
         // `orderData` must not be empty
         vm.expectRevert(ISolverNetInbox.InvalidOrderData.selector);
@@ -36,7 +36,7 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         order.orderData = abi.encode(orderData);
 
         // `destChainId` must be non-zero
-        vm.expectRevert(ISolverNetInbox.InvalidChainId.selector);
+        vm.expectRevert(ISolverNetInbox.InvalidDestinationChainId.selector);
         inbox.validate(order);
         orderData.destChainId = destChainId;
         order.orderData = abi.encode(orderData);
@@ -44,8 +44,21 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         // `calls` must not be empty
         vm.expectRevert(ISolverNetInbox.InvalidMissingCalls.selector);
         inbox.validate(order);
+        orderData.calls = new SolverNet.Call[](33);
+        order.orderData = abi.encode(orderData);
+
+        // `calls` must not exceed array length limit of 32
+        vm.expectRevert(ISolverNetInbox.InvalidArrayLength.selector);
+        inbox.validate(order);
         orderData.calls = new SolverNet.Call[](1);
         orderData.calls[0].target = address(erc20Vault);
+        orderData.expenses = new SolverNet.TokenExpense[](33);
+        order.orderData = abi.encode(orderData);
+
+        // `expenses` must not exceed array length limit of 32
+        vm.expectRevert(ISolverNetInbox.InvalidArrayLength.selector);
+        inbox.validate(order);
+        orderData.expenses = new SolverNet.TokenExpense[](1);
         order.orderData = abi.encode(orderData);
 
         // `expenses` must not have a zero token

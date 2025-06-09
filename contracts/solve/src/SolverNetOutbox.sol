@@ -147,6 +147,9 @@ contract SolverNetOutbox is
                 _fillGasLimit(fillData),
                 msg.sender
             );
+        } else if (inboxConfig.provider == Provider.Trusted) {
+            // Trusted routes simply emit an event as they do not rely on messaging, so we return 0 here.
+            return 0;
         } else {
             revert InvalidConfig();
         }
@@ -266,9 +269,13 @@ contract SolverNetOutbox is
 
         for (uint256 i; i < fillData.calls.length; ++i) {
             SolverNet.Call memory call = fillData.calls[i];
-            _executor.execute{ value: call.value }(
-                call.target, call.value, abi.encodePacked(call.selector, call.params)
-            );
+
+            // Only pass data if selector is non-zero. Else, we'd send non-empty calldata 0x00000000,
+            // and revert on native transfers to contracts with just receive().
+            bytes memory data;
+            if (call.selector != bytes4(0)) data = abi.encodePacked(call.selector, call.params);
+
+            _executor.execute{ value: call.value }(call.target, call.value, data);
             unchecked {
                 totalNativeValue += call.value;
             }
@@ -358,6 +365,10 @@ contract SolverNetOutbox is
                 uint32(fillData.srcChainId), inboxConfig.inbox, message, _fillGasLimit(fillData), msg.sender
             );
             _dispatch(uint32(fillData.srcChainId), inboxConfig.inbox, fee, message, _fillGasLimit(fillData), msg.sender);
+        } else if (inboxConfig.provider == Provider.Trusted) {
+            // Trusted routes simply emit an event as they do not rely on messaging, so we return 0 here.
+            // This is a temporary measure for fills from new chains such as Solana.
+            return 0;
         } else {
             revert InvalidConfig();
         }

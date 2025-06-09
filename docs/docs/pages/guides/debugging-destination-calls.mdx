@@ -1,0 +1,44 @@
+---
+sidebar_position: 4
+title: Debugging destination calls
+description: How to debug destination calls reverting.
+---
+
+# Debugging destination calls
+
+When validating orders using the Omni SDK, the SolverNet API may reject orders by returning a `DestCallReverts` rejection reason, indicating a call fails to execute on the destination chain.
+
+This error is a bit opaque. To figure out why the call is reverting, you can use the `debug` option in order validation. When `debug=true`, you'll receive a full call trace in the validation response.
+
+:::code-group
+
+```ts [Core]
+import { type Order, validateOrder } from '@omni-network/core'
+
+const order: Order = {...} // Order parameters with invalid call
+
+const validation = await validateOrder(order)
+if (validation.rejected && validation.rejectReason === 'DestCallReverts') {
+  const debugValidation = await validateOrder({...order, debug: true})
+  console.log('debug trace', debugValidation.trace)
+}
+```
+
+```tsx [React]
+import { useOrder } from '@omni-network/react'
+
+function MyComponent() {
+  const orderResult = useOrder({
+    // ... Order parameters with invalid call
+    validateEnabled: true, // enable validation
+    debugValidation: true, // enable debug trace
+  })
+  if (orderResult.validation?.status === 'rejected' && orderResult.validation?.rejectReason === 'DestCallReverts') {
+    console.log('debug trace', orderResult.validation.trace)
+  }
+}
+```
+
+:::
+
+The `trace` object returned by the validation will be the result of calling [the `debug_traceCall` RPC method](https://geth.ethereum.org/docs/interacting-with-geth/rpc/ns-debug#debugtracecall), providing more details about the error that caused the call to revert.
