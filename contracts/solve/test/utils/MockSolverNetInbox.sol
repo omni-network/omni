@@ -618,7 +618,7 @@ contract MockSolverNetInbox is
                     calls: calls,
                     expenses: expenses
                 })
-                )
+            )
         });
 
         return fillInstructions;
