@@ -3,12 +3,14 @@ package contracts
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -49,12 +51,20 @@ func versions(ctx context.Context, network netconf.ID) (Versions, error) {
 		// same for both on devnet
 		return Versions{Core: devnetVersion, SolverNet: devnetVersion}, nil
 	case netconf.Staging:
-		v, err := StagingID(ctx)
-		if err != nil {
-			return Versions{}, err
+		for range 3 {
+			v, err := StagingID(ctx)
+			if err != nil {
+				log.Warn(ctx, "Failed fetching staging ID (will retry)", err)
+				time.Sleep(time.Second * 3)
+
+				continue
+			}
+
+			// same for both on staging
+			return Versions{Core: v, SolverNet: v}, nil
 		}
-		// same for both on staging
-		return Versions{Core: v, SolverNet: v}, nil
+
+		return Versions{}, errors.New("failed to fetch staging ID after 3 attempts")
 	case netconf.Omega:
 		return Versions{Core: omegaVersion, SolverNet: solvernetOmegaVersion}, nil
 	case netconf.Mainnet:
