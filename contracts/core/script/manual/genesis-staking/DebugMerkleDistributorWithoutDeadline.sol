@@ -59,7 +59,7 @@ contract DebugMerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgr
         solvernetInbox = IOriginSettler(solverNetInbox_);
     }
 
-   /**
+    /**
      * @notice Initialize the contract
      * @param admin_            The admin of the contract
      */

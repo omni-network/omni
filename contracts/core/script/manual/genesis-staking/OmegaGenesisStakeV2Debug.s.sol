@@ -25,7 +25,7 @@ contract OmegaGenesisStakeV2DebugScript is Script {
 
     address internal validator = 0xdBd26a685DB4475b6c58ADEC0DE06c6eE387EAa8;
 
-    GenesisStakeV2 internal genesisStake  = GenesisStakeV2(0xE5728CB5EdDD90DFcE8318783642b399b7d7feE7); // owner
+    GenesisStakeV2 internal genesisStake = GenesisStakeV2(0xE5728CB5EdDD90DFcE8318783642b399b7d7feE7); // owner
     DebugMerkleDistributorWithoutDeadline internal merkleDistributor =
         DebugMerkleDistributorWithoutDeadline(0x983285184A687A137E5eF3ADAf0B4cC84C8d3a90);
 
@@ -44,7 +44,7 @@ contract OmegaGenesisStakeV2DebugScript is Script {
 
         vm.stopBroadcast();
     }
-    
+
     function _deployContracts() internal {
         bytes32 genesisStakeSalt = keccak256(abi.encodePacked("genesisStake", block.timestamp));
         bytes32 merkleDistributorSalt = keccak256(abi.encodePacked("merkleDistributor", block.timestamp));
@@ -78,7 +78,7 @@ contract OmegaGenesisStakeV2DebugScript is Script {
                 address(omni), root, address(portal), address(genesisStake), address(inbox)
             )
         );
-        
+
         merkleDistributor = DebugMerkleDistributorWithoutDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
