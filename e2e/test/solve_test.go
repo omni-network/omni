@@ -48,9 +48,7 @@ func testTokensEndpoint(ctx context.Context, t *testing.T, deps NetworkDeps) {
 	t.Helper()
 	tokenResp, err := sclient.New(deps.SolverAddr).Tokens(ctx)
 	require.NoError(t, err)
-
-	count := len(deps.Network.Chains)
-	require.Len(t, tokenResp.Tokens, count, "expected %d tokens, got %d", count, len(tokenResp.Tokens))
+	require.NotEmpty(t, tokenResp.Tokens)
 }
 
 func TestSolverSVM(t *testing.T) {
