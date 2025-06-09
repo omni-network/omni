@@ -263,8 +263,8 @@ func swapPrice(ctx context.Context, scl sclient.Client, srcToken, dstToken token
 	priceReq := stypes.PriceRequest{
 		SourceChainID:      srcToken.ChainID,
 		DestinationChainID: dstToken.ChainID,
-		DepositToken:       srcToken.Address,
-		ExpenseToken:       dstToken.Address,
+		DepositToken:       srcToken.UniAddress(),
+		ExpenseToken:       dstToken.UniAddress(),
 	}
 
 	return scl.Price(ctx, priceReq)
@@ -275,7 +275,7 @@ func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Addre
 		SourceChainID:      srcToken.ChainID,
 		DestinationChainID: dstToken.ChainID,
 		Deposit: stypes.AddrAmt{
-			Token:  srcToken.Address,
+			Token:  srcToken.UniAddress(),
 			Amount: depositAmt,
 		},
 	}
@@ -298,9 +298,12 @@ func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Addre
 	return bindings.SolverNetOrderData{
 		Owner:       owner,
 		DestChainId: dstToken.ChainID,
-		Deposit:     solvernet.Deposit(quoteResp.Deposit),
-		Expenses:    []solvernet.Expense{}, // Explicit expense not required for native transfer calls.
-		Calls:       []bindings.SolverNetCall{call.ToBinding()},
+		Deposit: solvernet.Deposit{
+			Token:  quoteResp.Deposit.Token.EVM(),
+			Amount: quoteResp.Deposit.Amount,
+		},
+		Expenses: []solvernet.Expense{}, // Explicit expense not required for native transfer calls.
+		Calls:    []bindings.SolverNetCall{call.ToBinding()},
 	}, nil
 }
 

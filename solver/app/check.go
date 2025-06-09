@@ -259,7 +259,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 }
 
 func parseTokenAmt(srcChainID uint64, dep types.AddrAmt) (TokenAmt, error) {
-	tkn, ok := tokens.ByAddress(srcChainID, dep.Token)
+	tkn, ok := tokens.ByUniAddress(srcChainID, dep.Token)
 	if !ok {
 		return TokenAmt{}, newRejection(types.RejectUnsupportedDeposit, errors.New("unsupported source chain deposit token", "addr", dep.Token, "src_chain", srcChainID))
 	}

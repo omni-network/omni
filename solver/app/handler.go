@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/uni"
 	"github.com/omni-network/omni/solver/types"
 )
 
@@ -27,6 +28,18 @@ type APIError struct {
 
 func (e APIError) Error() string {
 	return e.Err.Error()
+}
+
+func (e APIError) Unwrap() error {
+	return e.Err
+}
+
+func (e APIError) Format(st fmt.State, verb rune) {
+	if fmter, ok := e.Err.(fmt.Formatter); ok {
+		fmter.Format(st, verb)
+	} else {
+		_, _ = io.WriteString(st, e.Err.Error())
+	}
 }
 
 type Handler struct {
@@ -51,12 +64,12 @@ func newContractsHandler(addrs contracts.Addresses) Handler {
 		ZeroReq:        func() any { return nil },
 		HandleFunc: func(context.Context, any) (any, error) {
 			return types.ContractsResponse{
-				Portal: addrs.Portal,
-				Inbox:  addrs.SolverNetInbox,
-				Outbox: addrs.SolverNetOutbox,
+				Portal: uni.EVMAddress(addrs.Portal),
+				Inbox:  uni.EVMAddress(addrs.SolverNetInbox),
+				Outbox: uni.EVMAddress(addrs.SolverNetOutbox),
 				// Middleman deprecated and logic moved to executor, temporarily retained for backwards compatibility.
-				Middleman: addrs.SolverNetExecutor,
-				Executor:  addrs.SolverNetExecutor,
+				Middleman: uni.EVMAddress(addrs.SolverNetExecutor),
+				Executor:  uni.EVMAddress(addrs.SolverNetExecutor),
 			}, nil
 		},
 	}
@@ -262,7 +275,7 @@ func writeErrResponse(ctx context.Context, w http.ResponseWriter, err error) {
 		Error: types.JSONError{
 			Code:    statusCode,
 			Status:  http.StatusText(statusCode),
-			Message: removeBUG(err.Error()),
+			Message: removeBUG(errors.Format(err)),
 		},
 	})
 }

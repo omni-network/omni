@@ -1,0 +1,24 @@
+{
+  "sourceChainId": 352,
+  "destChainId": 1652,
+  "fillDeadline": 0,
+  "calls": [
+    {
+      "target": "0x0000000000000000000000000000000000000000",
+      "data": "0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7",
+      "value": null
+    }
+  ],
+  "expenses": [
+    {
+      "spender": "0x0000000000000000000000000000000000000000",
+      "token": "0xfac41d3e0777e7f5611bceddd827a05c0cea985f",
+      "amount": "0xf4240"
+    }
+  ],
+  "deposit": {
+    "token": "6AfTP38VbvM3gxMRy8ubvb7NbhzhjVB8VGMy2uBby1pY",
+    "amount": "0xf4df8"
+  },
+  "debug": false
+}

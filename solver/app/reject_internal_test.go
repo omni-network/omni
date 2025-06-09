@@ -7,7 +7,6 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/unibackend"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -53,10 +52,9 @@ func TestShouldReject(t *testing.T) {
 	for _, tt := range rejectTestCases(t, solver, outbox) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
-			uniBackends := unibackend.EVMBackends(backends)
 
 			callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return !tt.disallowCall }
-			shouldReject := newShouldRejector(uniBackends, callAllower, priceFunc, solver, outbox)
+			shouldReject := newShouldRejector(backends, callAllower, priceFunc, solver, outbox)
 
 			if tt.mock != nil {
 				tt.mock(clients)

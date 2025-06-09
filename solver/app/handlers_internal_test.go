@@ -10,9 +10,8 @@ import (
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/uni"
 	"github.com/omni-network/omni/solver/types"
-
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -102,7 +101,7 @@ func TestCheckHandlerRequests(t *testing.T) {
 			Input: `{"deposit":{"token":"0x0123456789012345678901234567890123456789"}}`,
 			Request: types.CheckRequest{
 				Deposit: types.AddrAmt{
-					Token:  common.HexToAddress("0x0123456789012345678901234567890123456789"),
+					Token:  uni.MustHexToAddress("0x0123456789012345678901234567890123456789"),
 					Amount: bi.Zero(),
 				},
 			},

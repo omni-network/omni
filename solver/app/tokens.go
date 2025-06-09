@@ -194,7 +194,7 @@ func tokensResponse(chains []uint64) (types.TokensResponse, error) {
 				Name:       token.Name,
 				Symbol:     token.Symbol,
 				ChainID:    token.ChainID,
-				Address:    token.Address,
+				Address:    token.UniAddress(),
 				Decimals:   token.Decimals,
 				ExpenseMin: (*hexutil.Big)(bounds.MinSpend),
 				ExpenseMax: (*hexutil.Big)(bounds.MaxSpend),

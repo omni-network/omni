@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/lib/uni"
 	solver "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -203,7 +204,7 @@ func mintAndApprove(ctx context.Context, backends ethbackend.Backends, order Tes
 }
 
 func addrAmtFromDeposit(d solvernet.Deposit) solver.AddrAmt {
-	return solver.AddrAmt{Token: d.Token, Amount: d.Amount}
+	return solver.AddrAmt{Token: uni.EVMAddress(d.Token), Amount: d.Amount}
 }
 
 func callsFromBindings(calls []solvernet.Call) []solver.Call {

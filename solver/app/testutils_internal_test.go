@@ -14,8 +14,12 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/mock"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/lib/uni"
+	"github.com/omni-network/omni/lib/unibackend"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -32,8 +36,6 @@ var (
 	inboxABI  = mustGetABI(bindings.SolverNetInboxMetaData)
 	outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
 )
-
-type OrderData = bindings.SolverNetOrderData
 
 type testOrder struct {
 	srcChainID uint64
@@ -132,7 +134,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 	for _, d := range tt.order.deposits {
 		minReceived = append(minReceived, bindings.IERC7683Output{
 			Amount:  d.Amount,
-			Token:   toBz32(d.Token),
+			Token:   d.Token.Bytes32(),
 			ChainId: bi.N(tt.order.srcChainID),
 		})
 	}
@@ -368,9 +370,11 @@ func omniERC20(network netconf.ID) tokens.Token {
 func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 	t.Helper()
 
-	omegaOMNIAddr := omniERC20(netconf.Omega).Address
-	arbSepoliaUSDC := common.HexToAddress("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
-	baseSepoliaUSDC := common.HexToAddress("0x036CbD53842c5426634e7929541eC2318f3dCF7e")
+	omegaOMNI := omniERC20(netconf.Omega)
+	arbSepoliaUSDC := uni.MustHexToAddress("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
+	baseSepoliaUSDC := uni.MustHexToAddress("0x036CbD53842c5426634e7929541eC2318f3dCF7e")
+	svmUSDC := uni.SVMAddress(svmutil.DevnetUSDCMint.PublicKey())
+	mockL1USDC, _ := tokens.ByAsset(evmchain.IDMockL1, tokens.USDC)
 
 	// dummy calldata / target. unused but for /check calls, and to build valid FillOriginData
 	dummyCallData := hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7")
@@ -402,7 +406,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
 				// OMNI does not require fee
-				deposits: []types.AddrAmt{{Amount: ether(1), Token: omegaOMNIAddr}},
+				deposits: []types.AddrAmt{{Amount: ether(1), Token: omegaOMNI.UniAddress()}},
 				calls:    []types.Call{{Value: ether(1)}},
 				expenses: []types.Expense{{Amount: ether(1)}},
 			},
@@ -421,10 +425,10 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				dstChainID: evmchain.IDHolesky,
 				deposits:   []types.AddrAmt{{Amount: ether(1)}},
 				calls:      []types.Call{{Data: dummyCallData}},
-				expenses:   []types.Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
+				expenses:   []types.Expense{{Amount: ether(1), Token: omegaOMNI.Address}},
 			},
 			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, ether(0))
+				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNI.Address, ether(0))
 			},
 		},
 		{
@@ -438,11 +442,11 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				// OMNI does not require fee
 				deposits: []types.AddrAmt{{Amount: ether(1)}},
 				calls:    []types.Call{{Data: dummyCallData}},
-				expenses: []types.Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
+				expenses: []types.Expense{{Amount: ether(1), Token: omegaOMNI.Address}},
 			},
 			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, ether(1))
-				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr)
+				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNI.Address, ether(1))
+				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNI.Address)
 			},
 			testdata: true,
 		},
@@ -459,11 +463,11 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				dstChainID: evmchain.IDHolesky,
 				deposits:   []types.AddrAmt{{Amount: ether(1)}},
 				calls:      []types.Call{{Data: dummyCallData}},
-				expenses:   []types.Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
+				expenses:   []types.Expense{{Amount: ether(1), Token: omegaOMNI.Address}},
 			},
 			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, ether(1))
-				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr)
+				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNI.Address, ether(1))
+				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNI.Address)
 			},
 		},
 		{
@@ -516,7 +520,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDBaseSepolia,
 				// wstETH on holesky
-				deposits: []types.AddrAmt{{Amount: ether(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")}},
+				deposits: []types.AddrAmt{{Amount: ether(1), Token: uni.MustHexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")}},
 				// native eth on base
 				calls:    []types.Call{{Value: ether(1)}},
 				expenses: []types.Expense{{Amount: ether(1)}},
@@ -529,7 +533,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omegaOMNIAddr}, {Amount: ether(1)}},
+				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omegaOMNI.UniAddress()}, {Amount: ether(1)}},
 				calls:      []types.Call{{Value: ether(1)}},
 				expenses:   []types.Expense{{Amount: ether(1)}},
 			},
@@ -674,11 +678,11 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				dstChainID: evmchain.IDArbSepolia,
 				deposits:   []types.AddrAmt{{Amount: depositFor(t, bi.Dec6(1)), Token: baseSepoliaUSDC}},
 				calls:      []types.Call{{Target: common.HexToAddress("0x01"), Data: dummyCallData}}, // does not matter
-				expenses:   []types.Expense{{Amount: bi.Dec6(1), Token: arbSepoliaUSDC}},
+				expenses:   []types.Expense{{Amount: bi.Dec6(1), Token: arbSepoliaUSDC.EVM()}},
 			},
 			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC, bi.Dec6(1))
-				mockERC20Allowance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC)
+				mockERC20Balance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC.EVM(), bi.Dec6(1))
+				mockERC20Allowance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC.EVM())
 			},
 		},
 		{
@@ -691,11 +695,11 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				dstChainID: evmchain.IDArbSepolia,
 				deposits:   []types.AddrAmt{{Amount: bi.Dec6(1), Token: baseSepoliaUSDC}},
 				calls:      []types.Call{{Target: common.HexToAddress("0x01"), Data: dummyCallData}}, // does not matter
-				expenses:   []types.Expense{{Amount: bi.Dec6(1), Token: arbSepoliaUSDC}},
+				expenses:   []types.Expense{{Amount: bi.Dec6(1), Token: arbSepoliaUSDC.EVM()}},
 			},
 			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC, bi.Dec6(1))
-				mockERC20Allowance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC)
+				mockERC20Balance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC.EVM(), bi.Dec6(1))
+				mockERC20Allowance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC.EVM())
 			},
 		},
 		{
@@ -707,11 +711,11 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				dstChainID: evmchain.IDArbSepolia,
 				deposits:   []types.AddrAmt{{Amount: depositFor(t, ether(1)), Token: baseSepoliaUSDC}},
 				calls:      []types.Call{{Target: common.HexToAddress("0x01"), Data: dummyCallData}}, // does not matter
-				expenses:   []types.Expense{{Amount: ether(1), Token: arbSepoliaUSDC}},
+				expenses:   []types.Expense{{Amount: ether(1), Token: arbSepoliaUSDC.EVM()}},
 			},
 			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC, ether(1))
-				mockERC20Allowance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC)
+				mockERC20Balance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC.EVM(), ether(1))
+				mockERC20Allowance(t, clients.Client(t, evmchain.IDArbSepolia), arbSepoliaUSDC.EVM())
 			},
 		},
 		{
@@ -727,6 +731,21 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDHolesky), solver, ether(2))
 			},
 		},
+		{
+			name: "svm usdc to evm usdc",
+			order: testOrder{
+				srcChainID: evmchain.IDSolanaLocal,
+				dstChainID: evmchain.IDMockL1,
+				deposits:   []types.AddrAmt{{Amount: depositFor(t, bi.Dec6(1)), Token: svmUSDC}},
+				calls:      []types.Call{{Data: dummyCallData}},
+				expenses:   []types.Expense{{Amount: bi.Dec6(1), Token: mockL1USDC.Address}},
+			},
+			testdata: true,
+			mock: func(clients MockClients) {
+				mockERC20Balance(t, clients.Client(t, evmchain.IDMockL1), mockL1USDC.Address, bi.Dec6(1))
+				mockERC20Allowance(t, clients.Client(t, evmchain.IDMockL1), mockL1USDC.Address)
+			},
+		},
 	}
 }
 
@@ -736,10 +755,10 @@ func noopTracer(_ context.Context, _ types.CheckRequest) (types.CallTrace, error
 }
 
 // testBackends returns test backends / clients required for test cases above.
-func testBackends(t *testing.T) (ethbackend.Backends, MockClients) {
+func testBackends(t *testing.T) (unibackend.Backends, MockClients) {
 	t.Helper()
 
-	return makeMockBackends(t,
+	backends, clients := makeMockBackends(t,
 		// mock omega chains for tests
 		evmchain.IDOmniOmega,
 		evmchain.IDHolesky,
@@ -748,7 +767,17 @@ func testBackends(t *testing.T) (ethbackend.Backends, MockClients) {
 
 		// add one mainnet chain, to make sure testnet ETH cannot be used for mainnet ETH
 		evmchain.IDOptimism,
+
+		// mock devnet chains as well
+		evmchain.IDMockL1,
+		evmchain.IDMockL2,
 	)
+
+	unib := unibackend.EVMBackends(backends)
+	// Add stub SVM so source chain checks pass
+	unib[evmchain.IDSolanaLocal] = unibackend.SVMBackend(nil, evmchain.IDSolanaLocal)
+
+	return unib, clients
 }
 
 // mockDidFill mocks an Outbox.didFill(...) call.
@@ -1003,7 +1032,7 @@ func depositFor(t *testing.T, expense *big.Int) *big.Int {
 			SourceChainID:      evmchain.IDMockL2,
 			DestinationChainID: evmchain.IDMockL1,
 		})
-	require.NoError(t, err)
+	tutil.RequireNoError(t, err)
 
 	return feePrice.ToDeposit(expense)
 }

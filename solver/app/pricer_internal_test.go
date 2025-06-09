@@ -76,8 +76,8 @@ func TestPriceHandler(t *testing.T) {
 			actual, err := handlerFunc(t.Context(), types.PriceRequest{
 				SourceChainID:      test.Deposit.ChainID,
 				DestinationChainID: test.Expense.ChainID,
-				DepositToken:       test.Deposit.Address,
-				ExpenseToken:       test.Expense.Address,
+				DepositToken:       test.Deposit.UniAddress(),
+				ExpenseToken:       test.Expense.UniAddress(),
 			})
 			require.NoError(t, err)
 
