@@ -4,6 +4,7 @@ import (
 	"context"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
@@ -294,6 +295,7 @@ func (s shared) runForge(ctx context.Context, rpc string, script string, dir str
 	for {
 		if attempts >= 1 {
 			resume = true
+			time.Sleep(5 * time.Second) // sleep to allow RPCs to catch up if needed
 		}
 
 		out, err := runForgeOnce(ctx, rpc, script, dir, input, s.cfg.Broadcast, resume, senders...)
