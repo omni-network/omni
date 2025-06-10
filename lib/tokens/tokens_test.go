@@ -116,8 +116,6 @@ func TestGenTokens(t *testing.T) {
 
 		// RLUSD
 		rlusd(evmchain.IDEthereum, addr("0x8292Bb45bf1Ee4d140127049757C2E0fF06317eD")),
-		rlusd(evmchain.IDHolesky, addr("0x084Db6262bE13D210940D15dA1300cD1E72a5C34")),
-		rlusd(evmchain.IDMockL1, addr("0x9ea011e9bC127fc0afb5e481707fFee2A720094f")),
 
 		// HYPE
 		tokens.Token{

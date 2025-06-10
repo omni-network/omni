@@ -148,16 +148,8 @@ var (
 		},
 		tokens.RLUSD: {
 			tokens.ClassMainnet: {
-				MinSpend: bi.Dec6(0.1),   // 0.1 RLUSD
-				MaxSpend: bi.Dec6(5_000), // 5k RLUSD
-			},
-			tokens.ClassTestnet: {
-				MinSpend: bi.Dec6(0.1), // 0.1 RLUSD
-				MaxSpend: bi.Dec6(10),  // 10 RLUSD
-			},
-			tokens.ClassDevent: {
-				MinSpend: bi.Dec6(0.1), // 0.1 RLUSD
-				MaxSpend: bi.Dec6(10),  // 10 RLUSD
+				MinSpend: bi.Ether(0.1),   // 0.1 RLUSD
+				MaxSpend: bi.Ether(5_000), // 5k RLUSD
 			},
 		},
 	}

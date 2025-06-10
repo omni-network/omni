@@ -135,7 +135,7 @@ var (
 	RLUSD = Asset{
 		Symbol:      "RLUSD",
 		Name:        "RLUSD",
-		Decimals:    6,
+		Decimals:    18,
 		CoingeckoID: "rlusd",
 	}
 )
