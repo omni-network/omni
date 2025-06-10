@@ -11,9 +11,11 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/uni"
 	"github.com/omni-network/omni/solver/client"
 	"github.com/omni-network/omni/solver/types"
 
@@ -104,7 +106,7 @@ func addThousandSeparators(num string) string {
 func TestQuote(t *testing.T) {
 	t.Parallel()
 
-	omegaOMNIAddr := omniERC20(netconf.Omega).Address
+	omegaOMNIAddr := omniERC20(netconf.Omega).UniAddress()
 
 	tests := []struct {
 		name     string
@@ -216,13 +218,13 @@ func TestQuote(t *testing.T) {
 			req: types.QuoteRequest{
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDArbitrumOne,
-				Deposit:            types.AddrAmt{Token: common.HexToAddress("0x1234")},
+				Deposit:            types.AddrAmt{Token: uni.EVMAddress(common.HexToAddress("0x1234"))},
 				Expense:            mockAddrAmt("1000000000000000000"),
 			},
 			expErr: types.JSONError{
 				Code:    http.StatusNotFound,
 				Status:  http.StatusText(http.StatusNotFound),
-				Message: "unsupported deposit token",
+				Message: "unsupported deposit token [chain=42161, address=0x0000000000000000000000000000000000000000]",
 			},
 		},
 		{
@@ -231,12 +233,12 @@ func TestQuote(t *testing.T) {
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDArbitrumOne,
 				Deposit:            mockAddrAmt("1000000000000000000"),
-				Expense:            types.AddrAmt{Token: common.HexToAddress("0x1234")},
+				Expense:            types.AddrAmt{Token: uni.EVMAddress(common.HexToAddress("0x1234"))},
 			},
 			expErr: types.JSONError{
 				Code:    http.StatusNotFound,
 				Status:  http.StatusText(http.StatusNotFound),
-				Message: "unsupported expense token",
+				Message: "unsupported expense token [chain=42161, address=0x0000000000000000000000000000000000001234]",
 			},
 		},
 		{
@@ -258,13 +260,13 @@ func TestQuote(t *testing.T) {
 				SourceChainID:      evmchain.IDBase,
 				DestinationChainID: evmchain.IDOmniMainnet,
 				Deposit: types.AddrAmt{
-					Token: erc20(evmchain.IDBase, tokens.USDC).Address,
+					Token: erc20(evmchain.IDBase, tokens.USDC).UniAddress(),
 				},
 				Expense: mockAddrAmt("1000000000000000000"),
 			},
 			res: types.QuoteResponse{
 				Deposit: types.AddrAmt{
-					Token:  erc20(evmchain.IDBase, tokens.USDC).Address,
+					Token:  erc20(evmchain.IDBase, tokens.USDC).UniAddress(),
 					Amount: parseInt("5015000"), // Price is $5/OMNI (USDC has 6 decimals)
 				},
 				Expense: mockAddrAmt("1000000000000000000"),
@@ -281,7 +283,7 @@ func TestQuote(t *testing.T) {
 			expErr: types.JSONError{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
-				Message: "InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet) [deposit=mainnet, expense=testnet]",
+				Message: "deposit and expense must be of the same chain class (e.g. mainnet, testnet) [deposit=mainnet, expense=testnet]",
 			},
 			testdata: true,
 		},
@@ -318,6 +320,31 @@ func TestQuote(t *testing.T) {
 				RejectCode:        types.RejectExpenseUnderMin,
 				RejectReason:      types.RejectExpenseUnderMin.String(),
 				RejectDescription: "requested expense is below minimum [ask=0.0001 ETH, min=0.001 ETH]",
+			},
+			testdata: true,
+		},
+		{
+			name: "svm USDC to mockL1 USDC",
+			req: types.QuoteRequest{
+				SourceChainID:      evmchain.IDSolanaLocal,
+				DestinationChainID: evmchain.IDMockL1,
+				Deposit: types.AddrAmt{
+					Token: uni.SVMAddress(svmutil.DevnetUSDCMint.PublicKey()),
+				},
+				Expense: types.AddrAmt{
+					Amount: bi.Dec6(10),
+					Token:  erc20(evmchain.IDMockL1, tokens.USDC).UniAddress(),
+				},
+			},
+			res: types.QuoteResponse{
+				Deposit: types.AddrAmt{
+					Amount: bi.Dec6(10.03),
+					Token:  uni.SVMAddress(svmutil.DevnetUSDCMint.PublicKey()),
+				},
+				Expense: types.AddrAmt{
+					Amount: bi.Dec6(10),
+					Token:  erc20(evmchain.IDMockL1, tokens.USDC).UniAddress(),
+				},
 			},
 			testdata: true,
 		},
@@ -410,7 +437,9 @@ func parseInt(s string) *big.Int {
 }
 
 func mockAddrAmt(amt string) types.AddrAmt {
-	return types.AddrAmt{Amount: parseInt(amt)}
+	return types.AddrAmt{
+		Amount: parseInt(amt),
+	}
 }
 
 var zeroAddrAmt types.AddrAmt

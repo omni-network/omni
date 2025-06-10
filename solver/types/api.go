@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/lib/uni"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -66,10 +67,10 @@ type QuoteRequest struct {
 }
 
 type PriceRequest struct {
-	SourceChainID      uint64         `json:"sourceChainId"`
-	DestinationChainID uint64         `json:"destChainId"`
-	DepositToken       common.Address `json:"depositToken"`
-	ExpenseToken       common.Address `json:"expenseToken"`
+	SourceChainID      uint64      `json:"sourceChainId"`
+	DestinationChainID uint64      `json:"destChainId"`
+	DepositToken       uni.Address `json:"depositToken"`
+	ExpenseToken       uni.Address `json:"expenseToken"`
 }
 
 type TokensResponse struct {
@@ -77,25 +78,25 @@ type TokensResponse struct {
 }
 
 type TokenResponse struct {
-	Enabled    bool           `json:"enabled"`
-	Name       string         `json:"name"`
-	Symbol     string         `json:"symbol"`
-	ChainID    uint64         `json:"chainId"`
-	Address    common.Address `json:"address"`
-	Decimals   uint           `json:"decimals"`
-	ExpenseMin *hexutil.Big   `json:"expenseMin"`
-	ExpenseMax *hexutil.Big   `json:"expenseMax"`
+	Enabled    bool         `json:"enabled"`
+	Name       string       `json:"name"`
+	Symbol     string       `json:"symbol"`
+	ChainID    uint64       `json:"chainId"`
+	Address    uni.Address  `json:"address"`
+	Decimals   uint         `json:"decimals"`
+	ExpenseMin *hexutil.Big `json:"expenseMin"`
+	ExpenseMax *hexutil.Big `json:"expenseMax"`
 }
 
 type addrAmtJSON struct {
-	Token  common.Address `json:"token"`
-	Amount *hexutil.Big   `json:"amount,omitempty"`
+	Token  uni.Address  `json:"token"`
+	Amount *hexutil.Big `json:"amount,omitempty"`
 }
 
 // AddrAmt represents a token address and amount pair, with the amount being optional.
 // If amount is nil or zero, quote response should inform the amount.
 type AddrAmt struct {
-	Token  common.Address
+	Token  uni.Address
 	Amount *big.Int
 }
 
@@ -130,18 +131,18 @@ type QuoteResponse struct {
 
 // ContractsResponse is the response json for the /api/vi/contracts endpoint.
 type ContractsResponse struct {
-	Portal    common.Address `json:"portal"`
-	Inbox     common.Address `json:"inbox"`
-	Outbox    common.Address `json:"outbox"`
-	Middleman common.Address `json:"middleman"`
-	Executor  common.Address `json:"executor"`
+	Portal    uni.Address `json:"portal"`
+	Inbox     uni.Address `json:"inbox"`
+	Outbox    uni.Address `json:"outbox"`
+	Middleman uni.Address `json:"middleman"`
+	Executor  uni.Address `json:"executor"`
 }
 
 // expenseJSON is a json marshal-able solvernt.Expense.
 type expenseJSON struct {
-	Spender common.Address `json:"spender"`
-	Token   common.Address `json:"token"`
-	Amount  *hexutil.Big   `json:"amount"`
+	Spender uni.Address  `json:"spender"`
+	Token   uni.Address  `json:"token"`
+	Amount  *hexutil.Big `json:"amount"`
 }
 
 // Expense wraps solvernet.Expense to provide custom json marshaling.
@@ -153,8 +154,12 @@ func (e *Expense) UnmarshalJSON(bz []byte) error {
 		return err
 	}
 
-	e.Spender = v.Spender
-	e.Token = v.Token
+	if !v.Spender.IsEVM() || !v.Token.IsEVM() {
+		return errors.New("expenses must be EVM addresses")
+	}
+
+	e.Spender = v.Spender.EVM()
+	e.Token = v.Token.EVM()
 	e.Amount = intOrZero(v.Amount)
 
 	return nil
@@ -162,8 +167,8 @@ func (e *Expense) UnmarshalJSON(bz []byte) error {
 
 func (e Expense) MarshalJSON() ([]byte, error) {
 	return marshal(expenseJSON{
-		Spender: e.Spender,
-		Token:   e.Token,
+		Spender: uni.EVMAddress(e.Spender),
+		Token:   uni.EVMAddress(e.Token),
 		Amount:  (*hexutil.Big)(e.Amount),
 	})
 }
@@ -284,9 +289,12 @@ func CheckRequestFromOrderData(srcChainID uint64, data bindings.SolverNetOrderDa
 		SourceChainID:      srcChainID,
 		DestinationChainID: data.DestChainId,
 		FillDeadline:       deadline,
-		Deposit:            AddrAmt(data.Deposit),
-		Expenses:           expenses,
-		Calls:              CallsFromBindings(data.Calls),
+		Deposit: AddrAmt{
+			Token:  uni.EVMAddress(data.Deposit.Token),
+			Amount: data.Deposit.Amount,
+		},
+		Expenses: expenses,
+		Calls:    CallsFromBindings(data.Calls),
 	}, nil
 }
 

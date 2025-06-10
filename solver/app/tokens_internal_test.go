@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"net/http/httptest"
 	"sort"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/solver/client"
 
 	"github.com/stretchr/testify/require"
 )
@@ -132,4 +134,18 @@ func TestTokenResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	tutil.RequireGoldenJSON(t, resp, tutil.WithFilename("TestTokens/tokens_response.json"))
+}
+
+func TestTokensEndpoint(t *testing.T) {
+	t.Parallel()
+
+	handler := handlerAdapter(newTokensHandler([]uint64{evmchain.IDSolanaLocal, evmchain.IDOmniDevnet, evmchain.IDMockL1}))
+
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	cl := client.New(srv.URL)
+	resp, err := cl.Tokens(t.Context())
+	require.NoError(t, err)
+	require.NotEmpty(t, resp.Tokens)
 }

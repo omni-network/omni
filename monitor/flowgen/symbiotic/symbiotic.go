@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/uni"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/monitor/flowgen/util"
 	sclient "github.com/omni-network/omni/solver/client"
@@ -106,11 +107,11 @@ func openOrder(
 		SourceChainID:      srcToken.ChainID,
 		DestinationChainID: dstToken.ChainID,
 		Deposit: stypes.AddrAmt{
-			Token: srcToken.Address,
+			Token: uni.EVMAddress(srcToken.Address),
 			// Amount left empty, quote will return the required amount.
 		},
 		Expense: stypes.AddrAmt{
-			Token:  dstToken.Address,
+			Token:  uni.EVMAddress(dstToken.Address),
 			Amount: conf.orderAmount,
 		},
 	}
@@ -135,9 +136,12 @@ func openOrder(
 	orderData := bindings.SolverNetOrderData{
 		Owner:       owner,
 		DestChainId: conf.dstChain,
-		Deposit:     solvernet.Deposit(quoteResp.Deposit),
+		Deposit: solvernet.Deposit{
+			Token:  quoteResp.Deposit.Token.EVM(),
+			Amount: quoteResp.Deposit.Amount,
+		},
 		Expenses: []solvernet.Expense{{
-			Token:   quoteReq.Expense.Token,
+			Token:   quoteReq.Expense.Token.EVM(),
 			Amount:  quoteReq.Expense.Amount,
 			Spender: conf.vaultAddr,
 		}},

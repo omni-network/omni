@@ -2,6 +2,10 @@
 package uni
 
 import (
+	"encoding/json"
+
+	"github.com/omni-network/omni/lib/errors"
+
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/gagliardetto/solana-go"
@@ -11,9 +15,8 @@ import (
 type Kind int
 
 const (
-	KindUnknown Kind = iota
-	KindEVM          // ethereum
-	KindSVM          // solana
+	KindEVM Kind = iota // ethereum
+	KindSVM             // solana
 )
 
 // IsSVMChain return true if the given chain ID is one of the SVM chains.
@@ -22,10 +25,48 @@ func IsSVMChain(chainID uint64) bool {
 	return chainID == 350 || chainID == 351 || chainID == 352 // Hardcoded to avoid dependency on evmchain.
 }
 
+// Address represents a universal blockchain address.
+// Note the zero value defaults to zero evm address.
 type Address struct {
 	kind Kind
 	evm  common.Address
 	svm  solana.PublicKey
+}
+
+func (a Address) MarshalJSON() ([]byte, error) {
+	var b []byte
+	var err error
+	if a.IsEVM() {
+		b, err = json.Marshal(a.evm)
+	} else {
+		b, err = json.Marshal(a.svm)
+	}
+
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal address")
+	}
+
+	return b, nil
+}
+
+func (a *Address) UnmarshalJSON(bz []byte) error {
+	var evm common.Address
+	if err := json.Unmarshal(bz, &evm); err == nil {
+		a.kind = KindEVM
+		a.evm = evm
+
+		return nil
+	}
+
+	var svm solana.PublicKey
+	if err := json.Unmarshal(bz, &svm); err == nil {
+		a.kind = KindSVM
+		a.svm = svm
+
+		return nil
+	}
+
+	return errors.New("invalid address format")
 }
 
 func EVMAddress(evm common.Address) Address {
@@ -76,4 +117,16 @@ func (a Address) String() string {
 	}
 
 	return a.svm.String()
+}
+
+// Bytes32 returns the address as a 32-byte array.
+func (a Address) Bytes32() [32]byte {
+	if a.IsEVM() {
+		var bz [32]byte
+		copy(bz[12:], a.evm.Bytes())
+
+		return bz
+	}
+
+	return a.svm
 }

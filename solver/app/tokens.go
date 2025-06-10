@@ -182,6 +182,8 @@ func tokensResponse(chains []uint64) (types.TokensResponse, error) {
 			token, ok := tokens.ByAsset(chain, asset)
 			if !ok {
 				continue
+			} else if !token.IsEVM() {
+				continue // TODO(corver): Enable once SDK supports non-EVM chains.
 			}
 
 			bounds, ok := GetSpendBounds(token)
@@ -194,7 +196,7 @@ func tokensResponse(chains []uint64) (types.TokensResponse, error) {
 				Name:       token.Name,
 				Symbol:     token.Symbol,
 				ChainID:    token.ChainID,
-				Address:    token.Address,
+				Address:    token.UniAddress(),
 				Decimals:   token.Decimals,
 				ExpenseMin: (*hexutil.Big)(bounds.MinSpend),
 				ExpenseMax: (*hexutil.Big)(bounds.MaxSpend),

@@ -1,0 +1,14 @@
+{
+  "deposit": {
+    "token": "6AfTP38VbvM3gxMRy8ubvb7NbhzhjVB8VGMy2uBby1pY",
+    "amount": "0x990bb0"
+  },
+  "expense": {
+    "token": "0xfac41d3e0777e7f5611bceddd827a05c0cea985f",
+    "amount": "0x989680"
+  },
+  "rejected": false,
+  "rejectCode": 0,
+  "rejectReason": "",
+  "rejectDescription": ""
+}

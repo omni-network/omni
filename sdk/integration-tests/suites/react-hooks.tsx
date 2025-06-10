@@ -153,7 +153,7 @@ describe.concurrent('useQuote()', () => {
       code: 400,
       status: 'Bad Request',
       message:
-        'InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet) [deposit=mainnet, expense=testnet]',
+        'deposit and expense must be of the same chain class (e.g. mainnet, testnet) [deposit=mainnet, expense=testnet]',
     })
   })
 

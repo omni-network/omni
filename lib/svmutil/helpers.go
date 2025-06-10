@@ -135,6 +135,10 @@ func FilterDataLogs(logs []string, program solana.PublicKey) ([]string, bool, er
 
 	var filtered []string
 	for _, log := range logs {
+		if isTruncated(log) {
+			break
+		}
+
 		// If target program is current, filter any data logs
 		if current() && strings.HasPrefix(log, "Program data: ") {
 			filtered = append(filtered, log)
@@ -161,6 +165,10 @@ func FilterDataLogs(logs []string, program solana.PublicKey) ([]string, bool, er
 	}
 
 	return filtered, len(stack) == 0, nil
+}
+
+func isTruncated(l string) bool {
+	return l == "Log truncated"
 }
 
 // GetBlock is a convenience function returning the block for the given slot,

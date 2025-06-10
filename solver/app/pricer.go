@@ -71,11 +71,11 @@ type priceHandlerFunc func(ctx context.Context, request types.PriceRequest) (typ
 
 func wrapPriceHandlerFunc(priceFunc priceFunc) priceHandlerFunc {
 	return func(ctx context.Context, req types.PriceRequest) (types.Price, error) {
-		srcToken, ok := tokens.ByAddress(req.SourceChainID, req.DepositToken)
+		srcToken, ok := tokens.ByUniAddress(req.SourceChainID, req.DepositToken)
 		if !ok {
 			return types.Price{}, errors.New("deposit token not found", "token", req.DepositToken, "src_chain", evmchain.Name(req.SourceChainID))
 		}
-		dstToken, ok := tokens.ByAddress(req.DestinationChainID, req.ExpenseToken)
+		dstToken, ok := tokens.ByUniAddress(req.DestinationChainID, req.ExpenseToken)
 		if !ok {
 			return types.Price{}, errors.New("expense token not found", "token", req.ExpenseToken, "dst_chain", evmchain.Name(req.DestinationChainID))
 		}

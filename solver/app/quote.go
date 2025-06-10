@@ -20,8 +20,8 @@ type quoteFunc func(context.Context, types.QuoteRequest) (types.QuoteResponse, e
 // It is the logic behind the /quoter endpoint.
 func newQuoter(priceFunc priceFunc) quoteFunc {
 	return func(ctx context.Context, req types.QuoteRequest) (types.QuoteResponse, error) {
-		returnErr := func(code int, msg string) (types.QuoteResponse, error) {
-			return types.QuoteResponse{}, newAPIError(errors.New(msg), code)
+		returnErr := func(code int, msg string, attrs ...any) (types.QuoteResponse, error) {
+			return types.QuoteResponse{}, newAPIError(errors.New(msg, attrs...), code)
 		}
 
 		isDepositQuote := bi.IsZero(req.Deposit.Amount)
@@ -30,21 +30,20 @@ func newQuoter(priceFunc priceFunc) quoteFunc {
 		if isDepositQuote == isExpenseQuote {
 			return returnErr(http.StatusBadRequest, "deposit and expense amount cannot be both zero or both non-zero")
 		}
-
-		depositTkn, ok := tokens.ByAddress(req.SourceChainID, req.Deposit.Token)
+		depositTkn, ok := tokens.ByUniAddress(req.SourceChainID, req.Deposit.Token)
 		if !ok {
-			return returnErr(http.StatusNotFound, "unsupported deposit token")
+			return returnErr(http.StatusNotFound, "unsupported deposit token", "chain", req.DestinationChainID, "address", req.Expense.Token)
 		}
 
-		expenseTkn, ok := tokens.ByAddress(req.DestinationChainID, req.Expense.Token)
+		expenseTkn, ok := tokens.ByUniAddress(req.DestinationChainID, req.Expense.Token)
 		if !ok {
-			return returnErr(http.StatusNotFound, "unsupported expense token")
+			return returnErr(http.StatusNotFound, "unsupported expense token", "chain", req.DestinationChainID, "address", req.Expense.Token)
 		}
 
 		// Get the price of the order
 		price, err := priceFunc(ctx, depositTkn, expenseTkn)
 		if err != nil {
-			return types.QuoteResponse{}, newAPIError(newRejection(types.RejectInvalidDeposit, err), http.StatusBadRequest)
+			return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
 		}
 
 		// Add solver fee to price
