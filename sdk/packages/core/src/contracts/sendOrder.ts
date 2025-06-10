@@ -1,19 +1,20 @@
-import type { Address, Client } from 'viem'
+import type { Client } from 'viem'
 import { zeroAddress } from 'viem'
 import { type WriteContractReturnType, writeContract } from 'viem/actions'
 import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
 import { AccountRequiredError } from '../errors/base.js'
 import type { OptionalAbis } from '../types/abi.js'
-import type { Order } from '../types/order.js'
+import type { EVMAddress } from '../types/addresses.js'
+import type { EVMOrder } from '../types/order.js'
 import { encodeOrderData } from '../utils/encodeOrderData.js'
 
 const defaultFillDeadline = () => Math.floor(Date.now() / 1000 + 86400)
 
 export type SendOrderParameters<abis extends OptionalAbis> = {
   client: Client
-  inboxAddress: Address
-  order: Order<abis>
+  inboxAddress: EVMAddress
+  order: EVMOrder<abis>
   // Viem transaction options
   gas?: bigint
   maxFeePerGas?: bigint

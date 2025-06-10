@@ -1,7 +1,7 @@
 import type {
+  EVMOrder,
   FetchJSONError,
   OptionalAbis,
-  Order,
   ValidationResponse,
 } from '@omni-network/core'
 import { isAcceptedRes, isRejectedRes, validateOrder } from '@omni-network/core'
@@ -12,7 +12,7 @@ import { hashFn } from '../utils/query.js'
 import type { QueryOpts } from './types.js'
 
 type UseValidateOrderParams<abis extends OptionalAbis> = {
-  order: Order<abis>
+  order: EVMOrder<abis>
   enabled: boolean
   debug?: boolean
   queryOpts?: QueryOpts<ValidationResponse, FetchJSONError>

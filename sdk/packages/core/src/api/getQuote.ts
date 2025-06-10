@@ -1,7 +1,7 @@
 import { type Hex, fromHex, zeroAddress } from 'viem'
 import { string, z } from 'zod/v4-mini'
 import { fetchJSON } from '../internal/api.js'
-import { address, hex } from '../schema/types.js'
+import { anyAddress, evmAddress, hex } from '../schema/types.js'
 import type { Environment } from '../types/config.js'
 import type { Quote, Quoteable } from '../types/quote.js'
 import type { Prettify } from '../types/utils.js'
@@ -9,11 +9,11 @@ import { getApiUrl, toJSON } from '../utils/index.js'
 
 export const quoteResponseSchema = z.object({
   deposit: z.object({
-    token: address(),
+    token: anyAddress(),
     amount: z.union([hex(), string()]),
   }),
   expense: z.object({
-    token: address(),
+    token: evmAddress(),
     amount: z.union([hex(), string()]),
   }),
 })

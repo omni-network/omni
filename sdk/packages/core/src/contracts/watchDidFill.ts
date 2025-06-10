@@ -1,13 +1,14 @@
-import type { Address, Block, Client, Hex } from 'viem'
+import type { Block, Client, Hex } from 'viem'
 import { getLogs, watchBlocks } from 'viem/actions'
 import { outboxABI } from '../constants/abis.js'
+import type { EVMAddress } from '../types/addresses.js'
 import { computeFillHash } from '../utils/computeFillHash.js'
 import { invariant } from '../utils/index.js'
 import type { ResolvedOrder } from './parseOpenEvent.js'
 
 export type WatchDidFillParams = {
   client: Client
-  outboxAddress: Address
+  outboxAddress: EVMAddress
   resolvedOrder: ResolvedOrder
   onFill: (txHash: Hex) => void
   pollingInterval?: number

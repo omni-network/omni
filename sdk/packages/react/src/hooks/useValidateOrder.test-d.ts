@@ -1,4 +1,4 @@
-import type { OptionalAbis, Order } from '@omni-network/core'
+import type { EVMOrder, OptionalAbis } from '@omni-network/core'
 import { expectTypeOf, test } from 'vitest'
 import { accounts } from '../../test/index.js'
 import { useValidateOrder } from './useValidateOrder.js'
@@ -26,7 +26,7 @@ test('type: useInboxStatus', () => {
   })
 
   expectTypeOf(useValidateOrder).parameter(0).toMatchTypeOf<{
-    order: Order<OptionalAbis>
+    order: EVMOrder<OptionalAbis>
     enabled: boolean
   }>()
 

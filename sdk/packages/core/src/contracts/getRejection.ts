@@ -1,7 +1,8 @@
-import type { Address, BlockNumber, Client, Hex } from 'viem'
+import type { BlockNumber, Client, Hex } from 'viem'
 import { getLogs } from 'viem/actions'
 import { inboxABI } from '../constants/abis.js'
 import { GetRejectionError } from '../errors/base.js'
+import type { EVMAddress } from '../types/addresses.js'
 import type { Rejection } from '../types/rejection.js'
 import { invariant } from '../utils/index.js'
 
@@ -26,7 +27,7 @@ export const rejectReasons = {
 export type GetRejectionParams = {
   client: Client
   orderId: Hex
-  inboxAddress: Address
+  inboxAddress: EVMAddress
   fromBlock: BlockNumber
 }
 

@@ -6,12 +6,12 @@ import {
   zeroAddress,
 } from 'viem'
 import type { OptionalAbis } from '../types/abi.js'
-import { type Order, isContractCall } from '../types/order.js'
+import { type EVMOrder, isContractCall } from '../types/order.js'
 
 /**
  * @description Encodes order params in preparation for sending to the inbox contract
  *
- * @param order - {@link Order}
+ * @param order - {@link EVMOrder}
  * @returns Encoded order - {@link Hex}
  *
  * @example
@@ -42,7 +42,7 @@ import { type Order, isContractCall } from '../types/order.js'
  *   ],
  * })
  */
-export function encodeOrderData(order: Order<OptionalAbis>): Hex {
+export function encodeOrderData(order: EVMOrder<OptionalAbis>): Hex {
   const callsTuple = order.calls.map((call) => {
     if (!isContractCall(call)) {
       return {

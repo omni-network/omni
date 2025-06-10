@@ -20,7 +20,6 @@ export function isAssets(json: unknown): json is Record<string, Asset[]> {
       typeof asset.expenseMax === 'string' &&
       typeof asset.chainId === 'number' &&
       typeof asset.address === 'string' &&
-      asset.address.startsWith('0x') &&
       typeof asset.decimals === 'number'
     ) {
       const parsedExpenseMin = fromHex(asset.expenseMin as Hex, 'bigint')

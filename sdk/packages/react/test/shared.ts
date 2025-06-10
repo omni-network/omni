@@ -1,4 +1,4 @@
-import type { OmniContracts, OptionalAbis, Order } from '@omni-network/core'
+import type { EVMOrder, OmniContracts, OptionalAbis } from '@omni-network/core'
 import { testAccount } from '@omni-network/test-utils'
 import {
   type Hex,
@@ -84,7 +84,7 @@ export const resolvedOrder = {
   ] as readonly FillInstruction[],
 } as const
 
-export const orderRequest: Order<OptionalAbis> = {
+export const orderRequest: EVMOrder<OptionalAbis> = {
   srcChainId: 1,
   destChainId: 2,
   deposit: {

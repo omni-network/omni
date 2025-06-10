@@ -1,10 +1,11 @@
-import type { Address, Client, Hex } from 'viem'
+import type { Client, Hex } from 'viem'
 import { type ReadContractReturnType, readContract } from 'viem/actions'
 import { inboxABI } from '../constants/abis.js'
+import type { EVMAddress } from '../types/addresses.js'
 
 export type GetOrderParameters = {
   client: Client
-  inboxAddress: Address
+  inboxAddress: EVMAddress
   orderId: Hex
 }
 
