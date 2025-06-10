@@ -26,6 +26,7 @@ var (
 		tokens.MNT:    true,
 		tokens.HYPE:   true,
 		tokens.USDT0:  true,
+		tokens.RLUSD:  true,
 	}
 
 	// minSafeETH is the minimum amount of ETH the solver can leave itself with post-fill,
@@ -143,6 +144,20 @@ var (
 			tokens.ClassMainnet: {
 				MinSpend: bi.Dec6(0.1),       // 0.1 USDT0
 				MaxSpend: bi.Dec6(2_000_000), // 2M USDT0
+			},
+		},
+		tokens.RLUSD: {
+			tokens.ClassMainnet: {
+				MinSpend: bi.Dec6(0.1),   // 0.1 RLUSD
+				MaxSpend: bi.Dec6(5_000), // 5k RLUSD
+			},
+			tokens.ClassTestnet: {
+				MinSpend: bi.Dec6(0.1), // 0.1 RLUSD
+				MaxSpend: bi.Dec6(10),  // 10 RLUSD
+			},
+			tokens.ClassDevent: {
+				MinSpend: bi.Dec6(0.1), // 0.1 RLUSD
+				MaxSpend: bi.Dec6(10),  // 10 RLUSD
 			},
 		},
 	}

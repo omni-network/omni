@@ -131,6 +131,13 @@ var (
 		Decimals:    18,
 		CoingeckoID: "mantle-staked-ether",
 	}
+
+	RLUSD = Asset{
+		Symbol:      "RLUSD",
+		Name:        "RLUSD",
+		Decimals:    6,
+		CoingeckoID: "rlusd",
+	}
 )
 
 func AssetBySymbol(symbol string) (Asset, error) {

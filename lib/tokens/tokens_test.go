@@ -114,6 +114,11 @@ func TestGenTokens(t *testing.T) {
 		meth(evmchain.IDEthereum, addr("0xd5f7838f5c461feff7fe49ea5ebaf7728bb0adfa")),
 		meth(evmchain.IDMantle, addr("0xcDA86A272531e8640cD7F1a92c01839911B90bb0")),
 
+		// RLUSD
+		rlusd(evmchain.IDEthereum, addr("0x8292Bb45bf1Ee4d140127049757C2E0fF06317eD")),
+		rlusd(evmchain.IDHolesky, addr("0x084Db6262bE13D210940D15dA1300cD1E72a5C34")),
+		rlusd(evmchain.IDMockL1, addr("0x9ea011e9bC127fc0afb5e481707fFee2A720094f")),
+
 		// HYPE
 		tokens.Token{
 			Asset:      tokens.HYPE,
@@ -296,6 +301,15 @@ func usdt(chainID uint64, addr common.Address) tokens.Token {
 func usdt0(chainID uint64, addr common.Address) tokens.Token {
 	return tokens.Token{
 		Asset:      tokens.USDT0,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    addr,
+	}
+}
+
+func rlusd(chainID uint64, addr common.Address) tokens.Token {
+	return tokens.Token{
+		Asset:      tokens.RLUSD,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
