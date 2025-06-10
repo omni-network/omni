@@ -26,7 +26,7 @@ var (
 	tokenConversion = map[tokens.Asset]float64{
 		tokens.OMNI: 500,
 		tokens.ETH:  1,
-		tokens.MNT:  1,
+		tokens.MNT:  5,
 		tokens.HYPE: 1,
 	}
 

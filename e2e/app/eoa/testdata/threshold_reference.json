@@ -102,28 +102,28 @@
   },
   "MNT": {
    "cold": {
-    "min": "2.104 MNT",
-    "target": "8.84 MNT"
+    "min": "10.52 MNT",
+    "target": "44.2 MNT"
    },
    "create3-deployer": {
-    "min": "0.001 MNT",
-    "target": "0.01 MNT"
+    "min": "0.005 MNT",
+    "target": "0.05 MNT"
    },
    "deployer": {
-    "min": "0.02 MNT",
-    "target": "0.2 MNT"
-   },
-   "flowgen": {
-    "min": "0.01 MNT",
+    "min": "0.1 MNT",
     "target": "1 MNT"
    },
+   "flowgen": {
+    "min": "0.05 MNT",
+    "target": "5 MNT"
+   },
    "hot": {
-    "min": "2.104 MNT",
-    "target": "8.84 MNT"
+    "min": "10.52 MNT",
+    "target": "44.2 MNT"
    },
    "manager": {
-    "min": "0.02 MNT",
-    "target": "0.2 MNT"
+    "min": "0.1 MNT",
+    "target": "1 MNT"
    },
    "monitor": {
     "min": "0 MNT",
@@ -134,16 +134,16 @@
     "target": "0 MNT"
    },
    "solver": {
-    "min": "1 MNT",
-    "target": "3 MNT"
+    "min": "5 MNT",
+    "target": "15 MNT"
    },
    "tester": {
     "min": "0 MNT",
     "target": "0 MNT"
    },
    "upgrader": {
-    "min": "0.001 MNT",
-    "target": "0.01 MNT"
+    "min": "0.005 MNT",
+    "target": "0.05 MNT"
    },
    "xcaller": {
     "min": "0 MNT",
