@@ -180,11 +180,19 @@ func detectPanics(ctx context.Context, def Definition) error {
 	const limit = 50 // Print max 50 lines after first detected panic.
 	var detected []string
 	for _, line := range strings.Split(string(logs), "\n") {
-		if len(detected) == 0 && !strings.Contains(line, "panic") {
+		// Check for lines that contain "panic" but not "svm",
+		// since svm generates random seeds that can contain the word "panic"
+		hasPanic := strings.Contains(line, "panic")
+		if strings.Contains(line, "svm") {
+			hasPanic = false
+		}
+
+		if len(detected) == 0 && !hasPanic {
 			continue
 		}
 
 		detected = append(detected, line)
+
 		if len(detected) >= limit {
 			break
 		}
