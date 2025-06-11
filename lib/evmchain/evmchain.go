@@ -41,7 +41,7 @@ const (
 	IDArbSepolia      uint64 = 421614
 	IDSepolia         uint64 = 11155111
 	IDOpSepolia       uint64 = 11155420
-	IDSolanaTest      uint64 = 351
+	IDSolanaDevnet    uint64 = 351 // Note we use solana devnet, not testnet which is for performance testing only.
 
 	// Ephemeral.
 	IDOmniStaging uint64 = 1650
@@ -256,8 +256,8 @@ var static = map[uint64]Metadata{
 		NativeToken: tokens.ETH,
 		PostsTo:     IDSepolia,
 	},
-	IDSolanaTest: {
-		ChainID:     IDSolanaTest,
+	IDSolanaDevnet: {
+		ChainID:     IDSolanaDevnet,
 		Name:        "solana_testnet",
 		PrettyName:  "Solana Testnet",
 		BlockPeriod: 400 * time.Millisecond,
@@ -335,5 +335,5 @@ func Name(id uint64) string {
 
 // IsSVM returns true if the chain is a Solana Virtual Machine (SVM) chain.
 func IsSVM(chainID uint64) bool {
-	return chainID == IDSolana || chainID == IDSolanaTest || chainID == IDSolanaLocal
+	return chainID == IDSolana || chainID == IDSolanaDevnet || chainID == IDSolanaLocal
 }

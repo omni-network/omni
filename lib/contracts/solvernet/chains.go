@@ -56,10 +56,10 @@ var trustedChains = map[netconf.ID][]uint64{
 		evmchain.IDSolanaLocal,
 	},
 	netconf.Staging: {
-		// evmchain.IDSolanaTest,
+		// evmchain.IDSolanaDevnet,
 	},
 	netconf.Omega: {
-		// evmchain.IDSolanaTest,
+		// evmchain.IDSolanaDevnet,
 	},
 	netconf.Mainnet: {
 		// evmchain.IDSolana,

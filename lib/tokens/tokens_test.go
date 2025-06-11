@@ -237,9 +237,9 @@ func svm(chainID uint64, asset tokens.Asset, address solana.PublicKey) tokens.To
 		Asset:   asset,
 		ChainID: chainID,
 		ChainClass: map[uint64]tokens.ChainClass{
-			evmchain.IDSolanaLocal: tokens.ClassDevent,
-			evmchain.IDSolanaTest:  tokens.ClassTestnet,
-			evmchain.IDSolana:      tokens.ClassMainnet,
+			evmchain.IDSolanaLocal:  tokens.ClassDevent,
+			evmchain.IDSolanaDevnet: tokens.ClassTestnet,
+			evmchain.IDSolana:       tokens.ClassMainnet,
 		}[chainID],
 		SVMAddress: address,
 		IsMock:     chainID == evmchain.IDSolanaLocal,

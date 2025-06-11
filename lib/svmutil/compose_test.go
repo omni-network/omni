@@ -544,13 +544,13 @@ func TestChainIDs(t *testing.T) {
 	}
 	require.Equal(t, evmchain.IDSolana, id)
 
-	cl = rpc.New("https://api.testnet.solana.com")
+	cl = rpc.New("https://api.devnet.solana.com")
 	id, err = svmutil.ChainID(ctx, cl)
 	if err != nil {
 		log.Error(ctx, "get chain ID", err)
 		t.Skip("Skip 3rd party network issues")
 	}
-	require.Equal(t, evmchain.IDSolanaTest, id)
+	require.Equal(t, evmchain.IDSolanaDevnet, id)
 }
 
 func ensureInboxEvent(t *testing.T, prog svmutil.Program, txRes *rpc.GetTransactionResult, expectName string, expectData any) {
