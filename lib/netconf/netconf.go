@@ -167,9 +167,9 @@ func SolanaChainID(network ID) uint64 {
 	case Mainnet:
 		return evmchain.IDSolana
 	case Omega:
-		return evmchain.IDSolanaTest
+		return evmchain.IDSolanaDevnet
 	case Staging:
-		return evmchain.IDSolanaTest
+		return evmchain.IDSolanaDevnet
 	default:
 		return evmchain.IDSolanaLocal
 	}

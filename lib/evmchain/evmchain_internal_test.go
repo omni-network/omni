@@ -29,7 +29,7 @@ func TestIsSolChain(t *testing.T) {
 	t.Parallel()
 
 	require.True(t, IsSVM(IDSolana))
-	require.True(t, IsSVM(IDSolanaTest))
+	require.True(t, IsSVM(IDSolanaDevnet))
 	require.True(t, IsSVM(IDSolanaLocal))
 
 	require.False(t, IsSVM(IDBase))

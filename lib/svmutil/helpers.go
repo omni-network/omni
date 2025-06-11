@@ -62,7 +62,7 @@ func GetAccountDataInto(ctx context.Context, cl *rpc.Client, address solana.Publ
 
 var chainIDsByHash = map[solana.Hash]uint64{
 	solana.MustHashFromBase58("5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"): evmchain.IDSolana,
-	solana.MustHashFromBase58("4uhcVJyU9pJkvQyS88uRDiswHXSCkY3zQawwpjk2NsNY"): evmchain.IDSolanaTest,
+	solana.MustHashFromBase58("EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG"): evmchain.IDSolanaDevnet,
 }
 
 func ChainID(ctx context.Context, cl *rpc.Client) (uint64, error) {
