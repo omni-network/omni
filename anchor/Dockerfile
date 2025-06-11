@@ -39,7 +39,7 @@ RUN . $NVM_DIR/nvm.sh && \
     npm install -g yarn
 
 # Install Solana tools.
-RUN sh -c "$(curl -sSfL https://release.anza.xyz/v2.1.21/install)" && \
+RUN sh -c "$(curl -sSfL https://release.anza.xyz/${SOLANA_CLI}/install)" && \
     solana --version
 
 # Install anchor.
