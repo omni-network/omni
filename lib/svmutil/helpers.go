@@ -4,12 +4,16 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/ed25519"
+	"encoding/json"
 	"math/big"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 
@@ -188,4 +192,28 @@ func GetBlock(ctx context.Context, cl *rpc.Client, slot uint64, details rpc.Tran
 	}
 
 	return block, true, nil
+}
+
+// SavePrivateKey saves a Solana private key to a file in JSON format.
+func SavePrivateKey(key solana.PrivateKey, path string) error {
+	key64, err := cast.Array64(key[:])
+	if err != nil {
+		return err
+	}
+
+	bz, err := json.Marshal(key64)
+	if err != nil {
+		return errors.Wrap(err, "marshal private key")
+	}
+
+	// Ensure the directory exists
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return errors.Wrap(err, "create directory for private key")
+	}
+
+	if err := os.WriteFile(path, bz, 0o600); err != nil {
+		return errors.Wrap(err, "write private key to file")
+	}
+
+	return nil
 }

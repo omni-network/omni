@@ -12,6 +12,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -101,6 +102,45 @@ func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Cl
 	log.Info(ctx, "Solana: RPC is available", "addr", endpoint)
 
 	return cl, endpoint, privKey, stop, nil
+}
+
+// Rebuild rebuilds the program's so file with the provided private key.
+// This effectively changes the program ID.
+func Rebuild(ctx context.Context, program Program, key solana.PrivateKey, anchorDir string) (Program, error) {
+	// Store privkey to <anchorDir>/tmp/<program>-keypair.json
+	keyFile := filepath.Join(anchorDir, "tmp", program.Name+"-keypair.json")
+	if err := SavePrivateKey(key, keyFile); err != nil {
+		return Program{}, err
+	}
+
+	defer func() {
+		// Delete the keypair file after building the program
+		_ = os.Remove(keyFile)
+	}()
+
+	// Run <anchorDir>/build.sh tmp
+	_, err := execCmd(ctx, anchorDir, "bash", "build.sh", "tmp")
+	if err != nil {
+		return Program{}, err
+	}
+
+	// Load the program from <anchorDir>/tmp/<program>.so
+	soFile := filepath.Join(anchorDir, "tmp", program.SOFile())
+	program.SharedObject, err = os.ReadFile(soFile)
+	if err != nil {
+		return Program{}, errors.Wrap(err, "read shared object file", "path", soFile)
+	}
+
+	key64, err := cast.Array64(key[:])
+	if err != nil {
+		return Program{}, err
+	}
+	program.KeyPairJSON, err = json.Marshal(key64)
+	if err != nil {
+		return Program{}, errors.Wrap(err, "marshal private key to JSON")
+	}
+
+	return program, nil
 }
 
 // Deploy deploys a program to the localhost compose network using hte default keypair.
@@ -262,15 +302,10 @@ func CopyProgram(composeDir string, program Program) error {
 		return errors.Wrap(err, "write so file")
 	}
 
-	if err := os.WriteFile(
+	return SavePrivateKey(
+		program.MustPrivateKey(),
 		filepath.Join(targetDir, program.KeyPairFile()),
-		program.KeyPairJSON,
-		0644,
-	); err != nil {
-		return errors.Wrap(err, "write so file")
-	}
-
-	return nil
+	)
 }
 
 // composeDown runs docker-compose down in the provided directory.
