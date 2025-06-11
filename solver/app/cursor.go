@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -170,9 +171,19 @@ func maybeBootstrapCursor(
 	chainVer xchain.ChainVersion,
 ) error {
 	// Check if cursor already bootstrapped
-	if _, ok, err := cursors.Get(ctx, chainVer); err != nil {
+	if height, ok, err := cursors.Get(ctx, chainVer); err != nil {
 		return errors.Wrap(err, "get cursor")
 	} else if ok {
+		// HyperEVM had an outage, blocks between 5219420 and 5226000 are not available, skip past them.
+		const hyperSkipTo uint64 = 5226000
+		if chainVer.ID == evmchain.IDHyperEVM && height < hyperSkipTo {
+			log.Info(ctx, "Updating HyperEVM cursor to skip height", "height", height, "skip_to", hyperSkipTo)
+			err := cursors.Set(ctx, chainVer, hyperSkipTo)
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}
 

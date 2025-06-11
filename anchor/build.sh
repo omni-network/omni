@@ -22,7 +22,7 @@ fi
 mkdir -p ./target/deploy
 cp ./"${NET}"/solver_inbox-keypair.json ./target/deploy/solver_inbox-keypair.json
 
-# Mount . in backpackapp/build:v0.31.0 and run ./build.sh
+# Mount . in omniops/anchor:v0.31.0 and run ./anchorbuild.sh
 docker run --rm -v "${PWD}":/anchor -w /anchor omniops/anchor:v0.31.0 ./anchorbuild.sh
 
 # Copy the compiled artefacts to "${NET}"
