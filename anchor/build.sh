@@ -4,7 +4,7 @@
 # It requires inbox program private key (from which the program ID is derived) to be present in ./$NET/solver_inbox-keypair.json.
 # It must be run from the omni/anchor directory.
 # It copies the compiled artifacts to ./$NET/ (IDL, share object, and TypeScript bindings).
-# It uses backpackapp/build:v0.31.0 container to avoid local dependencies, see anchorbuild.sh for details.
+# It uses omniops/anchor:v0.31.0 container to avoid local dependencies, see anchorbuild.sh for details.
 # Go bindings do however require solana-anchor-go to be installed locally.
 
 set -euo pipefail

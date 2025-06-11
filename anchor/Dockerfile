@@ -53,7 +53,7 @@ RUN anchor --version && \
 # Build a dummy program to bootstrap the BPF SDK (doing this speeds up builds).
 RUN mkdir -p /tmp && cd tmp && anchor init dummy && cd dummy && anchor build
 
-# Copy whole anchor dir into the container to build faster
+# Pre-build anchor inbox to speed up builds even more.
 COPY *.toml /app/
 COPY *.lock /app/
 COPY *.json /app/

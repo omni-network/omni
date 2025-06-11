@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-# Runs anchor build inside backpackapp/build:v0.31.0 docker container
-# backpackapp/build is a container with anchor and solana installed
+# Runs anchor build inside omniops/anchor:v0.31.0 docker container
+# which has correct versions of rust, solana and anchor.
 # See everclear for source: from https://github.com/everclearorg/monorepo/tree/dev/packages/contracts/solana-spoke/docker
-# Note this container is huge, 2GB 🥲
+# Note this container is huge, 2GB 🥲#
+#
+# It also has prebuilt artefacts located at /app/target which is copy to mounted to /anchor/target to speed up builds.
 
 set -euo pipefail
 
