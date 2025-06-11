@@ -85,7 +85,11 @@ func wrapPriceHandlerFunc(priceFunc priceFunc) priceHandlerFunc {
 			return types.Price{}, errors.Wrap(err, "price")
 		}
 
-		return price.WithFeeBips(feeBips(srcToken.Asset, dstToken.Asset)), nil // Add fee to the price.
+		if req.IncludeFees { // Add fee to the price.
+			price = price.WithFeeBips(feeBips(srcToken.Asset, dstToken.Asset))
+		}
+
+		return price, nil
 	}
 }
 

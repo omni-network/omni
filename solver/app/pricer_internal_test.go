@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/solver/client"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/stretchr/testify/require"
@@ -78,6 +80,7 @@ func TestPriceHandler(t *testing.T) {
 				DestinationChainID: test.Expense.ChainID,
 				DepositToken:       test.Deposit.UniAddress(),
 				ExpenseToken:       test.Expense.UniAddress(),
+				IncludeFees:        true,
 			})
 			require.NoError(t, err)
 
@@ -113,4 +116,30 @@ func unaryPrice(_ context.Context, deposit, expense tokens.Token) (types.Price, 
 		Deposit: deposit.Asset,
 		Expense: expense.Asset,
 	}, nil
+}
+
+func TestPriceEndpoint(t *testing.T) {
+	t.Parallel()
+
+	handler := handlerAdapter(newPriceHandler(wrapPriceHandlerFunc(unaryPrice)))
+
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	cl := client.New(srv.URL)
+	realPrice, err := cl.Price(t.Context(), types.PriceRequest{
+		SourceChainID:      evmchain.IDBaseSepolia,
+		DestinationChainID: evmchain.IDArbSepolia,
+		IncludeFees:        false,
+	})
+	require.NoError(t, err)
+
+	priceWithFees, err := cl.Price(t.Context(), types.PriceRequest{
+		SourceChainID:      evmchain.IDBaseSepolia,
+		DestinationChainID: evmchain.IDArbSepolia,
+		IncludeFees:        true,
+	})
+	require.NoError(t, err)
+	require.Greater(t, realPrice.F64(), priceWithFees.F64()) // Price with fees is less, since you get less expense tokens for same deposit.
+	require.Equal(t, priceWithFees, realPrice.WithFeeBips(feeBips(realPrice.Deposit, realPrice.Expense)))
 }

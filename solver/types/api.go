@@ -71,6 +71,7 @@ type PriceRequest struct {
 	DestinationChainID uint64      `json:"destChainId"`
 	DepositToken       uni.Address `json:"depositToken"`
 	ExpenseToken       uni.Address `json:"expenseToken"`
+	IncludeFees        bool        `json:"includeFees"` // If true, include fees in the price calculation
 }
 
 type TokensResponse struct {
