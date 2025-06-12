@@ -186,7 +186,7 @@ func tokensResponse(ctx context.Context, backends unibackend.Backends, solverAdd
 	for chainID := range backends {
 		for asset := range supportedAssets {
 			token, ok := tokens.ByAsset(chainID, asset)
-			if !ok {
+			if !ok || token.IsSVM() {
 				continue
 			}
 

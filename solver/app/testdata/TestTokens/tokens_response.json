@@ -79,19 +79,6 @@
    "expenseInventory": "0x56bc75e2d63100000"
   },
   {
-   "enabled": false,
-   "expenseEnabled": false,
-   "depositEnabled": true,
-   "name": "USD Coin",
-   "symbol": "USDC",
-   "chainId": 352,
-   "address": "6AfTP38VbvM3gxMRy8ubvb7NbhzhjVB8VGMy2uBby1pY",
-   "decimals": 6,
-   "expenseMin": "0x186a0",
-   "expenseMax": "0x989680",
-   "expenseInventory": "0x0"
-  },
-  {
    "enabled": true,
    "expenseEnabled": true,
    "depositEnabled": true,
