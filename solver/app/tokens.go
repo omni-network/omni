@@ -1,15 +1,20 @@
 package app
 
 import (
+	"context"
 	"math/big"
 	"sort"
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/tokenutil"
+	"github.com/omni-network/omni/lib/unibackend"
 	"github.com/omni-network/omni/solver/types"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -175,35 +180,66 @@ func GetSpendBounds(token tokens.Token) (SpendBounds, bool) {
 	return resp, ok
 }
 
-func tokensResponse(chains []uint64) (types.TokensResponse, error) {
-	var resp []types.TokenResponse
-	for _, chain := range chains {
+func tokensResponse(ctx context.Context, backends unibackend.Backends, solverAddr common.Address) (types.TokensResponse, error) {
+	// Get all tokens we support
+	var tkns []tokens.Token
+	for chainID := range backends {
 		for asset := range supportedAssets {
-			token, ok := tokens.ByAsset(chain, asset)
-			if !ok {
+			token, ok := tokens.ByAsset(chainID, asset)
+			if !ok || token.IsSVM() {
 				continue
-			} else if !token.IsEVM() {
-				continue // TODO(corver): Enable once SDK supports non-EVM chains.
 			}
 
-			bounds, ok := GetSpendBounds(token)
-			if !ok {
-				return types.TokensResponse{}, errors.New("invalid token")
-			}
-
-			resp = append(resp, types.TokenResponse{
-				Enabled:    true, // Disable not supported yet.
-				Name:       token.Name,
-				Symbol:     token.Symbol,
-				ChainID:    token.ChainID,
-				Address:    token.UniAddress(),
-				Decimals:   token.Decimals,
-				ExpenseMin: (*hexutil.Big)(bounds.MinSpend),
-				ExpenseMax: (*hexutil.Big)(bounds.MaxSpend),
-			})
+			tkns = append(tkns, token)
 		}
 	}
 
+	// Define a forkjoin work function to process each token concurrently.
+	workFn := func(ctx context.Context, token tokens.Token) (types.TokenResponse, error) {
+		backend, err := backends.Backend(token.ChainID)
+		if err != nil {
+			return types.TokenResponse{}, err
+		}
+
+		bounds, ok := GetSpendBounds(token)
+		if !ok {
+			return types.TokenResponse{}, errors.New("invalid token spend bounds", "token", token)
+		}
+
+		var expenseEnabled bool
+		inventory := bi.Zero()
+		if backend.IsEVM() {
+			bal, err := tokenutil.BalanceOf(ctx, backend.EVMBackend(), token, solverAddr)
+			if err == nil { // Disable expense if query fails (should be temporary).
+				expenseEnabled = bi.GT(bal, bounds.MinSpend)
+				inventory = bal
+			}
+		}
+
+		return types.TokenResponse{
+			Enabled:          expenseEnabled,
+			ExpenseEnabled:   expenseEnabled,
+			DepositEnabled:   true, // Always enabled for deposits for now.
+			Name:             token.Name,
+			Symbol:           token.Symbol,
+			ChainID:          token.ChainID,
+			Address:          token.UniAddress(),
+			Decimals:         token.Decimals,
+			ExpenseMin:       (*hexutil.Big)(bounds.MinSpend),
+			ExpenseMax:       (*hexutil.Big)(bounds.MaxSpend),
+			ExpenseInventory: (*hexutil.Big)(inventory),
+		}, nil
+	}
+
+	// Do forkjoin
+	result, cancel := forkjoin.NewWithInputs(ctx, workFn, tkns)
+	defer cancel()
+	resp, err := result.Flatten()
+	if err != nil {
+		return types.TokensResponse{}, errors.Wrap(err, "fork join tokens response")
+	}
+
+	// Sort deterministically.
 	sort.Slice(resp, func(i, j int) bool {
 		if resp[i].ChainID != resp[j].ChainID {
 			return resp[i].ChainID < resp[j].ChainID

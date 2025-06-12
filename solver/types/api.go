@@ -79,14 +79,17 @@ type TokensResponse struct {
 }
 
 type TokenResponse struct {
-	Enabled    bool         `json:"enabled"`
-	Name       string       `json:"name"`
-	Symbol     string       `json:"symbol"`
-	ChainID    uint64       `json:"chainId"`
-	Address    uni.Address  `json:"address"`
-	Decimals   uint         `json:"decimals"`
-	ExpenseMin *hexutil.Big `json:"expenseMin"`
-	ExpenseMax *hexutil.Big `json:"expenseMax"`
+	Enabled          bool         `json:"enabled"` // Deprecated, use ExpenseEnabled instead
+	ExpenseEnabled   bool         `json:"expenseEnabled"`
+	DepositEnabled   bool         `json:"depositEnabled"`
+	Name             string       `json:"name"`
+	Symbol           string       `json:"symbol"`
+	ChainID          uint64       `json:"chainId"`
+	Address          uni.Address  `json:"address"`
+	Decimals         uint         `json:"decimals"`
+	ExpenseMin       *hexutil.Big `json:"expenseMin"`
+	ExpenseMax       *hexutil.Big `json:"expenseMax"`
+	ExpenseInventory *hexutil.Big `json:"expenseInventory"`
 }
 
 type addrAmtJSON struct {

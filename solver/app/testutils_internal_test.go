@@ -840,6 +840,16 @@ func mockERC20Balance(t *testing.T, client *mock.MockClient, token common.Addres
 	client.EXPECT().CallContract(ctx, msg, nil).Return(abiEncodeBig(t, balance), nil).AnyTimes()
 }
 
+// mockAnyBalance returns the balance for both native and erc20 tokens.
+// Note this doesn't support other `CallContract`.
+func mockAnyBalance(t *testing.T, client *mock.MockClient, balance *big.Int) {
+	t.Helper()
+
+	ctx := gomock.Any()
+	client.EXPECT().CallContract(ctx, gomock.Any(), nil).Return(abiEncodeBig(t, balance), nil).AnyTimes()
+	client.EXPECT().BalanceAt(ctx, gomock.Any(), nil).Return(balance, nil).AnyTimes()
+}
+
 func mockDebugTrace(t *testing.T, client *mock.MockClient, trace types.CallTrace, err error) {
 	t.Helper()
 
