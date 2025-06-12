@@ -2,6 +2,7 @@ package svmutil_test
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -12,6 +13,21 @@ import (
 	"github.com/gagliardetto/solana-go"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSavePrivateKey(t *testing.T) {
+	t.Parallel()
+
+	k, err := solana.NewRandomPrivateKey()
+	require.NoError(t, err)
+
+	file := filepath.Join(t.TempDir(), "key.json")
+	err = svmutil.SavePrivateKey(k, file)
+	require.NoError(t, err)
+
+	k2, err := solana.PrivateKeyFromSolanaKeygenFile(file)
+	require.NoError(t, err)
+	require.Equal(t, k, k2)
+}
 
 func TestMapEVMKey(t *testing.T) {
 	t.Parallel()

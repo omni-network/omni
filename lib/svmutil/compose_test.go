@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"path/filepath"
 	"testing"
 
 	"github.com/omni-network/omni/anchor/anchorinbox"
@@ -140,6 +141,39 @@ func TestIntegration(t *testing.T) {
 		require.Contains(t, *memoSigs[0].Memo, string(msg1))
 		require.Contains(t, *memoSigs[0].Memo, string(msg2))
 	})
+}
+
+func TestRebuild(t *testing.T) {
+	t.Skip("Skipping rebuild test as this is very slow") // Uncomment to test manually.
+
+	ctx := t.Context()
+	anchorDir, err := filepath.Abs("../../anchor")
+	require.NoError(t, err)
+	key, err := solana.NewRandomPrivateKey()
+	require.NoError(t, err)
+
+	prog, err := svmutil.Rebuild(ctx, anchorinbox.Program(), key, anchorDir)
+	require.NoError(t, err)
+	anchorinbox.SetProgramID(prog.MustPublicKey())
+
+	// Start svm
+	cl, _, privkey, stop, err := svmutil.Start(ctx, dir, prog)
+	require.NoError(t, err)
+	defer stop()
+
+	// Deploy the new program
+	_, err = svmutil.Deploy(ctx, cl, dir, prog)
+	require.NoError(t, err)
+
+	// Init the anchor program
+	init, err := anchorinbox.NewInit(0, 0, privkey.PublicKey())
+	require.NoError(t, err)
+
+	txSig, err := svmutil.SendSimple(ctx, cl, privkey, init.Build())
+	require.NoError(t, err)
+
+	_, err = svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
+	require.NoError(t, err)
 }
 
 func TestInbox(t *testing.T) {
