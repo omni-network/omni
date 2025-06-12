@@ -6,6 +6,7 @@ import (
 	"crypto/ed25519"
 	"encoding/json"
 	"math/big"
+	"net"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -216,4 +217,23 @@ func SavePrivateKey(key solana.PrivateKey, path string) error {
 	}
 
 	return nil
+}
+
+func maybeDelete(path string) {
+	_ = os.Remove(path) // Ignore error, as it may not exist
+}
+
+func getLocalIP() (net.IP, error) {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return nil, errors.Wrap(err, "dial")
+	}
+	defer conn.Close()
+
+	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
+	if !ok {
+		return nil, errors.New("failed to get local address")
+	}
+
+	return localAddr.IP, nil
 }

@@ -157,12 +157,12 @@ func TestRebuild(t *testing.T) {
 	anchorinbox.SetProgramID(prog.MustPublicKey())
 
 	// Start svm
-	cl, _, privkey, stop, err := svmutil.Start(ctx, dir, prog)
+	cl, rpcAddr, privkey, stop, err := svmutil.Start(ctx, dir, prog)
 	require.NoError(t, err)
 	defer stop()
 
 	// Deploy the new program
-	_, err = svmutil.Deploy(ctx, cl, dir, prog)
+	_, err = svmutil.Deploy(ctx, rpcAddr, prog, privkey, privkey)
 	require.NoError(t, err)
 
 	// Init the anchor program
@@ -184,15 +184,18 @@ func TestInbox(t *testing.T) {
 	prog := anchorinbox.Program()
 
 	ctx := t.Context()
-	cl, _, privKey0, stop, err := svmutil.Start(ctx, dir, prog)
+	cl, rpcAddr, privKey0, stop, err := svmutil.Start(ctx, dir, prog)
 	if err != nil {
 		t.Skip("Skip if docker unhealthy")
 	}
 	defer stop()
 
+	random, err := solana.NewRandomPrivateKey()
+	require.NoError(t, err)
+
 	// Deploy events program
 	t.Run("deploy", func(t *testing.T) {
-		tx0, err := svmutil.Deploy(ctx, cl, dir, prog)
+		tx0, err := svmutil.Deploy(ctx, rpcAddr, prog, privKey0, random)
 		tutil.RequireNoError(t, err)
 		t.Logf("Deployed inbox program: slot=%d, account=%s", tx0.Slot, prog.MustPublicKey())
 	})
