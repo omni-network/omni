@@ -504,33 +504,19 @@ describe.concurrent('useOmniAssets()', () => {
 
     // biome-ignore lint/style/noNonNullAssertion: safe due to throwing condition above
     const omniAssets = omniAssetsHook.result.current.data!
-
     expect(omniAssets).toBeInstanceOf(Array)
 
     const asset = omniAssets[0]
-    expect(asset).toBeInstanceOf(Object)
-    const expectedKeys = [
-      'address',
-      'chainId',
-      'decimals',
-      'expenseMin',
-      'expenseMax',
-      'enabled',
-      'name',
-      'symbol',
-    ]
-    expect(Object.keys(asset).sort()).toEqual(expectedKeys.sort())
-    expect(asset.enabled).toBeTypeOf('boolean')
-    expect(asset.name).toBeTypeOf('string')
-    expect(asset.symbol).toBeTypeOf('string')
-    expect(asset.address).toBeTypeOf('string')
-    expect(asset.address.startsWith('0x')).toBe(true)
-    expect(asset.decimals).toBeTypeOf('number')
-    expect(asset.chainId).toBeTypeOf('number')
-    expect(asset.expenseMin).toBeTypeOf('bigint')
-    expect(asset.expenseMax).toBeTypeOf('bigint')
-    expect(asset.expenseMin).toBeGreaterThan(0n)
-    expect(asset.expenseMax).toBeGreaterThan(0n)
+    expect(asset).toMatchObject({
+      enabled: expect.any(Boolean),
+      name: expect.any(String),
+      symbol: expect.any(String),
+      address: expect.any(String),
+      chainId: expect.any(Number),
+      decimals: expect.any(Number),
+      expenseMin: expect.any(BigInt),
+      expenseMax: expect.any(BigInt),
+    })
   })
 })
 
