@@ -27,9 +27,6 @@ importers:
         specifier: ^6.2.0
         version: 6.2.0
     devDependencies:
-      ds-test:
-        specifier: github:dapphub/ds-test
-        version: https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0
       forge-std:
         specifier: github:foundry-rs/forge-std
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8ba9031ffcbe25aa0d1224d3ca263a995026e477
@@ -475,9 +472,6 @@ packages:
     resolution: {integrity: sha512-uIFDxqpRZGZ6ThOk84hEfqWoHx2devRFvpTZcTHur85vImfaxUbTW9Ryh4CpCuDnToOP1CEtXKIgytHBPVff5A==}
     engines: {node: '>=0.3.1'}
 
-  ds-test@https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0:
-    resolution: {tarball: https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0}
-    version: 1.0.0
 
   eigenlayer-contracts@https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/b6a3a91e1c0c126981de409b00b5fba178503447:
     resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/b6a3a91e1c0c126981de409b00b5fba178503447}
@@ -1817,7 +1811,6 @@ snapshots:
 
   diff@5.2.0: {}
 
-  ds-test@https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0: {}
 
   eigenlayer-contracts@https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/b6a3a91e1c0c126981de409b00b5fba178503447(hardhat@2.22.10):
     dependencies:

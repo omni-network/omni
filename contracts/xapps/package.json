@@ -6,7 +6,6 @@
     "test": "forge test"
   },
   "devDependencies": {
-    "ds-test": "github:dapphub/ds-test",
     "forge-std": "github:foundry-rs/forge-std"
   },
   "dependencies": {
