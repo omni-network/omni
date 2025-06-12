@@ -216,7 +216,7 @@ func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgr
 	cmd.Stderr = &stdErr
 
 	if err := cmd.Run(); err != nil {
-		return nil, errors.Wrap(err, "run deploy", "stderr", stdErr.String(), "stdout", stdOut.String())
+		return nil, errors.Wrap(err, "docker run deploy", "stderr", stdErr.String(), "stdout", stdOut.String(), "args", args)
 	}
 
 	var resp struct {
