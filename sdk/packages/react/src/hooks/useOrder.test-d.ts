@@ -1,4 +1,4 @@
-import type { OptionalAbis, Order } from '@omni-network/core'
+import type { EVMOrder, OptionalAbis } from '@omni-network/core'
 import type { UseMutateFunction } from '@tanstack/react-query'
 import type { Hex } from 'viem'
 import { expectTypeOf, test } from 'vitest'
@@ -7,7 +7,7 @@ import { type MutationResult, useOrder } from './useOrder.js'
 import type { UseValidateOrderResult } from './useValidateOrder.js'
 
 test('type: useOrder', () => {
-  const order: Order<OptionalAbis> & { validateEnabled: boolean } = {
+  const order: EVMOrder<OptionalAbis> & { validateEnabled: boolean } = {
     srcChainId: 1,
     destChainId: 2,
     deposit: { token: '0x123', amount: 100n },

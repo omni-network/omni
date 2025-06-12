@@ -1,6 +1,6 @@
-import type { Address } from 'viem'
+import type { EVMAddress } from './addresses.js'
 
 export type OmniContracts = {
-  inbox: Address
-  outbox: Address
+  inbox: EVMAddress
+  outbox: EVMAddress
 }

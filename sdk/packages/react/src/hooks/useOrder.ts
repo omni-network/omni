@@ -1,12 +1,12 @@
 import {
   type DidFillError,
+  type EVMOrder,
   GetOrderError,
   type GetRejectionError,
   LoadContractsError,
   type OmniContracts,
   OpenError,
   type OptionalAbis,
-  type Order,
   type OrderStatus,
   type ParseOpenEventError,
   type Rejection,
@@ -44,7 +44,7 @@ import {
   useValidateOrder,
 } from './useValidateOrder.js'
 
-type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
+type UseOrderParams<abis extends OptionalAbis> = EVMOrder<abis> & {
   validateEnabled: boolean
   debugValidation?: boolean
   omniContractsQueryOpts?: QueryOpts<OmniContracts>

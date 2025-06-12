@@ -4,7 +4,7 @@ import { ValidateOrderError } from '../errors/base.js'
 import { fetchJSON } from '../internal/api.js'
 import type { OptionalAbis } from '../types/abi.js'
 import type { Environment } from '../types/config.js'
-import { type Order, isContractCall } from '../types/order.js'
+import { type EVMOrder, isContractCall } from '../types/order.js'
 import { getApiUrl, toJSON } from '../utils/index.js'
 
 const traceSchema = z.union([z.record(z.string(), z.unknown()), z.null()])
@@ -34,10 +34,11 @@ const errorResponseSchema = z.object({
   }),
 })
 
-export type ValidateOrderParameters<abis extends OptionalAbis> = Order<abis> & {
-  debug?: boolean
-  environment?: Environment | string
-}
+export type ValidateOrderParameters<abis extends OptionalAbis> =
+  EVMOrder<abis> & {
+    debug?: boolean
+    environment?: Environment | string
+  }
 
 export type ValidationResponse =
   | z.infer<typeof acceptedResponseSchema>
@@ -64,7 +65,7 @@ export async function validateOrder<abis extends OptionalAbis>(
 }
 
 const serialize = <abis extends OptionalAbis>(
-  order: Order<abis> & { debug?: boolean },
+  order: EVMOrder<abis> & { debug?: boolean },
 ) => {
   try {
     const calls = order.calls.map((call) => {

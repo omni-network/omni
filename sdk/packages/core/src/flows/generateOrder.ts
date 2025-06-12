@@ -1,4 +1,4 @@
-import type { Address, Hex } from 'viem'
+import type { Hex } from 'viem'
 import { assertAcceptedResult, validateOrder } from '../api/validateOrder.js'
 import type { ResolvedOrder } from '../contracts/parseOpenEvent.js'
 import { type SendOrderParameters, sendOrder } from '../contracts/sendOrder.js'
@@ -9,13 +9,14 @@ import {
 import { waitForOrderOpen } from '../contracts/waitForOrderOpen.js'
 import { watchDidFill } from '../contracts/watchDidFill.js'
 import type { OptionalAbis } from '../types/abi.js'
+import type { EVMAddress } from '../types/addresses.js'
 import type { Environment } from '../types/config.js'
 
 export type GenerateOrderParameters<abis extends OptionalAbis> =
   SendOrderParameters<abis> & {
     environment?: Environment | string
     pollingInterval?: number
-    outboxAddress: Address
+    outboxAddress: EVMAddress
   }
 
 export type OrderState =

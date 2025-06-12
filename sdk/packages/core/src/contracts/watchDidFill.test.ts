@@ -1,10 +1,11 @@
 import { testResolvedOrder } from '@omni-network/test-utils'
-import type { Address, Block, Client } from 'viem'
+import type { Block, Client } from 'viem'
 import { beforeEach, expect, test, vi } from 'vitest'
+import type { EVMAddress } from '../types/addresses.js'
 import { watchDidFill } from './watchDidFill.js'
 
 const client = {} as Client
-const outboxAddrs = '0x0' as Address
+const outboxAddrs = '0x0' as EVMAddress
 const resolvedOrder = testResolvedOrder
 const txHash = '0xTxHash'
 const blockHash = '0xBlockHash'

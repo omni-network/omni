@@ -1,11 +1,16 @@
 import type {
   Abi,
-  Address,
   ContractFunctionArgs,
   ContractFunctionName,
   ContractFunctionParameters,
+  Hex,
 } from 'viem'
 import type { AbiWriteMutability, OptionalAbi, OptionalAbis } from './abi.js'
+import type { EVMAddress, SVMAddress } from './addresses.js'
+
+export type EVMOrderId = Hex
+export type SVMOrderId = SVMAddress
+export type OrderId = EVMOrderId | SVMOrderId
 
 export type OrderStatus =
   | 'not-found'
@@ -15,14 +20,16 @@ export type OrderStatus =
   | 'filled'
   | 'error'
 
-type Deposit = {
-  readonly token?: Address
+// EVM and SVM deposits will be supported
+type EVMDeposit = {
+  readonly token?: EVMAddress
   readonly amount: bigint
 }
 
-type Expense = {
-  readonly spender?: Address
-  readonly token?: Address
+// only EVM expenses are supported
+type EVMExpense = {
+  readonly spender?: EVMAddress
+  readonly token?: EVMAddress
   readonly amount: bigint
 }
 
@@ -45,15 +52,15 @@ export type ContractCall<
   (mutability extends 'payable'
     ? {
         readonly value?: bigint
-        readonly target: Address
+        readonly target: EVMAddress
       }
     : {
-        readonly target: Address
+        readonly target: EVMAddress
       })
 
 type NativeTransfer = {
   readonly abi?: Abi // allows auto-complete abi, type will narrow if abi is provided
-  readonly target: Address
+  readonly target: EVMAddress
   readonly value: bigint
 }
 
@@ -67,14 +74,14 @@ export type Calls<abis extends OptionalAbis> = {
     : NativeTransfer
 }
 
-export type Order<abis extends OptionalAbis> = {
-  readonly owner?: Address
+export type EVMOrder<abis extends OptionalAbis> = {
+  readonly owner?: EVMAddress
   readonly srcChainId?: number
   readonly destChainId: number
   readonly fillDeadline?: number
   readonly calls: Calls<abis>
-  readonly deposit: Deposit
-  readonly expense: Expense
+  readonly deposit: EVMDeposit
+  readonly expense: EVMExpense
 }
 
 // isContractCall call narrows a call type based on the presence of abi

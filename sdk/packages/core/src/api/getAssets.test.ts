@@ -23,6 +23,32 @@ test('default: returns assets with parsed hex values', async () => {
   expect(fetchJSONSpy).toHaveBeenCalledWith('http://localhost/tokens')
 })
 
+test('behaviour: supports SVM assets', async () => {
+  const tokens = [
+    {
+      enabled: true,
+      name: 'USD Coin',
+      symbol: 'UDSC',
+      chainId: 352,
+      address: '6AfTP38VbvM3gxMRy8ubvb7NbhzhjVB8VGMy2uBby1pY',
+      decimals: 18,
+      expenseMin: '0x1000000000000000000',
+      expenseMax: '0x1000000000000000000',
+    } as const,
+  ]
+
+  const fetchJSONSpy = vi.spyOn(api, 'fetchJSON')
+  fetchJSONSpy.mockResolvedValueOnce({ tokens })
+
+  await expect(getAssets({ environment: 'http://localhost' })).resolves.toEqual(
+    tokens.map((token) => ({
+      ...token,
+      expenseMin: fromHex(token.expenseMin, 'bigint'),
+      expenseMax: fromHex(token.expenseMax, 'bigint'),
+    })),
+  )
+})
+
 test('behaviour: handles invalid response format (incorrect type)', async () => {
   vi.spyOn(api, 'fetchJSON').mockResolvedValueOnce({
     invalidField: 'value',
