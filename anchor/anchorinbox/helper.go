@@ -50,54 +50,26 @@ func NewOrderID(owner solana.PublicKey, nonce uint64) solana.PublicKey {
 // FindOrderStateAddress returns the address of the order state account.
 //
 // This is equivalent to anchor: `seeds = [OrderState::SEED_PREFIX, params.order_id.as_ref()]`.
-//
-// Note the generated code variant produces invalid results since it assumes MsgPack encoding instruction args.
-// `(&Open{Params: &OpenParams{OrderId: orderID}}).FindOrderStateAddress()`.
 func FindOrderStateAddress(orderID solana.PublicKey) (solana.PublicKey, uint8, error) {
-	seeds := [][]byte{
-		[]byte("order_state"),
-		orderID[:],
-	}
-
-	account, bump, err := solana.FindProgramAddress(seeds, ProgramID)
-	if err != nil {
-		return solana.PublicKey{}, 0, errors.Wrap(err, "find program address")
-	}
-
-	return account, bump, nil
+	return (&OpenInstruction{Params: &OpenParams{OrderId: orderID}}).FindOrderStateAddress()
 }
 
 // FindOrderTokenAddress returns the address of the order token account.
 //
 // This is equivalent to anchor: `seeds = [ORDER_TOKEN_SEED_PREFIX, params.order_id.as_ref()]`.
-//
-// Note the generated code variant produces invalid results since it assumes MsgPack encoding instruction args.
-// `(&Open{Params: &OpenParams{OrderId: orderID}}).FindOrderTokenAddress()`.
 func FindOrderTokenAddress(orderID solana.PublicKey) (solana.PublicKey, uint8, error) {
-	seeds := [][]byte{
-		[]byte("order_token"),
-		orderID[:],
-	}
-
-	account, bump, err := solana.FindProgramAddress(seeds, ProgramID)
-	if err != nil {
-		return solana.PublicKey{}, 0, errors.Wrap(err, "find program address")
-	}
-
-	return account, bump, nil
+	return (&OpenInstruction{Params: &OpenParams{OrderId: orderID}}).FindOrderTokenAddress()
 }
 
 // FindInboxStateAddress returns the address of the inbox state account.
 //
 // This is equivalent to anchor: `seeds = [InitState::SEED_PREFIX]`.
-//
-// Generated code variant is fine, since no instruction arguments required.
 func FindInboxStateAddress() (solana.PublicKey, uint8, error) {
-	return new(Init).FindInboxStateAddress()
+	return new(InitInstruction).FindInboxStateAddress()
 }
 
 // NewInit returns a new Init instruction with the given parameters.
-func NewInit(chainID uint64, closeBuffer time.Duration, admin solana.PublicKey) (*Init, error) {
+func NewInit(chainID uint64, closeBuffer time.Duration, admin solana.PublicKey) (*InitInstruction, error) {
 	inboxState, _, err := FindInboxStateAddress()
 	if err != nil {
 		return nil, err
@@ -107,7 +79,7 @@ func NewInit(chainID uint64, closeBuffer time.Duration, admin solana.PublicKey) 
 }
 
 type OpenOrder struct {
-	*Open
+	*OpenInstruction
 
 	ID           solana.PublicKey
 	StateAddress solana.PublicKey
@@ -149,12 +121,12 @@ func NewOpenOrder(params OpenParams, owner, mint solana.PublicKey) (OpenOrder, e
 	open := NewOpenInstruction(params, orderState, owner, mint, ownerToken, orderToken, token.ProgramID, inboxState, system.ProgramID)
 
 	return OpenOrder{
-		Open:         open,
-		ID:           params.OrderId,
-		StateAddress: orderState,
-		StateBump:    stateBump,
-		TokenAddress: orderToken,
-		TokenBump:    tokenBump,
+		OpenInstruction: open,
+		ID:              params.OrderId,
+		StateAddress:    orderState,
+		StateBump:       stateBump,
+		TokenAddress:    orderToken,
+		TokenBump:       tokenBump,
 	}, nil
 }
 
@@ -233,7 +205,7 @@ func FillData(chainID uint64, state OrderStateAccount) (bindings.SolverNetFillOr
 	}, nil
 }
 
-func NewMarkFilledOrder(ctx context.Context, cl *rpc.Client, claimableBy, admin, orderID solana.PublicKey) (*MarkFilled, error) {
+func NewMarkFilledOrder(ctx context.Context, cl *rpc.Client, claimableBy, admin, orderID solana.PublicKey) (*MarkFilledInstruction, error) {
 	state, ok, err := GetOrderState(ctx, cl, orderID)
 	if err != nil {
 		return nil, err
@@ -271,7 +243,7 @@ func NewMarkFilledOrder(ctx context.Context, cl *rpc.Client, claimableBy, admin,
 	), nil
 }
 
-func NewClaimOrder(ctx context.Context, cl *rpc.Client, claimer, orderID solana.PublicKey) (*Claim, error) {
+func NewClaimOrder(ctx context.Context, cl *rpc.Client, claimer, orderID solana.PublicKey) (*ClaimInstruction, error) {
 	state, ok, err := GetOrderState(ctx, cl, orderID)
 	if err != nil {
 		return nil, err
@@ -311,7 +283,7 @@ func NewClaimOrder(ctx context.Context, cl *rpc.Client, claimer, orderID solana.
 }
 
 // NewRejectOrder returns a new order rejection instruction.
-func NewRejectOrder(ctx context.Context, cl *rpc.Client, admin, orderID solana.PublicKey, reason uint8) (*Reject, error) {
+func NewRejectOrder(ctx context.Context, cl *rpc.Client, admin, orderID solana.PublicKey, reason uint8) (*RejectInstruction, error) {
 	state, ok, err := GetOrderState(ctx, cl, orderID)
 	if err != nil {
 		return nil, err

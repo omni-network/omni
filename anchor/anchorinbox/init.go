@@ -12,7 +12,7 @@ import (
 
 // Initialize the inbox state
 // This should be called only once, preferably by the upgrade authority.
-type Init struct {
+type InitInstruction struct {
 	ChainId     *uint64
 	CloseBuffer *int64
 
@@ -24,9 +24,9 @@ type Init struct {
 	ag_solanago.AccountMetaSlice `bin:"-"`
 }
 
-// NewInitInstructionBuilder creates a new `Init` instruction builder.
-func NewInitInstructionBuilder() *Init {
-	nd := &Init{
+// NewInitInstructionBuilder creates a new `InitInstruction` instruction builder.
+func NewInitInstructionBuilder() *InitInstruction {
+	nd := &InitInstruction{
 		AccountMetaSlice: make(ag_solanago.AccountMetaSlice, 3),
 	}
 	nd.AccountMetaSlice[2] = ag_solanago.Meta(Addresses["11111111111111111111111111111111"])
@@ -34,24 +34,24 @@ func NewInitInstructionBuilder() *Init {
 }
 
 // SetChainId sets the "chain_id" parameter.
-func (inst *Init) SetChainId(chain_id uint64) *Init {
+func (inst *InitInstruction) SetChainId(chain_id uint64) *InitInstruction {
 	inst.ChainId = &chain_id
 	return inst
 }
 
 // SetCloseBuffer sets the "close_buffer" parameter.
-func (inst *Init) SetCloseBuffer(close_buffer int64) *Init {
+func (inst *InitInstruction) SetCloseBuffer(close_buffer int64) *InitInstruction {
 	inst.CloseBuffer = &close_buffer
 	return inst
 }
 
 // SetInboxStateAccount sets the "inbox_state" account.
-func (inst *Init) SetInboxStateAccount(inboxState ag_solanago.PublicKey) *Init {
+func (inst *InitInstruction) SetInboxStateAccount(inboxState ag_solanago.PublicKey) *InitInstruction {
 	inst.AccountMetaSlice[0] = ag_solanago.Meta(inboxState).WRITE()
 	return inst
 }
 
-func (inst *Init) findFindInboxStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+func (inst *InitInstruction) findFindInboxStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	var seeds [][]byte
 	// const: inbox_state
 	seeds = append(seeds, []byte{byte(0x69), byte(0x6e), byte(0x62), byte(0x6f), byte(0x78), byte(0x5f), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
@@ -66,12 +66,12 @@ func (inst *Init) findFindInboxStateAddress(knownBumpSeed uint8) (pda ag_solanag
 }
 
 // FindInboxStateAddressWithBumpSeed calculates InboxState account address with given seeds and a known bump seed.
-func (inst *Init) FindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
+func (inst *InitInstruction) FindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
 	pda, _, err = inst.findFindInboxStateAddress(bumpSeed)
 	return
 }
 
-func (inst *Init) MustFindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
+func (inst *InitInstruction) MustFindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
 	pda, _, err := inst.findFindInboxStateAddress(bumpSeed)
 	if err != nil {
 		panic(err)
@@ -80,12 +80,12 @@ func (inst *Init) MustFindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_
 }
 
 // FindInboxStateAddress finds InboxState account address with given seeds.
-func (inst *Init) FindInboxStateAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+func (inst *InitInstruction) FindInboxStateAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	pda, bumpSeed, err = inst.findFindInboxStateAddress(0)
 	return
 }
 
-func (inst *Init) MustFindInboxStateAddress() (pda ag_solanago.PublicKey) {
+func (inst *InitInstruction) MustFindInboxStateAddress() (pda ag_solanago.PublicKey) {
 	pda, _, err := inst.findFindInboxStateAddress(0)
 	if err != nil {
 		panic(err)
@@ -94,33 +94,33 @@ func (inst *Init) MustFindInboxStateAddress() (pda ag_solanago.PublicKey) {
 }
 
 // GetInboxStateAccount gets the "inbox_state" account.
-func (inst *Init) GetInboxStateAccount() *ag_solanago.AccountMeta {
+func (inst *InitInstruction) GetInboxStateAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(0)
 }
 
 // SetAdminAccount sets the "admin" account.
-func (inst *Init) SetAdminAccount(admin ag_solanago.PublicKey) *Init {
+func (inst *InitInstruction) SetAdminAccount(admin ag_solanago.PublicKey) *InitInstruction {
 	inst.AccountMetaSlice[1] = ag_solanago.Meta(admin).WRITE().SIGNER()
 	return inst
 }
 
 // GetAdminAccount gets the "admin" account.
-func (inst *Init) GetAdminAccount() *ag_solanago.AccountMeta {
+func (inst *InitInstruction) GetAdminAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(1)
 }
 
 // SetSystemProgramAccount sets the "system_program" account.
-func (inst *Init) SetSystemProgramAccount(systemProgram ag_solanago.PublicKey) *Init {
+func (inst *InitInstruction) SetSystemProgramAccount(systemProgram ag_solanago.PublicKey) *InitInstruction {
 	inst.AccountMetaSlice[2] = ag_solanago.Meta(systemProgram)
 	return inst
 }
 
 // GetSystemProgramAccount gets the "system_program" account.
-func (inst *Init) GetSystemProgramAccount() *ag_solanago.AccountMeta {
+func (inst *InitInstruction) GetSystemProgramAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(2)
 }
 
-func (inst Init) Build() *Instruction {
+func (inst InitInstruction) Build() *Instruction {
 	return &Instruction{BaseVariant: ag_binary.BaseVariant{
 		Impl:   inst,
 		TypeID: Instruction_Init,
@@ -130,14 +130,14 @@ func (inst Init) Build() *Instruction {
 // ValidateAndBuild validates the instruction parameters and accounts;
 // if there is a validation error, it returns the error.
 // Otherwise, it builds and returns the instruction.
-func (inst Init) ValidateAndBuild() (*Instruction, error) {
+func (inst InitInstruction) ValidateAndBuild() (*Instruction, error) {
 	if err := inst.Validate(); err != nil {
 		return nil, err
 	}
 	return inst.Build(), nil
 }
 
-func (inst *Init) Validate() error {
+func (inst *InitInstruction) Validate() error {
 	// Check whether all (required) parameters are set:
 	{
 		if inst.ChainId == nil {
@@ -163,7 +163,7 @@ func (inst *Init) Validate() error {
 	return nil
 }
 
-func (inst *Init) EncodeToTree(parent ag_treeout.Branches) {
+func (inst *InitInstruction) EncodeToTree(parent ag_treeout.Branches) {
 	parent.Child(ag_format.Program(ProgramName, ProgramID)).
 		//
 		ParentFunc(func(programBranch ag_treeout.Branches) {
@@ -187,7 +187,7 @@ func (inst *Init) EncodeToTree(parent ag_treeout.Branches) {
 		})
 }
 
-func (obj Init) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+func (obj InitInstruction) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
 	// Serialize `ChainId` param:
 	err = encoder.Encode(obj.ChainId)
 	if err != nil {
@@ -200,7 +200,7 @@ func (obj Init) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
 	}
 	return nil
 }
-func (obj *Init) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+func (obj *InitInstruction) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
 	// Deserialize `ChainId`:
 	err = decoder.Decode(&obj.ChainId)
 	if err != nil {
@@ -222,7 +222,7 @@ func NewInitInstruction(
 	// Accounts:
 	inboxState ag_solanago.PublicKey,
 	admin ag_solanago.PublicKey,
-	systemProgram ag_solanago.PublicKey) *Init {
+	systemProgram ag_solanago.PublicKey) *InitInstruction {
 	return NewInitInstructionBuilder().
 		SetChainId(chain_id).
 		SetCloseBuffer(close_buffer).
