@@ -1,6 +1,6 @@
 import type { Hex } from 'viem'
 import { z } from 'zod/v4-mini'
-import type { AnyAddress, EVMAddress, SVMAddress } from '../types/addresses.js'
+import type { Address, EVMAddress, SVMAddress } from '../types/addresses.js'
 
 export const hex = () =>
   z.string().check(
@@ -25,5 +25,5 @@ export const svmAddress = () =>
     }),
   ) as unknown as z.ZodMiniType<SVMAddress>
 
-export const anyAddress = () =>
-  z.union([evmAddress(), svmAddress()]) as z.ZodMiniType<AnyAddress>
+export const address = () =>
+  z.union([evmAddress(), svmAddress()]) as z.ZodMiniType<Address>

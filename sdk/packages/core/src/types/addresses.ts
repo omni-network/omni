@@ -3,4 +3,4 @@ import type { Address as EVMAddress } from 'viem'
 
 export type { EVMAddress, SVMAddress }
 
-export type AnyAddress = EVMAddress | SVMAddress
+export type Address = EVMAddress | SVMAddress

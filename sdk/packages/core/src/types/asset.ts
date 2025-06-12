@@ -1,11 +1,11 @@
-import type { AnyAddress } from './addresses.js'
+import type { Address } from './addresses.js'
 
 export type Asset = {
   enabled: boolean
   name: string
   symbol: string
   chainId: number
-  address: AnyAddress
+  address: Address
   decimals: number
   expenseMin: bigint
   expenseMax: bigint

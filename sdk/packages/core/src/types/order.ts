@@ -10,7 +10,7 @@ import type { EVMAddress, SVMAddress } from './addresses.js'
 
 export type EVMOrderId = Hex
 export type SVMOrderId = SVMAddress
-export type AnyOrderId = EVMOrderId | SVMOrderId
+export type OrderId = EVMOrderId | SVMOrderId
 
 export type OrderStatus =
   | 'not-found'
