@@ -1031,6 +1031,7 @@ func depositFor(t *testing.T, expense *big.Int) *big.Int {
 		types.PriceRequest{
 			SourceChainID:      evmchain.IDMockL2,
 			DestinationChainID: evmchain.IDMockL1,
+			IncludeFees:        true,
 		})
 	tutil.RequireNoError(t, err)
 
@@ -1046,6 +1047,7 @@ func expenseFor(t *testing.T, deposit *big.Int) *big.Int {
 		types.PriceRequest{
 			SourceChainID:      evmchain.IDMockL2,
 			DestinationChainID: evmchain.IDMockL1,
+			IncludeFees:        true,
 		})
 	require.NoError(t, err)
 

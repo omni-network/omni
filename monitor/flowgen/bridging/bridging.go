@@ -265,6 +265,7 @@ func swapPrice(ctx context.Context, scl sclient.Client, srcToken, dstToken token
 		DestinationChainID: dstToken.ChainID,
 		DepositToken:       srcToken.UniAddress(),
 		ExpenseToken:       dstToken.UniAddress(),
+		IncludeFees:        true,
 	}
 
 	return scl.Price(ctx, priceReq)
