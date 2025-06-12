@@ -63,6 +63,34 @@ func WrapRunE(cmd *cobra.Command, printFatal func(ctx context.Context, err error
 		}
 	}
 
+	if cmd.PersistentPreRunE != nil {
+		cached := cmd.PersistentPreRunE
+		cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+			err := cached(cmd, args)
+			if err != nil {
+				cmd.SilenceUsage = true
+				cmd.SilenceErrors = true
+				printFatal(cmd.Context(), err)
+			}
+
+			return err
+		}
+	}
+
+	if cmd.PreRunE != nil {
+		cached := cmd.PreRunE
+		cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+			err := cached(cmd, args)
+			if err != nil {
+				cmd.SilenceUsage = true
+				cmd.SilenceErrors = true
+				printFatal(cmd.Context(), err)
+			}
+
+			return err
+		}
+	}
+
 	for _, subCmd := range cmd.Commands() {
 		WrapRunE(subCmd, printFatal)
 	}
