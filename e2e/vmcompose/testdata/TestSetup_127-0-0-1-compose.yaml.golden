@@ -44,7 +44,7 @@ services:
       - --pprof.addr=0.0.0.0
       - --metrics
       - --graphql
-      - --verbosity=3 # Log level (1=error,2=warn,3=info,4=debug)
+      - --verbosity=4 # Log level (1=error,2=warn,3=info,4=debug)
       
     ports:
       - 8551:8551 # Auth RPC

@@ -93,7 +93,7 @@ func (p *Provider) Setup() error {
 			}
 		}
 
-		gethVerbosity := 3 // Info level
+		gethVerbosity := 4 // Debug level
 
 		def := docker.ComposeDef{
 			UpgradeVersion: p.Testnet.UpgradeVersion,
