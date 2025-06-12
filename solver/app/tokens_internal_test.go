@@ -8,12 +8,15 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/manifests"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/solver/client"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
 )
@@ -76,7 +79,7 @@ func genSupportedTokens(t *testing.T, network netconf.ID, fileName string) {
 	tutil.RequireGoldenBytes(t, b.Bytes(), tutil.WithFilename(fileName))
 }
 
-// TestTokens ensures solver toke list does not change without explicit golden update.
+// TestTokens ensures solver token list does not change without explicit golden update.
 func TestTokens(t *testing.T) {
 	t.Parallel()
 
@@ -115,22 +118,19 @@ func TestTokens(t *testing.T) {
 	tutil.RequireGoldenJSON(t, golden)
 }
 
+// 12037465313470890
+
+//go:generate go test . -run=TestTokenResponse -golden
+
 func TestTokenResponse(t *testing.T) {
 	t.Parallel()
 
-	mainnet, err := manifests.Mainnet()
-	require.NoError(t, err)
-
-	chains := []uint64{
-		evmchain.IDOmniMainnet,
-	}
-	for _, name := range mainnet.PublicChains {
-		chain, ok := evmchain.MetadataByName(name)
-		require.True(t, ok, "chain %s not found", name)
-		chains = append(chains, chain.ChainID)
+	backends, mockClients := testBackends(t)
+	for _, cl := range mockClients.clients {
+		mockAnyBalance(t, cl, bi.Ether(100))
 	}
 
-	resp, err := tokensResponse(chains)
+	resp, err := tokensResponse(t.Context(), backends, common.Address{})
 	require.NoError(t, err)
 
 	tutil.RequireGoldenJSON(t, resp, tutil.WithFilename("TestTokens/tokens_response.json"))
@@ -139,7 +139,12 @@ func TestTokenResponse(t *testing.T) {
 func TestTokensEndpoint(t *testing.T) {
 	t.Parallel()
 
-	handler := handlerAdapter(newTokensHandler([]uint64{evmchain.IDSolanaLocal, evmchain.IDOmniDevnet, evmchain.IDMockL1}))
+	backends, mockClients := testBackends(t)
+	for _, cl := range mockClients.clients {
+		mockAnyBalance(t, cl, bi.Ether(100))
+	}
+
+	handler := handlerAdapter(newTokensHandler(backends, common.Address{}))
 
 	srv := httptest.NewServer(handler)
 	defer srv.Close()

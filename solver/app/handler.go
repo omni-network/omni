@@ -13,7 +13,10 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/uni"
+	"github.com/omni-network/omni/lib/unibackend"
 	"github.com/omni-network/omni/solver/types"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func newAPIError(err error, statusCode int) APIError {
@@ -176,13 +179,13 @@ func newPriceHandler(priceFunc priceHandlerFunc) Handler {
 	}
 }
 
-func newTokensHandler(chains []uint64) Handler {
+func newTokensHandler(backends unibackend.Backends, solverAddr common.Address) Handler {
 	return Handler{
 		Endpoint:       endpointTokens,
 		SkipInstrument: true, // Reduce noise as this endpoint returns static data.
 		ZeroReq:        func() any { return nil },
-		HandleFunc: func(context.Context, any) (any, error) {
-			return tokensResponse(chains)
+		HandleFunc: func(ctx context.Context, _ any) (any, error) {
+			return tokensResponse(ctx, backends, solverAddr)
 		},
 	}
 }
