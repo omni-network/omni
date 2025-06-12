@@ -67,9 +67,18 @@ func (obj *EventUpdatedEventData) UnmarshalWithDecoder(decoder *ag_binary.Decode
 }
 
 func (*EventUpdatedEventData) isEventData() {}
+func (obj *EventUpdatedEventData) Self() any {
+	return obj
+}
 
 var eventTypes = map[[8]byte]reflect.Type{EventUpdatedEventDataDiscriminator: reflect.TypeOf(EventUpdatedEventData{})}
 var eventNames = map[[8]byte]string{EventUpdatedEventDataDiscriminator: "EventUpdated"}
+var (
+	_ fmt.Formatter = nil
+)
+var (
+	_ *ag_solanago.Transaction = nil
+)
 var (
 	_ *strings.Builder = nil
 )
@@ -94,6 +103,7 @@ type Event struct {
 type EventData interface {
 	UnmarshalWithDecoder(decoder *ag_binary.Decoder) error
 	isEventData()
+	Self() any
 }
 
 const eventLogPrefix = "Program data: "

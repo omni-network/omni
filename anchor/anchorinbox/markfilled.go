@@ -8,12 +8,11 @@ import (
 	ag_solanago "github.com/gagliardetto/solana-go"
 	ag_format "github.com/gagliardetto/solana-go/text/format"
 	ag_treeout "github.com/gagliardetto/treeout"
-	ag_v5 "github.com/vmihailenco/msgpack/v5"
 )
 
 // Mark an order as filled, and set the claimable_by account.
 // This may only be called by the inbox admin.
-type MarkFilled struct {
+type MarkFilledInstruction struct {
 	OrderId     *ag_solanago.PublicKey
 	FillHash    *ag_solanago.PublicKey
 	ClaimableBy *ag_solanago.PublicKey
@@ -26,44 +25,44 @@ type MarkFilled struct {
 	ag_solanago.AccountMetaSlice `bin:"-"`
 }
 
-// NewMarkFilledInstructionBuilder creates a new `MarkFilled` instruction builder.
-func NewMarkFilledInstructionBuilder() *MarkFilled {
-	nd := &MarkFilled{
+// NewMarkFilledInstructionBuilder creates a new `MarkFilledInstruction` instruction builder.
+func NewMarkFilledInstructionBuilder() *MarkFilledInstruction {
+	nd := &MarkFilledInstruction{
 		AccountMetaSlice: make(ag_solanago.AccountMetaSlice, 3),
 	}
 	return nd
 }
 
 // SetOrderId sets the "_order_id" parameter.
-func (inst *MarkFilled) SetOrderId(_order_id ag_solanago.PublicKey) *MarkFilled {
+func (inst *MarkFilledInstruction) SetOrderId(_order_id ag_solanago.PublicKey) *MarkFilledInstruction {
 	inst.OrderId = &_order_id
 	return inst
 }
 
 // SetFillHash sets the "fill_hash" parameter.
-func (inst *MarkFilled) SetFillHash(fill_hash ag_solanago.PublicKey) *MarkFilled {
+func (inst *MarkFilledInstruction) SetFillHash(fill_hash ag_solanago.PublicKey) *MarkFilledInstruction {
 	inst.FillHash = &fill_hash
 	return inst
 }
 
 // SetClaimableBy sets the "claimable_by" parameter.
-func (inst *MarkFilled) SetClaimableBy(claimable_by ag_solanago.PublicKey) *MarkFilled {
+func (inst *MarkFilledInstruction) SetClaimableBy(claimable_by ag_solanago.PublicKey) *MarkFilledInstruction {
 	inst.ClaimableBy = &claimable_by
 	return inst
 }
 
 // SetOrderStateAccount sets the "order_state" account.
-func (inst *MarkFilled) SetOrderStateAccount(orderState ag_solanago.PublicKey) *MarkFilled {
+func (inst *MarkFilledInstruction) SetOrderStateAccount(orderState ag_solanago.PublicKey) *MarkFilledInstruction {
 	inst.AccountMetaSlice[0] = ag_solanago.Meta(orderState).WRITE()
 	return inst
 }
 
-func (inst *MarkFilled) findFindOrderStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+func (inst *MarkFilledInstruction) findFindOrderStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	var seeds [][]byte
 	// const: order_state
 	seeds = append(seeds, []byte{byte(0x6f), byte(0x72), byte(0x64), byte(0x65), byte(0x72), byte(0x5f), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
 	// arg: OrderId
-	orderIdSeed, err := ag_v5.Marshal(inst.OrderId)
+	orderIdSeed, err := ag_binary.MarshalBorsh(inst.OrderId)
 	if err != nil {
 		return
 	}
@@ -79,12 +78,12 @@ func (inst *MarkFilled) findFindOrderStateAddress(knownBumpSeed uint8) (pda ag_s
 }
 
 // FindOrderStateAddressWithBumpSeed calculates OrderState account address with given seeds and a known bump seed.
-func (inst *MarkFilled) FindOrderStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
+func (inst *MarkFilledInstruction) FindOrderStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
 	pda, _, err = inst.findFindOrderStateAddress(bumpSeed)
 	return
 }
 
-func (inst *MarkFilled) MustFindOrderStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
+func (inst *MarkFilledInstruction) MustFindOrderStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
 	pda, _, err := inst.findFindOrderStateAddress(bumpSeed)
 	if err != nil {
 		panic(err)
@@ -93,12 +92,12 @@ func (inst *MarkFilled) MustFindOrderStateAddressWithBumpSeed(bumpSeed uint8) (p
 }
 
 // FindOrderStateAddress finds OrderState account address with given seeds.
-func (inst *MarkFilled) FindOrderStateAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+func (inst *MarkFilledInstruction) FindOrderStateAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	pda, bumpSeed, err = inst.findFindOrderStateAddress(0)
 	return
 }
 
-func (inst *MarkFilled) MustFindOrderStateAddress() (pda ag_solanago.PublicKey) {
+func (inst *MarkFilledInstruction) MustFindOrderStateAddress() (pda ag_solanago.PublicKey) {
 	pda, _, err := inst.findFindOrderStateAddress(0)
 	if err != nil {
 		panic(err)
@@ -107,17 +106,17 @@ func (inst *MarkFilled) MustFindOrderStateAddress() (pda ag_solanago.PublicKey) 
 }
 
 // GetOrderStateAccount gets the "order_state" account.
-func (inst *MarkFilled) GetOrderStateAccount() *ag_solanago.AccountMeta {
+func (inst *MarkFilledInstruction) GetOrderStateAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(0)
 }
 
 // SetInboxStateAccount sets the "inbox_state" account.
-func (inst *MarkFilled) SetInboxStateAccount(inboxState ag_solanago.PublicKey) *MarkFilled {
+func (inst *MarkFilledInstruction) SetInboxStateAccount(inboxState ag_solanago.PublicKey) *MarkFilledInstruction {
 	inst.AccountMetaSlice[1] = ag_solanago.Meta(inboxState)
 	return inst
 }
 
-func (inst *MarkFilled) findFindInboxStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+func (inst *MarkFilledInstruction) findFindInboxStateAddress(knownBumpSeed uint8) (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	var seeds [][]byte
 	// const: inbox_state
 	seeds = append(seeds, []byte{byte(0x69), byte(0x6e), byte(0x62), byte(0x6f), byte(0x78), byte(0x5f), byte(0x73), byte(0x74), byte(0x61), byte(0x74), byte(0x65)})
@@ -132,12 +131,12 @@ func (inst *MarkFilled) findFindInboxStateAddress(knownBumpSeed uint8) (pda ag_s
 }
 
 // FindInboxStateAddressWithBumpSeed calculates InboxState account address with given seeds and a known bump seed.
-func (inst *MarkFilled) FindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
+func (inst *MarkFilledInstruction) FindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey, err error) {
 	pda, _, err = inst.findFindInboxStateAddress(bumpSeed)
 	return
 }
 
-func (inst *MarkFilled) MustFindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
+func (inst *MarkFilledInstruction) MustFindInboxStateAddressWithBumpSeed(bumpSeed uint8) (pda ag_solanago.PublicKey) {
 	pda, _, err := inst.findFindInboxStateAddress(bumpSeed)
 	if err != nil {
 		panic(err)
@@ -146,12 +145,12 @@ func (inst *MarkFilled) MustFindInboxStateAddressWithBumpSeed(bumpSeed uint8) (p
 }
 
 // FindInboxStateAddress finds InboxState account address with given seeds.
-func (inst *MarkFilled) FindInboxStateAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
+func (inst *MarkFilledInstruction) FindInboxStateAddress() (pda ag_solanago.PublicKey, bumpSeed uint8, err error) {
 	pda, bumpSeed, err = inst.findFindInboxStateAddress(0)
 	return
 }
 
-func (inst *MarkFilled) MustFindInboxStateAddress() (pda ag_solanago.PublicKey) {
+func (inst *MarkFilledInstruction) MustFindInboxStateAddress() (pda ag_solanago.PublicKey) {
 	pda, _, err := inst.findFindInboxStateAddress(0)
 	if err != nil {
 		panic(err)
@@ -160,22 +159,22 @@ func (inst *MarkFilled) MustFindInboxStateAddress() (pda ag_solanago.PublicKey) 
 }
 
 // GetInboxStateAccount gets the "inbox_state" account.
-func (inst *MarkFilled) GetInboxStateAccount() *ag_solanago.AccountMeta {
+func (inst *MarkFilledInstruction) GetInboxStateAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(1)
 }
 
 // SetAdminAccount sets the "admin" account.
-func (inst *MarkFilled) SetAdminAccount(admin ag_solanago.PublicKey) *MarkFilled {
+func (inst *MarkFilledInstruction) SetAdminAccount(admin ag_solanago.PublicKey) *MarkFilledInstruction {
 	inst.AccountMetaSlice[2] = ag_solanago.Meta(admin).WRITE().SIGNER()
 	return inst
 }
 
 // GetAdminAccount gets the "admin" account.
-func (inst *MarkFilled) GetAdminAccount() *ag_solanago.AccountMeta {
+func (inst *MarkFilledInstruction) GetAdminAccount() *ag_solanago.AccountMeta {
 	return inst.AccountMetaSlice.Get(2)
 }
 
-func (inst MarkFilled) Build() *Instruction {
+func (inst MarkFilledInstruction) Build() *Instruction {
 	return &Instruction{BaseVariant: ag_binary.BaseVariant{
 		Impl:   inst,
 		TypeID: Instruction_MarkFilled,
@@ -185,14 +184,14 @@ func (inst MarkFilled) Build() *Instruction {
 // ValidateAndBuild validates the instruction parameters and accounts;
 // if there is a validation error, it returns the error.
 // Otherwise, it builds and returns the instruction.
-func (inst MarkFilled) ValidateAndBuild() (*Instruction, error) {
+func (inst MarkFilledInstruction) ValidateAndBuild() (*Instruction, error) {
 	if err := inst.Validate(); err != nil {
 		return nil, err
 	}
 	return inst.Build(), nil
 }
 
-func (inst *MarkFilled) Validate() error {
+func (inst *MarkFilledInstruction) Validate() error {
 	// Check whether all (required) parameters are set:
 	{
 		if inst.OrderId == nil {
@@ -221,7 +220,7 @@ func (inst *MarkFilled) Validate() error {
 	return nil
 }
 
-func (inst *MarkFilled) EncodeToTree(parent ag_treeout.Branches) {
+func (inst *MarkFilledInstruction) EncodeToTree(parent ag_treeout.Branches) {
 	parent.Child(ag_format.Program(ProgramName, ProgramID)).
 		//
 		ParentFunc(func(programBranch ag_treeout.Branches) {
@@ -246,7 +245,7 @@ func (inst *MarkFilled) EncodeToTree(parent ag_treeout.Branches) {
 		})
 }
 
-func (obj MarkFilled) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
+func (obj MarkFilledInstruction) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error) {
 	// Serialize `OrderId` param:
 	err = encoder.Encode(obj.OrderId)
 	if err != nil {
@@ -264,7 +263,7 @@ func (obj MarkFilled) MarshalWithEncoder(encoder *ag_binary.Encoder) (err error)
 	}
 	return nil
 }
-func (obj *MarkFilled) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
+func (obj *MarkFilledInstruction) UnmarshalWithDecoder(decoder *ag_binary.Decoder) (err error) {
 	// Deserialize `OrderId`:
 	err = decoder.Decode(&obj.OrderId)
 	if err != nil {
@@ -292,7 +291,7 @@ func NewMarkFilledInstruction(
 	// Accounts:
 	orderState ag_solanago.PublicKey,
 	inboxState ag_solanago.PublicKey,
-	admin ag_solanago.PublicKey) *MarkFilled {
+	admin ag_solanago.PublicKey) *MarkFilledInstruction {
 	return NewMarkFilledInstructionBuilder().
 		SetOrderId(_order_id).
 		SetFillHash(fill_hash).

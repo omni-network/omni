@@ -84,22 +84,22 @@ var InstructionImplDef = ag_binary.NewVariantDefinition(
 	ag_binary.AnchorTypeIDEncoding,
 	[]ag_binary.VariantType{
 		{
-			Name: "claim", Type: (*Claim)(nil),
+			Name: "claim", Type: (*ClaimInstruction)(nil),
 		},
 		{
-			Name: "close", Type: (*Close)(nil),
+			Name: "close", Type: (*CloseInstruction)(nil),
 		},
 		{
-			Name: "init", Type: (*Init)(nil),
+			Name: "init", Type: (*InitInstruction)(nil),
 		},
 		{
-			Name: "mark_filled", Type: (*MarkFilled)(nil),
+			Name: "mark_filled", Type: (*MarkFilledInstruction)(nil),
 		},
 		{
-			Name: "open", Type: (*Open)(nil),
+			Name: "open", Type: (*OpenInstruction)(nil),
 		},
 		{
-			Name: "reject", Type: (*Reject)(nil),
+			Name: "reject", Type: (*RejectInstruction)(nil),
 		},
 	},
 )
