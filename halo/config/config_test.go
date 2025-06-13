@@ -39,6 +39,8 @@ func TestDefaultConfigReference(t *testing.T) {
 				}
 				cfg.UnsafeSkipUpgrades = []int{1, 2, 3}
 				cfg.FeatureFlags = feature.Flags{"a", "b"}
+				cfg.EVMProxyListen = "0.0.0.0:8545"
+				cfg.EVMProxyTarget = "http://omni_evm:8545"
 
 				return cfg
 			},

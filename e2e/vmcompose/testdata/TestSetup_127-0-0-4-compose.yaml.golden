@@ -18,6 +18,7 @@ services:
     - 26657:26657 # CometBFT Consensus RPC
     - 9999:9999 # Cosmos gRPC API (VM port 9090 used by grafana-agent)
     - 1317:1317 # Cosmos REST API
+    - 8545:8545 # EVM JSON-RPC Proxy
     - 6060 # Pprof
     volumes:
     - ./seed01:/halo
@@ -48,7 +49,7 @@ services:
       
     ports:
       - 8551:8551 # Auth RPC
-      - 8545:8545 # HTTP RPC
+      - 8544:8545 # HTTP RPC
       - 30303:30303 # Execution P2P
       - 30303:30303/udp # Execution P2P Discovery
       - 8546:8546 # Websockets RPC

@@ -31,6 +31,8 @@
   "a",
   "b"
  ],
+ "EVMProxyListen": "",
+ "EVMProxyTarget": "",
  "Comet": {
   "Version": "0.38.17",
   "RootDir": "testinput/input1",

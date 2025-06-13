@@ -89,6 +89,8 @@ type Config struct {
 	SDKAPI             RPCConfig `mapstructure:"api"`
 	SDKGRPC            RPCConfig `mapstructure:"grpc"`
 	FeatureFlags       feature.Flags
+	EVMProxyListen     string // The address to listen for evm proxy requests on
+	EVMProxyTarget     string // The target address to proxy evm requests to
 }
 
 // RPCConfig is an abridged version of CosmosSDK srvconfig.API/GRPCConfig.

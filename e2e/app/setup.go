@@ -438,6 +438,10 @@ func writeHaloConfig(
 		logCfg.Level = log.LevelDebug // Debug log levels on staging
 	}
 
+	// Enable Proxying of EVM requests
+	cfg.EVMProxyListen = "0.0.0.0:8545"
+	cfg.EVMProxyTarget = fmt.Sprintf("http://%s:8545", evmInstance) //nolint:nosprintfhostport // net.JoinHostPort doesn't prefix http.
+
 	return halocfg.WriteConfigTOML(cfg, logCfg)
 }
 
