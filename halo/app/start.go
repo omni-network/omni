@@ -225,6 +225,8 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), status)
 	go monitorEVMForever(ctx, cfg, engineCl, status)
 
+	stopProxy := startEVMProxy(ctx, asyncAbort, cfg.EVMProxyListen, cfg.EVMProxyTarget)
+
 	// Return asyncAbort and stop functions.
 	// Note that the original context used to start the app must be canceled first.
 	// And a fresh context should be passed into the stop function.
@@ -244,6 +246,10 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 		if err := stopTracer(ctx); err != nil {
 			return errors.Wrap(err, "stop tracer")
+		}
+
+		if err := stopProxy(ctx); err != nil {
+			return errors.Wrap(err, "stop evm proxy")
 		}
 
 		log.Info(ctx, "Halo consensus client stopped")

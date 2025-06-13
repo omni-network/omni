@@ -36,6 +36,8 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 	flags.StringVar(&cfg.PruningOption, "pruning", cfg.PruningOption, "Pruning strategy (default|nothing|everything)")
 	flags.DurationVar(&cfg.EVMBuildDelay, "evm-build-delay", cfg.EVMBuildDelay, "Minimum delay between triggering and fetching a EVM payload build")
 	flags.BoolVar(&cfg.EVMBuildOptimistic, "evm-build-optimistic", cfg.EVMBuildOptimistic, "Enables optimistic building of EVM payloads on previous block finalize")
+	flags.StringVar(&cfg.EVMProxyListen, "evm-proxy-listen", cfg.EVMProxyListen, "The address to listen for EVM proxy requests on. Empty string disables the proxy")
+	flags.StringVar(&cfg.EVMProxyTarget, "evm-proxy-target", cfg.EVMProxyTarget, "The target address to proxy EVM requests to. Empty string disables the proxy")
 	flags.IntSliceVar(&cfg.UnsafeSkipUpgrades, sdkserver.FlagUnsafeSkipUpgrades, cfg.UnsafeSkipUpgrades, "Skip a set of upgrade heights to continue the old binary")
 }
 

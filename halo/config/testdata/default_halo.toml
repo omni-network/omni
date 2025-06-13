@@ -28,6 +28,14 @@ evm-build-delay = "600ms"
 # more time for block building while ensuring faster consensus blocks.
 evm-build-optimistic = true
 
+# EVMProxyListen defines listen address for optional proxying of EVM JSON-RPC requests.
+# Empty string disables the proxy.
+evm-proxy-listen = ""
+
+# EVMProxyTarget defines the target address for EVM JSON-RPC proxy.
+# Empty string disables the proxy.
+evm-proxy-target = ""
+
 #######################################################################
 ###                 Cosmos SDK Base Configuration                   ###
 #######################################################################

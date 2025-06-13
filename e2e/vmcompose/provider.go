@@ -81,6 +81,7 @@ func (p *Provider) Setup() error {
 		var omniEVMs []types.OmniEVM
 		for _, omniEVM := range p.Testnet.OmniEVMs {
 			if services[omniEVM.InstanceName] {
+				omniEVM.ProxyPort = 8544 // Halo EVM-proxy uses 8454 (via BindAll=true)
 				omniEVMs = append(omniEVMs, omniEVM)
 			}
 		}

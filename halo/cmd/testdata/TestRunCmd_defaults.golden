@@ -25,6 +25,8 @@
   "Address": "0.0.0.0:9090"
  },
  "FeatureFlags": [],
+ "EVMProxyListen": "",
+ "EVMProxyTarget": "",
  "Comet": {
   "Version": "0.38.17",
   "RootDir": "./halo",

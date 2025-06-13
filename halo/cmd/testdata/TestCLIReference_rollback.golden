@@ -18,6 +18,8 @@ Flags:
       --engine-jwt-file string                    The path to the Engine API JWT file
       --evm-build-delay duration                  Minimum delay between triggering and fetching a EVM payload build (default 600ms)
       --evm-build-optimistic                      Enables optimistic building of EVM payloads on previous block finalize (default true)
+      --evm-proxy-listen string                   The address to listen for EVM proxy requests on. Empty string disables the proxy
+      --evm-proxy-target string                   The target address to proxy EVM requests to. Empty string disables the proxy
       --feature-flags strings                     Comma separated list of enabled feature flags
       --grpc-address string                       Address defines the GRPC server to listen on (default "0.0.0.0:9090")
       --grpc-enable                               Enable defines if the GRPC server should be enabled. (default true)

@@ -25,6 +25,7 @@ services:
     - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657 # CometBFT Consensus RPC
     - {{ if $.BindAll }}9999:{{end}}9999 # Cosmos gRPC API (VM port 9090 used by grafana-agent)
     - {{ if $.BindAll }}1317:{{end}}1317 # Cosmos REST API
+    - {{ if $.BindAll }}8545:{{end}}8545 # EVM JSON-RPC Proxy
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660 # Prometheus
 {{- end }}
