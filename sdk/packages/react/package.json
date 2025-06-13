@@ -1,7 +1,7 @@
 {
   "name": "@omni-network/react",
   "description": "React hooks for Omni Solvernet",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@9.12.1",
