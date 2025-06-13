@@ -217,3 +217,7 @@ func SavePrivateKey(key solana.PrivateKey, path string) error {
 
 	return nil
 }
+
+func maybeDelete(path string) {
+	_ = os.Remove(path) // Ignore error, as it may not exist
+}

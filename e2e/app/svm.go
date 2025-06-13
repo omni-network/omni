@@ -82,7 +82,7 @@ func svmInit(ctx context.Context, def Definition) error {
 
 	// Deploy the anchorinbox program
 	log.Debug(ctx, "SVM: Deploying anchorinbox program")
-	_, err = svmutil.Deploy(ctx, cl, svmDir, anchorinbox.Program())
+	_, err = svmutil.Deploy(ctx, svmChain.ExternalRPC, anchorinbox.Program(), roleKeys[eoa.RoleDeployer], roleKeys[eoa.RoleDeployer])
 	if err != nil {
 		return errors.Wrap(err, "deploy anchorinbox program")
 	}

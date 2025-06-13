@@ -49,7 +49,7 @@ func run(ctx context.Context, dir string) error {
 
 	prog := anchorinbox.Program()
 
-	cl, addr, privkey, cancel, err := svmutil.Start(ctx, dir, prog)
+	cl, rpcAddr, privkey, cancel, err := svmutil.Start(ctx, dir, prog)
 	if err != nil {
 		return errors.Wrap(err, "start SVM client")
 	}
@@ -62,7 +62,7 @@ func run(ctx context.Context, dir string) error {
 	}
 
 	log.Info(ctx, "Deploying anchor inbox program...")
-	_, err = svmutil.Deploy(ctx, cl, dir, prog)
+	_, err = svmutil.Deploy(ctx, rpcAddr, prog, privkey, privkey)
 	if err != nil {
 		return errors.Wrap(err, "deploy anchor inbox program")
 	}
@@ -78,7 +78,7 @@ func run(ctx context.Context, dir string) error {
 		return err
 	}
 
-	if err := dumpConfig(ctx, dir, addr, privkey, mintResp, prog); err != nil {
+	if err := dumpConfig(ctx, dir, rpcAddr, privkey, mintResp, prog); err != nil {
 		return err
 	}
 

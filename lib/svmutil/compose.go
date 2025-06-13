@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
@@ -112,11 +113,7 @@ func Rebuild(ctx context.Context, program Program, key solana.PrivateKey, anchor
 	if err := SavePrivateKey(key, keyFile); err != nil {
 		return Program{}, err
 	}
-
-	defer func() {
-		// Delete the keypair file after building the program
-		_ = os.Remove(keyFile)
-	}()
+	defer maybeDelete(keyFile)
 
 	// Run <anchorDir>/build.sh tmp
 	_, err := execCmd(ctx, anchorDir, "bash", "build.sh", "tmp")
@@ -143,42 +140,89 @@ func Rebuild(ctx context.Context, program Program, key solana.PrivateKey, anchor
 	return program, nil
 }
 
-// Deploy deploys a program to the localhost compose network using hte default keypair.
+// Deploy deploys a program to the rpc network using the provided keys.
 // It returns the confirmed transaction result or an error.
-func Deploy(ctx context.Context, cl *rpc.Client, composeDir string, program Program) (*rpc.GetTransactionResult, error) {
-	programDir := filepath.Join("/root/.config/solana/", program.Name)
-	soFile := filepath.Join(programDir, program.SOFile())
-	keypairFile := filepath.Join(programDir, program.KeyPairFile())
+func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgrader solana.PrivateKey) (*rpc.GetTransactionResult, error) {
+	hostDir, err := filepath.Abs("deploy")
+	if err != nil {
+		return nil, errors.Wrap(err, "absolute path")
+	}
+	if err := os.MkdirAll(hostDir, 0o755); err != nil {
+		return nil, errors.Wrap(err, "mkdir temp")
+	}
+	defer maybeDelete(hostDir)
 
-	_, err := cl.GetAccountInfoWithOpts(ctx, program.MustPublicKey(), &rpc.GetAccountInfoOpts{
+	m := mount{
+		HostPath:      hostDir,
+		ContainerPath: "/deploy",
+	}
+
+	// Store SO file
+	if err := os.WriteFile(m.OnHost(program.SOFile()), program.SharedObject, 0644); err != nil {
+		return nil, errors.Wrap(err, "write shared object file")
+	}
+	// Store program keypair file
+	if err := SavePrivateKey(program.MustPrivateKey(), m.OnHost(program.KeyPairFile())); err != nil {
+		return nil, errors.Wrap(err, "write keypair file")
+	}
+	// Store deployer keypair file
+	deployerKeyFile := "deployer.json"
+	if err := SavePrivateKey(deployer, m.OnHost(deployerKeyFile)); err != nil {
+		return nil, errors.Wrap(err, "write deployer keypair file")
+	}
+	// Store upgrader keypair file
+	upgraderKeyFile := "upgrader.json"
+	if err := SavePrivateKey(upgrader, m.OnHost(upgraderKeyFile)); err != nil {
+		return nil, errors.Wrap(err, "write upgrader keypair file")
+	}
+
+	cl := rpc.New(rpcAddr)
+	_, err = cl.GetAccountInfoWithOpts(ctx, program.MustPublicKey(), &rpc.GetAccountInfoOpts{
 		Commitment: rpc.CommitmentConfirmed,
 	})
 	if !errors.Is(err, rpc.ErrNotFound) {
-		return nil, errors.New("program already deployed", "account", program.MustPublicKey())
+		return nil, errors.Wrap(err, "program already deployed", "account", program.MustPublicKey())
+	}
+
+	// Since we run the program in a docker container, we need to replace localhost with host IP
+	dockerAddr := rpcAddr
+	if strings.HasPrefix(dockerAddr, "http://localhost") {
+		hostIP, err := getHostIP(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get host IP")
+		}
+		dockerAddr = strings.ReplaceAll(dockerAddr, "localhost", hostIP)
+		log.Debug(ctx, "Replacing localhost with host IP", "host_ip", hostIP, "docker_addr", dockerAddr, "rpc_addr", rpcAddr)
 	}
 
 	// TODO(corver): Switch to program-v4 once 'stable' supports --program-keypair flag
 
 	args := []string{
-		"compose", "exec", "svm", // Container
-		"solana", "program", // Program command
-		"deploy", soFile, // Loader-v4 subcommand
+		"run",
+		"--rm",          // Remove the container after execution
+		"-v", m.Mount(), // Mount the host directory to the container
+		"--entrypoint", "solana", // Run CLI (instead of test-validator)
+		"anzaxyz/agave:" + Version,                // Container
+		"program",                                 // Program command
+		"deploy", m.InContainer(program.SOFile()), // Loader subcommand
 		// Args...
-		"--program-id", keypairFile,
+		"--program-id", m.InContainer(program.KeyPairFile()),
+		"--keypair", m.InContainer(deployerKeyFile),
+		"--upgrade-authority", m.InContainer(upgraderKeyFile),
 		"--verbose",
 		"--commitment", string(rpc.CommitmentConfirmed),
-		"--url", "localhost",
+		"--url", dockerAddr,
 		"--output", "json",
+		"--use-rpc",
 	}
 
 	var stdOut, stdErr bytes.Buffer
 	cmd := exec.CommandContext(ctx, "docker", args...)
-	cmd.Dir = composeDir
 	cmd.Stdout = &stdOut
 	cmd.Stderr = &stdErr
 
 	if err := cmd.Run(); err != nil {
-		return nil, errors.Wrap(err, "exec deploy", "stderr", stdErr.String(), "stdout", stdOut.String())
+		return nil, errors.Wrap(err, "docker run deploy", "stderr", stdErr.String(), "stdout", stdOut.String(), "args", args)
 	}
 
 	var resp struct {
@@ -213,6 +257,34 @@ func Deploy(ctx context.Context, cl *rpc.Client, composeDir string, program Prog
 	}
 
 	return tx, nil
+}
+
+// getHostIP retrieves the host's IP address by running a shell command.
+// Ref: https://stackoverflow.com/questions/13322485/how-to-get-the-primary-ip-address-of-the-local-machine-on-linux-and-os-x
+func getHostIP(ctx context.Context) (string, error) {
+	out, err := exec.CommandContext(ctx, "bash", "-c", `ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.' | grep -v '172.' | head -n1`).CombinedOutput()
+	if err != nil {
+		return "", errors.Wrap(err, "get host IP", "output", string(out))
+	}
+
+	return strings.TrimSpace(string(out)), nil
+}
+
+type mount struct {
+	HostPath      string
+	ContainerPath string
+}
+
+func (m mount) Mount() string {
+	return fmt.Sprintf("%s:%s", m.HostPath, m.ContainerPath)
+}
+
+func (m mount) OnHost(path string) string {
+	return filepath.Join(m.HostPath, path)
+}
+
+func (m mount) InContainer(path string) string {
+	return filepath.Join(m.ContainerPath, path)
 }
 
 func SendSimple(ctx context.Context, cl *rpc.Client, privkey solana.PrivateKey, instrs ...solana.Instruction) (solana.Signature, error) {
