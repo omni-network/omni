@@ -28,7 +28,7 @@ var Version = "stable"
 
 // Start starts a genesis solana node and returns a client, a funded private key and a stop function or an error.
 // The dir parameter is the location of the docker compose.
-func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Client, string, solana.PrivateKey, func(), error) {
+func Start(ctx context.Context, composeDir string) (*rpc.Client, string, solana.PrivateKey, func(), error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Allow 1 minute for edge case of pulling images.
 	defer cancel()
 
@@ -44,12 +44,6 @@ func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Cl
 
 	if err := writeComposeFile(composeDir, port, Version); err != nil {
 		return nil, "", nil, nil, errors.Wrap(err, "write compose file")
-	}
-
-	for _, program := range programs {
-		if err := CopyProgram(composeDir, program); err != nil {
-			return nil, "", nil, nil, errors.Wrap(err, "copy program")
-		}
 	}
 
 	log.Info(ctx, "Starting solana")
@@ -143,6 +137,36 @@ func Rebuild(ctx context.Context, program Program, key solana.PrivateKey, anchor
 // Deploy deploys a program to the rpc network using the provided keys.
 // It returns the confirmed transaction result or an error.
 func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgrader solana.PrivateKey) (*rpc.GetTransactionResult, error) {
+	cl := rpc.New(rpcAddr)
+	_, err := cl.GetAccountInfoWithOpts(ctx, program.MustPublicKey(), &rpc.GetAccountInfoOpts{
+		Commitment: rpc.CommitmentConfirmed,
+	})
+	if err == nil {
+		return nil, errors.Wrap(err, "program already deployed", "account", program.MustPublicKey())
+	} else if !errors.Is(err, rpc.ErrNotFound) {
+		return nil, errors.Wrap(err, "get account info", "account", program.MustPublicKey())
+	}
+
+	return deploy(ctx, rpcAddr, program, deployer, upgrader)
+}
+
+// Redeploy redeployes/upgrades the program to the rpc network using the provided keys.
+// It returns the confirmed transaction result or an error.
+func Redeploy(ctx context.Context, rpcAddr string, program Program, upgrader solana.PrivateKey) (*rpc.GetTransactionResult, error) {
+	cl := rpc.New(rpcAddr)
+	info, err := cl.GetAccountInfoWithOpts(ctx, program.MustPublicKey(), &rpc.GetAccountInfoOpts{
+		Commitment: rpc.CommitmentConfirmed,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "get account info", "account", program.MustPublicKey())
+	} else if !info.Value.Executable {
+		return nil, errors.New("program not executable", "account", program.MustPublicKey())
+	}
+
+	return deploy(ctx, rpcAddr, program, upgrader, upgrader)
+}
+
+func deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgrader solana.PrivateKey) (*rpc.GetTransactionResult, error) {
 	hostDir, err := filepath.Abs("deploy")
 	if err != nil {
 		return nil, errors.Wrap(err, "absolute path")
@@ -174,14 +198,6 @@ func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgr
 	upgraderKeyFile := "upgrader.json"
 	if err := SavePrivateKey(upgrader, m.OnHost(upgraderKeyFile)); err != nil {
 		return nil, errors.Wrap(err, "write upgrader keypair file")
-	}
-
-	cl := rpc.New(rpcAddr)
-	_, err = cl.GetAccountInfoWithOpts(ctx, program.MustPublicKey(), &rpc.GetAccountInfoOpts{
-		Commitment: rpc.CommitmentConfirmed,
-	})
-	if !errors.Is(err, rpc.ErrNotFound) {
-		return nil, errors.Wrap(err, "program already deployed", "account", program.MustPublicKey())
 	}
 
 	// Since we run the program in a docker container, we need to replace localhost with host IP
@@ -241,6 +257,8 @@ func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgr
 	if err != nil {
 		return nil, errors.Wrap(err, "parse signature")
 	}
+
+	cl := rpc.New(rpcAddr)
 
 	tx, err := AwaitConfirmedTransaction(ctx, cl, txSig)
 	if err != nil {
@@ -354,30 +372,6 @@ func Send(ctx context.Context, cl *rpc.Client, opts ...func(*sendOpts)) (solana.
 	}
 
 	return txSig, nil
-}
-
-func CopyProgram(composeDir string, program Program) error {
-	targetDir := filepath.Join(composeDir, program.Name)
-	if err := os.RemoveAll(targetDir); err != nil {
-		return errors.Wrap(err, "remove target dir", "path", targetDir)
-	}
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		return errors.Wrap(err, "mkdir", "path", targetDir)
-	}
-
-	// Copy <programDir>/<program>.so and <programDir>/<program>-keypair.json to <composeDir>/<programDir>
-	if err := os.WriteFile(
-		filepath.Join(targetDir, program.SOFile()),
-		program.SharedObject,
-		0644,
-	); err != nil {
-		return errors.Wrap(err, "write so file")
-	}
-
-	return SavePrivateKey(
-		program.MustPrivateKey(),
-		filepath.Join(targetDir, program.KeyPairFile()),
-	)
 }
 
 // composeDown runs docker-compose down in the provided directory.

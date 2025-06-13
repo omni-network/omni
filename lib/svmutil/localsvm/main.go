@@ -49,7 +49,7 @@ func run(ctx context.Context, dir string) error {
 
 	prog := anchorinbox.Program()
 
-	cl, rpcAddr, privkey, cancel, err := svmutil.Start(ctx, dir, prog)
+	cl, rpcAddr, privkey, cancel, err := svmutil.Start(ctx, dir)
 	if err != nil {
 		return errors.Wrap(err, "start SVM client")
 	}
