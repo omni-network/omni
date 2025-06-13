@@ -184,10 +184,14 @@ func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgr
 		return nil, errors.Wrap(err, "program already deployed", "account", program.MustPublicKey())
 	}
 
-	// Since we run the program in a docker container, we need to replace localhost with host.docker.internal
+	// Since we run the program in a docker container, we need to replace localhost with host IP
 	dockerAddr := rpcAddr
 	if strings.HasPrefix(dockerAddr, "http://localhost") {
-		dockerAddr = strings.ReplaceAll(dockerAddr, "localhost", "host.docker.internal")
+		hostIP, err := getHostIP(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get host IP")
+		}
+		dockerAddr = strings.ReplaceAll(dockerAddr, "localhost", hostIP)
 	}
 
 	// TODO(corver): Switch to program-v4 once 'stable' supports --program-keypair flag
@@ -252,6 +256,17 @@ func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgr
 	}
 
 	return tx, nil
+}
+
+// getHostIP retrieves the host's IP address by running a shell command.
+// Ref: https://stackoverflow.com/questions/13322485/how-to-get-the-primary-ip-address-of-the-local-machine-on-linux-and-os-x
+func getHostIP(ctx context.Context) (string, error) {
+	out, err := exec.CommandContext(ctx, "bash", "-c", `ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'`).CombinedOutput()
+	if err != nil {
+		return "", errors.Wrap(err, "get host IP", "output", string(out))
+	}
+
+	return strings.TrimSpace(string(out)), nil
 }
 
 type mount struct {
