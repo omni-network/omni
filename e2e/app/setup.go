@@ -54,6 +54,8 @@ const (
 )
 
 // Setup sets up the testnet configuration.
+//
+//nolint:gocyclo // Multiple steps
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
@@ -213,8 +215,24 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		}
 	}
 
+	if err := svmSetup(def.Testnet); err != nil {
+		return err
+	}
+
 	if err := def.Infra.Setup(); err != nil {
 		return errors.Wrap(err, "setup provider")
+	}
+
+	return nil
+}
+
+func svmSetup(testnet types.Testnet) error {
+	if len(testnet.SVMChains) == 0 {
+		return nil
+	}
+
+	if err := os.MkdirAll(filepath.Join(testnet.Dir, "svm"), 0o755); err != nil {
+		return errors.Wrap(err, "mkdir svm dir")
 	}
 
 	return nil
