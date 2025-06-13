@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
@@ -58,12 +59,7 @@ func Start(ctx context.Context, composeDir string, programs ...Program) (*rpc.Cl
 		return nil, "", nil, nil, errors.Wrap(err, "docker compose up: "+out)
 	}
 
-	ip, err := getLocalIP()
-	if err != nil {
-		return nil, "", nil, nil, errors.Wrap(err, "get local IP")
-	}
-
-	endpoint := fmt.Sprintf("http://%s:%s", ip, port) //nolint:nosprintfhostport // Ignore
+	endpoint := "http://localhost:" + port
 
 	cl := rpc.New(endpoint)
 
@@ -181,12 +177,17 @@ func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgr
 	}
 
 	cl := rpc.New(rpcAddr)
-
 	_, err = cl.GetAccountInfoWithOpts(ctx, program.MustPublicKey(), &rpc.GetAccountInfoOpts{
 		Commitment: rpc.CommitmentConfirmed,
 	})
 	if !errors.Is(err, rpc.ErrNotFound) {
-		return nil, errors.New("program already deployed", "account", program.MustPublicKey())
+		return nil, errors.Wrap(err, "program already deployed", "account", program.MustPublicKey())
+	}
+
+	// Since we run the program in a docker container, we need to replace localhost with host.docker.internal
+	dockerAddr := rpcAddr
+	if strings.HasPrefix(dockerAddr, "http://localhost") {
+		dockerAddr = strings.ReplaceAll(dockerAddr, "localhost", "host.docker.internal")
 	}
 
 	// TODO(corver): Switch to program-v4 once 'stable' supports --program-keypair flag
@@ -205,7 +206,7 @@ func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgr
 		"--upgrade-authority", m.InContainer(upgraderKeyFile),
 		"--verbose",
 		"--commitment", string(rpc.CommitmentConfirmed),
-		"--url", rpcAddr,
+		"--url", dockerAddr,
 		"--output", "json",
 		"--use-rpc",
 	}
