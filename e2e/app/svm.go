@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -39,6 +40,12 @@ func svmInit(ctx context.Context, def Definition) error {
 	} else if def.Testnet.Network != netconf.Devnet {
 		return errors.New("svm is only available on Devnet")
 	}
+
+	out, err := exec.CommandContext(ctx, "ls", "-l", def.Testnet.Dir).CombinedOutput() //nolint:gosec // Ignore
+	if err != nil {
+		return errors.Wrap(err, "list directory", "dir", def.Testnet.Dir, "output", string(out))
+	}
+	log.Debug(ctx, "Testnet directory contents", "dir", def.Testnet.Dir, "output", string(out))
 
 	svmChain := def.Testnet.SVMChains[0]
 	svmDir := filepath.Join(def.Testnet.Dir, "svm")
@@ -173,6 +180,13 @@ func dumpSVMConfig(
 	if err != nil {
 		return errors.Wrap(err, "marshal config")
 	}
+
+	out, err := exec.CommandContext(ctx, "ls", "-l", dir).CombinedOutput()
+	if err != nil {
+		return errors.Wrap(err, "list directory", "dir", dir, "output", string(out))
+	}
+	log.Debug(ctx, "Config directory contents", "dir", dir, "output", string(out))
+
 	configFile := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(configFile, content, 0644); err != nil {
 		return errors.Wrap(err, "write config file")
