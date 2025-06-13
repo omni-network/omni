@@ -262,7 +262,7 @@ func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgr
 // getHostIP retrieves the host's IP address by running a shell command.
 // Ref: https://stackoverflow.com/questions/13322485/how-to-get-the-primary-ip-address-of-the-local-machine-on-linux-and-os-x
 func getHostIP(ctx context.Context) (string, error) {
-	out, err := exec.CommandContext(ctx, "bash", "-c", `ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'`).CombinedOutput()
+	out, err := exec.CommandContext(ctx, "bash", "-c", `ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.' | grep -v '172.' | head -n1`).CombinedOutput()
 	if err != nil {
 		return "", errors.Wrap(err, "get host IP", "output", string(out))
 	}
