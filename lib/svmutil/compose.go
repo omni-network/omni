@@ -192,6 +192,7 @@ func Deploy(ctx context.Context, rpcAddr string, program Program, deployer, upgr
 			return nil, errors.Wrap(err, "get host IP")
 		}
 		dockerAddr = strings.ReplaceAll(dockerAddr, "localhost", hostIP)
+		log.Debug(ctx, "Replacing localhost with host IP", "host_ip", hostIP, "docker_addr", dockerAddr, "rpc_addr", rpcAddr)
 	}
 
 	// TODO(corver): Switch to program-v4 once 'stable' supports --program-keypair flag
