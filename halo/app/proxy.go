@@ -14,7 +14,10 @@ import (
 	"github.com/omni-network/omni/lib/log"
 )
 
-const maxEVMReqSize = 512 * 1024 // 512 KiB
+const (
+	evmProxyMaxReq  = 256 * 1024 // 256 KiB
+	evmProxyTimeout = 10 * time.Second
+)
 
 // startEVMProxy starts an HTTP server that proxies EVM JSON-RPC requests to the target.
 // This is mostly for debugging purposes.
@@ -52,7 +55,7 @@ func startEVMProxy(ctx context.Context, abort chan<- error, listen string, targe
 
 func serveProxy(ctx context.Context, w http.ResponseWriter, r *http.Request, target string) error {
 	// Limit read size to prevent abuse
-	maxReader := http.MaxBytesReader(w, r.Body, maxEVMReqSize)
+	maxReader := http.MaxBytesReader(w, r.Body, evmProxyMaxReq)
 	defer maxReader.Close()
 
 	reqBody, err := io.ReadAll(maxReader)
@@ -61,6 +64,7 @@ func serveProxy(ctx context.Context, w http.ResponseWriter, r *http.Request, tar
 	}
 
 	t0 := time.Now()
+	id := t0.UnixNano() % 10_000 // Random ID for logging
 	ip, _ := clientIP(r)
 	var method, params string
 
@@ -73,12 +77,15 @@ func serveProxy(ctx context.Context, w http.ResponseWriter, r *http.Request, tar
 		}
 	}
 	log.Debug(ctx, "Proxy evm request start",
+		"id", id,
 		"method", method,
 		"params", params,
 		"client_ip", ip,
-		"nano", t0.UnixNano(),
 		"req_body", len(reqBody),
 	)
+
+	ctx, cancel := context.WithTimeout(ctx, evmProxyTimeout)
+	defer cancel()
 
 	nextReq, err := http.NewRequestWithContext(
 		ctx,
@@ -93,7 +100,7 @@ func serveProxy(ctx context.Context, w http.ResponseWriter, r *http.Request, tar
 
 	resp, err := new(http.Client).Do(nextReq)
 	if err != nil {
-		return errors.Wrap(err, "do request")
+		return errors.Wrap(err, "do request", "id", id)
 	}
 	defer resp.Body.Close()
 
@@ -107,12 +114,10 @@ func serveProxy(ctx context.Context, w http.ResponseWriter, r *http.Request, tar
 	respBodyLen, _ := io.Copy(w, resp.Body)
 
 	log.Debug(ctx, "Proxy evm request end",
-		"method", method,
-		"params", params,
-		"client_ip", ip,
-		"nano", t0.UnixNano(),
+		"id", id,
 		"duration", time.Since(t0),
-		"resp_body", respBodyLen,
+		"resp_len", respBodyLen,
+		"status", resp.StatusCode,
 	)
 
 	return nil
