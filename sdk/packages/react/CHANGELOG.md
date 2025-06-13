@@ -1,5 +1,14 @@
 # @omni-network/react
 
+## 0.3.3
+
+### Patch Changes
+
+- 1332864: Bug fix in useOrder
+- 4c5fe3b: add support for SVM assets in API responses
+- Updated dependencies [4c5fe3b]
+  - @omni-network/core@0.3.2
+
 ## 0.3.2
 
 ### Patch Changes

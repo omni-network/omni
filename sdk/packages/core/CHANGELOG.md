@@ -1,5 +1,11 @@
 # @omni-network/core
 
+## 0.3.2
+
+### Patch Changes
+
+- 4c5fe3b: add support for SVM assets in API responses
+
 ## 0.3.1
 
 ### Patch Changes
