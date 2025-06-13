@@ -54,8 +54,6 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-//
-
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
