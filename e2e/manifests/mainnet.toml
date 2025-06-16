@@ -4,7 +4,7 @@ public_chains = ["ethereum","arbitrum_one","base","optimism"]
 multi_omni_evms = true
 prometheus   = true
 
-pinned_halo_tag = "v0.15.0"
+pinned_halo_tag = "f90341d" # EVM Proxy
 pinned_relayer_tag = "07c4ac7"
 pinned_monitor_tag = "e7c1bd8"
 pinned_solver_tag = "855e393"
