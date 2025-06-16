@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omni-network/omni/anchor/anchorinbox"
 	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/geth"
@@ -29,7 +28,6 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/xchain"
 	monapp "github.com/omni-network/omni/monitor/app"
 	relayapp "github.com/omni-network/omni/relayer/app"
@@ -57,7 +55,7 @@ const (
 
 // Setup sets up the testnet configuration.
 //
-//nolint:gocyclo // Just many steps
+//nolint:gocyclo // Multiple steps
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
@@ -217,8 +215,8 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		}
 	}
 
-	if err := svmProgramSetup(def.Testnet); err != nil {
-		return errors.Wrap(err, "setup svm chains")
+	if err := svmSetup(def.Testnet); err != nil {
+		return err
 	}
 
 	if err := def.Infra.Setup(); err != nil {
@@ -228,15 +226,16 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	return nil
 }
 
-// svmProgramSetup copies the SVM programs and keys to the testnet directory.
-func svmProgramSetup(testnet types.Testnet) error {
+func svmSetup(testnet types.Testnet) error {
 	if len(testnet.SVMChains) == 0 {
 		return nil
 	}
 
-	dir := filepath.Join(testnet.Dir, "svm")
+	if err := os.MkdirAll(filepath.Join(testnet.Dir, "svm"), 0o755); err != nil {
+		return errors.Wrap(err, "mkdir svm dir")
+	}
 
-	return svmutil.CopyProgram(dir, anchorinbox.Program())
+	return nil
 }
 
 // writeAnvilState writes the embedded /static/el-anvil-state.json

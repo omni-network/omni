@@ -173,6 +173,7 @@ func dumpSVMConfig(
 	if err != nil {
 		return errors.Wrap(err, "marshal config")
 	}
+
 	configFile := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(configFile, content, 0644); err != nil {
 		return errors.Wrap(err, "write config file")

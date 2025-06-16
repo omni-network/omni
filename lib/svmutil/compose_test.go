@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/anchor/anchorinbox"
+	"github.com/omni-network/omni/anchor/localnet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
@@ -143,26 +144,42 @@ func TestIntegration(t *testing.T) {
 	})
 }
 
-func TestRebuild(t *testing.T) {
-	t.Skip("Skipping rebuild test as this is very slow") // Uncomment to test manually.
-
-	ctx := t.Context()
-	anchorDir, err := filepath.Abs("../../anchor")
-	require.NoError(t, err)
-	key, err := solana.NewRandomPrivateKey()
-	require.NoError(t, err)
-
-	prog, err := svmutil.Rebuild(ctx, anchorinbox.Program(), key, anchorDir)
-	require.NoError(t, err)
-	anchorinbox.SetProgramID(prog.MustPublicKey())
+func TestUpgrade(t *testing.T) {
+	t.Skip("Skipping upgrade test as this is very slow") // Uncomment to test manually.
 
 	// Start svm
-	cl, rpcAddr, privkey, stop, err := svmutil.Start(ctx, dir, prog)
+	ctx := t.Context()
+	cl, rpcAddr, privkey, stop, err := svmutil.Start(ctx, dir)
 	require.NoError(t, err)
 	defer stop()
 
-	// Deploy the new program
-	_, err = svmutil.Deploy(ctx, rpcAddr, prog, privkey, privkey)
+	// Create two new accounts to deploy and upgrade programs.
+	deployer, err := fundNewAccount(ctx, cl)
+	require.NoError(t, err)
+	upgrader, err := fundNewAccount(ctx, cl)
+	require.NoError(t, err)
+
+	// dummyProgram is a valid "empty" program; it is result of `anchor init`.
+	dummyProgram := svmutil.Program{
+		Name:         "dummy",
+		SharedObject: localnet.DummySO,
+		KeyPairJSON:  localnet.DummyKeyPairJSON,
+	}
+
+	// Deploy the dummy program
+	_, err = svmutil.Deploy(ctx, rpcAddr, dummyProgram, deployer, upgrader)
+	require.NoError(t, err)
+
+	anchorDir, err := filepath.Abs("../../anchor")
+	require.NoError(t, err)
+
+	// Rebuild anchor inbox with dummy key pair
+	prog, err := svmutil.Rebuild(ctx, anchorinbox.Program(), dummyProgram.MustPrivateKey(), anchorDir)
+	require.NoError(t, err)
+	anchorinbox.SetProgramID(prog.MustPublicKey())
+
+	// Redeploy/upgrade dummy program to anchorinbox
+	_, err = svmutil.Redeploy(ctx, rpcAddr, prog, upgrader)
 	require.NoError(t, err)
 
 	// Init the anchor program
@@ -176,6 +193,27 @@ func TestRebuild(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func fundNewAccount(ctx context.Context, cl *rpc.Client) (solana.PrivateKey, error) {
+	key, err := solana.NewRandomPrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	txSig, err := cl.RequestAirdrop(ctx, key.PublicKey(), 1e6*solana.LAMPORTS_PER_SOL, rpc.CommitmentConfirmed)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = svmutil.AwaitConfirmedTransaction(ctx, cl, txSig)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debug(ctx, "Funded new account", "address", key.PublicKey())
+
+	return key, nil
+}
+
 func TestInbox(t *testing.T) {
 	if !*integration {
 		t.Skip("skipping integration test")
@@ -184,7 +222,7 @@ func TestInbox(t *testing.T) {
 	prog := anchorinbox.Program()
 
 	ctx := t.Context()
-	cl, rpcAddr, privKey0, stop, err := svmutil.Start(ctx, dir, prog)
+	cl, rpcAddr, privKey0, stop, err := svmutil.Start(ctx, dir)
 	if err != nil {
 		t.Skip("Skip if docker unhealthy")
 	}
