@@ -5,7 +5,7 @@ Octane is a modular framework for the EVM. Developers can use it to run:
 - any EVM execution client that implements the [Engine API](https://hackmd.io/@danielrachi/engine_api)
 - any consensus client that implements [ABCI 2.0](https://github.com/cometbft/cometbft/tree/main/spec/abci)
 
-You can read more about Octane in our [documentation](https://docs.omni.network/octane/background/introduction)
+You can read more about Octane in our [documentation](https://news.omni.network/introducing-octane-an-open-source-high-performance-evm-framework/)
 
 ## Examples
 
