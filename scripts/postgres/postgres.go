@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -18,21 +20,30 @@ func Start(ctx context.Context, t *testing.T) string {
 	port := tutil.RandomAvailablePort(t)
 	t.Logf("Starting postgres on port %d", port)
 
-	// docker run -it --rm postgres psql -h some-postgres -U postgres
+	name := fmt.Sprint(time.Now().UnixNano())
 	cmd := exec.CommandContext(ctx, "docker", "run",
 		"--rm",
 		"-e", "POSTGRES_PASSWORD=password",
 		"-e", "POSTGRES_USER=admin",
 		"-e", "POSTGRES_DB=postgres",
 		"-p", fmt.Sprintf("%d:5432", port),
+		"--name", name,
 		"postgres",
 	)
 	err := cmd.Start()
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_ = cmd.Process.Kill()
-		_ = cmd.Wait()
+		if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+			t.Logf("Failed to terminate docker run: %v", err)
+		}
+		if err := cmd.Wait(); err != nil && !strings.Contains(err.Error(), "killed") {
+			t.Logf("Docker container exited with error: %v", err)
+		}
+		_, err = exec.Command("docker", "kill", name).CombinedOutput()
+		if err != nil {
+			t.Logf("Failed to kill docker %s: %v", name, err)
+		}
 	})
 
 	// Wait for the postgres server to start
