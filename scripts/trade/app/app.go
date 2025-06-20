@@ -14,6 +14,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// Start starts the trade service and returns:
+// - a channel for async errors.
+// - a function to stop the service.
+// - an error if the service could not be started.
 func Start(ctx context.Context, cfg config.Config) (<-chan error, func(context.Context) error, error) {
 	log.Info(ctx, "Trade service starting up")
 
@@ -47,8 +51,6 @@ func Start(ctx context.Context, cfg config.Config) (<-chan error, func(context.C
 }
 
 // Run runs the trade app until the context is canceled.
-//
-
 func Run(ctx context.Context, cfg config.Config) error {
 	async, stopFunc, err := Start(ctx, cfg)
 	if err != nil {
