@@ -1,0 +1,21 @@
+services:
+
+  trade:
+    container_name: trade
+    image: omniops/trade:main
+    restart: unless-stopped
+    environment:
+      TRADE_DB_CONN: "postgres://admin:password@postgres:5432/trade?sslmode=disable"
+      TRADE_LOG_LEVEL: "debug"
+      TRADE_LOG_COLOR: "force"
+    ports:
+      - "8080:8080"   # RPC
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: trade
