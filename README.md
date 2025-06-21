@@ -1,6 +1,7 @@
 <h1 align="center">Omni Monorepo</h1>
 
 <p align="center"><a href="https://docs.omni.network/"><img src="https://img.shields.io/badge/Docs-docs.omni.network-176CFF.svg"></a>
+<a href="https://deepwiki.com/omni-network/omni"><img src="https://img.shields.io/badge/DeepWiki-View%20on%20DeepWiki-8A2BE2.svg"></a>
 <a href="https://github.com/omni-network/omni/releases/"><img src="https://img.shields.io/github/release/omni-network/omni.svg?color=176CFF"></a>
 <a href="https://goreportcard.com/report/github.com/omni-network/omni"><img src="https://goreportcard.com/badge/github.com/omni-network/omni"></a>
 <a href="https://github.com/omni-network/omni/actions?query=workflow%3Aci-main"><img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-main.yaml?label=Tests&logoColor=white" alt="Tests"></a>
