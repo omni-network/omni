@@ -136,3 +136,13 @@ func ToInt32[N constraints.Integer](i N) (int32, error) {
 
 	return int32(i), nil
 }
+
+func ToInt[N constraints.Integer](i N) (int, error) {
+	if i < 0 {
+		return 0, errors.New("underflow")
+	} else if uint64(i) > math.MaxInt {
+		return 0, errors.New("overflow")
+	}
+
+	return int(i), nil
+}

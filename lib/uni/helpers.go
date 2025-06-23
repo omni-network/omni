@@ -44,3 +44,13 @@ func MustBase58ToAddress(base58 string) Address {
 
 	return addr
 }
+
+func ParseAddress(address string) (Address, error) {
+	if a, err := HexToAddress(address); err == nil {
+		return a, nil
+	} else if a, err := Base58ToAddress(address); err == nil {
+		return a, nil
+	}
+
+	return Address{}, errors.New("invalid address", "address", address)
+}
