@@ -54,9 +54,9 @@ func Stream(ctx context.Context, cl *rpc.Client, req StreamReq, callback StreamC
 			if req.AfterSig == sig.Signature {
 				return errors.New("signature is equal to afterSig [BUG]")
 			} else if prev != nil && sig.BlockTime != nil && *prev.BlockTime > *sig.BlockTime {
-				return errors.New("block time is less than prev [BUG]")
+				return errors.New("block time is less than prev [BUG]", "sig", sig.Signature, "prev", prev.Signature, "time", sig.BlockTime, "prev_time", prev.BlockTime)
 			} else if prev != nil && sig.Slot < prev.Slot {
-				return errors.New("slot is less than prev [BUG]")
+				return errors.New("slot is less than prev [BUG]", "sig", sig.Signature, "prev", prev.Signature, "slot", sig.Slot, "prev_slot", prev.Slot)
 			}
 			prev = sig
 

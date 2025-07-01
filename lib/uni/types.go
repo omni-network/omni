@@ -66,7 +66,7 @@ func (a *Address) UnmarshalJSON(bz []byte) error {
 		return nil
 	}
 
-	return errors.New("invalid address format")
+	return errors.New("invalid address format", "address", string(bz))
 }
 
 func EVMAddress(evm common.Address) Address {

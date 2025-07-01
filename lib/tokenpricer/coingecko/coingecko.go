@@ -22,6 +22,7 @@ import (
 
 const (
 	endpointSimplePrice = "/api/v3/simple/price"
+	endpointCoinsList   = "/api/v3/coins/list"
 	defaultProdHost     = "https://api.coingecko.com"
 	proProdHost         = "https://pro-api.coingecko.com"
 	apikeyHeader        = "x-cg-pro-api-key" //nolint:gosec // This is the header
