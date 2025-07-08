@@ -1,6 +1,7 @@
 package log
 
 import (
+	"io"
 	"log/slog"
 	"strings"
 
@@ -59,6 +60,7 @@ type Config struct {
 	Level  string
 	Color  string
 	Format string
+	Writer io.Writer // Optional writer, defaults to os.Stderr.
 }
 
 func (c Config) color() (termenv.Profile, error) {
@@ -112,6 +114,9 @@ func (c Config) make() (*slog.Logger, error) {
 	return loggerFunc(func(o *options) {
 		o.Level = level
 		o.Color = color
+		if c.Writer != nil {
+			o.Writer = c.Writer
+		}
 	}), nil
 }
 
