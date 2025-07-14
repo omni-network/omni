@@ -3,6 +3,7 @@ public_chains = ["holesky","op_sepolia","base_sepolia","arb_sepolia"]
 multi_omni_evms = true
 prometheus = true
 
+ephemeral_genesis = "3_drake" # vm_compose evm proxy only supported in 3_drake.
 feature_flags = []
 
 [node.validator01]
