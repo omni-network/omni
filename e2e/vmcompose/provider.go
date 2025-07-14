@@ -97,20 +97,21 @@ func (p *Provider) Setup() error {
 		gethVerbosity := 4 // Debug level
 
 		def := docker.ComposeDef{
-			UpgradeVersion: p.Testnet.UpgradeVersion,
-			Network:        false,
-			BindAll:        true,
-			NetworkName:    p.Testnet.Name,
-			NetworkCIDR:    p.Testnet.IP.String(),
-			Nodes:          nodes,
-			OmniEVMs:       omniEVMs,
-			Anvils:         anvilChains,
-			Relayer:        services["relayer"],
-			Monitor:        services["monitor"],
-			Solver:         services["solver"],
-			Prometheus:     p.Testnet.Prometheus,
-			GethVerbosity:  gethVerbosity,
-			AnvilAMD:       docker.AnvilAMD(),
+			UpgradeVersion:   p.Testnet.UpgradeVersion,
+			Network:          false,
+			BindAll:          true,
+			NetworkName:      p.Testnet.Name,
+			NetworkCIDR:      p.Testnet.IP.String(),
+			Nodes:            nodes,
+			OmniEVMs:         omniEVMs,
+			Anvils:           anvilChains,
+			Relayer:          services["relayer"],
+			Monitor:          services["monitor"],
+			Solver:           services["solver"],
+			Prometheus:       p.Testnet.Prometheus,
+			GethVerbosity:    gethVerbosity,
+			AnvilAMD:         docker.AnvilAMD(),
+			EphemeralGenesis: p.Testnet.Manifest.EphemeralGenesis,
 		}
 		def = docker.SetImageTags(def, p.Testnet.Manifest, p.omniTag)
 
