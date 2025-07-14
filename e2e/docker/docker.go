@@ -15,7 +15,7 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/geth"
 	"github.com/omni-network/omni/e2e/types"
-	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
+	"github.com/omni-network/omni/halo/app/upgrades/static"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -243,8 +243,7 @@ func (c ComposeDef) haloGenesisBinary(node string) string {
 
 		if n.StateSync {
 			// When state syncing, use latest upgrade binary always.
-			// TODO(corver): Add better way to get this without haloapp dependency.
-			return magellan2.UpgradeName
+			return static.LatestUpgrade()
 		}
 	}
 
