@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Omni Network (ERC-20)",
+    "address": "0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4",
+    "symbol": "OMNI",
+    "decimals": 18,
+    "chainId": 1,
+    "logoURI": "https://raw.githubusercontent.com/omni-network/omni/refs/heads/main/docs/docs/public/img/logo.png"
+  },
+  {
+    "name": "Omni Network",
+    "address": "0x0000000000000000000000000000000000000000",
+    "symbol": "OMNI",
+    "decimals": 18,
+    "chainId": 166,
+    "logoURI": "https://raw.githubusercontent.com/omni-network/omni/refs/heads/main/docs/docs/public/img/logo.png",
+    "native": true
+  }
+]
