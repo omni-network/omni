@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 )
@@ -135,7 +135,7 @@ func newTraceProvider(exp sdktrace.SpanExporter, ids Identifiers) (*sdktrace.Tra
 		resource.NewWithAttributes(semconv.SchemaURL,
 			semconv.ServiceName(ids.Service),
 			semconv.ServiceInstanceID(ids.Instance),
-			semconv.DeploymentEnvironment(ids.Network),
+			semconv.DeploymentEnvironmentName(ids.Network),
 		))
 	if err != nil {
 		return nil, errors.Wrap(err, "merge resource")
