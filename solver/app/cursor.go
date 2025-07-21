@@ -174,8 +174,9 @@ func maybeBootstrapCursor(
 	if height, ok, err := cursors.Get(ctx, chainVer); err != nil {
 		return errors.Wrap(err, "get cursor")
 	} else if ok {
-		// HyperEVM had an outage, blocks between 5219420 and 5226000 are not available, skip past them.
-		const hyperSkipTo uint64 = 5226000
+		// HyperEVM had semi-frequent outages that makes some blocks unavailable.
+		// We use this to skip over blocks when necessary.
+		const hyperSkipTo uint64 = 9009018
 		if chainVer.ID == evmchain.IDHyperEVM && height < hyperSkipTo {
 			log.Info(ctx, "Updating HyperEVM cursor to skip height", "height", height, "skip_to", hyperSkipTo)
 			err := cursors.Set(ctx, chainVer, hyperSkipTo)
