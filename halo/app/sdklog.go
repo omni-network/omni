@@ -69,7 +69,7 @@ func (c sdkLogger) Impl() any {
 func splitOutError(keyvals []any) ([]any, error) {
 	var remaining []any
 	var err error
-	for i := 0; i < len(keyvals); i += 2 {
+	for i := 0; i < len(keyvals)-1; i += 2 {
 		if keyErr, ok := keyvals[i+1].(error); ok {
 			err = keyErr
 		} else {
