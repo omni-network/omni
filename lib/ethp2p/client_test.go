@@ -43,6 +43,7 @@ func TestP2PClient(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// executionSeedENR returns an enode by parsing the first ENR from the provided path.
 func executionSeedENR(t *testing.T, path string) *enode.Node {
 	t.Helper()
 	bz, err := os.ReadFile(path)

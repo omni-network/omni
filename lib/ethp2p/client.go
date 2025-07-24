@@ -27,6 +27,7 @@ var (
 )
 
 // Client represents an individual connection with a remote P2P Peer.
+// This was adapted from go-ethereum/cmd/devp2p/internal/ethtest.
 type Client struct {
 	conn *rlpx.Conn
 	key  *ecdsa.PrivateKey
@@ -104,7 +105,7 @@ func (c Client) writeMsg(proto proto, code uint64, msg any) error {
 
 	_, err = c.conn.Write(proto.MsgCode(code), payload)
 	if err != nil {
-		return errors.Wrap(err, "writeMsg packet to connection", "proto", proto, "code", code)
+		return errors.Wrap(err, "write message", "proto", proto, "code", code)
 	}
 
 	return nil
@@ -119,7 +120,7 @@ func (c Client) negotiate(ctx context.Context) error {
 	}
 
 	if err := c.writeMsg(protoBase, handshakeMsg, shake); err != nil {
-		return errors.Wrap(err, "writeMsg handshake to connection")
+		return errors.Wrap(err, "write handshake")
 	}
 
 	var msg protoHandshake
@@ -151,7 +152,7 @@ func (c Client) negotiate(ctx context.Context) error {
 
 func (c Client) Disconnect() error {
 	if err := c.writeMsg(protoBase, discMsg, []p2p.DiscReason{p2p.DiscQuitting}); err != nil {
-		return errors.Wrap(err, "writeMsg disconnect message")
+		return errors.Wrap(err, "write disconnect")
 	}
 
 	if err := c.conn.Close(); err != nil {
@@ -162,15 +163,16 @@ func (c Client) Disconnect() error {
 }
 
 // statusExchange performs a `Status` message exchange with the given node.
+// Note that statuses are not requested, but rather just exchanged after handshake.
 func (c Client) statusExchange(ctx context.Context) (*eth.StatusPacket, error) {
 	var received eth.StatusPacket
 	if err := c.readMsg(ctx, protoEth, eth.StatusMsg, &received); err != nil {
-		return nil, errors.Wrap(err, "writeMsg status request")
+		return nil, errors.Wrap(err, "read status request")
 	}
 
 	// Echo response
 	if err := c.writeMsg(protoEth, eth.StatusMsg, received); err != nil {
-		return nil, errors.Wrap(err, "writeMsg status response")
+		return nil, errors.Wrap(err, "write status")
 	}
 
 	return &received, nil
@@ -190,14 +192,14 @@ func (c Client) HeadersDownFrom(ctx context.Context, blockHash common.Hash, coun
 	}
 
 	if err := c.writeMsg(protoEth, eth.GetBlockHeadersMsg, headerReq); err != nil {
-		return nil, errors.Wrap(err, "send GetBlockHeaders request")
+		return nil, errors.Wrap(err, "write GetBlockHeaders")
 	}
 
 	resp := new(eth.BlockHeadersPacket)
 	if err := c.readMsg(ctx, protoEth, eth.BlockHeadersMsg, &resp); err != nil {
-		return nil, errors.Wrap(err, "read BlockHeaders response")
+		return nil, errors.Wrap(err, "read BlockHeaders")
 	} else if len(resp.BlockHeadersRequest) == 0 {
-		return nil, errors.New("no headers received in response")
+		return nil, errors.New("no headers received")
 	}
 
 	return resp.BlockHeadersRequest, nil
@@ -213,12 +215,12 @@ func (c Client) AccountRange(ctx context.Context, root, origin common.Hash, byte
 	}
 
 	if err := c.writeMsg(protoSnap, snap.GetAccountRangeMsg, accReq); err != nil {
-		return nil, errors.Wrap(err, "send GetAccountRange request")
+		return nil, errors.Wrap(err, "write GetAccountRange")
 	}
 
 	accResp := new(snap.AccountRangePacket)
 	if err := c.readMsg(ctx, protoSnap, snap.AccountRangeMsg, accResp); err != nil {
-		return nil, errors.Wrap(err, "read AccountRange response")
+		return nil, errors.Wrap(err, "read AccountRange")
 	}
 
 	return accResp, nil
@@ -228,14 +230,14 @@ func (c Client) AccountRange(ctx context.Context, root, origin common.Hash, byte
 func (c Client) SnapshotRange(ctx context.Context, blockHash common.Hash, max uint64) (int, error) {
 	headers, err := c.HeadersDownFrom(ctx, blockHash, max)
 	if err != nil {
-		return 0, errors.Wrap(err, "fetch headers for snapshot range")
+		return 0, errors.Wrap(err, "fetch headers")
 	}
 
 	var resp int
 	for _, header := range headers {
 		acc, err := c.AccountRange(ctx, header.Root, common.Hash{}, 256)
 		if err != nil {
-			return 0, errors.Wrap(err, "fetch account range for snapshot")
+			return 0, errors.Wrap(err, "fetch account range")
 		} else if len(acc.Accounts) == 0 {
 			break
 		}
