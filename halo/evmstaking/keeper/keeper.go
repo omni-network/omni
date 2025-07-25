@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/evmstaking/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
@@ -390,7 +391,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 	accAddr := sdk.AccAddress(createValidator.Validator.Bytes())
 	valAddr := sdk.ValAddress(createValidator.Validator.Bytes())
 
-	amountCoin, amountCoins := omniToBondCoin(createValidator.Deposit)
+	amountCoin := evmredenom.ToBondCoin(createValidator.Deposit)
 
 	if _, err := k.sKeeper.GetValidator(ctx, valAddr); err == nil {
 		return errors.New("validator already exists")
@@ -398,11 +399,11 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 
 	k.createAccIfNone(ctx, accAddr)
 
-	if err := k.bKeeper.MintCoins(ctx, k.Name(), amountCoins); err != nil {
+	if err := k.bKeeper.MintCoins(ctx, k.Name(), sdk.NewCoins(amountCoin)); err != nil {
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := k.bKeeper.SendCoinsFromModuleToAccountNoWithdrawal(ctx, k.Name(), accAddr, amountCoins); err != nil {
+	if err := k.bKeeper.SendCoinsFromModuleToAccountNoWithdrawal(ctx, k.Name(), accAddr, sdk.NewCoins(amountCoin)); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 

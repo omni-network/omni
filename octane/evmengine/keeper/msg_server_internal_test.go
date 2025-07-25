@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
@@ -19,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -70,7 +72,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		keeper.SetCometAPI(cmtAPI)
 		populateGenesisHead(ctx, t, keeper)
 
-		err = keeper.InsertWithdrawal(ctx.WithBlockHeight(0), withdrawalAddr, amountGwei)
+		err = keeper.InsertWithdrawal(ctx.WithBlockHeight(0), withdrawalAddr, bi.N(amountGwei*params.GWei))
 		require.NoError(t, err)
 
 		msgSrv := NewMsgServerImpl(keeper)
