@@ -16,6 +16,7 @@ import (
 
 	ethereum "github.com/ethereum/go-ethereum"
 	common "github.com/ethereum/go-ethereum/common"
+	hexutil "github.com/ethereum/go-ethereum/common/hexutil"
 	types "github.com/ethereum/go-ethereum/core/types"
 	ethclient "github.com/omni-network/omni/lib/ethclient"
 	gomock "go.uber.org/mock/gomock"
@@ -414,6 +415,21 @@ func (m *MockClient) PendingTransactionCount(ctx context.Context) (uint, error) 
 func (mr *MockClientMockRecorder) PendingTransactionCount(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PendingTransactionCount", reflect.TypeOf((*MockClient)(nil).PendingTransactionCount), ctx)
+}
+
+// Preimage mocks base method.
+func (m *MockClient) Preimage(ctx context.Context, hash common.Hash) (hexutil.Bytes, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Preimage", ctx, hash)
+	ret0, _ := ret[0].(hexutil.Bytes)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Preimage indicates an expected call of Preimage.
+func (mr *MockClientMockRecorder) Preimage(ctx, hash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Preimage", reflect.TypeOf((*MockClient)(nil).Preimage), ctx, hash)
 }
 
 // ProgressIfSyncing mocks base method.
