@@ -59,6 +59,28 @@ func (k *Keeper) getExecutionHead(ctx context.Context) (*ExecutionHead, error) {
 	return head, nil
 }
 
+// GetExecutionHeader returns the current execution head.
+func (k *Keeper) GetExecutionHeader(ctx context.Context) (*etypes.Header, error) {
+	head, err := k.headTable.Get(ctx, executionHeadID)
+	if err != nil {
+		return nil, errors.Wrap(err, "update execution head")
+	}
+
+	blockHash, err := cast.EthHash(head.GetBlockHash())
+	if err != nil {
+		return nil, errors.Wrap(err, "block hash conversion")
+	}
+
+	// Fetching evm events over the network is unreliable, retry forever.
+	var header *etypes.Header
+	err = retryForever(ctx, func(ctx context.Context) (bool, error) {
+		header, err = k.engineCl.HeaderByHash(ctx, blockHash)
+		return err == nil, errors.Wrap(err, "fetch execution header by hash")
+	})
+
+	return header, err
+}
+
 // updateExecutionHead updates the execution head with the given payload.
 func (k *Keeper) updateExecutionHead(ctx context.Context, payload engine.ExecutableData) error {
 	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())

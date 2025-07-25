@@ -90,6 +90,8 @@ func Do(
 		tx, err := contract.Submit(txOpts, batch)
 		if err != nil {
 			return errors.Wrap(err, "submit batch")
+		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+			return errors.Wrap(err, "wait submit mined")
 		}
 
 		log.Info(ctx, "Submitted account range batch", "tx", tx.Hash(), "index", i, "done", done, "next", next)
