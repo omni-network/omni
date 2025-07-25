@@ -1,11 +1,4 @@
-// Package drake defines the third Omni consensus chain upgrade, named after
-// Sir Francis Drake, an English explorer best known for making the second
-// circumnavigation of the world in a single expedition between 1577 and 1580.
-//
-// It includes:
-// - Unstaking of funds,
-// - Processing of rewards withdrawals.
-package drake
+package earhart
 
 import (
 	"context"
