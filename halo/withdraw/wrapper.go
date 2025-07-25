@@ -4,10 +4,8 @@ package withdraw
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/omni-network/omni/halo/evmredenom"
-	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -110,20 +108,6 @@ func (w *BankWrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderMo
 	}
 
 	return nil
-}
-
-// toGwei converts a wei amount to a gwei amount and the wei remainder.
-func toGwei(weiAmount *big.Int) (gweiU64 uint64, weiRemU64 uint64, err error) { //nolint:nonamedreturns // Disambiguate identical return types.
-	const giga uint64 = 1e9
-	gweiAmount := bi.DivRaw(weiAmount, giga)
-	weiRem := bi.Sub(weiAmount, bi.MulRaw(gweiAmount, giga))
-
-	// This should work up to 18G ETH
-	if !gweiAmount.IsUint64() {
-		return 0, 0, errors.New("invalid amount [BUG]")
-	}
-
-	return gweiAmount.Uint64(), weiRem.Uint64(), nil
 }
 
 // anyAmountNil returns true if any coin has a nil amount.
