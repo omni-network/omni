@@ -3,9 +3,11 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"math/big"
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
@@ -80,10 +82,19 @@ func (k *Keeper) updateExecutionHead(ctx context.Context, payload engine.Executa
 	return nil
 }
 
-// InsertWithdrawal inserts a new withdrawal.
-func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountGwei uint64) error {
-	if amountGwei == 0 {
-		return errors.New("zero withdrawal amount")
+// InsertWithdrawal creates a new withdrawal request.
+// Note the amount is the native EVM token amount in wei.
+// Withdrawals are rounded to gwei, so small amounts result in noop.
+func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountWei *big.Int) error {
+	gwei, dust, err := toGwei(amountWei)
+	if err != nil {
+		return err
+	}
+	dustCounter.Add(float64(dust))
+
+	if gwei == 0 {
+		log.Debug(ctx, "Not creating all-dust withdrawal", "addr", withdrawalAddr, "amount_wei", amountWei)
+		return nil
 	}
 
 	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
@@ -94,7 +105,7 @@ func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Add
 	err = k.withdrawalTable.Insert(ctx, &Withdrawal{
 		Address:       withdrawalAddr.Bytes(),
 		CreatedHeight: height,
-		AmountGwei:    amountGwei,
+		AmountGwei:    gwei,
 	})
 	if err != nil {
 		return errors.Wrap(err, "insert withdrawal")

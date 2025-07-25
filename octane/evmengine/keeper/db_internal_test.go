@@ -3,6 +3,7 @@ package keeper
 import (
 	"testing"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -49,7 +51,7 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	type testCase struct {
 		addr   common.Address
 		height uint64
-		amount uint64
+		amount uint64 // gwei
 		expID  uint64
 	}
 
@@ -62,7 +64,7 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 
 	for _, in := range inputs {
 		ctx = ctx.WithBlockHeight(int64(in.height))
-		err := keeper.InsertWithdrawal(ctx, in.addr, in.amount)
+		err := keeper.InsertWithdrawal(ctx, in.addr, bi.N(in.amount*params.GWei))
 		require.NoError(t, err)
 	}
 
@@ -166,7 +168,7 @@ func TestKeeper_withdrawalsDeletion(t *testing.T) {
 	type testCase struct {
 		addr   common.Address
 		height uint64
-		amount uint64
+		amount uint64 // gwei
 		expID  uint64
 	}
 
@@ -179,7 +181,7 @@ func TestKeeper_withdrawalsDeletion(t *testing.T) {
 
 	for _, in := range inputs {
 		ctx = ctx.WithBlockHeight(int64(in.height))
-		err := keeper.InsertWithdrawal(ctx, in.addr, in.amount)
+		err := keeper.InsertWithdrawal(ctx, in.addr, bi.N(in.amount*params.GWei))
 		require.NoError(t, err)
 	}
 

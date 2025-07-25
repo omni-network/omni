@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/octane/evmengine/types"
@@ -11,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -37,7 +39,10 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 
 	withdrawalAddr := tutil.RandomAddress()
 	amountGwei := uint64(100)
-	err = keeper.InsertWithdrawal(sdkCtx.WithBlockHeight(0), withdrawalAddr, amountGwei)
+	err = keeper.InsertWithdrawal(sdkCtx.WithBlockHeight(0), withdrawalAddr, bi.N(amountGwei*params.GWei+1_000)) // +1k wei should be rounded out
+	require.NoError(t, err)
+
+	err = keeper.InsertWithdrawal(sdkCtx.WithBlockHeight(0), withdrawalAddr, bi.N(1_000)) // Tiny 1k wei withdrawal ignored
 	require.NoError(t, err)
 
 	propSrv := NewProposalServer(keeper)

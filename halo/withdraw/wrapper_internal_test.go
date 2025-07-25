@@ -3,6 +3,7 @@ package withdraw
 import (
 	"context"
 	gomath "math"
+	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/lib/tutil"
@@ -20,12 +21,11 @@ import (
 func TestWrapper(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		arg  math.Int
-		gwei uint64
+		arg math.Int
 	}{
-		{math.NewInt(1), 0},
-		{math.NewInt(params.GWei), 1},
-		{math.NewInt(params.GWei).AddRaw(1), 1},
+		{math.NewInt(1)},
+		{math.NewInt(params.GWei)},
+		{math.NewInt(params.GWei).AddRaw(1)},
 	}
 
 	for _, tt := range tests {
@@ -46,10 +46,10 @@ func TestWrapper(t *testing.T) {
 					return nil
 				},
 			}
-			engKeeper := testEVMEngKeeper(func(ctx context.Context, withdrawalAddr common.Address, amountGwei uint64) error {
+			engKeeper := testEVMEngKeeper(func(ctx context.Context, withdrawalAddr common.Address, amountWei *big.Int) error {
 				require.False(t, withdrawn)
 				require.Equal(t, address, withdrawalAddr)
-				require.Equal(t, tt.gwei, amountGwei)
+				tutil.RequireEQ(t, tt.arg.BigInt(), amountWei)
 				withdrawn = true
 
 				return nil
@@ -60,11 +60,7 @@ func TestWrapper(t *testing.T) {
 			err := w.SendCoinsFromModuleToAccount(t.Context(), module, address.Bytes(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, tt.arg)))
 			require.NoError(t, err)
 			require.True(t, burnt)
-			if tt.gwei > 0 {
-				require.True(t, withdrawn)
-			} else {
-				require.False(t, withdrawn)
-			}
+			require.True(t, withdrawn)
 		})
 
 		t.Run(tt.arg.String(), func(t *testing.T) {
@@ -81,10 +77,10 @@ func TestWrapper(t *testing.T) {
 					return nil
 				},
 			}
-			engKeeper := testEVMEngKeeper(func(ctx context.Context, withdrawalAddr common.Address, amountGwei uint64) error {
+			engKeeper := testEVMEngKeeper(func(ctx context.Context, withdrawalAddr common.Address, amountWei *big.Int) error {
 				require.False(t, withdrawn)
 				require.Equal(t, address, withdrawalAddr)
-				require.Equal(t, tt.gwei, amountGwei)
+				tutil.RequireEQ(t, tt.arg.BigInt(), amountWei)
 				withdrawn = true
 
 				return nil
@@ -96,11 +92,7 @@ func TestWrapper(t *testing.T) {
 			err := w.UndelegateCoinsFromModuleToAccount(t.Context(), module, address.Bytes(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, tt.arg)))
 			require.NoError(t, err)
 			require.True(t, burnt)
-			if tt.gwei > 0 {
-				require.True(t, withdrawn)
-			} else {
-				require.False(t, withdrawn)
-			}
+			require.True(t, withdrawn)
 		})
 	}
 }
@@ -122,7 +114,7 @@ func TestToGwei(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.arg.String(), func(t *testing.T) {
 			t.Parallel()
-			gwei, wei, err := toGwei(tt.arg)
+			gwei, wei, err := toGwei(tt.arg.BigInt())
 			require.NoError(t, err)
 			require.Equal(t, tt.gwei, gwei)
 			require.Equal(t, tt.wei, wei)
@@ -130,14 +122,14 @@ func TestToGwei(t *testing.T) {
 	}
 
 	const maxUint64 = gomath.MaxUint64
-	_, _, err := toGwei(math.NewIntFromUint64(maxUint64).MulRaw(2).MulRaw(params.GWei))
+	_, _, err := toGwei(math.NewIntFromUint64(maxUint64).MulRaw(2).MulRaw(params.GWei).BigInt())
 	require.ErrorContains(t, err, "invalid amount [BUG]")
 }
 
-type testEVMEngKeeper func(ctx context.Context, withdrawalAddr common.Address, amountGwei uint64) error
+type testEVMEngKeeper func(ctx context.Context, withdrawalAddr common.Address, amountWei *big.Int) error
 
-func (t testEVMEngKeeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountGwei uint64) error {
-	return t(ctx, withdrawalAddr, amountGwei)
+func (t testEVMEngKeeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountWei *big.Int) error {
+	return t(ctx, withdrawalAddr, amountWei)
 }
 
 type testBankKeeper struct {
