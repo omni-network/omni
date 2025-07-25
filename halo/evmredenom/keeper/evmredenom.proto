@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package halo.evmredenom.keeper;
+
+import "cosmos/orm/v1/orm.proto";
+
+option go_package = "halo/evmredenom/keeper";
+
+message Status {
+  option (cosmos.orm.v1.singleton) = {
+    id: 1;
+  };
+  bytes root = 1; // EVM state root of block of redenomination.
+  bool done  = 2; // Whether the redenomination has been completed.
+  bytes next = 3; // Start of next batch of accounts to redenominate.
+}
