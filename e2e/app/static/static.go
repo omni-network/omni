@@ -2,16 +2,16 @@ package static
 
 import _ "embed"
 
-//go:embed el-anvil-state.json
+//go:embed devnet-anvil-state.json
 var elAnvilState []byte
 
-func GetDevnetElAnvilState() []byte {
+func GetDevnetAnvilState() []byte {
 	return elAnvilState
 }
 
-//go:embed el-deployments.json
+//go:embed devnet-deployments.json
 var elDeployments []byte
 
-func GetDevnetElDeployments() []byte {
+func GetDevnetDeployments() []byte {
 	return elDeployments
 }

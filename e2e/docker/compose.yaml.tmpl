@@ -50,7 +50,7 @@ services:
       - ANVILPROXY_CHAIN_ID={{ .Chain.ChainID }}
       - ANVILPROXY_BLOCK_TIME={{.Chain.BlockPeriod.Seconds}}
       - ANVILPROXY_SLOTS_IN_AN_EPOCH=4 # Finality in 4*2*BlockPeriod
-      {{ if .LoadState }}- FORKPROXY_LOAD_STATE=/anvil/state.json{{ end }}
+      {{ if .LoadState }}- ANVILPROXY_LOAD_STATE=/anvil/state.json{{ end }}
       {{ if .ForkRPC }}- ANVILPROXY_FORK_URL={{ .ForkRPC }}{{ end }}
       {{ if .ForkRPC }}- ANVILPROXY_SILENT=false{{ end }}
     ports:

@@ -246,7 +246,7 @@ func writeAnvilState(testnet types.Testnet) error {
 	if err := os.MkdirAll(filepath.Dir(anvilStateFile), 0o755); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}
-	if err := os.WriteFile(anvilStateFile, static.GetDevnetElAnvilState(), 0o644); err != nil {
+	if err := os.WriteFile(anvilStateFile, static.GetDevnetAnvilState(), 0o644); err != nil {
 		return errors.Wrap(err, "write anvil state")
 	}
 
