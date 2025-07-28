@@ -1,0 +1,32 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["node_modules"]
+
+remappings = [
+  "forge-std/=node_modules/forge-std/src",
+  "src/=src",
+  "test/=test",
+  "core/=../core/src",
+  "nomina/=.",
+]
+
+fs_permissions = [
+  { access = "read-write", path = "./test" },
+  { access = "read-write", path = "./script" },
+  { access = "read", path = "./out" },
+]
+
+allow_paths = ["../core"]
+gas_limit = 9223372036854775807 # prev foundry default
+
+solc_version = "0.8.30"
+optimizer = true
+optimizer_runs = 200
+
+[fuzz]
+seed = "0x6eed"
+
+[fmt]
+bracket_spacing = true
+number_underscore = "thousands"

@@ -1,0 +1,15 @@
+{
+  "license": "GPL-3.0-only",
+  "packageManager": "pnpm@9.12.1",
+  "repository": "https://github.com/omni-network/omni/tree/main/contracts/solve",
+  "scripts": {
+    "test": "forge test"
+  },
+  "devDependencies": {
+    "forge-std": "github:foundry-rs/forge-std"
+  },
+  "dependencies": {
+    "solady": "github:vectorized/solady",
+    "@openzeppelin-v4/contracts": "npm:@openzeppelin/contracts@4.9.6"
+  }
+}
