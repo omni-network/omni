@@ -6,7 +6,7 @@ prometheus   = true
 
 pinned_halo_tag = "f90341d" # EVM Proxy
 pinned_relayer_tag = "07c4ac7"
-pinned_monitor_tag = "e7c1bd8"
+pinned_monitor_tag = "5489d71"
 pinned_solver_tag = "a917e50"
 
 [node.validator01]
