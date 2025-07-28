@@ -22,7 +22,6 @@ import (
 	"github.com/omni-network/omni/monitor/account"
 	"github.com/omni-network/omni/monitor/cctpgen"
 	"github.com/omni-network/omni/monitor/contract"
-	"github.com/omni-network/omni/monitor/flowgen"
 	"github.com/omni-network/omni/monitor/loadgen"
 	"github.com/omni-network/omni/monitor/routerecon"
 	"github.com/omni-network/omni/monitor/staking"
@@ -77,9 +76,10 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if err := flowgen.Start(ctx, network, ethClients, cfg.FlowGenKey, cfg.SolverAddress); err != nil {
-		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
-	}
+	// Skip flowgen, reduce alerts.
+	// if err := flowgen.Start(ctx, network, ethClients, cfg.FlowGenKey, cfg.SolverAddress); err != nil {
+	// 	log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
+	// }
 
 	if err := account.StartMonitoring(ctx, solvNetwork, solvEthClients); err != nil {
 		return errors.Wrap(err, "start account monitor")
