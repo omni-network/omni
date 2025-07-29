@@ -70,3 +70,25 @@ jobs:
         run: forge snapshot --check --tolerance 5
         env:
             FOUNDRY_FUZZ_SEED: "0x6eed"
+
+  sol_nomina_tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts/nomina
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-foundry
+      - name: Install pnpm
+        run: make install-pnpm
+        working-directory: contracts
+      - run: pnpm install
+      - name: Check fmt
+        run: forge fmt --check
+      - name: Run tests
+        run: forge test -vv
+      - name: Check snapshot
+        # fuzz tests snapshots are different in CI, so we ignore them
+        run: forge snapshot --check --tolerance 5
+        env:
+            FOUNDRY_FUZZ_SEED: "0x6eed"

@@ -1,0 +1,5 @@
+Nomina_Test:testBurn() (gas: 106241)
+Nomina_Test:testBurnReverts() (gas: 8391)
+Nomina_Test:testConvert() (gas: 103104)
+Nomina_Test:testConvertReverts() (gas: 673796)
+Nomina_Test:testMetadata() (gas: 19468)
