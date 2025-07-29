@@ -250,4 +250,12 @@ contract AllocPredeploys is Script {
         address impl = Predeploys.impl(Predeploys.Distribution);
         vm.etch(impl, vm.getDeployedCode("Distribution.sol:Distribution"));
     }
+
+    /**
+     * @notice Setup Redenom predeploy
+     */
+    function setRedenom() internal {
+        address impl = Predeploys.impl(Predeploys.Redenom);
+        vm.etch(impl, vm.getDeployedCode("Redenom.sol:Redenom"));
+    }
 }
