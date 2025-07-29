@@ -25,6 +25,7 @@ import { BridgeL1PostUpgradeTest } from "./BridgeL1PostUpgradeTest.sol";
 import { BridgeNativePostUpgradeTest } from "./BridgeNativePostUpgradeTest.sol";
 import { StakingPostUpgradeTest } from "./StakingPostUpgradeTest.sol";
 import { FeeOracleV2PostUpdateTest } from "./FeeOracleV2PostUpdateTest.sol";
+import { DistributionPostUpgradeTest } from "./DistributionPostUpgradeTest.sol";
 
 /**
  * @title Admin
@@ -301,7 +302,7 @@ contract Admin is Script {
 
         _upgradeProxy(admin, Predeploys.Distribution, impl, data, false, false); // Distribution has no initializers
 
-        // TODO: add post upgrade tests
+        new DistributionPostUpgradeTest().run(Predeploys.Distribution);
     }
 
     /**

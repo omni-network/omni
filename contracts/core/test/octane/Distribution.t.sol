@@ -25,7 +25,7 @@ contract Distribution_Test is Test {
         distribution = new Distribution();
     }
 
-    function test_withdraw() public {
+    /*function test_withdraw() public {
         uint256 fee = 0.1 ether;
 
         vm.expectRevert("Distribution: insufficient fee");
@@ -36,5 +36,10 @@ contract Distribution_Test is Test {
         vm.expectEmit();
         emit Withdraw(owner, validator);
         distribution.withdraw{ value: fee }(validator);
+    }*/
+
+    function test_temporarilyDisabled() public {
+        vm.expectRevert(abi.encodeWithSelector(Distribution.TemporarilyDisabled.selector));
+        distribution.withdraw(validator);
     }
 }

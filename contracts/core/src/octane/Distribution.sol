@@ -13,6 +13,11 @@ contract Distribution {
     using SafeTransferLib for address;
 
     /**
+     * @notice Error thrown when the contract is temporarily disabled
+     */
+    error TemporarilyDisabled();
+
+    /**
      * @notice Emitted when a rewards withdrawal request is made by a delegator
      * @param delegator     (MsgWithdraw.delegator_addr) The address of the delegator
      * @param validator     (MsgWithdraw.validator_addr) The address of the validator with a delegation
@@ -36,6 +41,7 @@ contract Distribution {
      * @param validator The address of the validator with a stake
      */
     function withdraw(address validator) external payable {
+        revert TemporarilyDisabled(); // Remove this and the error, and fix test and admin script to reenable
         _burnFee();
         emit Withdraw(msg.sender, validator);
     }

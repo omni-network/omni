@@ -18,6 +18,11 @@ import { Secp256k1 } from "../libraries/Secp256k1.sol";
  */
 contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     /**
+     * @notice Error thrown when the contract is temporarily disabled
+     */
+    error TemporarilyDisabled();
+
+    /**
      * @notice Emitted when a validator is created
      * @param validator     (MsgCreateValidator.validator_addr) The address of the validator to create
      * @param pubkey        (MsgCreateValidator.pubkey) The validators consensus public key. 33 bytes compressed secp256k1 public key
@@ -226,6 +231,7 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @param validator The address of the validator to delegate to
      */
     function delegate(address validator) external payable {
+        revert TemporarilyDisabled(); // Remove this and the error, and fix test and admin script to reenable
         _delegate(msg.sender, validator);
     }
 
@@ -235,6 +241,7 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @param validator The address of the validator to delegate to
      */
     function delegateFor(address delegator, address validator) external payable {
+        revert TemporarilyDisabled(); // Remove this and the error, and fix test and admin script to reenable
         _delegate(delegator, validator);
     }
 
@@ -245,6 +252,7 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @param amount The amount of ether tokens to undelegate
      */
     function undelegate(address validator, uint256 amount) external payable {
+        revert TemporarilyDisabled(); // Remove this and the error, and fix test and admin script to reenable
         require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
         _burnFee();
         emit Undelegate(msg.sender, validator, amount);

@@ -213,7 +213,7 @@ contract Staking_Test is Test {
         staking.createValidator{ value: deposit }(pubkey, signature);
     }
 
-    function test_delegate() public {
+    /*function test_delegate() public {
         // requires min delegation
         uint256 minDelegation = staking.MinDelegation();
 
@@ -268,6 +268,17 @@ contract Staking_Test is Test {
         vm.prank(owner);
         staking.undelegate{ value: fee }(validator, amount);
         emit Undelegate(owner, validator, amount);
+    }*/
+
+    function test_temporarilyDisabled() public {
+        vm.expectRevert(abi.encodeWithSelector(Staking.TemporarilyDisabled.selector));
+        staking.delegate(validator);
+
+        vm.expectRevert(abi.encodeWithSelector(Staking.TemporarilyDisabled.selector));
+        staking.delegateFor(owner, validator);
+
+        vm.expectRevert(abi.encodeWithSelector(Staking.TemporarilyDisabled.selector));
+        staking.undelegate(validator, 1 ether);
     }
 
     function _sign(bytes32 digest, uint256 privkey) private pure returns (bytes memory) {

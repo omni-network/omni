@@ -20,7 +20,8 @@ contract StakingPostUpgradeTest is Test {
         _testEip712();
         _testAllowlist();
         _testCreateValidator();
-        _testDelegate();
+        // _testDelegate();
+        _testTemporarilyDisabled();
     }
 
     function _setup() internal {
@@ -97,5 +98,16 @@ contract StakingPostUpgradeTest is Test {
         emit Staking.Delegate(validator, validator, deposit);
         vm.prank(validator);
         staking.delegateFor{ value: deposit }(validator, validator);
+    }
+
+    function _testTemporarilyDisabled() internal {
+        vm.expectRevert(abi.encodeWithSelector(Staking.TemporarilyDisabled.selector));
+        staking.delegate(validator);
+
+        vm.expectRevert(abi.encodeWithSelector(Staking.TemporarilyDisabled.selector));
+        staking.delegateFor(owner, validator);
+
+        vm.expectRevert(abi.encodeWithSelector(Staking.TemporarilyDisabled.selector));
+        staking.undelegate(validator, 1 ether);
     }
 }
