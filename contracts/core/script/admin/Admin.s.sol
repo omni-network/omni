@@ -18,6 +18,7 @@ import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Slashing } from "src/octane/Slashing.sol";
 import { Distribution } from "src/octane/Distribution.sol";
+import { Redenom } from "src/octane/Redenom.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { Script } from "forge-std/Script.sol";
 
@@ -300,6 +301,21 @@ contract Admin is Script {
         vm.stopBroadcast();
 
         _upgradeProxy(admin, Predeploys.Distribution, impl, data, false, false); // Distribution has no initializers
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade the Redenom predeploy.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     */
+    function upgradeRedenom(address admin, address deployer, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new Redenom());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, Predeploys.Redenom, impl, data, false, false); // Redenom has no initializers
 
         // TODO: add post upgrade tests
     }
