@@ -20,6 +20,7 @@ library Predeploys {
     address internal constant Slashing = 0xCccCCC0000000000000000000000000000000002;
     address internal constant Upgrade = 0xccCCcc0000000000000000000000000000000003;
     address internal constant Distribution = 0xCcCcCC0000000000000000000000000000000004;
+    address internal constant Redenom = 0xCCCcCC0000000000000000000000000000000005;
 
     function namespaces() internal pure returns (address[] memory ns) {
         ns = new address[](2);
@@ -50,7 +51,7 @@ library Predeploys {
      */
     function isActivePredeploy(address addr) internal pure returns (bool) {
         return addr == PortalRegistry || addr == OmniBridgeNative || addr == WOmni || addr == Staking
-            || addr == Slashing || addr == Upgrade || addr == Distribution;
+            || addr == Slashing || addr == Upgrade || addr == Distribution || addr == Redenom;
     }
 
     /**

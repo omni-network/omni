@@ -31,6 +31,7 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newUpgradeStakingCmd(def, &cfg),
 		newUpgradeSlashingCmd(def, &cfg),
 		newUpgradeDistributionCmd(def, &cfg),
+		newUpgradeRedenomCmd(def, &cfg),
 		newUpgradeBridgeNativeCmd(def, &cfg),
 		newUpgradeBridgeL1(def, &cfg),
 		newUpgradePortalRegistryCmd(def, &cfg),
@@ -196,6 +197,18 @@ func newUpgradeDistributionCmd(def *app.Definition, cfg *admin.Config) *cobra.Co
 	cmd := &cobra.Command{
 		Use:   "upgrade-distribution",
 		Short: "Upgrade the Distribution predeploy.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeDistribution(cmd.Context(), *def, *cfg)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradeRedenomCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-redenom",
+		Short: "Upgrade the Redenom predeploy.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return admin.UpgradeDistribution(cmd.Context(), *def, *cfg)
 		},
