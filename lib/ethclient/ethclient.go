@@ -11,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -243,6 +244,23 @@ func (w wrapper) TxReceipt(ctx context.Context, txHash common.Hash) (*Receipt, e
 	}
 
 	return r, err
+}
+
+func (w wrapper) Preimage(ctx context.Context, hash common.Hash) (hexutil.Bytes, error) {
+	const endpoint = "preimage"
+	defer latency(w.name, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
+	var preimage hexutil.Bytes
+	err := w.cl.Client().CallContext(ctx, &preimage, "debug_preimage", hash)
+	if err != nil {
+		incError(w.name, endpoint)
+		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
+	}
+
+	return preimage, err
 }
 
 //nolint:revive // interface{} required by upstream.

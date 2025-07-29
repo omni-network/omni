@@ -37,6 +37,7 @@ package ethclient
 import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 {{- range .Imports}}
 	{{.}}
 {{- end}}
@@ -53,6 +54,7 @@ type Client interface {
 	SetHead(ctx context.Context, height uint64) error
 	ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error)
 	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
+    Preimage(ctx context.Context, hash common.Hash) (hexutil.Bytes, error)
 	Address() string
 	Name() string
 	CloseIdleConnectionsForever(ctx context.Context)
