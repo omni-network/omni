@@ -366,7 +366,7 @@ contract Admin is Script {
         // read storage pre-upgrade
         address owner = b.owner();
         address token = address(b.token());
-        address omni = address(b.omni());
+        address portal = address(b.portal());
 
         vm.startBroadcast(deployer);
         address impl = address(new OmniBridgeL1(token));
@@ -377,7 +377,7 @@ contract Admin is Script {
         // assert storage unchanged
         require(b.owner() == owner, "owner changed");
         require(address(b.token()) == token, "token changed");
-        require(address(b.omni()) == omni, "omni changed");
+        require(address(b.portal()) == portal, "portal changed");
         require(b.isPaused(b.KeyPauseAll()) == allPaused, "all paused state changed");
         require(b.isPaused(b.ACTION_BRIDGE()) == bridgePaused, "bridge paused state changed");
         require(b.isPaused(b.ACTION_WITHDRAW()) == withdrawPaused, "withdraw paused state changed");
