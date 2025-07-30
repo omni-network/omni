@@ -20,7 +20,7 @@ import { VmSafe } from "forge-std/Vm.sol";
 contract BridgeL1PostUpgradeTest is Test {
     OmniBridgeL1 b;
     MockPortal portal;
-    IERC20 token;
+    IERC20 omni;
     address owner;
 
     function run(address addr) public {
@@ -35,7 +35,7 @@ contract BridgeL1PostUpgradeTest is Test {
 
     function _setup(address addr) internal {
         b = OmniBridgeL1(addr);
-        token = b.token();
+        omni = b.omni();
         owner = b.owner();
 
         // OmniBridgeL1 portal at slot 0, no admin setters
@@ -54,7 +54,7 @@ contract BridgeL1PostUpgradeTest is Test {
         uint256 amount = 1e18;
         address payor = address(this);
         uint256 fee = b.bridgeFee(payor, to, amount);
-        uint256 bridgeBalance = token.balanceOf(address(b));
+        uint256 bridgeBalance = omni.balanceOf(address(b));
 
         vm.expectCall(
             address(portal),
@@ -71,23 +71,23 @@ contract BridgeL1PostUpgradeTest is Test {
             )
         );
 
-        deal(address(token), payor, amount);
+        deal(address(omni), payor, amount);
         vm.deal(payor, fee);
         vm.startPrank(payor);
-        token.approve(address(b), amount);
+        omni.approve(address(b), amount);
         b.bridge{ value: fee }(to, amount);
         vm.stopPrank();
 
-        assertEq(token.balanceOf(address(b)), bridgeBalance + amount);
-        assertEq(token.balanceOf(payor), 0);
+        assertEq(omni.balanceOf(address(b)), bridgeBalance + amount);
+        assertEq(omni.balanceOf(payor), 0);
     }
 
     function _testWithdraw() internal {
         address to = makeAddr("to");
         uint256 amount = 1e18;
-        uint256 bridgeBalance = token.balanceOf(address(b));
+        uint256 bridgeBalance = omni.balanceOf(address(b));
 
-        vm.expectCall(address(token), abi.encodeCall(token.transfer, (to, amount)));
+        vm.expectCall(address(omni), abi.encodeCall(omni.transfer, (to, amount)));
         portal.mockXCall({
             sourceChainId: portal.omniChainId(),
             sender: Predeploys.OmniBridgeNative,
@@ -96,8 +96,8 @@ contract BridgeL1PostUpgradeTest is Test {
             gasLimit: 100_000
         });
 
-        assertEq(token.balanceOf(to), amount);
-        assertEq(token.balanceOf(address(b)), bridgeBalance - amount);
+        assertEq(omni.balanceOf(to), amount);
+        assertEq(omni.balanceOf(address(b)), bridgeBalance - amount);
     }
 
     function _testPauseUnpause() internal {

@@ -33,15 +33,15 @@ contract OmniBridgeL1 is OmniBridgeCommon {
     /**
      * @notice The OMNI token contract.
      */
-    IERC20 public immutable token;
+    IERC20 public immutable omni;
 
     /**
      * @notice The OmniPortal contract.
      */
     IOmniPortal public portal;
 
-    constructor(address token_) {
-        token = IERC20(token_);
+    constructor(address omni_) {
+        omni = IERC20(omni_);
         _disableInitializers();
     }
 
@@ -63,7 +63,7 @@ contract OmniBridgeL1 is OmniBridgeCommon {
         require(xmsg.sender == Predeploys.OmniBridgeNative, "OmniBridge: not bridge");
         require(xmsg.sourceChainId == portal.omniChainId(), "OmniBridge: not omni portal");
 
-        token.transfer(to, amount);
+        omni.transfer(to, amount);
 
         emit Withdraw(to, amount);
     }
@@ -88,7 +88,7 @@ contract OmniBridgeL1 is OmniBridgeCommon {
         require(
             msg.value >= portal.feeFor(omniChainId, xcalldata, XCALL_WITHDRAW_GAS_LIMIT), "OmniBridge: insufficient fee"
         );
-        require(token.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
+        require(omni.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
 
         portal.xcall{ value: msg.value }(
             omniChainId, ConfLevel.Finalized, Predeploys.OmniBridgeNative, xcalldata, XCALL_WITHDRAW_GAS_LIMIT

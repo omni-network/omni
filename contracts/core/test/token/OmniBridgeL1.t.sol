@@ -22,7 +22,7 @@ contract OmniBridgeL1_Test is Test {
     event Withdraw(address indexed to, uint256 amount);
 
     MockPortal portal;
-    Omni token;
+    Omni omni;
     OmniBridgeL1Harness b;
 
     address owner;
@@ -36,9 +36,9 @@ contract OmniBridgeL1_Test is Test {
         proxyAdmin = makeAddr("proxyAdmin");
 
         portal = new MockPortal();
-        token = new Omni(totalSupply, initialSupplyRecipient);
+        omni = new Omni(totalSupply, initialSupplyRecipient);
 
-        address impl = address(new OmniBridgeL1Harness(address(token)));
+        address impl = address(new OmniBridgeL1Harness(address(omni)));
         b = OmniBridgeL1Harness(
             address(
                 new TransparentUpgradeableProxy(
@@ -49,7 +49,7 @@ contract OmniBridgeL1_Test is Test {
     }
 
     function test_initialize() public {
-        address impl = address(new OmniBridgeL1(address(token)));
+        address impl = address(new OmniBridgeL1(address(omni)));
         address proxy = address(new TransparentUpgradeableProxy(impl, proxyAdmin, ""));
 
         vm.expectRevert("OmniBridge: no zero addr");
@@ -78,7 +78,7 @@ contract OmniBridgeL1_Test is Test {
         vm.expectRevert("ERC20: insufficient allowance");
         b.bridge{ value: fee }(to, amount);
 
-        token.approve(address(b), amount);
+        omni.approve(address(b), amount);
 
         // requires balance
         vm.expectRevert("ERC20: transfer amount exceeds balance");
@@ -88,7 +88,7 @@ contract OmniBridgeL1_Test is Test {
         //
         // fund payor
         vm.prank(initialSupplyRecipient);
-        token.transfer(payor, amount);
+        omni.transfer(payor, amount);
 
         // emits event
         vm.expectEmit();
@@ -112,8 +112,8 @@ contract OmniBridgeL1_Test is Test {
         b.bridge{ value: fee }(to, amount);
 
         // assert balance change
-        assertEq(token.balanceOf(address(b)), amount);
-        assertEq(token.balanceOf(payor), 0);
+        assertEq(omni.balanceOf(address(b)), amount);
+        assertEq(omni.balanceOf(payor), 0);
     }
 
     function test_withdraw() public {
@@ -150,14 +150,14 @@ contract OmniBridgeL1_Test is Test {
         //
         // need to fund bridge first
         vm.prank(initialSupplyRecipient);
-        token.transfer(address(b), amount);
+        omni.transfer(address(b), amount);
 
         // emit event
         vm.expectEmit();
         emit Withdraw(to, amount);
 
         // tranfers amount to to
-        vm.expectCall(address(token), abi.encodeCall(token.transfer, (to, amount)));
+        vm.expectCall(address(omni), abi.encodeCall(omni.transfer, (to, amount)));
         uint256 gasUsed = portal.mockXCall({
             sourceChainId: portal.omniChainId(),
             sender: Predeploys.OmniBridgeNative,
@@ -167,8 +167,8 @@ contract OmniBridgeL1_Test is Test {
         });
 
         // assert balance change
-        assertEq(token.balanceOf(to), amount);
-        assertEq(token.balanceOf(address(b)), 0);
+        assertEq(omni.balanceOf(to), amount);
+        assertEq(omni.balanceOf(address(b)), 0);
 
         // log gas, to inform xcall gas limit
         console.log("OmniBridgeL1.withdraw gas used: ", gasUsed);
@@ -260,5 +260,5 @@ contract OmniBridgeL1_Test is Test {
 }
 
 contract OmniBridgeL1Harness is OmniBridgeL1 {
-    constructor(address token) OmniBridgeL1(token) { }
+    constructor(address omni) OmniBridgeL1(omni) { }
 }
