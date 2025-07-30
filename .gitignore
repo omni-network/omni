@@ -31,3 +31,6 @@ venv
 .goreleaser-local.yaml
 # Temp file created by TestJoinOmega
 scripts/join/join_test.log
+
+# Local Solana deployment files
+deploy
