@@ -21,6 +21,7 @@ install-deps: check-pnpm-version ## Install dependencies.
 	(cd core && pnpm install --frozen-lockfile)
 	(cd solve && pnpm install --frozen-lockfile)
 	(cd xapps && pnpm install --frozen-lockfile)
+	(cd nomina && pnpm install --frozen-lockfile)
 	go install github.com/ethereum/go-ethereum/cmd/abigen@v1.14.8
 
 .PHONY: build
@@ -29,6 +30,7 @@ build: version ## Build contracts.
 	forge build --force --root avs
 	forge build --force --root solve
 	forge build --force --root xapps
+	forge build --force --root nomina
 
 .PHONY: all
 all: install-deps build bindings allocs ## Build contracts, generate bindings and predeploy allocations.
@@ -48,6 +50,8 @@ AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirec
 
 XAPPS_CONTRACTS := Bridge Lockbox StablecoinUpgradeable StablecoinProxy
 
+NOMINA_CONTRACTS := Nomina
+
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
 	./bindings/scripts/enumgen.sh
@@ -55,6 +59,7 @@ bindings: check-abigen-version build ## Generate golang contract bindings.
 	ROOT=./avs ./bindings/scripts/gen.sh $(AVS_CONTRACTS)
 	ROOT=./solve ./bindings/scripts/gen.sh $(SOLVE_CONTRACTS)
 	ROOT=./xapps ./bindings/scripts/gen.sh $(XAPPS_CONTRACTS)
+	ROOT=./nomina ./bindings/scripts/gen.sh $(NOMINA_CONTRACTS)
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetinbox.go SolverNetCall SolverNetFillOriginData SolverNetTokenExpense
