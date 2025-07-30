@@ -322,7 +322,7 @@ contract Admin is Script {
 
         // read storage pre-upgrade
         address owner = b.owner();
-        address omni = address(b.omni());
+        address portal = address(b.portal());
         address l1Bridge = b.l1Bridge();
         uint64 l1ChainId = b.l1ChainId();
         uint256 l1Deposits = WithL1BridgeBalanceView(address(b)).l1BridgeBalance();
@@ -336,7 +336,7 @@ contract Admin is Script {
         // assert storage unchanged
         require(b.owner() == owner, "owner changed");
         require(b.l1ChainId() == l1ChainId, "l1ChainId changed");
-        require(address(b.omni()) == omni, "omni changed");
+        require(address(b.portal()) == portal, "portal changed");
         require(b.l1Deposits() == l1Deposits, "l1Deposits changed");
         require(b.l1Bridge() == l1Bridge, "l1Bridge changed");
         require(b.isPaused(b.KeyPauseAll()) == allPaused, "all paused state changed");
