@@ -8,11 +8,6 @@ contract Nomina is ERC20 {
     using SafeTransferLib for address;
 
     /**
-     * @notice Thrown when an amount parameter is zero.
-     */
-    error ZeroAmount();
-
-    /**
      * @notice Thrown when an address parameter is zero.
      */
     error ZeroAddress();
@@ -144,7 +139,7 @@ contract Nomina is ERC20 {
      * @param amount The amount of tokens to burn.
      */
     function burn(uint256 amount) public {
-        if (amount == 0) revert ZeroAmount();
+        if (amount == 0) return;
         _burn(msg.sender, amount);
     }
 
@@ -156,8 +151,8 @@ contract Nomina is ERC20 {
      */
     function convert(address to, uint256 amount) public {
         address _omni = omni;
+        if (amount == 0) return;
         if (to == address(0)) revert ZeroAddress();
-        if (amount == 0) revert ZeroAmount();
         if (_omni == address(0)) revert ConversionDisabled();
 
         _omni.safeTransferFrom(msg.sender, _DEAD_ADDRESS, amount);

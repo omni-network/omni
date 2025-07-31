@@ -50,7 +50,7 @@ AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirec
 
 XAPPS_CONTRACTS := Bridge Lockbox StablecoinUpgradeable StablecoinProxy
 
-NOMINA_CONTRACTS := Nomina
+NOMINA_CONTRACTS := Nomina NominaBridgeL1 NominaBridgeNative
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.

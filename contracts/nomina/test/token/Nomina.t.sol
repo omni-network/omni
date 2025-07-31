@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.30;
+pragma solidity 0.8.30;
 
 import { Test } from "forge-std/Test.sol";
+import { ERC20 } from "solady/src/tokens/ERC20.sol";
 import { Nomina } from "src/token/Nomina.sol";
 import { MockOmni } from "test/utils/MockOmni.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
@@ -45,9 +46,9 @@ contract Nomina_Test is Test {
     }
 
     function testBurnReverts() public {
-        // Zero amount is not allowed
-        vm.expectRevert(Nomina.ZeroAmount.selector);
-        nomina.burn(0);
+        // Must have balance to burn
+        vm.expectRevert(ERC20.InsufficientBalance.selector);
+        nomina.burn(1 ether);
     }
 
     function testBurn() public {
@@ -79,10 +80,6 @@ contract Nomina_Test is Test {
         vm.expectRevert(Nomina.ZeroAddress.selector);
         vm.prank(user);
         nomina.convert(address(0), 1 ether);
-
-        // Zero amount is not allowed
-        vm.expectRevert(Nomina.ZeroAmount.selector);
-        nomina.convert(user, 0);
 
         // Conversion must not be disabled
         nomina = new Nomina(address(0), mintAuthority, minter);
