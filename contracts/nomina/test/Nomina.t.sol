@@ -2,67 +2,46 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { Nomina } from "../src/Nomina.sol";
-import { MockOmni } from "./utils/MockOmni.sol";
+import { Nomina } from "src/token/Nomina.sol";
+import { MockOmni } from "test/utils/MockOmni.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 
 contract Nomina_Test is Test {
     Nomina public nomina;
     MockOmni public omni;
 
+    address public mintAuthority = makeAddr("mintAuthority");
     address public minter = makeAddr("minter");
     address public user = makeAddr("user");
 
     function setUp() public {
-        omni = new MockOmni(1_000_000 ether, minter);
-        nomina = new Nomina(address(omni));
+        omni = new MockOmni(1_000_000 ether, user);
+        nomina = new Nomina(address(omni), mintAuthority, minter);
     }
 
     function testMetadata() public view {
-        assertEq(nomina.name(), "Nomina");
-        assertEq(nomina.symbol(), "NOM");
-        assertEq(nomina.decimals(), 18);
-        assertEq(nomina.totalSupply(), 0);
-        assertEq(nomina.omni(), address(omni));
+        assertEq(nomina.name(), "Nomina", "name mismatch");
+        assertEq(nomina.symbol(), "NOM", "symbol mismatch");
+        assertEq(nomina.decimals(), 18, "decimals mismatch");
+        assertEq(nomina.totalSupply(), 0, "total supply mismatch");
+        assertEq(nomina.omni(), address(omni), "omni mismatch");
+        assertEq(nomina.mintAuthority(), mintAuthority, "mint authority mismatch");
+        assertEq(nomina.minter(), minter, "minter mismatch");
+        assertEq(nomina.CONVERSION_RATE(), 75, "conversion rate mismatch");
     }
 
-    function testConvertReverts() public {
-        // Token approval is required
-        vm.expectRevert(SafeTransferLib.TransferFromFailed.selector);
-        vm.prank(minter);
-        nomina.convert(user, 1 ether);
-
-        // Token balance is required
-        vm.startPrank(user);
-        omni.approve(address(nomina), type(uint256).max);
-        vm.expectRevert(SafeTransferLib.TransferFromFailed.selector);
-        nomina.convert(user, 1 ether);
-        vm.stopPrank();
-
-        // Burn on conversion is disallowed
-        vm.expectRevert(Nomina.ZeroAddress.selector);
-        vm.prank(minter);
-        nomina.convert(address(0), 1 ether);
-
-        // Zero amount is not allowed
-        vm.expectRevert(Nomina.ZeroAmount.selector);
-        nomina.convert(user, 0);
-
-        // Conversion must not be disabled
-        nomina = new Nomina(address(0));
-        vm.expectRevert(Nomina.ConversionDisabled.selector);
-        nomina.convert(user, 1 ether);
+    function testMintReverts() public {
+        vm.expectRevert(Nomina.Unauthorized.selector);
+        vm.prank(user);
+        nomina.mint(user, 1 ether);
     }
 
-    function testConvert() public {
-        vm.startPrank(minter);
-        omni.approve(address(nomina), 1 ether);
-        nomina.convert(minter, 1 ether);
-        vm.stopPrank();
+    function testMint() public {
+        vm.prank(minter);
+        nomina.mint(user, 1 ether);
 
-        // Ensure 1:75 ratio is preserved
-        assertEq(nomina.balanceOf(minter), 75 ether);
-        assertEq(nomina.totalSupply(), 75 ether);
+        assertEq(nomina.balanceOf(user), 1 ether, "balance mismatch");
+        assertEq(nomina.totalSupply(), 1 ether, "total supply mismatch");
     }
 
     function testBurnReverts() public {
@@ -72,14 +51,79 @@ contract Nomina_Test is Test {
     }
 
     function testBurn() public {
-        vm.startPrank(minter);
+        vm.startPrank(user);
         omni.approve(address(nomina), 1 ether);
-        nomina.convert(minter, 1 ether);
+        nomina.convert(user, 1 ether);
         nomina.burn(1 ether);
         vm.stopPrank();
 
         // Ensure no conversion ratio is applied to burns
-        assertEq(nomina.balanceOf(minter), 74 ether);
-        assertEq(nomina.totalSupply(), 74 ether);
+        assertEq(nomina.balanceOf(user), 74 ether, "balance mismatch");
+        assertEq(nomina.totalSupply(), 74 ether, "total supply mismatch");
+    }
+
+    function testConvertReverts() public {
+        // Token approval is required
+        vm.expectRevert(SafeTransferLib.TransferFromFailed.selector);
+        vm.prank(user);
+        nomina.convert(user, 1 ether);
+
+        // Token balance is required
+        vm.startPrank(minter);
+        omni.approve(address(nomina), type(uint256).max);
+        vm.expectRevert(SafeTransferLib.TransferFromFailed.selector);
+        nomina.convert(user, 1 ether);
+        vm.stopPrank();
+
+        // Burn on conversion is disallowed
+        vm.expectRevert(Nomina.ZeroAddress.selector);
+        vm.prank(user);
+        nomina.convert(address(0), 1 ether);
+
+        // Zero amount is not allowed
+        vm.expectRevert(Nomina.ZeroAmount.selector);
+        nomina.convert(user, 0);
+
+        // Conversion must not be disabled
+        nomina = new Nomina(address(0), mintAuthority, minter);
+        vm.expectRevert(Nomina.ConversionDisabled.selector);
+        nomina.convert(user, 1 ether);
+    }
+
+    function testConvert() public {
+        vm.startPrank(user);
+        omni.approve(address(nomina), 1 ether);
+        nomina.convert(user, 1 ether);
+        vm.stopPrank();
+
+        // Ensure 1:75 ratio is preserved
+        uint256 conversionRate = nomina.CONVERSION_RATE();
+        assertEq(nomina.balanceOf(user), 1 ether * conversionRate, "balance mismatch");
+        assertEq(nomina.totalSupply(), 1 ether * conversionRate, "total supply mismatch");
+        assertEq(1 ether * conversionRate, 75 ether, "conversion rate mismatch");
+    }
+
+    function testSetMintAuthorityReverts() public {
+        vm.expectRevert(Nomina.Unauthorized.selector);
+        vm.prank(user);
+        nomina.setMintAuthority(user);
+    }
+
+    function testSetMintAuthority() public {
+        vm.prank(mintAuthority);
+        nomina.setMintAuthority(user);
+        assertEq(nomina.mintAuthority(), user, "mint authority mismatch");
+    }
+
+    function testSetMinterReverts() public {
+        vm.expectRevert(Nomina.Unauthorized.selector);
+        vm.prank(user);
+        nomina.setMinter(user);
+    }
+
+    function testSetMinter() public {
+        vm.prank(mintAuthority);
+        nomina.setMinter(user);
+        assertEq(nomina.minter(), user, "minter mismatch");
     }
 }
