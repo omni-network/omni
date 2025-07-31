@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@nomad-xyz/excessively-safe-call':
+        specifier: github:nomad-xyz/ExcessivelySafeCall
+        version: https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0
       '@openzeppelin-v4/contracts':
         specifier: npm:@openzeppelin/contracts@4.9.6
         version: '@openzeppelin/contracts@4.9.6'
@@ -24,8 +27,15 @@ importers:
       forge-std:
         specifier: github:foundry-rs/forge-std
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/60acb7aaadcce2d68e52986a0a66fe79f07d138f
+      multiproof:
+        specifier: github:sigp/multiproof
+        version: https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff
 
 packages:
+
+  '@nomad-xyz/excessively-safe-call@https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0':
+    resolution: {tarball: https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0}
+    version: 0.0.1-rc.1
 
   '@openzeppelin/contracts-upgradeable@5.4.0':
     resolution: {integrity: sha512-STJKyDzUcYuB35Zub1JpWW58JxvrFFVgQ+Ykdr8A9PGXgtq/obF5uoh07k2XmFyPxfnZdPdBdhkJ/n2YxJ87HQ==}
@@ -42,11 +52,17 @@ packages:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/60acb7aaadcce2d68e52986a0a66fe79f07d138f}
     version: 1.9.7
 
+  multiproof@https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff:
+    resolution: {tarball: https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff}
+    version: 0.0.0
+
   solady@https://codeload.github.com/vectorized/solady/tar.gz/271807270b1e14e541a231ff76a869accca7546d:
     resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/271807270b1e14e541a231ff76a869accca7546d}
     version: 0.1.24
 
 snapshots:
+
+  '@nomad-xyz/excessively-safe-call@https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0': {}
 
   '@openzeppelin/contracts-upgradeable@5.4.0(@openzeppelin/contracts@5.4.0)':
     dependencies:
@@ -57,5 +73,7 @@ snapshots:
   '@openzeppelin/contracts@5.4.0': {}
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/60acb7aaadcce2d68e52986a0a66fe79f07d138f: {}
+
+  multiproof@https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff: {}
 
   solady@https://codeload.github.com/vectorized/solady/tar.gz/271807270b1e14e541a231ff76a869accca7546d: {}
