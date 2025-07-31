@@ -11,6 +11,12 @@ importers:
       '@openzeppelin-v4/contracts':
         specifier: npm:@openzeppelin/contracts@4.9.6
         version: '@openzeppelin/contracts@4.9.6'
+      '@openzeppelin/contracts':
+        specifier: ^5.3.0
+        version: 5.4.0
+      '@openzeppelin/contracts-upgradeable':
+        specifier: ^5.3.0
+        version: 5.4.0(@openzeppelin/contracts@5.4.0)
       solady:
         specifier: github:vectorized/solady
         version: https://codeload.github.com/vectorized/solady/tar.gz/271807270b1e14e541a231ff76a869accca7546d
@@ -21,8 +27,16 @@ importers:
 
 packages:
 
+  '@openzeppelin/contracts-upgradeable@5.4.0':
+    resolution: {integrity: sha512-STJKyDzUcYuB35Zub1JpWW58JxvrFFVgQ+Ykdr8A9PGXgtq/obF5uoh07k2XmFyPxfnZdPdBdhkJ/n2YxJ87HQ==}
+    peerDependencies:
+      '@openzeppelin/contracts': 5.4.0
+
   '@openzeppelin/contracts@4.9.6':
     resolution: {integrity: sha512-xSmezSupL+y9VkHZJGDoCBpmnB2ogM13ccaYDWqJTfS3dbuHkgjuwDFUmaFauBCboQMGB/S5UqUl2y54X99BmA==}
+
+  '@openzeppelin/contracts@5.4.0':
+    resolution: {integrity: sha512-eCYgWnLg6WO+X52I16TZt8uEjbtdkgLC0SUX/xnAksjjrQI4Xfn4iBRoI5j55dmlOhDv1Y7BoR3cU7e3WWhC6A==}
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/60acb7aaadcce2d68e52986a0a66fe79f07d138f:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/60acb7aaadcce2d68e52986a0a66fe79f07d138f}
@@ -34,7 +48,13 @@ packages:
 
 snapshots:
 
+  '@openzeppelin/contracts-upgradeable@5.4.0(@openzeppelin/contracts@5.4.0)':
+    dependencies:
+      '@openzeppelin/contracts': 5.4.0
+
   '@openzeppelin/contracts@4.9.6': {}
+
+  '@openzeppelin/contracts@5.4.0': {}
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/60acb7aaadcce2d68e52986a0a66fe79f07d138f: {}
 
