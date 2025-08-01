@@ -18,7 +18,7 @@
  "omega": {
   "Global": {
    "PauseAll": false,
-   "PauseOpen": false,
+   "PauseOpen": true,
    "PauseClose": false
   },
   "ChainOverrides": null
