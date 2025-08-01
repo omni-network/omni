@@ -37,21 +37,6 @@ contract Nomina is ERC20 {
     event MinterSet(address indexed minter);
 
     /**
-     * @notice The name of the token.
-     */
-    string private constant _NAME = "Nomina";
-
-    /**
-     * @notice The symbol of the token.
-     */
-    string private constant _SYMBOL = "NOM";
-
-    /**
-     * @notice The hash of the name, used in permit EIP-712 hashes.
-     */
-    bytes32 private constant _NAME_HASH = keccak256(bytes(_NAME));
-
-    /**
      * @notice The address OMNI tokens are sent to on conversion as they cannot be sent to the zero address or burned.
      */
     address private constant _DEAD_ADDRESS = address(0xdead);
@@ -112,7 +97,7 @@ contract Nomina is ERC20 {
      * @return _ The name of the token.
      */
     function name() public pure override returns (string memory) {
-        return _NAME;
+        return "Nomina";
     }
 
     /**
@@ -120,7 +105,7 @@ contract Nomina is ERC20 {
      * @return _ The symbol of the token.
      */
     function symbol() public pure override returns (string memory) {
-        return _SYMBOL;
+        return "NOM";
     }
 
     /**
@@ -180,10 +165,9 @@ contract Nomina is ERC20 {
     }
 
     /**
-     * @notice Sets a constant name hash in Solady ERC20 to optimize permit gas costs.
-     * @return _ The hash of the name.
+     * @notice Returns a constant name hash to optimize permit gas costs in Solady ERC20.
      */
     function _constantNameHash() internal pure override returns (bytes32) {
-        return _NAME_HASH;
+        return 0xc72733118dabad3698b4044c2dc83c8c688bd907b50ed9d09d93a263878bf518;
     }
 }
