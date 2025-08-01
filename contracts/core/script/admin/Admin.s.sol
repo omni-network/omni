@@ -187,6 +187,42 @@ contract Admin is Script {
     }
 
     /**
+     * @notice Pause the gas pump.
+     * @param admin   The owner of the gas pump contract.
+     * @param gasPump The address of the gas pump contract.
+     */
+    function pauseGasPump(address admin, address gasPump) public withBroadcast(admin) {
+        OmniGasPump(gasPump).pause();
+    }
+
+    /**
+     * @notice Unpause the gas pump.
+     * @param admin   The owner of the gas pump contract.
+     * @param gasPump The address of the gas pump contract.
+     */
+    function unpauseGasPump(address admin, address gasPump) public withBroadcast(admin) {
+        OmniGasPump(gasPump).unpause();
+    }
+
+    /**
+     * @notice Pause the gas station.
+     * @param admin      The owner of the gas station contract.
+     * @param gasStation The address of the gas station contract.
+     */
+    function pauseGasStation(address admin, address gasStation) public withBroadcast(admin) {
+        OmniGasStation(payable(gasStation)).pause();
+    }
+
+    /**
+     * @notice Unpause the gas station.
+     * @param admin      The owner of the gas station contract.
+     * @param gasStation The address of the gas station contract.
+     */
+    function unpauseGasStation(address admin, address gasStation) public withBroadcast(admin) {
+        OmniGasStation(payable(gasStation)).unpause();
+    }
+
+    /**
      * @notice Upgrade a FeeOracleV1 contract.
      * @param admin     The address of the admin account, owner of the proxy admin
      * @param deployer  The address of the account that will deploy the new implementation.

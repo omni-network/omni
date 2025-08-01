@@ -1,0 +1,30 @@
+{
+ "devnet": {
+  "Global": {
+   "PauseGasPump": false,
+   "PauseGasStation": false
+  },
+  "ChainOverrides": null
+ },
+ "mainnet": {
+  "Global": {
+   "PauseGasPump": true,
+   "PauseGasStation": true
+  },
+  "ChainOverrides": null
+ },
+ "omega": {
+  "Global": {
+   "PauseGasPump": true,
+   "PauseGasStation": true
+  },
+  "ChainOverrides": null
+ },
+ "staging": {
+  "Global": {
+   "PauseGasPump": true,
+   "PauseGasStation": true
+  },
+  "ChainOverrides": null
+ }
+}

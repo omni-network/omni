@@ -24,6 +24,7 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newEnsurePortalSpecCmd(def, &cfg),
 		newEnsureBridgeSpecCmd(def, &cfg),
 		newEnsureSolverNetSpecCmd(def, &cfg),
+		newEnsureGasAppSpecCmd(def, &cfg),
 		newUpgradePortalCmd(def, &cfg),
 		newUpgradeFeeOracleV1Cmd(def, &cfg),
 		newUpgradeGasStationCmd(def, &cfg),
@@ -115,6 +116,18 @@ func newEnsureSolverNetSpecCmd(def *app.Definition, cfg *admin.Config) *cobra.Co
 		Short: "Ensure live SolverNetInbox contracts match local spec, defined in e2e/app/admin/solvernetspec.go",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return admin.EnsureSolverNetSpec(cmd.Context(), *def, *cfg, nil)
+		},
+	}
+
+	return cmd
+}
+
+func newEnsureGasAppSpecCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "ensure-gas-app-spec",
+		Short: "Ensure live gas app contracts match local spec, defined in e2e/app/admin/gasappspec.go",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.EnsureGasAppSpec(cmd.Context(), *def, *cfg, nil)
 		},
 	}
 
