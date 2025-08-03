@@ -41,7 +41,7 @@ var (
 		Namespace: "monitor",
 		Subsystem: "public_rpc",
 		Name:      "sync_diff",
-		Help:      "Sync difference (highest blocks) betweent public RPC and omni node",
+		Help:      "Sync difference (highest blocks) between public RPC and omni node",
 	})
 
 	gasTipCap = promauto.NewGauge(prometheus.GaugeOpts{
