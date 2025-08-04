@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 
 	drake3 "github.com/omni-network/omni/halo/app/upgrades/drake"
+	earhart4 "github.com/omni-network/omni/halo/app/upgrades/earhart"
 	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
+	evmredenomkeeper "github.com/omni-network/omni/halo/evmredenom/keeper"
+	evmredenomsubmit "github.com/omni-network/omni/halo/evmredenom/submit"
+	evmenginekeeper "github.com/omni-network/omni/octane/evmengine/keeper"
 
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -23,6 +27,9 @@ type App interface {
 	GetSlashingKeeper() slkeeper.Keeper
 	GetMintKeeper() mintkeeper.Keeper
 	GetAccountKeeper() authkeeper.AccountKeeper
+	GetEVMEngineKeeper() *evmenginekeeper.Keeper
+	GetEVMRedenomKeeper() *evmredenomkeeper.Keeper
+	GetEVMRedenomSubmitConfig() evmredenomsubmit.Config
 }
 
 // Upgrade defines a network upgrade.
@@ -74,5 +81,19 @@ var Upgrades = []Upgrade{
 		},
 		Store:        drake3.StoreUpgrades,
 		GenesisState: drake3.GenesisState,
+	},
+	{
+		Name: earhart4.UpgradeName,
+		HandlerFunc: func(a App) upgradetypes.UpgradeHandler {
+			return earhart4.CreateUpgradeHandler(
+				a.GetModuleManager(),
+				a.GetModuleConfigurator(),
+				a.GetEVMEngineKeeper(),
+				a.GetEVMRedenomKeeper(),
+				a.GetEVMRedenomSubmitConfig(),
+			)
+		},
+		Store:        earhart4.StoreUpgrades,
+		GenesisState: earhart4.GenesisState,
 	},
 }

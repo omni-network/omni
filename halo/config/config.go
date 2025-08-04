@@ -8,6 +8,7 @@ import (
 	"text/template"
 	"time"
 
+	evmredenomsubmit "github.com/omni-network/omni/halo/evmredenom/submit"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/feature"
@@ -89,8 +90,9 @@ type Config struct {
 	SDKAPI             RPCConfig `mapstructure:"api"`
 	SDKGRPC            RPCConfig `mapstructure:"grpc"`
 	FeatureFlags       feature.Flags
-	EVMProxyListen     string // The address to listen for evm proxy requests on
-	EVMProxyTarget     string // The target address to proxy evm requests to
+	EVMProxyListen     string                  // The address to listen for evm proxy requests on
+	EVMProxyTarget     string                  // The target address to proxy evm requests to
+	EVMRedenomSubmit   evmredenomsubmit.Config // EVM redenomination submit config
 }
 
 // RPCConfig is an abridged version of CosmosSDK srvconfig.API/GRPCConfig.

@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
+	"github.com/omni-network/omni/e2e/test/testupgrade"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/app/upgrades/static"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
@@ -217,8 +218,13 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		}
 	}
 
+	// Ensure network upgrades complete before running tests.
+	if err := ensureNetworkUpgrades(ctx, def); err != nil {
+		return err
+	}
+
 	// Start unit tests.
-	if err := Test(ctx, def, TestConfig{}); err != nil {
+	if err := Test(ctx, def, TestConfig{Verbose: true}); err != nil {
 		return err
 	}
 
@@ -421,6 +427,10 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 			return nil // No next upgrade to plan
 		}
 
+		if err := testupgrade.PrepFor(ctx, backend, upgrade); err != nil {
+			return errors.Wrap(err, "prepare for upgrade", "upgrade", upgrade)
+		}
+
 		height, err := backend.BlockNumber(ctx)
 		if err != nil {
 			return err
@@ -473,4 +483,17 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 
 		log.Info(ctx, "Upgrade applied", "height", height, "name", upgrade) // We don't actually confirm this...
 	}
+}
+
+func ensureNetworkUpgrades(ctx context.Context, def Definition) error {
+	backend, err := def.Backends().Backend(def.Testnet.Network.Static().OmniExecutionChainID)
+	if err != nil {
+		return err
+	}
+
+	if err := testupgrade.Ensure(ctx, backend); err != nil {
+		return errors.Wrap(err, "ensure pre-upgrade state")
+	}
+
+	return nil
 }

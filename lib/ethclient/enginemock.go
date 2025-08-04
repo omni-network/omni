@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cast"
@@ -79,7 +80,7 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 			panic(errors.Wrap(err, "pubkey to address"))
 		}
 
-		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), bi.Ether(1))
+		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), bi.Ether(1*evmredenom.EVMToBondMultiplier))
 		if err != nil {
 			panic(errors.Wrap(err, "pack create validator"))
 		}

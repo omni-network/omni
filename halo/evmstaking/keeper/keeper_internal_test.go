@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/evmstaking/testutil"
 	"github.com/omni-network/omni/halo/evmstaking/types"
 	"github.com/omni-network/omni/lib/bi"
@@ -200,7 +201,7 @@ func TestHappyPathDelivery(t *testing.T) {
 	t.Parallel()
 
 	deliverInterval := int64(3)
-	ethStake := int64(7)
+	ethStake := int64(8 * evmredenom.EVMToBondMultiplier)
 
 	privKey := k1.GenPrivKey()
 
@@ -267,7 +268,8 @@ func TestHappyPathDelivery(t *testing.T) {
 	require.Len(t, msg.ValidatorAddress, 52)
 	require.True(t, strings.HasPrefix(msg.DelegatorAddress, "cosmos"), msg.DelegatorAddress)
 	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
-	stake := sdk.NewInt64Coin("stake", ethStake*1000000000000000000)
+
+	stake := evmredenom.ToBondCoin(bi.Ether(ethStake))
 	require.Equal(t, msg.Amount, stake)
 
 	require.Len(t, createValidatorMsgBuffer, 1)
@@ -275,8 +277,10 @@ func TestHappyPathDelivery(t *testing.T) {
 	// Sanity check of addresses
 	require.Len(t, msg2.ValidatorAddress, 52)
 	require.True(t, strings.HasPrefix(msg2.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
-	oneEth := sdk.NewInt64Coin("stake", 1000000000000000000)
-	require.Equal(t, msg2.Value, oneEth)
+
+	createdAmount := bi.Ether(1 * evmredenom.EVMToBondMultiplier)
+	expected := evmredenom.ToBondCoin(createdAmount)
+	require.Equal(t, expected.String(), msg2.Value.String())
 }
 
 func TestNonSelfDelegationEventDelivery(t *testing.T) {
@@ -355,8 +359,8 @@ func TestNonSelfDelegationEventDelivery(t *testing.T) {
 	require.Len(t, msg.ValidatorAddress, 52)
 	require.True(t, strings.HasPrefix(msg.DelegatorAddress, "cosmos"), msg.DelegatorAddress)
 	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
-	stake := sdk.NewInt64Coin("stake", ethStake*1000000000000000000)
-	require.Equal(t, msg.Amount, stake)
+	expected := evmredenom.ToBondCoin(bi.Ether(ethStake))
+	require.Equal(t, expected, msg.Amount)
 }
 
 func TestUndelegationEventDelivery(t *testing.T) {
@@ -436,8 +440,8 @@ func TestUndelegationEventDelivery(t *testing.T) {
 	require.Len(t, msg.ValidatorAddress, 52)
 	require.True(t, strings.HasPrefix(msg.DelegatorAddress, "cosmos"), msg.DelegatorAddress)
 	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
-	stake := sdk.NewInt64Coin("stake", ethStake*1000000000000000000)
-	require.Equal(t, msg.Amount, stake)
+	expected := evmredenom.ToBondCoin(bi.Ether(ethStake))
+	require.Equal(t, expected, msg.Amount)
 }
 
 func TestEditValidator(t *testing.T) {

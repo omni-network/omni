@@ -17,9 +17,9 @@ contract Redenom is OwnableUpgradeable {
 
     /**
      * @notice AccountRange specifies a range of accounts; see go-ethereum/eth/protocols/snap#AccountRangePacket
-     * @custom:field addresses        List of consecutive account hash pre-images (address) from the trie
-     * @custom:field accountBodies    RLP encoded bodies of above accounts
-     * @custom:field proof            List of trie nodes proving the account range
+     * @custom:field addresses   List of consecutive account hash pre-images (addresses) from the trie
+     * @custom:field accounts    RLP encoded bodies of above accounts
+     * @custom:field proof       List of trie nodes proving the account range
      */
     struct AccountRange {
         address[] addresses;

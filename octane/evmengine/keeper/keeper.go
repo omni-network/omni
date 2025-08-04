@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -152,25 +151,9 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 		return engine.ExecutableData{}, errors.New("invalid authority")
 	}
 
-	// Block of magellan network upgrade height is built by uluwatu logic,
-	// support both that and new magellan proto payloads.
-	// Note this should strictly only be allowed for that first block, but is tricky to enforce.
-	if msg.ExecutionPayloadDeneb != nil && len(msg.ExecutionPayload) > 0 {
-		return engine.ExecutableData{}, errors.New("only one payload type allowed")
-	} else if msg.ExecutionPayloadDeneb == nil && len(msg.ExecutionPayload) == 0 {
-		return engine.ExecutableData{}, errors.New("no payload provided")
-	}
-
-	// Parse the payload.
-	var payload engine.ExecutableData
-	if msg.ExecutionPayloadDeneb != nil {
-		var err error
-		payload, err = types.PayloadFromProto(msg.ExecutionPayloadDeneb)
-		if err != nil {
-			return engine.ExecutableData{}, errors.Wrap(err, "unmarshal proto payload")
-		}
-	} else if err := json.Unmarshal(msg.ExecutionPayload, &payload); err != nil {
-		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
+	payload, err := types.PayloadFromProto(msg.ExecutionPayloadDeneb)
+	if err != nil {
+		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal proto payload")
 	}
 
 	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
@@ -183,12 +166,7 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 		return engine.ExecutableData{}, errors.Wrap(err, "eligible withdrawals")
 	}
 
-	// Allow 0 payload withdrawals until then ext release after drake.
-	// Since block built and verified by magellan, but executed by drake.
-	// So do strict validation unless in FinalizeBlock and payload is empty.
-	strictWithdrawals := sdk.UnwrapSDKContext(ctx).ExecMode() == sdk.ExecModeProcessProposal || len(payload.Withdrawals) > 0
-
-	if !withdrawalsEqual(payload.Withdrawals, eligibleWithdrawals) && strictWithdrawals {
+	if !withdrawalsEqual(payload.Withdrawals, eligibleWithdrawals) {
 		return engine.ExecutableData{}, errors.New("mismatch with eligible withdrawals")
 	}
 

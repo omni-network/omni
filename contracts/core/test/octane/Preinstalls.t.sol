@@ -43,6 +43,7 @@ contract Preinstalls_Test is Test, AllocPredeploys {
             AllocPredeploys.Config({
                 manager: makeAddr("manager"),
                 upgrader: makeAddr("upgrader"),
+                redenomizer: makeAddr("redenomizer"),
                 chainId: 165,
                 nativeBridgeBalance: omniTotalSupply,
                 enableStakingAllowlist: false,

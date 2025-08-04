@@ -7,6 +7,7 @@ import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Upgrade } from "src/octane/Upgrade.sol";
+import { Redenom } from "src/octane/Redenom.sol";
 import { Preinstalls } from "src/octane/Preinstalls.sol";
 import { InitializableHelper } from "script/utils/InitializableHelper.sol";
 import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
@@ -20,6 +21,7 @@ contract AllocPredeploys is Script {
     struct Config {
         address manager;
         address upgrader;
+        address redenomizer;
         uint256 chainId;
         uint256 nativeBridgeBalance;
         bool enableStakingAllowlist;
@@ -93,6 +95,7 @@ contract AllocPredeploys is Script {
         setSlashing();
         setUpgrade();
         setDistribution();
+        setRedenom();
     }
 
     /**
@@ -257,5 +260,8 @@ contract AllocPredeploys is Script {
     function setRedenom() internal {
         address impl = Predeploys.impl(Predeploys.Redenom);
         vm.etch(impl, vm.getDeployedCode("Redenom.sol:Redenom"));
+
+        InitializableHelper.disableInitializers(impl);
+        Redenom(Predeploys.Redenom).initialize(cfg.redenomizer);
     }
 }

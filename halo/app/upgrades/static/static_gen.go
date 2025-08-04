@@ -8,4 +8,5 @@ var UpgradeNames = []string{
 	"1_uluwatu",
 	"2_magellan",
 	"3_drake",
+	"4_earhart",
 }

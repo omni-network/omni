@@ -187,7 +187,11 @@ func (m Manifest) OmniEVMs() map[string]Mode {
 
 	resp := make(map[string]Mode)
 	for name, node := range m.Nodes {
-		resp[name+"_evm"] = Mode(node.Mode)
+		mode := Mode(node.Mode)
+		if node.Mode == "" {
+			mode = ModeValidator // Default mode is validator
+		}
+		resp[name+"_evm"] = mode
 	}
 
 	return resp

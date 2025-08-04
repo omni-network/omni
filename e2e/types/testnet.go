@@ -246,6 +246,7 @@ type OmniEVM struct {
 	InternalRPC  string   // For JSON-RPC queries from halo/relayer
 	ExternalRPC  string   // For JSON-RPC queries from e2e app.
 	IsArchive    bool     // Whether this instance is in archive mode
+	IsValidator  bool     // Whether this instance is a consensus validator
 	JWTSecret    string   // JWT secret for authentication
 
 	// P2P networking

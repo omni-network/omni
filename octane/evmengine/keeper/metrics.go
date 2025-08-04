@@ -13,6 +13,13 @@ var (
 		Help:      "Total number of inserted withdrawals",
 	})
 
+	completedWithdrawals = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "octane",
+		Subsystem: "evmengine",
+		Name:      "withdrawals_completed_total",
+		Help:      "Total number of completed withdrawals",
+	})
+
 	dustCounter = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace:   "octane",
 		Subsystem:   "evmengine",

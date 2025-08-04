@@ -83,7 +83,7 @@ func TestSmoke(t *testing.T) {
 
 	genSet, err := cl.Validators(ctx, int64Ptr(1), nil, nil)
 	require.NoError(t, err)
-	getSetHash := types.NewValidatorSet(genSet.Validators).Hash()
+	genSetHash := types.NewValidatorSet(genSet.Validators).Hash()
 
 	// Wait for cometBFT validator set to change
 	require.Eventually(t, func() bool {
@@ -91,7 +91,7 @@ func TestSmoke(t *testing.T) {
 		require.NoError(t, err)
 		setHash := types.NewValidatorSet(set.Validators).Hash()
 
-		return !bytes.Equal(getSetHash, setHash)
+		return !bytes.Equal(genSetHash, setHash)
 	}, time.Second*time.Duration(target*4), time.Millisecond*100)
 
 	srcChain := netconf.Simnet.Static().OmniExecutionChainID

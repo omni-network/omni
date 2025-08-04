@@ -39,7 +39,7 @@ jobs:
         with:
           file: scripts/halovisor/Dockerfile
           build-args: |
-            HALO_VERSION_3_DRAKE=${{ github.ref_name }}
+            HALO_VERSION_N_LATEST=${{ github.ref_name }}
           platforms: |
             linux/amd64
             linux/arm64

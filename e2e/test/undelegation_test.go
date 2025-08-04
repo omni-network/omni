@@ -8,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain"
@@ -90,9 +91,9 @@ func TestUndelegations(t *testing.T) {
 			require.NoError(t, err)
 			log.Debug(ctx, "Staking proxy deployed", "address", proxyAddr)
 
-			delegation := bi.Ether(50)
-			undelegation1 := bi.Ether(20)
-			undelegation2 := bi.Ether(5)
+			delegation := bi.Ether(6 * factor)
+			undelegation1 := bi.Ether(3 * factor)
+			undelegation2 := bi.Ether(2 * factor)
 
 			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
 			require.True(t, ok)
@@ -126,16 +127,18 @@ func TestUndelegations(t *testing.T) {
 
 			// make sure our delegated amount is delegation-undelegation1-undelegation2
 			require.Eventuallyf(t, func() bool {
-				amount := delegatedAmount(t, ctx, cprov, val.OperatorAddress, proxyCosmosAddr.String()).Amount.BigInt()
-				log.Debug(ctx, "Delegated amount", "amount", amount)
+				stake := delegatedStake(t, ctx, cprov, val.OperatorAddress, proxyCosmosAddr.String())
+				log.Debug(ctx, "Delegated amount", "stake", stake)
 
-				expectedAmount := bi.Sub(delegation, undelegation1, undelegation2)
+				expected := bi.Sub(delegation, undelegation1, undelegation2)
+				actual, err := evmredenom.ToEVMAmount(stake) // actual=stake*factor
+				require.NoError(t, err)
 
-				return bi.EQ(expectedAmount, amount)
+				return bi.EQ(expected, actual)
 			}, valChangeWait, 500*time.Millisecond, "failed to execute batched staking calls")
 		})
 
-		const delegation = uint64(76)
+		const delegation = uint64(5 * factor)
 
 		var anyBlock *big.Int
 
@@ -262,8 +265,11 @@ func TestUndelegations(t *testing.T) {
 
 			// make sure the delegation can be found
 			require.Eventuallyf(t, func() bool {
-				delegatedAmt := delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).Amount.BigInt()
-				return bi.EQ(delegatedAmt, bi.Ether(delegation))
+				stake := delegatedStake(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String())
+				actual, err := evmredenom.ToEVMAmount(stake) // actual=stake*factor
+				require.NoError(t, err)
+
+				return bi.EQ(actual, bi.Ether(delegation))
 			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 
 			require.NoError(t, err)
@@ -307,10 +313,12 @@ func TestUndelegations(t *testing.T) {
 			require.NoError(t, err)
 			txOpts.Value = burnFee
 
-			delegatedAmt := delegatedAmount(t, ctx, cprov, validator.OperatorAddress, delegatorCosmosAddr.String()).Amount.BigInt()
+			remainingStake := delegatedStake(t, ctx, cprov, validator.OperatorAddress, delegatorCosmosAddr.String())
+			remainingAmount, err := evmredenom.ToEVMAmount(remainingStake) // remainingAmount=remainingStake*factor
+			require.NoError(t, err)
 
 			// undelegate remaining half
-			tx, err = contract.Undelegate(txOpts, validatorAddr, delegatedAmt)
+			tx, err = contract.Undelegate(txOpts, validatorAddr, remainingAmount)
 			require.NoError(t, err)
 
 			_, err = omniBackend.WaitMined(ctx, tx)
@@ -322,15 +330,18 @@ func TestUndelegations(t *testing.T) {
 
 				// we subtract the burn fee twice to account for the tx fees (which are expected to be below the burn fee)
 				minBalanceAfterDelegation := bi.Sub(balance, burnFee, burnFee)
-				minExpectedBalance := bi.Add(minBalanceAfterDelegation, delegatedAmt)
+				minExpectedBalance := bi.Add(minBalanceAfterDelegation, remainingAmount)
 
 				return bi.GTE(newBalance, minExpectedBalance)
 			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 
 			// ensure nothing is staked anymore
-			remainingAmt := delegatedAmount(t, ctx, cprov, validator.OperatorAddress, delegatorCosmosAddr.String())
-			log.Debug(ctx, "Remaining delegation", "amount", remainingAmt)
-			require.Equal(t, int64(0), remainingAmt.Amount.Int64())
+			remainingStake = delegatedStake(t, ctx, cprov, validator.OperatorAddress, delegatorCosmosAddr.String())
+			remainingAmt, err := evmredenom.ToEVMAmount(remainingStake) // remainingAmt=remainingStake*factor
+			require.NoError(t, err)
+
+			log.Debug(ctx, "Remaining delegation", "stake", remainingStake, "amount", remainingAmt)
+			require.Equal(t, int64(0), remainingAmt.Int64())
 
 			// ensure no rewards accrue anymore because we undelegated everything
 			waitForBlocks(ctx, t, cprov, 1)

@@ -71,11 +71,16 @@ func (k *Keeper) GetExecutionHeader(ctx context.Context) (*etypes.Header, error)
 		return nil, errors.Wrap(err, "block hash conversion")
 	}
 
-	// Fetching evm events over the network is unreliable, retry forever.
+	// EVM queries over the network is unreliable, retry forever.
 	var header *etypes.Header
 	err = retryForever(ctx, func(ctx context.Context) (bool, error) {
 		header, err = k.engineCl.HeaderByHash(ctx, blockHash)
-		return err == nil, errors.Wrap(err, "fetch execution header by hash")
+		if err != nil {
+			log.Warn(ctx, "Fetching execution header by hash (will retry)", err, "hash", blockHash)
+			return false, nil //nolint:nilerr // Retry on any error.
+		}
+
+		return true, nil // Successfully fetched the header.
 	})
 
 	return header, err
@@ -211,13 +216,14 @@ func (k *Keeper) eligibleWithdrawals(ctx context.Context, height uint64) ([]*ety
 	return evmWithdrawals, nil
 }
 
-// deleteWithdrawals removes all passed withdrawals by the id.
+// deleteWithdrawals deletes all provided withdrawals by the id/index.
 func (k *Keeper) deleteWithdrawals(ctx context.Context, withdrawals []*etypes.Withdrawal) error {
 	for _, w := range withdrawals {
 		err := k.withdrawalTable.Delete(ctx, &Withdrawal{Id: w.Index})
 		if err != nil {
 			return errors.Wrap(err, "removing withdrawal", "id", w.Index)
 		}
+		completedWithdrawals.Inc()
 	}
 
 	return nil

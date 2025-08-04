@@ -64,6 +64,7 @@ func genallocs() error {
 		cfg := bindings.AllocPredeploysConfig{
 			Manager:                eoa.MustAddress(network, eoa.RoleManager),
 			Upgrader:               eoa.MustAddress(network, eoa.RoleUpgrader),
+			Redenomizer:            eoa.MustAddress(network, eoa.RoleRedenomizer),
 			ChainId:                bi.N(network.Static().OmniExecutionChainID),
 			EnableStakingAllowlist: network.IsProtected(),
 			NativeBridgeBalance:    nativeBridgeBalance,

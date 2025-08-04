@@ -61,6 +61,7 @@ func Rollback(ctx context.Context, cfg Config, rCfg RollbackConfig) error {
 		netconf.ChainVersionNamer(cfg.Network),
 		netconf.ChainNamer(cfg.Network),
 		burnEVMFees{},
+		cfg.EVMRedenomSubmit,
 		serverAppOptsFromCfg(cfg),
 		make(chan<- error, 1),
 		baseAppOpts...,

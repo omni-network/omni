@@ -8,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/lib/ethp2p"
 
+	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
@@ -31,13 +32,39 @@ func TestP2PClient(t *testing.T) {
 	cl, status, err := ethp2p.Dial(ctx, key, peer)
 	require.NoError(t, err)
 
-	headers, err := cl.HeadersDownFrom(ctx, status.Head, 100)
+	headers, err := cl.HeadersDownFrom(ctx, status.Head, 1)
 	require.NoError(t, err)
 	require.NotEmpty(t, headers)
 
-	n, err := cl.SnapshotRange(ctx, status.Head, 256)
+	n, err := cl.AllAccountRanges(ctx, status.Head, 64*1024) // 64kB
 	require.NoError(t, err)
-	t.Logf("Snapshot range: %d", n)
+	t.Logf("Snapshot ranges:%d", len(n))
+
+	var accounts int
+	var all []int
+	var mini, maxi, sum int
+	for _, r := range n {
+		var nonZeros int
+		accounts += len(r.Accounts)
+		for _, v := range r.Accounts {
+			acc, err := etypes.FullAccount(v.Body)
+			require.NoError(t, err)
+			if acc.Balance.IsZero() {
+				continue
+			}
+			nonZeros++
+		}
+		all = append(all, nonZeros)
+		sum += nonZeros
+		if nonZeros > maxi {
+			maxi = nonZeros
+		}
+		if mini == 0 || nonZeros < mini {
+			mini = nonZeros
+		}
+	}
+
+	t.Logf("Accounts: total=%d, nonZeros=%d, min=%d, max=%d, avg=%.0f", accounts, sum, mini, maxi, float64(sum)/float64(len(all)))
 
 	err = cl.Disconnect()
 	require.NoError(t, err)

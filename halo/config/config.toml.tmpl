@@ -141,3 +141,30 @@ endpoint = "{{ .Tracer.Endpoint }}"
 
 # Open Telemetry OTLP headers. See https://grafana.com/docs/grafana-cloud/monitor-applications/application-observability/setup/quickstart/go/.
 headers = "{{ .Tracer.Headers }}"
+
+#######################################################################
+###                    EVM Redenom Submission                       ###
+#######################################################################
+
+[evmredenom]
+
+# Enables submission of EVM redenomination batches.
+submit-enable = {{ .EVMRedenomSubmit.Enabled }}
+
+# Path to redenom contract owner/admin private key to use for submitting EVM redenomination batches.
+privkey = "{{ .EVMRedenomSubmit.PrivKey }}"
+
+# EVM ENR to snap-sync accounts from. Must be local paired geth instance.
+evm-enr = "{{ .EVMRedenomSubmit.EVMENR }}"
+
+# EVM RPC address to submit txs to. Must not be local paired geth instance.
+rpc-submit = "{{ .EVMRedenomSubmit.RPCSubmit }}"
+
+# EVM RPC address to query preimages from. Must be archive.
+rpc-archive = "{{ .EVMRedenomSubmit.RPCArchive }}"
+
+# Path to evm genesis file; for preimage lookups
+genesis = "{{ .EVMRedenomSubmit.Genesis }}"
+
+# Size of account batch transactions to submit (in bytes).
+batch-size = {{ .EVMRedenomSubmit.BatchSize }}

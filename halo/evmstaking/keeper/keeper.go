@@ -273,24 +273,25 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 		return errors.New("validator does not exist", "validator", valAddr.String())
 	}
 
-	amountCoin, amountCoins := omniToBondCoin(ev.Amount)
+	stake := evmredenom.ToBondCoin(ev.Amount)
 
 	k.createAccIfNone(ctx, delAddr)
 
-	if err := k.bKeeper.MintCoins(ctx, k.Name(), amountCoins); err != nil {
+	if err := k.bKeeper.MintCoins(ctx, k.Name(), sdk.NewCoins(stake)); err != nil {
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := k.bKeeper.SendCoinsFromModuleToAccountNoWithdrawal(ctx, k.Name(), delAddr, amountCoins); err != nil {
+	if err := k.bKeeper.SendCoinsFromModuleToAccountNoWithdrawal(ctx, k.Name(), delAddr, sdk.NewCoins(stake)); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 
 	log.Info(ctx, "EVM staking delegation detected, delegating",
 		"delegator", ev.Delegator.Hex(),
 		"validator", ev.Validator.Hex(),
-		"amount", ev.Amount.String())
+		"amount", ev.Amount.String(),
+		"stake", stake.String())
 
-	msg := stypes.NewMsgDelegate(delAddr.String(), valAddr.String(), amountCoin)
+	msg := stypes.NewMsgDelegate(delAddr.String(), valAddr.String(), stake)
 	_, err := k.sServer.Delegate(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "delegate")
@@ -308,14 +309,16 @@ func (k Keeper) deliverUndelegate(ctx context.Context, ev *bindings.StakingUndel
 	delAddr := sdk.AccAddress(ev.Delegator.Bytes())
 	valAddr := sdk.ValAddress(ev.Validator.Bytes())
 
-	amountCoin, _ := omniToBondCoin(ev.Amount)
+	stake := evmredenom.ToBondCoin(ev.Amount)
 
 	log.Info(ctx, "EVM staking undelegation detected, undelegating",
 		"delegator", ev.Delegator.Hex(),
 		"validator", ev.Validator.Hex(),
-		"amount", ev.Amount.String())
+		"amount", ev.Amount.String(),
+		"stake", stake.String(),
+	)
 
-	msg := stypes.NewMsgUndelegate(delAddr.String(), valAddr.String(), amountCoin)
+	msg := stypes.NewMsgUndelegate(delAddr.String(), valAddr.String(), stake)
 	_, err := k.sServer.Undelegate(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "undelegate")
@@ -391,7 +394,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 	accAddr := sdk.AccAddress(createValidator.Validator.Bytes())
 	valAddr := sdk.ValAddress(createValidator.Validator.Bytes())
 
-	amountCoin := evmredenom.ToBondCoin(createValidator.Deposit)
+	stake := evmredenom.ToBondCoin(createValidator.Deposit)
 
 	if _, err := k.sKeeper.GetValidator(ctx, valAddr); err == nil {
 		return errors.New("validator already exists")
@@ -399,22 +402,23 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 
 	k.createAccIfNone(ctx, accAddr)
 
-	if err := k.bKeeper.MintCoins(ctx, k.Name(), sdk.NewCoins(amountCoin)); err != nil {
+	if err := k.bKeeper.MintCoins(ctx, k.Name(), sdk.NewCoins(stake)); err != nil {
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := k.bKeeper.SendCoinsFromModuleToAccountNoWithdrawal(ctx, k.Name(), accAddr, sdk.NewCoins(amountCoin)); err != nil {
+	if err := k.bKeeper.SendCoinsFromModuleToAccountNoWithdrawal(ctx, k.Name(), accAddr, sdk.NewCoins(stake)); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 
 	log.Info(ctx, "EVM staking deposit detected, adding new validator",
 		"depositor", createValidator.Validator.Hex(),
-		"amount", createValidator.Deposit.String())
+		"amount", createValidator.Deposit.String(),
+		"stake", stake.String())
 
 	msg, err := stypes.NewMsgCreateValidator(
 		valAddr.String(),
 		pubkey,
-		amountCoin,
+		stake,
 		stypes.Description{Moniker: createValidator.Validator.Hex()},
 		stypes.NewCommissionRates(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
 		math.NewInt(1)) // Omni has trusted validator set, so use minimum valid minSelfDelegation.

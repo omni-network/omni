@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/cli/cmd"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
@@ -38,6 +39,9 @@ import (
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 )
+
+// Y $Native == Y * factor $STAKE(Power).
+const factor = evmredenom.EVMToBondMultiplier
 
 // execCLI will execute provided command with the arguments and return an error in case
 // execution fails. It always returns stdOut and stdErr as well.
@@ -96,8 +100,8 @@ func TestCLIOperator(t *testing.T) {
 		const valChangeWait = 1 * time.Minute
 
 		// operator's initial and self delegations
-		const opInitDelegation = uint64(100)
-		const opSelfDelegation = uint64(1)
+		const opInitDelegation = uint64(10 * factor)
+		const opSelfDelegation = uint64(1 * factor)
 
 		// create a new valdiator and self-delegate
 		t.Run("create validator and self-delegate", func(t *testing.T) {
@@ -125,7 +129,7 @@ func TestCLIOperator(t *testing.T) {
 			require.True(t, ok)
 			power, err := val.Power()
 			require.NoError(t, err)
-			require.Equal(t, opInitDelegation, power)
+			require.Equal(t, opInitDelegation, power*factor)
 
 			// delegate more stake for the validator, since we are using an anvil account
 			// it is already sufficiently funded
@@ -147,7 +151,7 @@ func TestCLIOperator(t *testing.T) {
 				newPower, err := val.Power()
 				require.NoError(t, err)
 
-				return newPower == opInitDelegation+opSelfDelegation
+				return newPower*factor == opInitDelegation+opSelfDelegation
 			}, valChangeWait, 500*time.Millisecond, "failed to self-delegate")
 		})
 
@@ -158,7 +162,7 @@ func TestCLIOperator(t *testing.T) {
 		err = ethcrypto.SaveECDSA(delegatorPrivKeyFile, delegatorPrivKey)
 		require.NoError(t, err)
 
-		const delegatorDelegation = uint64(77)
+		const delegatorDelegation = uint64(7 * factor)
 		// delegate from a new account
 		t.Run("delegation", func(t *testing.T) {
 			// delegator delegate test
@@ -177,14 +181,15 @@ func TestCLIOperator(t *testing.T) {
 			require.Eventuallyf(t, func() bool {
 				val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
 				require.True(t, ok)
-				newPower, err := val.Power()
+				power, err := val.Power()
 				require.NoError(t, err)
 
-				if newPower != opInitDelegation+opSelfDelegation+delegatorDelegation {
+				expect := opInitDelegation + opSelfDelegation + delegatorDelegation
+				if power*factor != expect {
 					return false
 				}
 
-				if delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).IsZero() {
+				if delegatedStake(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).IsZero() {
 					return false
 				}
 
@@ -285,7 +290,7 @@ func TestCLIOperator(t *testing.T) {
 	})
 }
 
-func delegatedAmount(t *testing.T, ctx context.Context, cprov provider.Provider, valAddr string, delegatorAddr string) sdk.Coin {
+func delegatedStake(t *testing.T, ctx context.Context, cprov provider.Provider, valAddr string, delegatorAddr string) sdk.Coin {
 	t.Helper()
 	response, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, &stypes.QueryValidatorDelegationsRequest{
 		ValidatorAddr: valAddr,
