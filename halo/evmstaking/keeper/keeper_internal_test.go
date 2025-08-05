@@ -201,7 +201,7 @@ func TestHappyPathDelivery(t *testing.T) {
 	t.Parallel()
 
 	deliverInterval := int64(3)
-	ethStake := int64(8 * evmredenom.EVMToBondMultiplier)
+	ethStake := int64(8 * evmredenom.Factor)
 
 	privKey := k1.GenPrivKey()
 
@@ -269,7 +269,7 @@ func TestHappyPathDelivery(t *testing.T) {
 	require.True(t, strings.HasPrefix(msg.DelegatorAddress, "cosmos"), msg.DelegatorAddress)
 	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
 
-	stake := evmredenom.ToBondCoin(bi.Ether(ethStake))
+	stake := evmredenom.ToStakeCoin(bi.Ether(ethStake))
 	require.Equal(t, msg.Amount, stake)
 
 	require.Len(t, createValidatorMsgBuffer, 1)
@@ -278,8 +278,8 @@ func TestHappyPathDelivery(t *testing.T) {
 	require.Len(t, msg2.ValidatorAddress, 52)
 	require.True(t, strings.HasPrefix(msg2.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
 
-	createdAmount := bi.Ether(1 * evmredenom.EVMToBondMultiplier)
-	expected := evmredenom.ToBondCoin(createdAmount)
+	createdAmount := bi.Ether(1 * evmredenom.Factor)
+	expected := evmredenom.ToStakeCoin(createdAmount)
 	require.Equal(t, expected.String(), msg2.Value.String())
 }
 
@@ -359,7 +359,7 @@ func TestNonSelfDelegationEventDelivery(t *testing.T) {
 	require.Len(t, msg.ValidatorAddress, 52)
 	require.True(t, strings.HasPrefix(msg.DelegatorAddress, "cosmos"), msg.DelegatorAddress)
 	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
-	expected := evmredenom.ToBondCoin(bi.Ether(ethStake))
+	expected := evmredenom.ToStakeCoin(bi.Ether(ethStake))
 	require.Equal(t, expected, msg.Amount)
 }
 
@@ -440,7 +440,7 @@ func TestUndelegationEventDelivery(t *testing.T) {
 	require.Len(t, msg.ValidatorAddress, 52)
 	require.True(t, strings.HasPrefix(msg.DelegatorAddress, "cosmos"), msg.DelegatorAddress)
 	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
-	expected := evmredenom.ToBondCoin(bi.Ether(ethStake))
+	expected := evmredenom.ToStakeCoin(bi.Ether(ethStake))
 	require.Equal(t, expected, msg.Amount)
 }
 

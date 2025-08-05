@@ -133,7 +133,7 @@ func (p *Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes
 			return errors.Wrap(err, "decode account body")
 		}
 
-		mint, err := calcMint(account.Balance, evmredenom.EVMToBondMultiplier)
+		mint, err := calcMint(account.Balance, evmredenom.Factor)
 		if err != nil {
 			return err
 		}

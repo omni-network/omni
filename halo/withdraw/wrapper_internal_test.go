@@ -50,7 +50,7 @@ func TestWrapper(t *testing.T) {
 				require.False(t, withdrawn)
 				require.Equal(t, address, withdrawalAddr)
 
-				stake := evmredenom.ToBondCoin(amountWei)
+				stake := evmredenom.ToStakeCoin(amountWei)
 				tutil.RequireEQ(t, tt.arg.BigInt(), stake.Amount.BigInt())
 				withdrawn = true
 
@@ -82,7 +82,7 @@ func TestWrapper(t *testing.T) {
 			engKeeper := testEVMEngKeeper(func(ctx context.Context, withdrawalAddr common.Address, amountWei *big.Int) error {
 				require.False(t, withdrawn)
 				require.Equal(t, address, withdrawalAddr)
-				stake := evmredenom.ToBondCoin(amountWei)
+				stake := evmredenom.ToStakeCoin(amountWei)
 				tutil.RequireEQ(t, tt.arg.BigInt(), stake.Amount.BigInt())
 				withdrawn = true
 

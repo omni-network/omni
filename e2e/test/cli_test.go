@@ -41,7 +41,7 @@ import (
 )
 
 // Y $Native == Y * factor $STAKE(Power).
-const factor = evmredenom.EVMToBondMultiplier
+const factor = evmredenom.Factor
 
 // execCLI will execute provided command with the arguments and return an error in case
 // execution fails. It always returns stdOut and stdErr as well.

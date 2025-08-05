@@ -273,7 +273,7 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 		return errors.New("validator does not exist", "validator", valAddr.String())
 	}
 
-	stake := evmredenom.ToBondCoin(ev.Amount)
+	stake := evmredenom.ToStakeCoin(ev.Amount)
 
 	k.createAccIfNone(ctx, delAddr)
 
@@ -309,7 +309,7 @@ func (k Keeper) deliverUndelegate(ctx context.Context, ev *bindings.StakingUndel
 	delAddr := sdk.AccAddress(ev.Delegator.Bytes())
 	valAddr := sdk.ValAddress(ev.Validator.Bytes())
 
-	stake := evmredenom.ToBondCoin(ev.Amount)
+	stake := evmredenom.ToStakeCoin(ev.Amount)
 
 	log.Info(ctx, "EVM staking undelegation detected, undelegating",
 		"delegator", ev.Delegator.Hex(),
@@ -394,7 +394,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 	accAddr := sdk.AccAddress(createValidator.Validator.Bytes())
 	valAddr := sdk.ValAddress(createValidator.Validator.Bytes())
 
-	stake := evmredenom.ToBondCoin(createValidator.Deposit)
+	stake := evmredenom.ToStakeCoin(createValidator.Deposit)
 
 	if _, err := k.sKeeper.GetValidator(ctx, valAddr); err == nil {
 		return errors.New("validator already exists")

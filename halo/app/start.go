@@ -412,7 +412,7 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.ID, pubkey
 		return ethclient.NewEngineMock(
 			ethclient.WithPortalRegister(netconf.SimnetNetwork()),
 			ethclient.WithFarFutureUpgradePlan(),
-			ethclient.WithMockSelfDelegation(pubkey, evmredenom.EVMToBondMultiplier), // X $EVM == 1 $STAKE
+			ethclient.WithMockSelfDelegation(pubkey, evmredenom.Factor), // X $EVM == 1 $STAKE
 		)
 	}
 

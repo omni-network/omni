@@ -47,26 +47,26 @@ func TestToBondCoin(t *testing.T) {
 			name:   "one ether in wei",
 			amount: bi.Ether(1),
 			expected: sdk.NewCoin(sdk.DefaultBondDenom, toSDKMath(bi.Sub(
-				bi.Gwei(1e9/evmredenom.EVMToBondMultiplier),
+				bi.Gwei(1e9/evmredenom.Factor),
 				bi.Wei(1), // Round down
 			))),
 		},
 		{
 			name:     "large amount",
 			amount:   bi.N(math.MaxInt64),
-			expected: sdk.NewCoin(sdk.DefaultBondDenom, toSDKMath(bi.N(math.MaxInt64/evmredenom.EVMToBondMultiplier))),
+			expected: sdk.NewCoin(sdk.DefaultBondDenom, toSDKMath(bi.N(math.MaxInt64/evmredenom.Factor))),
 		},
 		{
 			name:     "random amount",
 			amount:   bi.N(123456789),
-			expected: sdk.NewCoin(sdk.DefaultBondDenom, toSDKMath(bi.N(123456789/evmredenom.EVMToBondMultiplier))),
+			expected: sdk.NewCoin(sdk.DefaultBondDenom, toSDKMath(bi.N(123456789/evmredenom.Factor))),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			result := evmredenom.ToBondCoin(tt.amount)
+			result := evmredenom.ToStakeCoin(tt.amount)
 			tutil.RequireEQ(t, tt.expected.Amount.BigInt(), result.Amount.BigInt())
 		})
 	}
@@ -90,19 +90,19 @@ func TestToEVMAmount(t *testing.T) {
 		{
 			name:        "one bond coin",
 			coin:        sdk.NewCoin(sdk.DefaultBondDenom, toSDKMath(bi.Ether(1))),
-			expected:    bi.Ether(1 * evmredenom.EVMToBondMultiplier),
+			expected:    bi.Ether(1 * evmredenom.Factor),
 			expectError: false,
 		},
 		{
 			name:        "large bond coin amount",
 			coin:        sdk.NewCoin(sdk.DefaultBondDenom, toSDKMath(bi.Ether(1))),
-			expected:    bi.Ether(1 * evmredenom.EVMToBondMultiplier),
+			expected:    bi.Ether(1 * evmredenom.Factor),
 			expectError: false,
 		},
 		{
 			name:        "random bond coin amount",
 			coin:        sdk.NewCoin(sdk.DefaultBondDenom, toSDKMath(bi.Ether(987654321))),
-			expected:    bi.Ether(987654321 * evmredenom.EVMToBondMultiplier),
+			expected:    bi.Ether(987654321 * evmredenom.Factor),
 			expectError: false,
 		},
 		{
@@ -153,7 +153,7 @@ func TestRoundTripConversion(t *testing.T) {
 			t.Parallel()
 
 			// Convert to bond coin
-			bondCoin := evmredenom.ToBondCoin(amount)
+			bondCoin := evmredenom.ToStakeCoin(amount)
 
 			// Convert back to EVM amount
 			evmAmount, err := evmredenom.ToEVMAmount(bondCoin)

@@ -428,7 +428,7 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 		}
 
 		if !def.Manifest.AllE2ETests { //nolint:revive // Prep only required for e2e tests, so skip it.
-		} else if err := testupgrade.PrepFor(ctx, backend, upgrade); err != nil {
+		} else if err := testupgrade.PrepFor(ctx, def.Testnet, backend, upgrade); err != nil {
 			return errors.Wrap(err, "prepare for upgrade", "upgrade", upgrade)
 		}
 
@@ -496,7 +496,7 @@ func ensureNetworkUpgrades(ctx context.Context, def Definition) error {
 		return err
 	}
 
-	if err := testupgrade.Ensure(ctx, backend); err != nil {
+	if err := testupgrade.Ensure(ctx, def.Testnet, backend); err != nil {
 		return errors.Wrap(err, "ensure pre-upgrade state")
 	}
 

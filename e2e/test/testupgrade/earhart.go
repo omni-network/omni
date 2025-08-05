@@ -5,7 +5,11 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/evmredenom"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
@@ -15,6 +19,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -26,13 +31,18 @@ var (
 		"0x0000000000000000333333000000000000000000": bi.Zero(),
 		"0xFFFFFFFFFFFFFFFF444444000000000000000000": bi.Ether(456),
 	}
+
+	delegator  = eoa.RoleTester
+	delegation = bi.N(2)
 )
 
 // prepForEarhart funds predefined addresses with specific balances.
-func prepForEarhart(ctx context.Context, omniEVM *ethbackend.Backend) error {
+func prepForEarhart(ctx context.Context, testnet types.Testnet, omniEVM *ethbackend.Backend) error {
 	from := anvil.DevAccount9()
 
-	// TODO(corver): Ensure consensus chain is pre-earhart.
+	if err := delegate(ctx, testnet, omniEVM); err != nil {
+		return err
+	}
 
 	eg, ctx := errgroup.WithContext(ctx)
 	for addrHex, bal := range preBalances {
@@ -71,8 +81,97 @@ func prepForEarhart(ctx context.Context, omniEVM *ethbackend.Backend) error {
 	return nil
 }
 
+func undelegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Backend) error {
+	var valAddr common.Address
+	for n := range testnet.Validators {
+		pk, err := crypto.ToECDSA(n.PrivvalKey.Bytes())
+		if err != nil {
+			return errors.Wrap(err, "to ecdsa")
+		}
+		valAddr = crypto.PubkeyToAddress(pk.PublicKey)
+	}
+
+	addr := eoa.MustAddress(testnet.Network, delegator)
+
+	txOpts, err := evm.BindOpts(ctx, addr)
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+
+	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), evm)
+	if err != nil {
+		return errors.Wrap(err, "new staking contract")
+	}
+
+	preBal, err := evm.BalanceAt(ctx, addr, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = contract.Undelegate(txOpts, valAddr, delegation)
+	if err != nil {
+		return errors.Wrap(err, "delegate for")
+	}
+
+	// Wait for balance to be increased by more than evmredenom.Factor (incl rewards).
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	for i := 0; ; i++ {
+		b, err := evm.BalanceAt(ctx, eoa.MustAddress(testnet.Network, delegator), nil)
+		if err != nil {
+			return errors.Wrap(err, "balance check failed")
+		}
+
+		increase := bi.Sub(b, preBal)
+		expect := bi.MulRaw(delegation, evmredenom.Factor)
+		if bi.GT(increase, expect) {
+			break // Done
+		}
+
+		if i > 5 {
+			log.Warn(ctx, "Waiting for undelegation withdraw", nil, "increase", increase, "expect", expect)
+		}
+
+		select {
+		case <-ctx.Done():
+			return errors.New("timeout waiting for undelegation withdraw", "increase", increase, "expect", expect)
+		case <-time.After(time.Second):
+		}
+	}
+
+	return nil
+}
+func delegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Backend) error {
+	var valAddr common.Address
+	for n := range testnet.Validators {
+		pk, err := crypto.ToECDSA(n.PrivvalKey.Bytes())
+		if err != nil {
+			return errors.Wrap(err, "to ecdsa")
+		}
+		valAddr = crypto.PubkeyToAddress(pk.PublicKey)
+	}
+
+	txOpts, err := evm.BindOpts(ctx, eoa.MustAddress(testnet.Network, delegator))
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+	txOpts.Value = delegation
+
+	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), evm)
+	if err != nil {
+		return errors.Wrap(err, "new staking contract")
+	}
+
+	_, err = contract.Delegate(txOpts, valAddr)
+	if err != nil {
+		return errors.Wrap(err, "delegate for")
+	}
+
+	return nil
+}
+
 // ensureEarhart ensure the balances of predefined addresses after the Earhart upgrade are increased.
-func ensureEarhart(ctx context.Context, omniEVM *ethbackend.Backend) error {
+func ensureEarhart(ctx context.Context, testnet types.Testnet, omniEVM *ethbackend.Backend) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
@@ -80,7 +179,7 @@ func ensureEarhart(ctx context.Context, omniEVM *ethbackend.Backend) error {
 
 	for addrHex, bal := range preBalances {
 		// Calculate expected balance after upgrade.
-		add := bi.MulRaw(bal, evmredenom.EVMToBondMultiplier-1)
+		add := bi.MulRaw(bal, evmredenom.Factor-1)
 		addRem := new(big.Int).Rem(add, bi.Gwei(1)) // Gwei truncation
 		exp := bi.Add(bal, bi.Sub(add, addRem))
 
@@ -107,6 +206,10 @@ func ensureEarhart(ctx context.Context, omniEVM *ethbackend.Backend) error {
 	}
 
 	log.Info(ctx, "All 4_earhart redenomination withdrawals complete")
+
+	if err := undelegate(ctx, testnet, omniEVM); err != nil {
+		return errors.Wrap(err, "undelegate failed")
+	}
 
 	return nil
 }

@@ -48,7 +48,7 @@ func TestCalcMint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprint(tt.amount), func(t *testing.T) {
 			t.Parallel()
-			result, err := calcMint(uint256.NewInt(tt.amount), evmredenom.EVMToBondMultiplier)
+			result, err := calcMint(uint256.NewInt(tt.amount), evmredenom.Factor)
 			require.NoError(t, err)
 			require.Equal(t, tt.expect, result.Uint64())
 		})
