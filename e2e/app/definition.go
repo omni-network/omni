@@ -322,7 +322,6 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 			NodeKey:      nodeKey,
 			Enode:        en,
 			IsArchive:    mode == types.ModeArchive || !manifest.MultiOmniEVMs,
-			IsValidator:  mode == types.ModeValidator,
 			JWTSecret:    tutil.RandomHash().Hex(),
 		})
 	}
