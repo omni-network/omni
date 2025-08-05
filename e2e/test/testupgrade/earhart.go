@@ -19,7 +19,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -82,13 +81,9 @@ func prepForEarhart(ctx context.Context, testnet types.Testnet, omniEVM *ethback
 }
 
 func undelegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Backend) error {
-	var valAddr common.Address
-	for n := range testnet.Validators {
-		pk, err := crypto.ToECDSA(n.PrivvalKey.Bytes())
-		if err != nil {
-			return errors.Wrap(err, "to ecdsa")
-		}
-		valAddr = crypto.PubkeyToAddress(pk.PublicKey)
+	valAddr, err := testnet.ValidatorEthAddr(0)
+	if err != nil {
+		return errors.Wrap(err, "get validator address")
 	}
 
 	addr := eoa.MustAddress(testnet.Network, delegator)
@@ -145,13 +140,9 @@ func undelegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Back
 	return nil
 }
 func delegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Backend) error {
-	var valAddr common.Address
-	for n := range testnet.Validators {
-		pk, err := crypto.ToECDSA(n.PrivvalKey.Bytes())
-		if err != nil {
-			return errors.Wrap(err, "to ecdsa")
-		}
-		valAddr = crypto.PubkeyToAddress(pk.PublicKey)
+	valAddr, err := testnet.ValidatorEthAddr(0)
+	if err != nil {
+		return errors.Wrap(err, "get validator address")
 	}
 
 	txOpts, err := evm.BindOpts(ctx, eoa.MustAddress(testnet.Network, delegator))

@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
@@ -16,6 +17,7 @@ import (
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
@@ -193,6 +195,26 @@ func (t Testnet) EthereumChain() (EVMChain, bool) {
 	}
 
 	return EVMChain{}, false
+}
+
+func (t Testnet) ValidatorEthAddr(index int) (common.Address, error) {
+	for _, node := range t.Nodes {
+		if node.Mode == "" || node.Mode == ModeValidator {
+			if index != 0 {
+				index--
+				continue
+			}
+
+			key, err := crypto.ToECDSA(node.PrivvalKey.Bytes())
+			if err != nil {
+				return common.Address{}, errors.Wrap(err, "to ecdsa")
+			}
+
+			return crypto.PubkeyToAddress(key.PublicKey), nil
+		}
+	}
+
+	return common.Address{}, errors.New("validator index not found")
 }
 
 // EVMChain represents a EVM chain in a omni network.
