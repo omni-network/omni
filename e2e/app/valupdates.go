@@ -2,17 +2,17 @@ package app
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"sort"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/bi"
+	cprovider "github.com/omni-network/omni/lib/cchain/provider"
+	"github.com/omni-network/omni/lib/cchain/queryutil"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/txmgr"
@@ -98,8 +98,15 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 	}
 
 	go func() {
-		// Get all halo private keys
-		var privkeys []*ecdsa.PrivateKey
+		// Create a backend to trigger deposits from
+		omniEVM, _ := def.Testnet.OmniEVMChain()
+		backend, err := def.Backends().Backend(omniEVM.ChainID)
+		if err != nil {
+			returnErr(errors.Wrap(err, "get backend"))
+			return
+		}
+
+		// Add node consensus private keys to backend
 		for _, node := range def.Testnet.Nodes {
 			pk, err := k1util.StdPrivKeyFromComet(node.PrivvalKey)
 			if err != nil {
@@ -107,8 +114,19 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 				return
 			}
 
-			privkeys = append(privkeys, pk)
+			_, err = backend.AddAccount(pk)
+			if err != nil {
+				returnErr(err)
+				return
+			}
 		}
+
+		client, err := def.Testnet.BroadcastNode().Client()
+		if err != nil {
+			returnErr(errors.Wrap(err, "get client"))
+			return
+		}
+		cProvider := cprovider.NewABCI(client, def.Testnet.Network)
 
 		// Get a sorted list of validator updates
 		var updates []valUpdate
@@ -122,27 +140,8 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 			return updates[i].Height < updates[j].Height
 		})
 
-		// Create a backend to trigger deposits from
-		endpoints := ExternalEndpoints(def)
-		omniEVM, _ := def.Testnet.OmniEVMChain()
-		rpc, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ChainID)
-		if err != nil {
-			returnErr(errors.Wrap(err, "get rpc"))
-			return
-		}
-		ethCl, err := ethclient.DialContext(ctx, omniEVM.Name, rpc)
-		if err != nil {
-			returnErr(errors.Wrap(err, "dial"))
-			return
-		}
-		valBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ChainID, omniEVM.BlockPeriod, ethCl, privkeys...)
-		if err != nil {
-			returnErr(errors.Wrap(err, "new backend"))
-			return
-		}
-
 		// Create the Staking contract
-		staking, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), valBackend)
+		staking, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), backend)
 		if err != nil {
 			returnErr(errors.Wrap(err, "new staking"))
 			return
@@ -157,6 +156,18 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 				return
 			}
 
+			// Wait for evmredenom
+			for {
+				ok, err := queryutil.IsPostEVMRedenom(ctx, cProvider)
+				if err != nil {
+					returnErr(errors.Wrap(err, "is post evm redenom"))
+					return
+				} else if ok {
+					break
+				}
+				time.Sleep(time.Second)
+			}
+
 			for node, power := range update.Powers {
 				pubkey := node.PrivvalKey.PubKey()
 				addr, err := k1util.PubKeyToAddress(pubkey)
@@ -164,38 +175,39 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					returnErr(errors.Wrap(err, "pubkey to addr"))
 					return
 				}
+				delegateEther := power * evmredenom.Factor
 
 				// Wait until we have enough balance.
 				// FundValidatorsForTesting should ensure this, but this sometimes fails...?
 				for i := 0; i < 10; i++ {
-					height, err := valBackend.BlockNumber(ctx)
+					height, err := backend.BlockNumber(ctx)
 					if err != nil {
 						returnErr(errors.Wrap(err, "block height"))
 						return
 					}
 
-					balance, err := valBackend.EtherBalanceAt(ctx, addr)
+					balance, err := backend.EtherBalanceAt(ctx, addr)
 					if err != nil {
 						returnErr(errors.Wrap(err, "balance at"))
 						return
 					}
 
-					if balance > float64(power) {
+					if balance > float64(delegateEther) {
 						break // We have enough balance
 					}
 
 					log.Warn(ctx, "Cannot self-delegate, balance to low (will retry)", nil,
-						"height", height, "balance", balance, "require", power,
+						"height", height, "balance", balance, "require", delegateEther,
 						"node", node.Name, "addr", addr.Hex())
 					time.Sleep(time.Second)
 				}
 
-				txOpts, err := valBackend.BindOpts(ctx, addr)
+				txOpts, err := backend.BindOpts(ctx, addr)
 				if err != nil {
 					returnErr(errors.Wrap(err, "bind opts"))
 					return
 				}
-				txOpts.Value = bi.Ether(power)
+				txOpts.Value = bi.Ether(delegateEther)
 
 				// NOTE: We can use CreateValidator here, rather than Delegate (self-delegation)
 				// because current e2e manifest validator_udpates are only used to create a new validator,
@@ -205,7 +217,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					returnErr(errors.Wrap(err, "deposit", "node", node.Name, "addr", addr.Hex()))
 					return
 				}
-				rec, err := valBackend.WaitMined(ctx, tx)
+				rec, err := backend.WaitMined(ctx, tx)
 				if err != nil {
 					returnErr(errors.Wrap(err, "wait minded", "node", node.Name, "addr", addr.Hex()))
 					return
@@ -215,6 +227,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					"validator", node.Name,
 					"address", addr.Hex(),
 					"power", power,
+					"amount", delegateEther,
 					"height", rec.BlockNumber.Uint64(),
 				)
 			}

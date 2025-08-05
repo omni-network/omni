@@ -2,6 +2,7 @@ package queryutil
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/omni-network/omni/halo/app/upgrades/static"
 	"github.com/omni-network/omni/lib/cchain"
@@ -38,4 +39,23 @@ func NextUpgrade(ctx context.Context, cprov cchain.Provider) (string, bool, erro
 	}
 
 	return static.NextUpgrade(current)
+}
+
+func IsPostEVMRedenom(ctx context.Context, provider cchain.Provider) (bool, error) {
+	current, err := CurrentUpgrade(ctx, provider)
+	if err != nil {
+		return false, err
+	} else if current == "" {
+		return false, nil // No upgrades applied, so not post EVM redenom
+	}
+
+	var version uint64
+	var name string
+	if _, err := fmt.Sscanf(current, "%d_%s", &version, &name); err != nil {
+		return false, errors.Wrap(err, "not %d_%s upgrade", "upgrade", current)
+	}
+
+	// EVM redenom done if 4_earhart.
+
+	return version >= 4, nil
 }
