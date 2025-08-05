@@ -224,6 +224,8 @@ func (k *Keeper) deleteWithdrawals(ctx context.Context, withdrawals []*etypes.Wi
 			return errors.Wrap(err, "removing withdrawal", "id", w.Index)
 		}
 		completedWithdrawals.Inc()
+
+		log.Debug(ctx, "🖨️ Completed evm withdrawal", "address", w.Address, "amount_gwei", w.Amount, "index", w.Index)
 	}
 
 	return nil

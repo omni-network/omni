@@ -109,7 +109,10 @@ func undelegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Back
 		return err
 	}
 
-	_, err = contract.Undelegate(txOpts, valAddr, delegation)
+	// undelegation amount is 2 $STAKE, which is 150 $NATIVE_EVM.
+	amount := bi.MulRaw(delegation, evmredenom.Factor)
+
+	_, err = contract.Undelegate(txOpts, valAddr, amount)
 	if err != nil {
 		return errors.Wrap(err, "delegate for")
 	}
@@ -124,18 +127,17 @@ func undelegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Back
 		}
 
 		increase := bi.Sub(b, preBal)
-		expect := bi.MulRaw(delegation, evmredenom.Factor)
-		if bi.GT(increase, expect) {
+		if bi.GT(increase, amount) {
 			break // Done
 		}
 
 		if i > 5 {
-			log.Warn(ctx, "Waiting for undelegation withdraw", nil, "increase", increase, "expect", expect)
+			log.Warn(ctx, "Waiting for undelegation withdraw", nil, "increase", increase, "expect", amount)
 		}
 
 		select {
 		case <-ctx.Done():
-			return errors.New("timeout waiting for undelegation withdraw", "increase", increase, "expect", expect)
+			return errors.New("timeout waiting for undelegation withdraw", "increase", increase, "expect", amount)
 		case <-time.After(time.Second):
 		}
 	}
