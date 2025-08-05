@@ -2,13 +2,13 @@
 network = "devnet"
 anvil_chains = ["mock_l1", "mock_l2"]
 
-# multi_omni_evms = true
+multi_omni_evms = true
 prometheus = true
-# all_e2e_tests = true
+all_e2e_tests = true
 ephemeral_genesis = "2_magellan"
 
 [node.validator01]
-# [node.validator02]
+[node.validator02]
 
 [node.fullnode01]
 mode="archive"
