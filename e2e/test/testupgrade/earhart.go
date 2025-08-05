@@ -92,7 +92,8 @@ func undelegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Back
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}
-	txOpts.Value = bi.Ether(0.1) // Fee
+	fee := bi.Ether(0.1) // Fee
+	txOpts.Value = fee
 
 	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), evm)
 	if err != nil {
@@ -103,6 +104,7 @@ func undelegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Back
 	if err != nil {
 		return err
 	}
+	preBal = bi.Sub(preBal, fee) // Subtract fee we will pay (should also subtract gas, but rewards should cover it).
 
 	// undelegation amount is 2 $STAKE, which is 150 $NATIVE_EVM.
 	amount := bi.MulRaw(delegation, evmredenom.Factor)
@@ -122,7 +124,7 @@ func undelegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Back
 		}
 
 		increase := bi.Sub(b, preBal)
-		if bi.GT(increase, amount) {
+		if bi.GTE(increase, amount) {
 			break // Done
 		}
 

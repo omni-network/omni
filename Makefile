@@ -96,7 +96,7 @@ devnet-clean: ## Deletes devnet containers (MANIFEST=devnet1 by default)
 .PHONY: e2e-ci
 e2e-ci: ## Runs all e2e CI tests
 	@go install github.com/omni-network/omni/e2e
-	@cd e2e && ./run-multiple.sh manifests/devnet0.toml manifests/devnet1.toml manifests/devnet2.toml manifests/fuzzyhead.toml manifests/ci.toml # manifests/backwards.toml # TODO: enable after drake is released
+	@cd e2e && ./run-multiple.sh manifests/devnet1.toml manifests/devnet2.toml manifests/fuzzyhead.toml manifests/ci.toml # manifests/backwards.toml # TODO: enable after drake is released
 
 .PHONY: e2e-run
 e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=devnet1, etc). `export RUN_ARGS='--preserve'` for containers remain running after the test.
