@@ -2,12 +2,15 @@ package earhart
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
+	"os"
 	"time"
 
 	evmredenomkeeper "github.com/omni-network/omni/halo/evmredenom/keeper"
 	evmredenomsubmit "github.com/omni-network/omni/halo/evmredenom/submit"
 	evmredenomtypes "github.com/omni-network/omni/halo/evmredenom/types"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -65,7 +68,7 @@ func CreateUpgradeHandler(
 
 // maybeSubmitRedenomination submits redenomination account batches if configured.
 func maybeSubmitRedenomination(ctx context.Context, cfg evmredenomsubmit.Config, root common.Hash) error {
-	if !cfg.Enabled() {
+	if !cfg.Enabled {
 		log.Debug(ctx, "Redenomination submission not enabled")
 		return nil
 	}
@@ -78,16 +81,21 @@ func maybeSubmitRedenomination(ctx context.Context, cfg evmredenomsubmit.Config,
 	}
 	from := crypto.PubkeyToAddress(privkey.PublicKey)
 
-	ethCl, err := ethclient.DialContext(ctx, "redenom", cfg.EVMAddr)
+	archiveCl, err := ethclient.DialContext(ctx, "omni_evm", cfg.RPCArchive)
+	if err != nil {
+		return errors.Wrap(err, "dial EVM archive client")
+	}
+
+	submitCl, err := ethclient.DialContext(ctx, "omni_evm", cfg.RPCSubmit)
 	if err != nil {
 		return errors.Wrap(err, "dial EVM client")
 	}
 
-	chainID, err := ethCl.ChainID(ctx)
+	chainID, err := submitCl.ChainID(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get chain ID")
 	}
-	backend, err := ethbackend.NewBackend("redenom", chainID.Uint64(), time.Second, ethCl, privkey)
+	backend, err := ethbackend.NewBackend("omni_evm", chainID.Uint64(), time.Second, submitCl, privkey)
 	if err != nil {
 		return errors.Wrap(err, "create backend")
 	}
@@ -101,9 +109,36 @@ func maybeSubmitRedenomination(ctx context.Context, cfg evmredenomsubmit.Config,
 		return errors.Wrap(err, "resolve ENR hostname")
 	}
 
-	return evmredenomsubmit.Do(ctx, from, backend, enr, root, cfg.BatchSize)
+	// Read additional preimages from evm genesis allocs.
+	bz, err := os.ReadFile(cfg.Genesis)
+	if err != nil {
+		return errors.Wrap(err, "read genesis file")
+	}
+	var allocs genesisAllocs
+	if err := json.Unmarshal(bz, &allocs); err != nil {
+		return errors.Wrap(err, "unmarshal genesis allocs")
+	}
+	preimages := make(map[common.Hash]common.Address, len(allocs.Alloc))
+	for addrHex := range allocs.Alloc {
+		addrBz, err := hex.DecodeString(addrHex)
+		if err != nil {
+			return errors.Wrap(err, "decode address", "hex", addrHex)
+		}
+		addr, err := cast.EthAddress(addrBz)
+		if err != nil {
+			return err
+		}
+		preimages[crypto.Keccak256Hash(addr[:])] = addr
+	}
+	log.Debug(ctx, "Using preimages from genesis allocs", "count", len(preimages))
+
+	return evmredenomsubmit.Do(ctx, from, backend, archiveCl, enr, root, cfg.BatchSize, preimages)
 }
 
 func GenesisState(codec.JSONCodec) (map[string]json.RawMessage, error) {
 	return nil, nil //nolint:nilnil // map is for reading only
+}
+
+type genesisAllocs struct {
+	Alloc map[string]json.RawMessage `json:"alloc"`
 }

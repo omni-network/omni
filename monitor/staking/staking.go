@@ -86,7 +86,7 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 	stakeAvg.Set(bi.ToEtherF64(avgStakeWei))
 
 	l := len(stakes)
-	if l == 0 {
+	if l < 2 {
 		return
 	}
 	sort.Slice(stakes, func(i, j int) bool {

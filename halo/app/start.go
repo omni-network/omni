@@ -8,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/halo/comet"
 	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/genutil/genserve"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/cchain"
@@ -160,6 +161,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		netconf.ChainVersionNamer(cfg.Network),
 		netconf.ChainNamer(cfg.Network),
 		burnEVMFees{},
+		cfg.EVMRedenomSubmit,
 		serverAppOptsFromCfg(cfg),
 		asyncAbort,
 		baseAppOpts...,
@@ -410,7 +412,7 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.ID, pubkey
 		return ethclient.NewEngineMock(
 			ethclient.WithPortalRegister(netconf.SimnetNetwork()),
 			ethclient.WithFarFutureUpgradePlan(),
-			ethclient.WithMockSelfDelegation(pubkey, 1),
+			ethclient.WithMockSelfDelegation(pubkey, evmredenom.Factor), // X $EVM == 1 $STAKE
 		)
 	}
 

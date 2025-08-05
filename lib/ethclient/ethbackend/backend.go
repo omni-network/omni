@@ -245,6 +245,26 @@ func (b *Backend) BindOpts(ctx context.Context, from common.Address) (*bind.Tran
 	}, nil
 }
 
+type nonceKey struct{}
+
+// WithReservedNonce returns a copy of the context including the next reserved nonce (also returned).
+// This is useful to ensure sequential nonces with parallel transaction sending/mining..
+func (b *Backend) WithReservedNonce(ctx context.Context, from common.Address) (context.Context, uint64, error) {
+	b.mu.RLock()
+	acc, ok := b.accounts[from]
+	b.mu.RUnlock()
+	if !ok {
+		return nil, 0, errors.New("unknown from address", "from", from)
+	}
+
+	nonce, err := acc.txMgr.ReserveNextNonce(ctx)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "reserve next nonce")
+	}
+
+	return context.WithValue(ctx, nonceKey{}, nonce), nonce, nil
+}
+
 // SendTransaction intercepts the tx that bindings generates, extracts the from address (if the
 // backendStubSigner was used), the strips fields, and passes it to the txmgr for reliable broadcasting.
 func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction) error {
@@ -273,12 +293,18 @@ func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction)
 	}
 	defer acc.sema.Release(1)
 
+	// Get optional nonce from context. Txmgr handles nonce if nil.
+	var noncePtr *uint64
+	if nonce, ok := ctx.Value(nonceKey{}).(uint64); ok {
+		noncePtr = &nonce
+	}
+
 	candidate := txmgr.TxCandidate{
 		TxData:   in.Data(),
 		To:       in.To(),
 		GasLimit: acc.txMgr.BumpGasLimit(in.Gas()), // If gas already estimated, just bump that (instead of re-estimating).
 		Value:    in.Value(),
-		// Nonce handled by txmgr
+		Nonce:    noncePtr,
 	}
 
 	ctx = log.WithCtx(ctx, "req_id", randomHex7(), "chain", b.chainName)

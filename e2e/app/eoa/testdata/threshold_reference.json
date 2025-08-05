@@ -29,6 +29,10 @@
     "min": "0.5 ETH",
     "target": "2 ETH"
    },
+   "redenomizer": {
+    "min": "0 ETH",
+    "target": "0 ETH"
+   },
    "relayer": {
     "min": "0.5 ETH",
     "target": "2 ETH"
@@ -76,6 +80,10 @@
     "target": "0.2 HYPE"
    },
    "monitor": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "redenomizer": {
     "min": "0 HYPE",
     "target": "0 HYPE"
    },
@@ -129,6 +137,10 @@
     "min": "0 MNT",
     "target": "0 MNT"
    },
+   "redenomizer": {
+    "min": "0 MNT",
+    "target": "0 MNT"
+   },
    "relayer": {
     "min": "0 MNT",
     "target": "0 MNT"
@@ -178,6 +190,10 @@
    "monitor": {
     "min": "250 OMNI",
     "target": "1000 OMNI"
+   },
+   "redenomizer": {
+    "min": "0 OMNI",
+    "target": "0 OMNI"
    },
    "relayer": {
     "min": "250 OMNI",
@@ -231,6 +247,10 @@
     "min": "0.5 ETH",
     "target": "2 ETH"
    },
+   "redenomizer": {
+    "min": "0 ETH",
+    "target": "0 ETH"
+   },
    "relayer": {
     "min": "0.5 ETH",
     "target": "2 ETH"
@@ -278,6 +298,10 @@
     "target": "0 HYPE"
    },
    "monitor": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "redenomizer": {
     "min": "0 HYPE",
     "target": "0 HYPE"
    },
@@ -331,6 +355,10 @@
     "min": "0 MNT",
     "target": "0 MNT"
    },
+   "redenomizer": {
+    "min": "0 MNT",
+    "target": "0 MNT"
+   },
    "relayer": {
     "min": "0 MNT",
     "target": "0 MNT"
@@ -380,6 +408,10 @@
    "monitor": {
     "min": "250 OMNI",
     "target": "1000 OMNI"
+   },
+   "redenomizer": {
+    "min": "0 OMNI",
+    "target": "0 OMNI"
    },
    "relayer": {
     "min": "250 OMNI",
@@ -433,6 +465,10 @@
     "min": "0.5 ETH",
     "target": "2 ETH"
    },
+   "redenomizer": {
+    "min": "0 ETH",
+    "target": "0 ETH"
+   },
    "relayer": {
     "min": "0.5 ETH",
     "target": "2 ETH"
@@ -480,6 +516,10 @@
     "target": "0 HYPE"
    },
    "monitor": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "redenomizer": {
     "min": "0 HYPE",
     "target": "0 HYPE"
    },
@@ -533,6 +573,10 @@
     "min": "0 MNT",
     "target": "0 MNT"
    },
+   "redenomizer": {
+    "min": "0 MNT",
+    "target": "0 MNT"
+   },
    "relayer": {
     "min": "0 MNT",
     "target": "0 MNT"
@@ -582,6 +626,10 @@
    "monitor": {
     "min": "250 OMNI",
     "target": "1000 OMNI"
+   },
+   "redenomizer": {
+    "min": "10 OMNI",
+    "target": "100 OMNI"
    },
    "relayer": {
     "min": "250 OMNI",

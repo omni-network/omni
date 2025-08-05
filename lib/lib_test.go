@@ -27,6 +27,7 @@ var allowed = map[string]bool{
 	"github.com/omni-network/omni/scripts":                     true, // Contains static data only.
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice":   true, // gasprice.Tier type used by contract/xfeemgr. TODO(corver): Extract to types xfeemgr package.
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker":     true, // [Transitive] Would be solved by extracting gasprice.Tier to own types package.
+	"github.com/omni-network/omni/halo/evmredenom":             true, // Static conversion functions.
 
 	// `types` packages are required for clients of those APIs.
 	"github.com/omni-network/omni/halo/attest/types":      true,

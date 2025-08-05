@@ -65,7 +65,7 @@ var (
 		RoleDeployer:        thresholdSmall,  // Protected chains are only deployed once but contract upgrades are more frequent
 		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc, on non-mainnet.
 		RoleXCaller:         thresholdSmall,  // XCaller funds used for sending xmsgs across networks.
-
+		RoleRedenomizer:     thresholdSmall,  // Redenomizer needs to send roughly 100 txs once on omni_evm only.
 		// Enough funds to fill orders, restricted to supported targets (to be implemented)
 		RoleSolver: {
 			minEther:    1,
@@ -117,6 +117,12 @@ var (
 	excludeNetworks = map[tokens.Asset]map[netconf.ID]bool{
 		tokens.MNT:  set(nonMainnetNetworks...),
 		tokens.HYPE: set(nonMainnetNetworks...),
+	}
+
+	// limitRoleAssets limits the assets that can be used to fund a role.
+	// If no rule is present, all assets are allowed.
+	limitRoleAssets = map[Role]map[tokens.Asset]bool{
+		RoleRedenomizer: set(tokens.OMNI), // Redenom only applicable on omni_evm.
 	}
 )
 
@@ -187,6 +193,11 @@ func getThreshold(token tokens.Asset, network netconf.ID, role Role) (FundThresh
 
 	if !nativeTokens[token] {
 		// Only native tokenmeta are supported by default.
+		return FundThresholds{}, false
+	}
+
+	if allowAsset, ok := limitRoleAssets[role]; ok && !allowAsset[token] {
+		// Skip assets that are not allowed for this role.
 		return FundThresholds{}, false
 	}
 

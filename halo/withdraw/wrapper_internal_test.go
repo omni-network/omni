@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -23,8 +24,8 @@ func TestWrapper(t *testing.T) {
 		arg math.Int
 	}{
 		{math.NewInt(1)},
-		{math.NewInt(params.GWei)},
-		{math.NewInt(params.GWei).AddRaw(1)},
+		{math.NewInt(params.GWei * 75)},
+		{math.NewInt(params.GWei * 75).AddRaw(1)},
 	}
 
 	for _, tt := range tests {
@@ -48,7 +49,9 @@ func TestWrapper(t *testing.T) {
 			engKeeper := testEVMEngKeeper(func(ctx context.Context, withdrawalAddr common.Address, amountWei *big.Int) error {
 				require.False(t, withdrawn)
 				require.Equal(t, address, withdrawalAddr)
-				tutil.RequireEQ(t, tt.arg.BigInt(), amountWei)
+
+				stake := evmredenom.ToStakeCoin(amountWei)
+				tutil.RequireEQ(t, tt.arg.BigInt(), stake.Amount.BigInt())
 				withdrawn = true
 
 				return nil
@@ -79,7 +82,8 @@ func TestWrapper(t *testing.T) {
 			engKeeper := testEVMEngKeeper(func(ctx context.Context, withdrawalAddr common.Address, amountWei *big.Int) error {
 				require.False(t, withdrawn)
 				require.Equal(t, address, withdrawalAddr)
-				tutil.RequireEQ(t, tt.arg.BigInt(), amountWei)
+				stake := evmredenom.ToStakeCoin(amountWei)
+				tutil.RequireEQ(t, tt.arg.BigInt(), stake.Amount.BigInt())
 				withdrawn = true
 
 				return nil

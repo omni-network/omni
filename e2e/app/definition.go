@@ -18,7 +18,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/fireblocks"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/xchain"
@@ -150,8 +149,6 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 
 		return backends, netman, nil
 	}
-
-	log.Debug(ctx, "Ephemeral genesis", "value", testnet.Manifest.EphemeralGenesis)
 
 	var infp types.InfraProvider
 	switch cfg.InfraProvider {
@@ -324,7 +321,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 			ExternalRPC:  fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 			NodeKey:      nodeKey,
 			Enode:        en,
-			IsArchive:    mode == types.ModeArchive,
+			IsArchive:    mode == types.ModeArchive || !manifest.MultiOmniEVMs,
 			JWTSecret:    tutil.RandomHash().Hex(),
 		})
 	}

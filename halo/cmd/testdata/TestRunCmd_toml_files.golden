@@ -33,6 +33,15 @@
  ],
  "EVMProxyListen": "",
  "EVMProxyTarget": "",
+ "EVMRedenomSubmit": {
+  "Enabled": false,
+  "PrivKey": "",
+  "EVMENR": "",
+  "RPCSubmit": "",
+  "RPCArchive": "",
+  "BatchSize": 0,
+  "Genesis": ""
+ },
  "Comet": {
   "Version": "0.38.17",
   "RootDir": "testinput/input1",

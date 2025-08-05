@@ -7,8 +7,8 @@ import (
 //nolint:gochecknoglobals // Static mappings.
 var statics = map[netconf.ID][]Account{
 	netconf.Devnet: flatten(
-		// DevPrivKey0 used by JS integration tests
 		wellKnown(DevPrivateKey0(), RoleCreate3Deployer, RoleDeployer, RoleManager, RoleUpgrader),
+		wellKnown(DevPrivateKey1(), RoleRedenomizer),
 		wellKnown(DevPrivateKey2(), RoleFlowgen),
 		wellKnown(DevPrivateKey3(), RoleXCaller),
 		wellKnown(DevPrivateKey4(), RoleSolver),
@@ -31,6 +31,7 @@ var statics = map[netconf.ID][]Account{
 		secret("0x9a8BF80057c8E5B5526a87389cF21A631a420998", RoleFlowgen),
 		secret("0xbC0F36A57B666922CF7C01003a01a613D44e993C", RoleXCaller),
 		secret("0xa2C64d844c177C814b6F0423b41D8644539f5F58", RoleSolver),
+		secret("0x2ced744c894eBdB09D15F4d426bCE07726602416", RoleRedenomizer),
 	),
 	netconf.Omega: flatten(
 		remote("0x64Bf40F5E6C4DE0dfe8fE6837F6339455657A2F5", RoleCold),     // we use shared-cold

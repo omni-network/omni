@@ -49,6 +49,8 @@ const (
 	RoleXCaller Role = "xcaller"
 	// RoleSolver is solver EOA on all networks that interacts with solve inbox / outboxes.
 	RoleSolver Role = "solver"
+	// RoleRedenomizer is used to submit redenomization account batches to the redenom contract.
+	RoleRedenomizer Role = "redenomizer"
 )
 
 func AllRoles() []Role {
@@ -65,6 +67,7 @@ func AllRoles() []Role {
 		RoleTester,
 		RoleXCaller,
 		RoleSolver,
+		RoleRedenomizer,
 	}
 }
 

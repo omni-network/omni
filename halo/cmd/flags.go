@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/halo/app"
 	halocfg "github.com/omni-network/omni/halo/config"
+	evmredenomsubmit "github.com/omni-network/omni/halo/evmredenom/submit"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
@@ -25,6 +26,7 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 	xchain.BindFlags(flags, &cfg.RPCEndpoints)
 	netconf.BindFlag(flags, &cfg.Network)
 	feature.BindFlag(flags, &cfg.FeatureFlags)
+	evmredenomsubmit.BindFlags(flags, &cfg.EVMRedenomSubmit)
 	bindRPCFlags(flags, "api", &cfg.SDKAPI)
 	bindRPCFlags(flags, "grpc", &cfg.SDKGRPC)
 	flags.StringVar(&cfg.EngineEndpoint, "engine-endpoint", cfg.EngineEndpoint, "An EVM execution client Engine API http endpoint")

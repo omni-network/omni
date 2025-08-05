@@ -20,6 +20,7 @@ import (
 	"github.com/omni-network/omni/e2e/vmcompose"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
+	evmredenomsubmit "github.com/omni-network/omni/halo/evmredenom/submit"
 	"github.com/omni-network/omni/halo/genutil"
 	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
@@ -49,8 +50,10 @@ const (
 	AppAddressTCP  = "tcp://127.0.0.1:30000"
 	AppAddressUNIX = "unix:///var/run/app.sock"
 
-	PrivvalKeyFile   = "config/priv_validator_key.json"
-	PrivvalStateFile = "data/priv_validator_state.json"
+	PrivvalKeyFile     = "config/priv_validator_key.json"
+	PrivvalStateFile   = "data/priv_validator_state.json"
+	RedenomPrivKeyFile = "config/redenom_priv_key"
+	RedenomBatchSize   = 64 * 1024 // 64 KiB (max=128KiB)
 )
 
 // Setup sets up the testnet configuration.
@@ -158,7 +161,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 			logCfg,
 			depCfg.testConfig,
 			node,
-			omniEVM.InstanceName,
+			omniEVM,
 			endpoints,
 		); err != nil {
 			return err
@@ -185,6 +188,18 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 			filepath.Join(nodeDir, PrivvalKeyFile),
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
+
+		if isRedenomSubmittter(def, node) {
+			log.Debug(ctx, "Configuring redenom submission", "node", node.Name)
+			// Configure redenom submission
+			key, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleRedenomizer)
+			if err != nil {
+				return err
+			}
+			if err := ethcrypto.SaveECDSA(filepath.Join(nodeDir, RedenomPrivKeyFile), key); err != nil {
+				return errors.Wrap(err, "write redenom private key")
+			}
+		}
 
 		// Initialize the node's data directory (with noop logger since it is noisy).
 		initCfg := halocmd.InitConfig{
@@ -224,6 +239,15 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	}
 
 	return nil
+}
+
+func isRedenomSubmittter(def Definition, node *e2e.Node) bool {
+	arch, ok := def.Testnet.ArchiveNode()
+	if !ok {
+		return node.Name == "fullnode01"
+	}
+
+	return node.Name == arch.Name
 }
 
 func svmSetup(testnet types.Testnet) error {
@@ -407,7 +431,7 @@ func writeHaloConfig(
 	logCfg log.Config,
 	testCfg bool,
 	node *e2e.Node,
-	evmInstance string,
+	evmInstance types.OmniEVM,
 	endpoints xchain.RPCEndpoints,
 ) error {
 	cfg := halocfg.DefaultConfig()
@@ -421,8 +445,8 @@ func writeHaloConfig(
 	cfg.Network = def.Testnet.Network
 	cfg.HomeDir = nodeDir
 	cfg.RPCEndpoints = endpoints
-	cfg.EngineEndpoint = fmt.Sprintf("http://%s:8551", evmInstance) //nolint:nosprintfhostport // net.JoinHostPort doesn't prefix http.
-	cfg.EngineJWTFile = "/halo/config/jwtsecret"                    // Absolute path inside docker container
+	cfg.EngineEndpoint = fmt.Sprintf("http://%s:8551", evmInstance.InstanceName) //nolint:nosprintfhostport // net.JoinHostPort doesn't prefix http.
+	cfg.EngineJWTFile = "/halo/config/jwtsecret"                                 // Absolute path inside docker container
 	cfg.Tracer.Endpoint = def.Cfg.TracingEndpoint
 	cfg.Tracer.Headers = def.Cfg.TracingHeaders
 	cfg.FeatureFlags = filterFeatureFlags(node, def.Manifest.FeatureFlags)
@@ -439,7 +463,19 @@ func writeHaloConfig(
 
 	// Enable Proxying of EVM requests
 	cfg.EVMProxyListen = "0.0.0.0:8545"
-	cfg.EVMProxyTarget = fmt.Sprintf("http://%s:8545", evmInstance) //nolint:nosprintfhostport // net.JoinHostPort doesn't prefix http.
+	cfg.EVMProxyTarget = fmt.Sprintf("http://%s:8545", evmInstance.InstanceName) //nolint:nosprintfhostport // net.JoinHostPort doesn't prefix http.
+
+	if isRedenomSubmittter(def, node) {
+		cfg.EVMRedenomSubmit = evmredenomsubmit.Config{
+			Enabled:    true,
+			PrivKey:    filepath.Join("halo", RedenomPrivKeyFile),
+			EVMENR:     evmInstance.Enode.URLv4(),
+			RPCArchive: cfg.EVMProxyTarget, // Submitters are archives
+			RPCSubmit:  def.Testnet.BroadcastOmniEVM().InternalRPC,
+			BatchSize:  RedenomBatchSize,
+			Genesis:    filepath.Join("halo", "config", "execution_genesis.json"),
+		}
+	}
 
 	return halocfg.WriteConfigTOML(cfg, logCfg)
 }

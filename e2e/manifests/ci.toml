@@ -13,13 +13,13 @@ all_e2e_tests = true
 start_at = 20
 state_sync = true
 
-[node.full01]
+[node.fullnode01]
 mode = "full"
 perturb = ["restart"]
 
 # Trigger validator updates at height 10
 [validator_update.10]
-full01 = 100 # Add full01 as validator by depositing 100 ether $OMNI (the minimum deposit)
+fullnode01 = 100 # Add fullnode01 as validator by depositing 100 ether $OMNI (the minimum deposit)
 
 # Additional perturbations.
 [perturb]

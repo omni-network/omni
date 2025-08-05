@@ -10,11 +10,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-const evmToBondMultiplier = 1 // 1 Native EVM == 1 Bond Denom
+// Factor is the conversion factor between $NATIVE_EVM tokens and bonded $STAKE tokens.
+const Factor = 75 // 75 $NATIVE_EVM == 1 bonded $STAKE
 
-// ToBondCoin converts the $NATIVE_EVM amount into a $STAKE coin.
-func ToBondCoin(amount *big.Int) sdk.Coin {
-	n := bi.DivRaw(amount, evmToBondMultiplier)
+// ToStakeCoin converts the $NATIVE_EVM amount into a $STAKE coin.
+func ToStakeCoin(amount *big.Int) sdk.Coin {
+	n := bi.DivRaw(amount, Factor)
 	return sdk.NewCoin(sdk.DefaultBondDenom, math.NewIntFromBigInt(n))
 }
 
@@ -24,5 +25,5 @@ func ToEVMAmount(coin sdk.Coin) (*big.Int, error) {
 		return nil, errors.New("not bond denom [BUG]", "denom", coin.Denom)
 	}
 
-	return bi.MulRaw(coin.Amount.BigInt(), evmToBondMultiplier), nil
+	return bi.MulRaw(coin.Amount.BigInt(), Factor), nil
 }

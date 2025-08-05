@@ -11,6 +11,7 @@ import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
 import { AllocPredeploys } from "script/genesis/AllocPredeploys.s.sol";
 import { InitializableHelper } from "script/utils/InitializableHelper.sol";
 import { Staking } from "src/octane/Staking.sol";
+import { Redenom } from "src/octane/Redenom.sol";
 import { Test } from "forge-std/Test.sol";
 import { Process } from "./utils/Process.sol";
 import { HelloWorld } from "./utils/HelloWorld.sol";
@@ -30,12 +31,14 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
     function test_num_allocs() public {
         address manager = makeAddr("manager");
         address upgrader = makeAddr("upgrader");
+        address redenomizer = makeAddr("redenomizer");
         string memory output = tmpfile();
 
         this.run(
             AllocPredeploys.Config({
                 manager: manager,
                 upgrader: upgrader,
+                redenomizer: redenomizer,
                 chainId: 165,
                 nativeBridgeBalance: omniTotalSupply,
                 enableStakingAllowlist: false,
@@ -54,7 +57,7 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
         expected += 1024 * 2 - 1;
 
         // predeploy implementations (excl. not proxied WOmni)
-        expected += 6;
+        expected += 7;
 
         // preinstalls (excl 4788 deployer)
         expected += 16;
@@ -77,6 +80,7 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
             AllocPredeploys.Config({
                 manager: makeAddr("manager"),
                 upgrader: makeAddr("upgrader"),
+                redenomizer: makeAddr("redenomizer"),
                 chainId: 165,
                 nativeBridgeBalance: omniTotalSupply,
                 enableStakingAllowlist: false,
@@ -95,6 +99,7 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
             AllocPredeploys.Config({
                 manager: makeAddr("manager"),
                 upgrader: makeAddr("upgrader"),
+                redenomizer: makeAddr("redenomizer"),
                 chainId: 165,
                 nativeBridgeBalance: nativeBridgeBalance,
                 enableStakingAllowlist: false,
@@ -112,6 +117,7 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
             AllocPredeploys.Config({
                 manager: makeAddr("manager"),
                 upgrader: makeAddr("upgrader"),
+                redenomizer: makeAddr("redenomizer"),
                 chainId: 165,
                 nativeBridgeBalance: omniTotalSupply,
                 enableStakingAllowlist: false,

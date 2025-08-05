@@ -2,15 +2,18 @@ package submit
 
 import (
 	"context"
+	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/ethp2p"
 	"github.com/omni-network/omni/lib/log"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -20,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/trie/trienode"
 
 	"github.com/holiman/uint256"
+	"golang.org/x/sync/errgroup"
 )
 
 // Do submits the account range batches to the redenom contract.
@@ -29,9 +33,11 @@ func Do(
 	ctx context.Context,
 	from common.Address,
 	backend *ethbackend.Backend,
+	archive ethclient.Client,
 	peer *enode.Node,
 	stateRoot common.Hash,
 	batchSize uint64,
+	preimages map[common.Hash]common.Address,
 ) error {
 	nodeKey, err := crypto.GenerateKey() // Random node key
 	if err != nil {
@@ -47,16 +53,23 @@ func Do(
 	if err != nil {
 		return errors.Wrap(err, "new redenom contract")
 	}
-	txOpts, err := backend.BindOpts(ctx, from)
-	if err != nil {
-		return errors.Wrap(err, "bind opts")
+
+	// Ensure the contract owner matches the from address.
+	if addr, err := contract.Owner(&bind.CallOpts{Context: ctx}); err != nil {
+		return errors.Wrap(err, "get contract owner")
+	} else if addr != from {
+		return errors.New("contract owner mismatch", "expected", from, "got", addr)
 	}
 
 	var next common.Hash
+	var prevNonce uint64
+	eg, ctx := errgroup.WithContext(ctx)
 	for i := 0; ; i++ {
 		resp, err := cl.AccountRange(ctx, stateRoot, next, batchSize)
 		if err != nil {
 			return errors.Wrap(err, "get account range")
+		} else if len(resp.Accounts) == 0 {
+			return errors.New("empty account range response")
 		}
 
 		done, err := verifyBatch(stateRoot, next, resp)
@@ -64,21 +77,76 @@ func Do(
 			return err
 		}
 
+		next = incHash(resp.Accounts[len(resp.Accounts)-1].Hash)
+
+		nonceCtx, nonce, err := backend.WithReservedNonce(ctx, from)
+		if err != nil {
+			return errors.Wrap(err, "get reserved nonce")
+		} else if i > 0 && nonce <= prevNonce {
+			return errors.New("nonce not incremented", "prev", prevNonce, "got", nonce)
+		}
+
+		eg.Go(submitBatch(nonceCtx, from, contract, backend, archive, preimages, resp))
+
+		if !done {
+			continue
+		}
+
+		if err := eg.Wait(); err != nil {
+			return errors.Wrap(err, "wait submit batch")
+		}
+
+		log.Info(ctx, "All redenomination account ranges submitted", "total", i+1)
+
+		return nil
+	}
+}
+
+//nolint:nestif // Slightly complex nested logic.
+func submitBatch(
+	ctx context.Context,
+	from common.Address,
+	contract *bindings.Redenom,
+	backend *ethbackend.Backend,
+	archive ethclient.Client,
+	preimages map[common.Hash]common.Address,
+	resp *snap.AccountRangePacket,
+) func() error {
+	return func() error {
 		var addrs []common.Address
 		var bodies [][]byte
+		var fromMap int
 		for _, acc := range resp.Accounts {
-			preimage, err := backend.Preimage(ctx, acc.Hash)
-			if err != nil {
-				return errors.Wrap(err, "get preimage")
-			}
-			addr, err := cast.EthAddress(preimage)
-			if err != nil {
-				return errors.Wrap(err, "decode address from preimage")
+			addr, ok := preimages[acc.Hash]
+			if !ok {
+				preimage, err := archive.Preimage(ctx, acc.Hash)
+				if err != nil {
+					if strings.Contains(err.Error(), "unknown preimage") {
+						// Check all preimages first for better logs/stats.
+						continue
+					}
+
+					return errors.Wrap(err, "get preimage", "hash", acc.Hash)
+				}
+				addr, err = cast.EthAddress(preimage)
+				if err != nil {
+					return errors.Wrap(err, "decode address from preimage", "preimage", preimage)
+				}
+			} else {
+				fromMap++
 			}
 
 			addrs = append(addrs, addr)
 			bodies = append(bodies, acc.Body)
-			next = incHash(acc.Hash)
+		}
+
+		if len(addrs) != len(resp.Accounts) {
+			return errors.New("missing preimages", "got_total", len(addrs), "got_from_map", from, "expected", len(resp.Accounts), "missing", len(resp.Accounts)-len(addrs))
+		}
+
+		txOpts, err := backend.BindOpts(ctx, from)
+		if err != nil {
+			return errors.Wrap(err, "bind opts")
 		}
 
 		batch := bindings.RedenomAccountRange{
@@ -90,18 +158,20 @@ func Do(
 		tx, err := contract.Submit(txOpts, batch)
 		if err != nil {
 			return errors.Wrap(err, "submit batch")
-		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+		}
+
+		rec, err := backend.WaitMined(ctx, tx)
+		if err != nil {
 			return errors.Wrap(err, "wait submit mined")
 		}
 
-		log.Info(ctx, "Submitted account range batch", "tx", tx.Hash(), "index", i, "done", done, "next", next)
+		log.Info(ctx, "Submitted redenomination account range batch", "tx", tx.Hash(), "len", len(resp.Accounts), "from_map", fromMap, "block", rec.BlockNumber, "block_hash", rec.BlockHash.Hex())
 
-		if done {
-			return nil
-		}
+		return nil
 	}
 }
 
+// It returns true if this is the last batch (no more accounts to process),.
 func verifyBatch(root, origin common.Hash, resp *snap.AccountRangePacket) (bool, error) {
 	if len(resp.Accounts) == 0 {
 		return false, errors.New("empty account range response")
@@ -123,12 +193,12 @@ func verifyBatch(root, origin common.Hash, resp *snap.AccountRangePacket) (bool,
 		proof = append(proof, node)
 	}
 
-	done, err := trie.VerifyRangeProof(root, origin[:], hashes, bodies, proof.Set())
+	more, err := trie.VerifyRangeProof(root, origin[:], hashes, bodies, proof.Set())
 	if err != nil {
 		return false, errors.Wrap(err, "verify range proof")
 	}
 
-	return done, nil
+	return !more, nil
 }
 
 // incHash returns the next hash, in lexicographical order (a.k.a plus one).

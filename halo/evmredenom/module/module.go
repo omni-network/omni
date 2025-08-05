@@ -105,7 +105,6 @@ type ModuleInputs struct {
 	depinject.In
 
 	StoreService store.KVStoreService
-	EVMEngine    types.EVMEngineKeeper
 	Cdc          codec.Codec
 	Config       *Module
 }
@@ -121,7 +120,6 @@ type ModuleOutputs struct {
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 	k, err := keeper.New(
 		in.StoreService,
-		in.EVMEngine,
 	)
 	if err != nil {
 		return ModuleOutputs{}, err
@@ -137,4 +135,16 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		Module:       m,
 		EVMEventProc: evmenginetypes.InjectEventProc(k),
 	}, nil
+}
+
+// DIInvoke injects the EVMEngineKeeper into the EVMRedenomKeeper.
+// This mitigates cyclic dependency: EVMEngineKeeper -> EVMEventProc(EVMRedenomKeeper) -> EVMEngineKeeper.
+func DIInvoke(keeper *keeper.Keeper, evmEngKeeper types.EVMEngineKeeper) {
+	if evmEngKeeper == nil {
+		panic("nil EVMEngineKeeper")
+	} else if keeper == nil {
+		panic("nil EVMRedenomKeeper")
+	}
+
+	keeper.SetEVMEngineKeeper(evmEngKeeper)
 }

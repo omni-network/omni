@@ -9,6 +9,8 @@ import (
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/halo/evmdistribution"
+	evmredenomkeeper "github.com/omni-network/omni/halo/evmredenom/keeper"
+	evmredenomsubmit "github.com/omni-network/omni/halo/evmredenom/submit"
 	"github.com/omni-network/omni/halo/evmslashing"
 	evmstakinkeeper "github.com/omni-network/omni/halo/evmstaking/keeper"
 	"github.com/omni-network/omni/halo/evmupgrade"
@@ -73,20 +75,22 @@ type App struct {
 	interfaceRegistry codectypes.InterfaceRegistry
 
 	// keepers
-	AccountKeeper         authkeeper.AccountKeeper
-	BankKeeper            bankkeeper.Keeper
-	StakingKeeper         *stakingkeeper.Keeper
-	SlashingKeeper        slashingkeeper.Keeper
-	DistrKeeper           distrkeeper.Keeper
-	ConsensusParamsKeeper consensuskeeper.Keeper
-	EVMEngKeeper          *evmengkeeper.Keeper
-	AttestKeeper          *attestkeeper.Keeper
-	ValSyncKeeper         *valsynckeeper.Keeper
-	EVMStakingKeeper      *evmstakinkeeper.Keeper
-	RegistryKeeper        registrykeeper.Keeper
-	EvidenceKeeper        evidencekeeper.Keeper
-	UpgradeKeeper         *upgradekeeper.Keeper
-	MintKeeper            mintkeeper.Keeper
+	AccountKeeper          authkeeper.AccountKeeper
+	BankKeeper             bankkeeper.Keeper
+	StakingKeeper          *stakingkeeper.Keeper
+	SlashingKeeper         slashingkeeper.Keeper
+	DistrKeeper            distrkeeper.Keeper
+	ConsensusParamsKeeper  consensuskeeper.Keeper
+	EVMEngKeeper           *evmengkeeper.Keeper
+	AttestKeeper           *attestkeeper.Keeper
+	ValSyncKeeper          *valsynckeeper.Keeper
+	EVMStakingKeeper       *evmstakinkeeper.Keeper
+	RegistryKeeper         registrykeeper.Keeper
+	EvidenceKeeper         evidencekeeper.Keeper
+	UpgradeKeeper          *upgradekeeper.Keeper
+	MintKeeper             mintkeeper.Keeper
+	EVMRedenomKeeper       *evmredenomkeeper.Keeper
+	EVMRedenomSubmitConfig evmredenomsubmit.Config
 
 	SlashingEventProc     evmslashing.EventProcessor
 	UpgradeEventProc      evmupgrade.EventProcessor
@@ -104,6 +108,7 @@ func newApp(
 	chainVerNamer atypes.ChainVerNameFunc,
 	chainNamer rtypes.ChainNameFunc,
 	feeRecProvider etypes.FeeRecipientProvider,
+	evmRedenomSubmitConfig evmredenomsubmit.Config,
 	appOpts servertypes.AppOptions,
 	asyncAbort chan<- error,
 	baseAppOpts ...func(*baseapp.BaseApp),
@@ -121,6 +126,7 @@ func newApp(
 			voter,
 			feeRecProvider,
 			appOpts,
+			evmRedenomSubmitConfig,
 		),
 	)
 
@@ -150,6 +156,8 @@ func newApp(
 		&app.SlashingEventProc,
 		&app.UpgradeEventProc,
 		&app.DistributionEventProc,
+		&app.EVMRedenomKeeper,
+		&app.EVMRedenomSubmitConfig,
 	}
 
 	if err := depinject.Inject(depCfg, dependencies...); err != nil {
@@ -287,6 +295,18 @@ func (a App) GetMintKeeper() mintkeeper.Keeper {
 
 func (a App) GetAccountKeeper() authkeeper.AccountKeeper {
 	return a.AccountKeeper
+}
+
+func (a App) GetEVMEngineKeeper() *evmengkeeper.Keeper {
+	return a.EVMEngKeeper
+}
+
+func (a App) GetEVMRedenomKeeper() *evmredenomkeeper.Keeper {
+	return a.EVMRedenomKeeper
+}
+
+func (a App) GetEVMRedenomSubmitConfig() evmredenomsubmit.Config {
+	return a.EVMRedenomSubmitConfig
 }
 
 // dumpLastAppliedUpgradeInfo dumps the last applied upgrade info to disk.

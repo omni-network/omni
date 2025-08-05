@@ -6,6 +6,8 @@ import (
 	attestmodule "github.com/omni-network/omni/halo/attest/module"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/evmdistribution"
+	evmredenommodule "github.com/omni-network/omni/halo/evmredenom/module"
+	evmredenomtypes "github.com/omni-network/omni/halo/evmredenom/types"
 	"github.com/omni-network/omni/halo/evmslashing"
 	evmstakingmodule "github.com/omni-network/omni/halo/evmstaking/module"
 	evmstakingtypes "github.com/omni-network/omni/halo/evmstaking/types"
@@ -183,6 +185,10 @@ var (
 						Config: appconfig.WrapAny(&distrmodulev1.Module{}),
 					},
 					{
+						Name:   evmredenomtypes.ModuleName,
+						Config: appconfig.WrapAny(&evmredenommodule.Module{}),
+					},
+					{
 						Name:   genutiltypes.ModuleName,
 						Config: appconfig.WrapAny(&genutilmodulev1.Module{}),
 					},
@@ -251,6 +257,7 @@ var (
 	// These are non-cosmos-module invokers used in halo's app wiring.
 	diInvokers = []any{
 		withdraw.DIInvoke,
+		evmredenommodule.DIInvoke,
 	}
 
 	// diProviders defines a list of depinject provider functions.

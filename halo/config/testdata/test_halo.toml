@@ -135,3 +135,30 @@ endpoint = ""
 
 # Open Telemetry OTLP headers. See https://grafana.com/docs/grafana-cloud/monitor-applications/application-observability/setup/quickstart/go/.
 headers = ""
+
+#######################################################################
+###                    EVM Redenom Submission                       ###
+#######################################################################
+
+[evmredenom]
+
+# Enables submission of EVM redenomination batches.
+submit-enable = false
+
+# Path to redenom contract owner/admin private key to use for submitting EVM redenomination batches.
+privkey = ""
+
+# EVM ENR to snap-sync accounts from. Must be local paired geth instance.
+evm-enr = ""
+
+# EVM RPC address to submit txs to. Must not be local paired geth instance.
+rpc-submit = ""
+
+# EVM RPC address to query preimages from. Must be archive.
+rpc-archive = ""
+
+# Path to evm genesis file; for preimage lookups
+genesis = ""
+
+# Size of account batch transactions to submit (in bytes).
+batch-size = 0

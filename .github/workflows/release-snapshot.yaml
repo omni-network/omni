@@ -67,7 +67,7 @@ jobs:
         with:
           file: scripts/halovisor/Dockerfile
           build-args: |
-            HALO_VERSION_3_DRAKE=${{ steps.git_ref.outputs.short_sha }}
+            HALO_VERSION_N_LATEST=${{ steps.git_ref.outputs.short_sha }}
           platforms: |
             linux/amd64
           push: true

@@ -4,13 +4,18 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/evmredenom/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/trie"
@@ -19,10 +24,7 @@ import (
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/orm/model/ormdb"
-	"cosmossdk.io/orm/types/ormerrors"
 )
-
-const evmToBondMultiplier = 75
 
 type Keeper struct {
 	status    StatusTable
@@ -33,7 +35,6 @@ type Keeper struct {
 
 func New(
 	storeService store.KVStoreService,
-	evmEngine types.EVMEngineKeeper,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_evmredenom_keeper_evmredenom_proto.Path()},
@@ -56,26 +57,28 @@ func New(
 	}
 
 	return &Keeper{
-		status:    s.StatusTable(),
-		evmEngine: evmEngine,
-		contract:  contract,
-		address:   address,
+		status:   s.StatusTable(),
+		contract: contract,
+		address:  address,
 	}, nil
 }
 
-func (Keeper) Name() string {
+func (p *Keeper) SetEVMEngineKeeper(keeper types.EVMEngineKeeper) {
+	p.evmEngine = keeper
+}
+
+func (*Keeper) Name() string {
 	return types.ModuleName
 }
 
 // InitStatus initializes the redenomination with the provided block state root hash.
 // This block defines the accounts and balances that will be redenominated.
-func (p Keeper) InitStatus(ctx context.Context, root common.Hash) error {
-	_, err := p.status.Get(ctx)
-	if err == nil {
-		return errors.New("status already initted [BUG]")
-	} else if !ormerrors.IsNotFound(err) {
+func (p *Keeper) InitStatus(ctx context.Context, root common.Hash) error {
+	if s, err := p.status.Get(ctx); err != nil {
 		return errors.Wrap(err, "get status")
-	} // else status not found, so we can initialize it.
+	} else if len(s.GetRoot()) != 0 {
+		return errors.New("status already initialized [BUG]")
+	}
 
 	var zero common.Hash
 	status := Status{
@@ -92,12 +95,12 @@ func (p Keeper) InitStatus(ctx context.Context, root common.Hash) error {
 }
 
 // FilterParams defines the matching EVM log events, see github.com/ethereum/go-ethereum#FilterQuery.
-func (p Keeper) FilterParams() ([]common.Address, [][]common.Hash) {
+func (p *Keeper) FilterParams() ([]common.Address, [][]common.Hash) {
 	return []common.Address{p.address}, [][]common.Hash{{submittedEvent.ID}}
 }
 
 // Deliver processes a omni redenom submitted log event.
-func (p Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.EVMEvent) error {
+func (p *Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.EVMEvent) error {
 	ethlog, err := elog.ToEthLog()
 	if err != nil {
 		return err
@@ -121,27 +124,46 @@ func (p Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.
 		return errors.Wrap(err, "save status")
 	}
 
+	var nonZero int
 	for i, body := range submitted.Accounts {
+		addr := submitted.Addresses[i]
+
 		account, err := etypes.FullAccount(body)
 		if err != nil {
 			return errors.Wrap(err, "decode account body")
 		}
 
-		mint, err := calcMint(account.Balance, evmToBondMultiplier)
+		mint, err := calcMint(account.Balance, evmredenom.Factor)
 		if err != nil {
 			return err
 		}
 
-		if err := p.evmEngine.InsertWithdrawal(ctx, submitted.Addresses[i], mint); err != nil {
+		if eoa.IsDevAccount(addr) {
+			log.Info(ctx, "Redenominating dev account", "address", addr, "balance", account.Balance, "mint", mint)
+		}
+
+		if bi.IsZero(mint) {
+			continue
+		}
+		nonZero++
+
+		if err := p.evmEngine.InsertWithdrawal(ctx, addr, mint); err != nil {
 			return errors.Wrap(err, "insert withdrawal")
 		}
 	}
+
+	log.Info(ctx, "🌾 Processed redenomination batch",
+		"total", len(submitted.Accounts),
+		"non_zero", nonZero,
+		"next", hexutil.Encode(status.GetNext()),
+		"done", status.GetDone(),
+	)
 
 	return nil
 }
 
 // verifyBatch verifies the batch of accounts and returns the new status.
-func (p Keeper) verifyBatch(ctx context.Context, batch *bindings.RedenomSubmitted) (*Status, error) {
+func (p *Keeper) verifyBatch(ctx context.Context, batch *bindings.RedenomSubmitted) (*Status, error) {
 	if batch == nil {
 		return nil, errors.New("batch is nil")
 	}
@@ -149,6 +171,8 @@ func (p Keeper) verifyBatch(ctx context.Context, batch *bindings.RedenomSubmitte
 	status, err := p.status.Get(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get status")
+	} else if len(status.GetRoot()) == 0 {
+		return nil, errors.New("redenomination not initialized")
 	} else if status.GetDone() {
 		return nil, errors.New("redenomination already done")
 	}
@@ -192,8 +216,8 @@ func (p Keeper) verifyBatch(ctx context.Context, batch *bindings.RedenomSubmitte
 	}
 
 	// Verify the range proof against the trie.
-	// Done indicates whether this is the last batch.
-	done, err := trie.VerifyRangeProof(root, first[:], hashes, bodies, proof.Set())
+	// More indicates whether there are more batches or whether this is the last batch.
+	more, err := trie.VerifyRangeProof(root, first[:], hashes, bodies, proof.Set())
 	if err != nil {
 		return nil, errors.Wrap(err, "verify batch")
 	}
@@ -204,13 +228,13 @@ func (p Keeper) verifyBatch(ctx context.Context, batch *bindings.RedenomSubmitte
 		return nil, errors.Wrap(err, "cast last account hash")
 	}
 	next := incHash(last)
-	if done {
+	if !more {
 		next = common.Hash{} // If done, reset next to zero hash.
 	}
 
 	return &Status{
 		Root: root[:],
-		Done: done,
+		Done: !more,
 		Next: next[:],
 	}, nil
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain"
@@ -69,7 +70,7 @@ func TestDistribution(t *testing.T) {
 		altValidator := validators[(valIndex+1)%len(validators)]
 
 		var anyBlock *big.Int
-		delegation := bi.Ether(50)
+		delegation := bi.Ether(5 * factor)
 		distrContractAddr := common.HexToAddress(predeploys.Distribution)
 		dContract, err := bindings.NewDistribution(distrContractAddr, omniBackend)
 		require.NoError(t, err)
@@ -137,8 +138,11 @@ func TestDistribution(t *testing.T) {
 
 			// make sure the delegation can be found
 			require.Eventuallyf(t, func() bool {
-				delegatedAmt := delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).Amount.BigInt()
-				return bi.EQ(delegatedAmt, delegation)
+				stake := delegatedStake(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String())
+				actual, err := evmredenom.ToEVMAmount(stake) // actual = stake * factor
+				require.NoError(t, err)
+
+				return bi.EQ(delegation, actual)
 			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 
 			// Wait for rewards to accrue
@@ -190,8 +194,11 @@ func TestDistribution(t *testing.T) {
 
 			// make sure the delegation can be found
 			require.Eventuallyf(t, func() bool {
-				delegatedAmt := delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).Amount.BigInt()
-				return bi.EQ(delegatedAmt, delegation)
+				stake := delegatedStake(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String())
+				actual, err := evmredenom.ToEVMAmount(stake) // actual = stake * factor
+				require.NoError(t, err)
+
+				return bi.EQ(delegation, actual)
 			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 
 			// Wait for rewards to accrue

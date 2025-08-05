@@ -19,6 +19,8 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/rlpx"
 	"github.com/ethereum/go-ethereum/rlp"
+
+	"github.com/holiman/uint256"
 )
 
 var (
@@ -92,7 +94,7 @@ func (c Client) readMsg(ctx context.Context, proto proto, code uint64, msg any) 
 		gotProto := parseProto(got)
 		gotMsg := umath.SubtractOrZero(got, gotProto.Offset())
 
-		log.Warn(ctx, "Dropping unexpected message", nil, "proto", gotProto, "code", gotMsg)
+		log.Debug(ctx, "Dropping ethp2p message", "proto", gotProto, "code", gotMsg)
 	}
 }
 
@@ -245,4 +247,44 @@ func (c Client) SnapshotRange(ctx context.Context, blockHash common.Hash, max ui
 	}
 
 	return resp, nil
+}
+
+// AllAccountRanges returns all account ranges starting of the provided block hash (not state root).
+func (c Client) AllAccountRanges(ctx context.Context, blockHash common.Hash, batchBytes uint64) ([]*snap.AccountRangePacket, error) {
+	headers, err := c.HeadersDownFrom(ctx, blockHash, 1)
+	if err != nil {
+		return nil, errors.Wrap(err, "fetch headers")
+	} else if len(headers) == 0 {
+		return nil, errors.New("no headers found")
+	}
+	header := headers[0]
+
+	var resp []*snap.AccountRangePacket
+	var next common.Hash
+	for {
+		acc, err := c.AccountRange(ctx, header.Root, next, batchBytes)
+		if err != nil {
+			return nil, errors.Wrap(err, "fetch account range")
+		} else if len(acc.Accounts) == 0 {
+			break
+		}
+
+		resp = append(resp, acc)
+		next = incHash(acc.Accounts[len(acc.Accounts)-1].Hash) // Increment to the next account key
+	}
+
+	if len(resp) == 0 {
+		return nil, errors.New("no accounts found")
+	}
+
+	return resp, nil
+}
+
+// incHash returns the next hash, in lexicographical order (a.k.a plus one).
+// Note it rolls over for common.MaxHash, returning zero hash.
+func incHash(h common.Hash) common.Hash {
+	return new(uint256.Int).AddUint64(
+		new(uint256.Int).SetBytes32(h[:]),
+		1,
+	).Bytes32()
 }

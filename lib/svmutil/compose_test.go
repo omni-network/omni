@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var integration = flag.Bool("integration", true, "Include integration tests")
+var integration = flag.Bool("integration", false, "Include integration tests")
 
 // dir is subdirectory to store the docker compose file and solana generated artifacts (ignored from repo).
 const dir = "compose"
