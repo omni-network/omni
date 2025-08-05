@@ -97,6 +97,7 @@ func undelegate(ctx context.Context, testnet types.Testnet, evm *ethbackend.Back
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}
+	txOpts.Value = bi.Ether(0.1) // Fee
 
 	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), evm)
 	if err != nil {
