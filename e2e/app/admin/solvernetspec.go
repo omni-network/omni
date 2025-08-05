@@ -21,7 +21,11 @@ import (
 var solverNetSpec = map[netconf.ID]NetworkSolverNetSpec{
 	netconf.Devnet:  {Global: DefaultSolverNetSpec()},
 	netconf.Staging: {Global: DefaultSolverNetSpec()},
-	netconf.Omega:   {Global: DefaultSolverNetSpec()},
+	netconf.Omega: {Global: SolverNetSpec{
+		PauseAll:   false,
+		PauseOpen:  true,
+		PauseClose: false,
+	}},
 	netconf.Mainnet: {Global: DefaultSolverNetSpec()},
 }
 
