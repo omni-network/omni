@@ -321,7 +321,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 			ExternalRPC:  fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 			NodeKey:      nodeKey,
 			Enode:        en,
-			IsArchive:    mode == types.ModeArchive,
+			IsArchive:    mode == types.ModeArchive || !manifest.MultiOmniEVMs,
 			IsValidator:  mode == types.ModeValidator,
 			JWTSecret:    tutil.RandomHash().Hex(),
 		})
