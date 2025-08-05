@@ -33,7 +33,7 @@ var (
 	}
 
 	delegator  = eoa.RoleTester
-	delegation = bi.N(2)
+	delegation = bi.Ether(2)
 )
 
 // prepForEarhart funds predefined addresses with specific balances.
