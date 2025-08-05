@@ -59,7 +59,7 @@ func (c Client) Price(ctx context.Context, base, quote tokens.Asset) (*big.Rat, 
 
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
-		m, err := c.getPrice(ctx, currencyUSD, base)
+		m, err := c.USDPricesRat(ctx, base)
 		if err != nil {
 			return errors.Wrap(err, "get price")
 		}
@@ -68,7 +68,7 @@ func (c Client) Price(ctx context.Context, base, quote tokens.Asset) (*big.Rat, 
 		return nil
 	})
 	eg.Go(func() error {
-		m, err := c.getPrice(ctx, currencyUSD, quote)
+		m, err := c.USDPricesRat(ctx, quote)
 		if err != nil {
 			return errors.Wrap(err, "get price")
 		}
@@ -96,7 +96,7 @@ func (c Client) USDPrice(ctx context.Context, asset tokens.Asset) (float64, erro
 
 // USDPrices returns the price of each asset in USD.
 func (c Client) USDPrices(ctx context.Context, assets ...tokens.Asset) (map[tokens.Asset]float64, error) {
-	rats, err := c.getPrice(ctx, currencyUSD, assets...)
+	rats, err := c.USDPricesRat(ctx, assets...)
 	if err != nil {
 		return nil, errors.Wrap(err, "get price")
 	}
@@ -112,7 +112,72 @@ func (c Client) USDPrices(ctx context.Context, assets ...tokens.Asset) (map[toke
 
 // USDPricesRat returns the price of each asset in USD.
 func (c Client) USDPricesRat(ctx context.Context, assets ...tokens.Asset) (map[tokens.Asset]*big.Rat, error) {
-	return c.getPrice(ctx, currencyUSD, assets...)
+	// Separate assets that need direct fetching vs derivation
+	var fetchAssets []tokens.Asset
+	var derivedAssets []tokens.Asset
+	needsOMNI := false
+
+	for _, asset := range assets {
+		if asset == tokens.NOM {
+			derivedAssets = append(derivedAssets, asset)
+			needsOMNI = true
+		} else {
+			fetchAssets = append(fetchAssets, asset)
+		}
+	}
+
+	// If we need to derive NOM, ensure OMNI is fetched
+	if needsOMNI {
+		// Check if OMNI is already in fetchAssets to avoid duplicates
+		hasOMNI := false
+		for _, asset := range fetchAssets {
+			if asset == tokens.OMNI {
+				hasOMNI = true
+				break
+			}
+		}
+		if !hasOMNI {
+			fetchAssets = append(fetchAssets, tokens.OMNI)
+		}
+	}
+
+	// Fetch prices for standard assets
+	var fetchedPrices map[tokens.Asset]*big.Rat
+	var err error
+	if len(fetchAssets) > 0 {
+		fetchedPrices, err = c.getPrice(ctx, currencyUSD, fetchAssets...)
+		if err != nil {
+			return nil, errors.Wrap(err, "get price")
+		}
+	} else {
+		fetchedPrices = make(map[tokens.Asset]*big.Rat)
+	}
+
+	// Build result mapping with fetched prices
+	prices := make(map[tokens.Asset]*big.Rat)
+	for _, asset := range assets {
+		if asset != tokens.NOM {
+			if price, ok := fetchedPrices[asset]; ok {
+				prices[asset] = price
+			}
+		}
+	}
+
+	// Derive NOM price from OMNI if requested
+	for _, asset := range derivedAssets {
+		if asset == tokens.NOM {
+			omniPrice, ok := fetchedPrices[tokens.OMNI]
+			if !ok {
+				return nil, errors.New("cannot derive NOM price: OMNI price not available")
+			}
+
+			// NOM price = OMNI price / 75
+			nomPrice := new(big.Rat).Quo(omniPrice, big.NewRat(75, 1))
+			prices[tokens.NOM] = nomPrice
+		}
+	}
+
+	return prices, nil
 }
 
 // USDPriceRat returns the price of each asset in USD.

@@ -111,6 +111,13 @@ var (
 		CoingeckoID: "berachain-bera",
 	}
 
+	NOM = Asset{
+		Symbol:      "NOM",
+		Name:        "Nomina",
+		Decimals:    18,
+		CoingeckoID: "", // Derived from OMNI price (OMNI / 75) until listed on CoinGecko
+	}
+
 	PLUME = Asset{
 		Symbol:      "PLUME",
 		Name:        "Plume",

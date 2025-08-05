@@ -45,9 +45,9 @@ const (
 	// Check live gas prices every 30 seconds.
 	gasPriceBufferSyncInterval = 30 * time.Second
 
-	maxSaneGasPrice   = uint64(500_000_000_000)
-	maxSaneOmniPerEth = float64(1_000_000)
-	maxSaneEthPerOmni = float64(1)
+	maxSaneGasPrice     = uint64(500_000_000_000)
+	maxSaneNativePerEth = float64(1_000_000)
+	maxSaneEthPerNative = float64(1)
 )
 
 var chainSyncOverrides = map[uint64]time.Duration{
@@ -90,7 +90,7 @@ func Start(
 	}
 
 	tprice := tokenprice.NewBuffer(cgCl,
-		[]tokens.Asset{tokens.OMNI, tokens.ETH},
+		[]tokens.Asset{tokens.OMNI, tokens.NOM, tokens.ETH},
 		tokenPriceBufferThreshold,
 		ticker.New(tokenPriceBufferSyncInterval))
 
