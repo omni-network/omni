@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -23,11 +22,7 @@ const (
 	StakingMethodUndelegate = 1
 )
 
-func maybeDosForever(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, delegator, validator common.Address, period time.Duration) {
-	if network != netconf.Staging {
-		return
-	}
-
+func maybeDosForever(ctx context.Context, backend *ethbackend.Backend, delegator, validator common.Address, period time.Duration) {
 	log.Info(ctx, "Starting periodic staking dos", "delegator", delegator.Hex(), "validator", validator.Hex(), "period", period)
 
 	nextPeriod := func() time.Duration {

@@ -1,4 +1,3 @@
-//nolint:unused // Temporary
 package loadgen
 
 import (
