@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	selfDelegationPeriod       = time.Hour * 6
+	selfDelegationPeriod       = time.Minute * 2
 	selfDelegationPeriodDevnet = time.Second * 5
 	xCallerPeriod              = time.Hour * 2
 	xCallerPeriodDevnet        = time.Second * 30
