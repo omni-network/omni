@@ -74,7 +74,7 @@ func dosOnce(ctx context.Context, backend *ethbackend.Backend, delegator, valida
 				Amount:    bi.Zero(), // Can't be nil
 			},
 		)
-		txOpts.Value = bi.Sub(txOpts.Value, bi.Ether(1.1)) // 1 + 0.1 ether per pair of calls
+		txOpts.Value = bi.Add(txOpts.Value, bi.Ether(1.1)) // 1 + 0.1 ether per pair of calls
 	}
 
 	// Await balance
