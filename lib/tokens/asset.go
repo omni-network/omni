@@ -115,7 +115,7 @@ var (
 		Symbol:      "NOM",
 		Name:        "Nomina",
 		Decimals:    18,
-		CoingeckoID: "", // Derived from OMNI price (OMNI / 75) until listed on CoinGecko
+		CoingeckoID: "nomina",
 	}
 
 	PLUME = Asset{

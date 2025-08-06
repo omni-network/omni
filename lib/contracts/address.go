@@ -32,7 +32,8 @@ const (
 	NameGasStation        = "gas-station"
 	NameL1Bridge          = "l1-bridge"
 	NamePortal            = "portal"
-	NameToken             = "token"
+	NameOmniToken         = "token"
+	NameNomToken          = "nom-token"
 	NameSolverNetInbox    = "solvernet-inbox"
 	NameSolverNetOutbox   = "solvernet-outbox"
 	NameSovlerNetExecutor = "solvernet-executor"
@@ -215,7 +216,7 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		AVS:               s(NameAVS),
 		Portal:            s(NamePortal),
 		L1Bridge:          s(NameL1Bridge),
-		Token:             s(NameToken),
+		Token:             s(NameOmniToken),
 		GasPump:           s(NameGasPump),
 		GasStation:        s(NameGasStation),
 		SolverNetInbox:    s(NameSolverNetInbox),
@@ -248,7 +249,15 @@ func TokenAddr(network netconf.ID) common.Address {
 		return common.HexToAddress("0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07")
 	}
 
-	return addr(network, prefixNetwork(network, NameToken))
+	return addr(network, prefixNetwork(network, NameOmniToken))
+}
+
+func NomAddr(network netconf.ID) common.Address {
+	if network == netconf.Mainnet || network == netconf.Omega {
+		return common.HexToAddress("0x6e6f6d696e610000000000000000000000000000")
+	}
+
+	return addr(network, prefixNetwork(network, NameNomToken))
 }
 
 // Create3Factory returns the Create3 factory address for the given network.
@@ -277,7 +286,7 @@ func salt(network netconf.ID, name string, versions Versions) string {
 func isVersioned(contract string) bool {
 	// AVS not versioned, as requiring re-registration per each version is too cumbersome.
 	// Token salt is static, as Omni ERC20 contract does not change.
-	not := contract == NameAVS || contract == NameToken
+	not := contract == NameAVS || contract == NameOmniToken || contract == NameNomToken
 
 	return !not
 }

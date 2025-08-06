@@ -135,5 +135,15 @@ func feeBips(a, b tokens.Asset) int64 {
 		return 0
 	}
 
+	// if NOM<>NOM, charge no fee
+	if a == tokens.NOM && b == tokens.NOM {
+		return 0
+	}
+
+	// if NOM<>OMNI, charge no fee
+	if (a == tokens.NOM && b == tokens.OMNI) || (a == tokens.OMNI && b == tokens.NOM) {
+		return 0
+	}
+
 	return standardFeeBips
 }

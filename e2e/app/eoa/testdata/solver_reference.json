@@ -38,6 +38,9 @@
    "MNT": {
     "min": "0 MNT"
    },
+   "NOM": {
+    "min": "0 NOM"
+   },
    "OMNI": {
     "min": "0 OMNI"
    },

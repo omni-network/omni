@@ -16,12 +16,13 @@ type Mock struct {
 
 var _ Pricer = (*Mock)(nil)
 
-// NewDevnetMock only supports OMNI/wstETH/ETH/USDC swaps.
+// NewDevnetMock only supports OMNI/wstETH/ETH/USDC/NOM swaps.
 func NewDevnetMock() *Mock {
 	m := &Mock{prices: make(map[pair]*big.Rat)}
 	m.SetPrice(tokens.WSTETH, tokens.USDC, big.NewRat(4000, 1)) // 1 WSTETH = 4000 USDC
 	m.SetPrice(tokens.ETH, tokens.USDC, big.NewRat(3000, 1))    // 1 ETH = 3000 USDC
 	m.SetPrice(tokens.OMNI, tokens.USDC, big.NewRat(5, 1))      // 1 OMNI = 5 USDC
+	m.SetPrice(tokens.NOM, tokens.USDC, big.NewRat(5, 75))      // 1 NOM = 5/75 USDC = OMNI/75
 
 	return m
 }

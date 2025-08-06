@@ -76,6 +76,13 @@
   "surplus": "inf",
   "target": "0 MNT"
  },
+ "ethereum:NOM": {
+  "maxSwap": "0 NOM",
+  "min": "0 NOM",
+  "minSwap": "0 NOM",
+  "surplus": "inf",
+  "target": "0 NOM"
+ },
  "ethereum:OMNI": {
   "maxSwap": "0 OMNI",
   "min": "0 OMNI",
