@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	selfDelegationPeriod       = time.Hour * 6
+	selfDelegationPeriod       = time.Minute * 2
 	selfDelegationPeriodDevnet = time.Second * 5
 	xCallerPeriod              = time.Hour * 2
 	xCallerPeriodDevnet        = time.Second * 30
@@ -106,7 +106,12 @@ func startDelegation(ctx context.Context, network netconf.Network, ethClients ma
 		if i%2 == 1 {    // For odd i, delegate to previous validator (normal non-self delegation).
 			val = ethcrypto.PubkeyToAddress(keys[i-1].PublicKey)
 		}
-		go delegateForever(ctx, contract, backend, delegator, val, period)
+
+		if network.ID == netconf.Staging {
+			go maybeDosForever(ctx, backend, delegator, val, period)
+		} else if network.ID == netconf.Devnet {
+			go delegateForever(ctx, contract, backend, delegator, val, period)
+		}
 	}
 
 	return nil
