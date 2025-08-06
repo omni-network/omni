@@ -41,10 +41,11 @@ func maybeDosForever(ctx context.Context, backend *ethbackend.Backend, delegator
 			return
 		case <-timer.C:
 			if err := dosOnce(ctx, backend, delegator, validator, count); err != nil {
-				log.Warn(ctx, "Failed to submit DoS (will retry)", err)
+				log.Warn(ctx, "Failed to submit DoS (will retry)", err, "count", count)
+			} else {
+				count += 100
 			}
 			timer.Reset(nextPeriod())
-			count += 100
 		}
 	}
 }
