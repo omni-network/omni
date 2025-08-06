@@ -23,7 +23,7 @@ const (
 )
 
 func maybeDosForever(ctx context.Context, backend *ethbackend.Backend, delegator, validator common.Address, period time.Duration) {
-	log.Info(ctx, "Starting periodic staking dos", "delegator", delegator.Hex(), "validator", validator.Hex(), "period", period)
+	log.Info(ctx, "Starting periodic staking DoS", "delegator", delegator.Hex(), "validator", validator.Hex(), "period", period)
 
 	nextPeriod := func() time.Duration {
 		jitter := time.Duration(float64(period) * rand.Float64() * loadgenJitter) //nolint:gosec // Weak random ok for load tests.
@@ -50,13 +50,41 @@ func maybeDosForever(ctx context.Context, backend *ethbackend.Backend, delegator
 }
 
 func dosOnce(ctx context.Context, backend *ethbackend.Backend, delegator, validator common.Address, count int) error {
+	txOpts, err := backend.BindOpts(ctx, delegator)
+	if err != nil {
+		return err
+	}
+	txOpts.Value = bi.Zero()
+
+	var calls []bindings.StakingProxyCall
+	for i := 0; i < count; i++ {
+		// Invalid undelegate message
+		invalid := bi.N(1000)
+		calls = append(calls,
+			bindings.StakingProxyCall{
+				Method:    StakingMethodUndelegate,
+				Value:     bi.Ether(0.1), // Undelegate fee
+				Validator: tutil.RandomAddress(),
+				Amount:    invalid,
+			},
+			bindings.StakingProxyCall{
+				Method:    StakingMethodDelegate,
+				Value:     bi.Ether(1),
+				Validator: validator,
+				Amount:    bi.Zero(), // Can't be nil
+			},
+		)
+		txOpts.Value = bi.Sub(txOpts.Value, bi.Ether(1.1)) // 1 + 0.1 ether per pair of calls
+	}
+
+	// Await balance
 	backoff := expbackoff.New(ctx)
 	for {
-		ethBalance, err := backend.EtherBalanceAt(ctx, delegator)
+		bal, err := backend.BalanceAt(ctx, delegator, nil)
 		if err != nil {
 			return err
-		} else if ethBalance < float64(count)*1.1 {
-			log.Info(ctx, "Waiting for delegator to be funded", "balance", ethBalance, "delegator", delegator.Hex())
+		} else if bi.LT(txOpts.Value, bal) {
+			log.Info(ctx, "Waiting for DoS delegator to be funded", "balance", bi.ToEtherF64(bal), "require", bi.ToEtherF64(txOpts.Value), "delegator", delegator.Hex())
 			backoff()
 
 			continue
@@ -73,30 +101,6 @@ func dosOnce(ctx context.Context, backend *ethbackend.Backend, delegator, valida
 	proxy, err := bindings.NewStakingProxy(proxyAddr, backend)
 	if err != nil {
 		return errors.Wrap(err, "new staking proxy")
-	}
-
-	txOpts, err := backend.BindOpts(ctx, delegator)
-	if err != nil {
-		return err
-	}
-	txOpts.Value = bi.Ether(count) // 1 ETH (in wei)
-
-	var calls []bindings.StakingProxyCall
-	for i := 0; i < count; i++ {
-		// Invalid undelegate message
-		invalid := bi.N(1000)
-		calls = append(calls, bindings.StakingProxyCall{
-			Method:    StakingMethodUndelegate,
-			Value:     bi.Ether(0.1), // Undelegate fee
-			Validator: tutil.RandomAddress(),
-			Amount:    invalid,
-		},
-			bindings.StakingProxyCall{
-				Method:    StakingMethodDelegate,
-				Value:     bi.Ether(1),
-				Validator: validator,
-				Amount:    bi.Zero(), // Can't be nil
-			})
 	}
 
 	tx, err := proxy.Proxy(txOpts, calls)
