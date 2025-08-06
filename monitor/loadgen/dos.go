@@ -95,6 +95,7 @@ func dosOnce(ctx context.Context, backend *ethbackend.Backend, delegator, valida
 				Method:    StakingMethodDelegate,
 				Value:     bi.Ether(1),
 				Validator: validator,
+				Amount:    bi.Zero(), // Can't be nil
 			})
 	}
 
