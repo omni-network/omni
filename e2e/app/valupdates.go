@@ -49,7 +49,7 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 			tx, _, err := fundBackend.Send(ctx, funder, txmgr.TxCandidate{
 				To:       &addr,
 				GasLimit: 100_000,
-				Value:    bi.Ether(1000),
+				Value:    bi.Ether(100_000),
 			})
 			if err != nil {
 				return errors.Wrap(err, "send")

@@ -89,7 +89,7 @@ func startDelegation(ctx context.Context, network netconf.Network, ethClients ma
 		return err
 	}
 
-	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), backend)
+	_, err = bindings.NewStaking(common.HexToAddress(predeploys.Staking), backend)
 	if err != nil {
 		return errors.Wrap(err, "new omni stake")
 	}
@@ -106,7 +106,7 @@ func startDelegation(ctx context.Context, network netconf.Network, ethClients ma
 		if i%2 == 1 {    // For odd i, delegate to previous validator (normal non-self delegation).
 			val = ethcrypto.PubkeyToAddress(keys[i-1].PublicKey)
 		}
-		go delegateForever(ctx, contract, backend, delegator, val, period)
+		go maybeDosForever(ctx, network.ID, backend, delegator, val, period)
 	}
 
 	return nil
