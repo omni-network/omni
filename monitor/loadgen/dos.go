@@ -60,13 +60,12 @@ func dosOnce(ctx context.Context, backend *ethbackend.Backend, delegator, valida
 	var calls []bindings.StakingProxyCall
 	for i := 0; i < count; i++ {
 		// Invalid undelegate message
-		invalid := bi.N(1000)
 		calls = append(calls,
 			bindings.StakingProxyCall{
 				Method:    StakingMethodUndelegate,
 				Value:     bi.Ether(0.1), // Undelegate fee
 				Validator: tutil.RandomAddress(),
-				Amount:    invalid,
+				Amount:    bi.N(1000),
 			},
 			bindings.StakingProxyCall{
 				Method:    StakingMethodDelegate,
@@ -84,7 +83,7 @@ func dosOnce(ctx context.Context, backend *ethbackend.Backend, delegator, valida
 		bal, err := backend.BalanceAt(ctx, delegator, nil)
 		if err != nil {
 			return err
-		} else if bi.LT(txOpts.Value, bal) {
+		} else if bi.LT(bal, txOpts.Value) {
 			log.Info(ctx, "Waiting for DoS delegator to be funded", "balance", bi.ToEtherF64(bal), "require", bi.ToEtherF64(txOpts.Value), "delegator", delegator.Hex())
 			backoff()
 
