@@ -13,6 +13,20 @@ contract StakingProxy {
         stakingContract = _stakingContract;
     }
 
+    function delegateN(address validator, uint256 value, uint256 n) external payable {
+        IStakingContract staking = IStakingContract(stakingContract);
+        for (uint256 i = 0; i < n; i++) {
+            staking.delegate{ value: value }(validator);
+        }
+    }
+
+    function undelegateN(address validator, uint256 value, uint256 amount, uint256 n) external payable {
+        IStakingContract staking = IStakingContract(stakingContract);
+        for (uint256 i = 0; i < n; i++) {
+            staking.undelegate{ value: value }(validator, amount);
+        }
+    }
+
     enum Method {
         Delegate,
         Undelegate

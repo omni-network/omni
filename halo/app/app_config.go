@@ -70,6 +70,7 @@ const (
 
 	deliverIntervalProtected = 20_000 // Roughly ~12h assuming 0.5bps
 	deliverIntervalEphemeral = 2      // Fast updates while testing
+	deliverIntervalStaging   = 2_400  // ~1h interval on staging for testing DoS
 
 	maxWithdrawalsPerBlock uint64 = 32 // The maximum number of withdrawals included in one block.
 )
@@ -273,6 +274,8 @@ var (
 func deliverInterval(network netconf.ID) int64 {
 	if network.IsProtected() {
 		return deliverIntervalProtected
+	} else if network == netconf.Staging {
+		return deliverIntervalStaging // TODO(corver): Remove this.
 	}
 
 	return deliverIntervalEphemeral

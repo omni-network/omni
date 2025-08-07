@@ -19,10 +19,10 @@ import (
 )
 
 const (
-	selfDelegationPeriod       = time.Minute * 2
-	selfDelegationPeriodDevnet = time.Second * 5
-	xCallerPeriod              = time.Hour * 2
-	xCallerPeriodDevnet        = time.Second * 30
+	selfDelegationPeriodStaging = time.Second * 5 // TODO(corver): Revert to 2h loadgen
+	selfDelegationPeriodDevnet  = time.Second * 5
+	xCallerPeriod               = time.Hour * 2
+	xCallerPeriodDevnet         = time.Second * 30
 )
 
 // Config is the configuration for the load generator.
@@ -94,7 +94,7 @@ func startDelegation(ctx context.Context, network netconf.Network, ethClients ma
 		return errors.Wrap(err, "new omni stake")
 	}
 
-	period := selfDelegationPeriod
+	period := selfDelegationPeriodStaging
 	if network.ID == netconf.Devnet {
 		period = selfDelegationPeriodDevnet
 	}
