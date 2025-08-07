@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/create3"
+	"github.com/omni-network/omni/lib/createx"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -118,6 +119,7 @@ func StagingID(ctx context.Context) (string, error) {
 type Addresses struct {
 	AVS               common.Address
 	Create3Factory    common.Address
+	CreateXFactory    common.Address
 	GasPump           common.Address
 	GasStation        common.Address
 	L1Bridge          common.Address
@@ -178,6 +180,7 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 
 	addrs = Addresses{
 		Create3Factory:    Create3Factory(network),
+		CreateXFactory:    createx.CreateXAddress,
 		AVS:               Avs(network),
 		Token:             TokenAddr(network),
 		Portal:            addr(network, s(NamePortal)),

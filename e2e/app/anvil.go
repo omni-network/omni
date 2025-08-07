@@ -18,7 +18,7 @@ func fundAnvil(ctx context.Context, def Definition) error {
 	amt := bi.Ether(1_000_000) // 1M Ether
 	toFund := dedup(append(
 		eoa.MustAddresses(def.Testnet.Network, eoa.AllRoles()...),
-		eoa.DevAccounts()...,
+		append(eoa.DevAccounts(), eoa.CreateXDeployer())...,
 	))
 
 	for _, chain := range def.Testnet.AnvilChains {
