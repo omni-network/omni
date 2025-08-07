@@ -210,7 +210,7 @@ func (p *Keeper) verifyBatch(ctx context.Context, batch *bindings.RedenomSubmitt
 	}
 
 	// Calculate account hashes from addresses.
-	var hashes [][]byte
+	hashes := make([][]byte, 0, len(batch.Addresses))
 	for _, addr := range batch.Addresses {
 		hashes = append(hashes, crypto.Keccak256(addr[:]))
 	}

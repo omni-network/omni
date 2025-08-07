@@ -118,6 +118,21 @@ func NewBackend(chainName string, chainID uint64, blockPeriod time.Duration, eth
 	}, nil
 }
 
+func DialOmni(ctx context.Context, addr string) (*Backend, error) {
+	const name = "omni_evm"
+	ethCl, err := ethclient.DialContext(ctx, name, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	chainID, err := ethCl.ChainID(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "chain id")
+	}
+
+	return NewBackend(name, chainID.Uint64(), time.Second*2, ethCl, eoa.DevPrivateKeys()...)
+}
+
 // AddAccount adds a in-memory private key account to the backend.
 // Note this can be called even if other accounts are fireblocks based.
 func (b *Backend) AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error) {

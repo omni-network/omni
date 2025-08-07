@@ -39,8 +39,8 @@ type StakingProxyCall struct {
 
 // StakingProxyMetaData contains all meta data concerning the StakingProxy contract.
 var StakingProxyMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_stakingContract\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"receive\",\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"proxy\",\"inputs\":[{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structStakingProxy.Call[]\",\"components\":[{\"name\":\"method\",\"type\":\"uint8\",\"internalType\":\"enumStakingProxy.Method\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"stakingContract\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"}]",
-	Bin: "0x608060405234801561000f575f80fd5b506040516104e33803806104e383398101604081905261002e91610052565b5f80546001600160a01b0319166001600160a01b039290921691909117905561007f565b5f60208284031215610062575f80fd5b81516001600160a01b0381168114610078575f80fd5b9392505050565b6104578061008c5f395ff3fe60806040526004361061002b575f3560e01c8063b1b69ebc14610036578063ee99205c1461004b575f80fd5b3661003257005b5f80fd5b61004961004436600461033f565b610085565b005b348015610056575f80fd5b505f54610069906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b5f80546001600160a01b0316905b828110156102a2575f8484838181106100ae576100ae6103c2565b6100c492602060809092020190810191506103d6565b60018111156100d5576100d56103ae565b0361018957816001600160a01b0316635c19a95c8585848181106100fb576100fb6103c2565b90506080020160200135868685818110610117576101176103c2565b905060800201604001602081019061012f91906103fb565b6040516001600160e01b031960e085901b1681526001600160a01b0390911660048201526024015f604051808303818588803b15801561016d575f80fd5b505af115801561017f573d5f803e3d5ffd5b505050505061029a565b600184848381811061019d5761019d6103c2565b6101b392602060809092020190810191506103d6565b60018111156101c4576101c46103ae565b0361029a57816001600160a01b0316634d99dd168585848181106101ea576101ea6103c2565b90506080020160200135868685818110610206576102066103c2565b905060800201604001602081019061021e91906103fb565b878786818110610230576102306103c2565b905060800201606001356040518463ffffffff1660e01b815260040161026b9291906001600160a01b03929092168252602082015260400190565b5f604051808303818588803b158015610282575f80fd5b505af1158015610294573d5f803e3d5ffd5b50505050505b600101610093565b50478015610339576040515f90339083908381818185875af1925050503d805f81146102e9576040519150601f19603f3d011682016040523d82523d5f602084013e6102ee565b606091505b50509050806103375760405162461bcd60e51b8152602060048201526011602482015270115512081c99599d5b990819985a5b1959607a1b604482015260640160405180910390fd5b505b50505050565b5f8060208385031215610350575f80fd5b823567ffffffffffffffff80821115610367575f80fd5b818501915085601f83011261037a575f80fd5b813581811115610388575f80fd5b8660208260071b850101111561039c575f80fd5b60209290920196919550909350505050565b634e487b7160e01b5f52602160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b5f602082840312156103e6575f80fd5b8135600281106103f4575f80fd5b9392505050565b5f6020828403121561040b575f80fd5b81356001600160a01b03811681146103f4575f80fdfea2646970667358221220ec9bed4eb10164e91643d5a8b127b7d482b23d4a572f44e24c4b5c6c88e19c2d64736f6c63430008180033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_stakingContract\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"receive\",\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"delegateN\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"n\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"proxy\",\"inputs\":[{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structStakingProxy.Call[]\",\"components\":[{\"name\":\"method\",\"type\":\"uint8\",\"internalType\":\"enumStakingProxy.Method\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"stakingContract\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"undelegateN\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"n\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"payable\"}]",
+	Bin: "0x608060405234801561000f575f80fd5b5060405161069d38038061069d83398101604081905261002e91610052565b5f80546001600160a01b0319166001600160a01b039290921691909117905561007f565b5f60208284031215610062575f80fd5b81516001600160a01b0381168114610078575f80fd5b9392505050565b6106118061008c5f395ff3fe608060405260043610610041575f3560e01c806325db2ab51461004c578063557707fa14610061578063b1b69ebc14610074578063ee99205c14610087575f80fd5b3661004857005b5f80fd5b61005f61005a3660046104a0565b6100c1565b005b61005f61006f3660046104d0565b610143565b61005f610082366004610506565b6101cd565b348015610092575f80fd5b505f546100a5906001600160a01b031681565b6040516001600160a01b03909116815260200160405180910390f35b5f80546001600160a01b0316905b8281101561013c576040516317066a5760e21b81526001600160a01b038681166004830152831690635c19a95c9086906024015f604051808303818588803b158015610119575f80fd5b505af115801561012b573d5f803e3d5ffd5b5050600190930192506100cf915050565b5050505050565b5f80546001600160a01b0316905b828110156101c5576040516326ccee8b60e11b81526001600160a01b03878116600483015260248201869052831690634d99dd169087906044015f604051808303818588803b1580156101a2575f80fd5b505af11580156101b4573d5f803e3d5ffd5b505060019093019250610151915050565b505050505050565b5f80546001600160a01b0316905b828110156103ea575f8484838181106101f6576101f6610589565b61020c926020608090920201908101915061059d565b600181111561021d5761021d610575565b036102d157816001600160a01b0316635c19a95c85858481811061024357610243610589565b9050608002016020013586868581811061025f5761025f610589565b905060800201604001602081019061027791906105c2565b6040516001600160e01b031960e085901b1681526001600160a01b0390911660048201526024015f604051808303818588803b1580156102b5575f80fd5b505af11580156102c7573d5f803e3d5ffd5b50505050506103e2565b60018484838181106102e5576102e5610589565b6102fb926020608090920201908101915061059d565b600181111561030c5761030c610575565b036103e257816001600160a01b0316634d99dd1685858481811061033257610332610589565b9050608002016020013586868581811061034e5761034e610589565b905060800201604001602081019061036691906105c2565b87878681811061037857610378610589565b905060800201606001356040518463ffffffff1660e01b81526004016103b39291906001600160a01b03929092168252602082015260400190565b5f604051808303818588803b1580156103ca575f80fd5b505af11580156103dc573d5f803e3d5ffd5b50505050505b6001016101db565b5047801561047f576040515f90339083908381818185875af1925050503d805f8114610431576040519150601f19603f3d011682016040523d82523d5f602084013e610436565b606091505b505090508061013c5760405162461bcd60e51b8152602060048201526011602482015270115512081c99599d5b990819985a5b1959607a1b604482015260640160405180910390fd5b50505050565b80356001600160a01b038116811461049b575f80fd5b919050565b5f805f606084860312156104b2575f80fd5b6104bb84610485565b95602085013595506040909401359392505050565b5f805f80608085870312156104e3575f80fd5b6104ec85610485565b966020860135965060408601359560600135945092505050565b5f8060208385031215610517575f80fd5b823567ffffffffffffffff8082111561052e575f80fd5b818501915085601f830112610541575f80fd5b81358181111561054f575f80fd5b8660208260071b8501011115610563575f80fd5b60209290920196919550909350505050565b634e487b7160e01b5f52602160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b5f602082840312156105ad575f80fd5b8135600281106105bb575f80fd5b9392505050565b5f602082840312156105d2575f80fd5b6105bb8261048556fea2646970667358221220ef83ef5ee041c79d8613ade8233d6038addfe7388a77d0b7bc41a4b76c4c2b6b64736f6c63430008180033",
 }
 
 // StakingProxyABI is the input ABI used to generate the binding from.
@@ -241,6 +241,27 @@ func (_StakingProxy *StakingProxyCallerSession) StakingContract() (common.Addres
 	return _StakingProxy.Contract.StakingContract(&_StakingProxy.CallOpts)
 }
 
+// DelegateN is a paid mutator transaction binding the contract method 0x25db2ab5.
+//
+// Solidity: function delegateN(address validator, uint256 value, uint256 n) payable returns()
+func (_StakingProxy *StakingProxyTransactor) DelegateN(opts *bind.TransactOpts, validator common.Address, value *big.Int, n *big.Int) (*types.Transaction, error) {
+	return _StakingProxy.contract.Transact(opts, "delegateN", validator, value, n)
+}
+
+// DelegateN is a paid mutator transaction binding the contract method 0x25db2ab5.
+//
+// Solidity: function delegateN(address validator, uint256 value, uint256 n) payable returns()
+func (_StakingProxy *StakingProxySession) DelegateN(validator common.Address, value *big.Int, n *big.Int) (*types.Transaction, error) {
+	return _StakingProxy.Contract.DelegateN(&_StakingProxy.TransactOpts, validator, value, n)
+}
+
+// DelegateN is a paid mutator transaction binding the contract method 0x25db2ab5.
+//
+// Solidity: function delegateN(address validator, uint256 value, uint256 n) payable returns()
+func (_StakingProxy *StakingProxyTransactorSession) DelegateN(validator common.Address, value *big.Int, n *big.Int) (*types.Transaction, error) {
+	return _StakingProxy.Contract.DelegateN(&_StakingProxy.TransactOpts, validator, value, n)
+}
+
 // Proxy is a paid mutator transaction binding the contract method 0xb1b69ebc.
 //
 // Solidity: function proxy((uint8,uint256,address,uint256)[] calls) payable returns()
@@ -260,6 +281,27 @@ func (_StakingProxy *StakingProxySession) Proxy(calls []StakingProxyCall) (*type
 // Solidity: function proxy((uint8,uint256,address,uint256)[] calls) payable returns()
 func (_StakingProxy *StakingProxyTransactorSession) Proxy(calls []StakingProxyCall) (*types.Transaction, error) {
 	return _StakingProxy.Contract.Proxy(&_StakingProxy.TransactOpts, calls)
+}
+
+// UndelegateN is a paid mutator transaction binding the contract method 0x557707fa.
+//
+// Solidity: function undelegateN(address validator, uint256 value, uint256 amount, uint256 n) payable returns()
+func (_StakingProxy *StakingProxyTransactor) UndelegateN(opts *bind.TransactOpts, validator common.Address, value *big.Int, amount *big.Int, n *big.Int) (*types.Transaction, error) {
+	return _StakingProxy.contract.Transact(opts, "undelegateN", validator, value, amount, n)
+}
+
+// UndelegateN is a paid mutator transaction binding the contract method 0x557707fa.
+//
+// Solidity: function undelegateN(address validator, uint256 value, uint256 amount, uint256 n) payable returns()
+func (_StakingProxy *StakingProxySession) UndelegateN(validator common.Address, value *big.Int, amount *big.Int, n *big.Int) (*types.Transaction, error) {
+	return _StakingProxy.Contract.UndelegateN(&_StakingProxy.TransactOpts, validator, value, amount, n)
+}
+
+// UndelegateN is a paid mutator transaction binding the contract method 0x557707fa.
+//
+// Solidity: function undelegateN(address validator, uint256 value, uint256 amount, uint256 n) payable returns()
+func (_StakingProxy *StakingProxyTransactorSession) UndelegateN(validator common.Address, value *big.Int, amount *big.Int, n *big.Int) (*types.Transaction, error) {
+	return _StakingProxy.Contract.UndelegateN(&_StakingProxy.TransactOpts, validator, value, amount, n)
 }
 
 // Receive is a paid mutator transaction binding the contract receive function.
