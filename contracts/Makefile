@@ -41,6 +41,7 @@ CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			PortalRegistry AllocPredeploys PingPong ProxyAdmin Admin \
 			OmniGasPump OmniGasStation FeeOracleV2 \
 			node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20 \
+			node_modules/createx/src/ICreateX.sol:ICreateX \
 			test/StakingProxy.sol:StakingProxy
 
 SOLVE_CONTRACTS := ISolverNetBindings SolverNetInbox SolverNetOutbox SolverNetExecutor \

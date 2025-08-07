@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/netman"
+	"github.com/omni-network/omni/e2e/nomina"
 	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
@@ -164,4 +165,22 @@ func maybeDeployL1OmniERC20(ctx context.Context, network netconf.Network, backen
 	}
 
 	return nil
+}
+
+func maybeDeployNomina(ctx context.Context, def Definition) error {
+	network := networkFromDef(def)
+	backends := def.Backends()
+
+	// Only deploy the nomina contracts for ephemeral networks
+	if !def.Testnet.Network.IsEphemeral() {
+		return nil
+	}
+
+	// Only deploy the nomina contracts for networks with an ethereum chain
+	_, ok := network.EthereumChain()
+	if !ok {
+		return nil
+	}
+
+	return nomina.DeployNomina(ctx, network, backends)
 }

@@ -360,7 +360,7 @@
   "symbol": "NOM"
  },
  {
-  "address": "0x42383afE6F9B910495e70e8E951718e065eE2A9C",
+  "address": "0x8C9c48d7E8eE53FA0429B5EFFe6bBE76702620f6",
   "chainId": 17000,
   "coingeckoId": "nomina",
   "isMock": false,
@@ -370,7 +370,7 @@
   "symbol": "NOM"
  },
  {
-  "address": "0x2a621055b9443f1cDAdC5FC5251991310131b72A",
+  "address": "0xD9227619950eD3E965d0d0DC3c9BDfB7BcEc59F6",
   "chainId": 1652,
   "coingeckoId": "nomina",
   "isMock": false,

@@ -17,7 +17,17 @@ contract Nomina_Test is Test {
 
     function setUp() public {
         omni = new MockOmni(1_000_000 ether, user);
-        nomina = new Nomina(address(omni), mintAuthority, minter);
+        nomina = new Nomina(address(omni), mintAuthority);
+        vm.prank(mintAuthority);
+        nomina.setMinter(minter);
+    }
+
+    function test_constructor() public {
+        vm.expectRevert(Nomina.ZeroAddress.selector);
+        new Nomina(address(0), mintAuthority);
+
+        vm.expectRevert(Nomina.ZeroAddress.selector);
+        new Nomina(address(omni), address(0));
     }
 
     function testMetadata() public view {
@@ -25,7 +35,7 @@ contract Nomina_Test is Test {
         assertEq(nomina.symbol(), "NOM", "symbol mismatch");
         assertEq(nomina.decimals(), 18, "decimals mismatch");
         assertEq(nomina.totalSupply(), 0, "total supply mismatch");
-        assertEq(nomina.omni(), address(omni), "omni mismatch");
+        assertEq(nomina.OMNI(), address(omni), "omni mismatch");
         assertEq(nomina.mintAuthority(), mintAuthority, "mint authority mismatch");
         assertEq(nomina.minter(), minter, "minter mismatch");
         assertEq(nomina.CONVERSION_RATE(), 75, "conversion rate mismatch");
@@ -80,11 +90,6 @@ contract Nomina_Test is Test {
         vm.expectRevert(Nomina.ZeroAddress.selector);
         vm.prank(user);
         nomina.convert(address(0), 1 ether);
-
-        // Conversion must not be disabled
-        nomina = new Nomina(address(0), mintAuthority, minter);
-        vm.expectRevert(Nomina.ConversionDisabled.selector);
-        nomina.convert(user, 1 ether);
     }
 
     function testConvert() public {
@@ -107,8 +112,30 @@ contract Nomina_Test is Test {
     }
 
     function testSetMintAuthority() public {
+        // Trigger pending transfer of mint authority
         vm.prank(mintAuthority);
         nomina.setMintAuthority(user);
+        assertEq(nomina.pendingMintAuthority(), user, "pending mint authority mismatch");
+
+        // Cancel pending transfer by setting the zero address
+        vm.prank(mintAuthority);
+        nomina.setMintAuthority(address(0));
+        assertEq(nomina.pendingMintAuthority(), address(0), "pending mint authority mismatch");
+    }
+
+    function testAcceptMintAuthorityReverts() public {
+        vm.expectRevert(Nomina.Unauthorized.selector);
+        vm.prank(user);
+        nomina.acceptMintAuthority();
+    }
+
+    function testAcceptMintAuthority() public {
+        vm.prank(mintAuthority);
+        nomina.setMintAuthority(user);
+
+        vm.prank(user);
+        nomina.acceptMintAuthority();
+
         assertEq(nomina.mintAuthority(), user, "mint authority mismatch");
     }
 

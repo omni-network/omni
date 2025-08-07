@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/e2e/bridge"
 	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/gasstation"
+	"github.com/omni-network/omni/e2e/nomina"
 	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/xbridge"
@@ -98,6 +99,7 @@ func New() *cobra.Command {
 		newDeployFeeOracleV2Cmd(&def),
 		newDeployXBridgeCmd(&def),
 		newDeploySolverNetCmd(&def),
+		newDeployNominaCmd(&def),
 		newSetSolverNetRoutesCmd(&def),
 		newHyperliquidUseBigBlocksCmd(&defCfg),
 		fundAccounts(&def),
@@ -355,6 +357,25 @@ func newDeploySolverNetCmd(def *app.Definition) *cobra.Command {
 			}
 
 			return solve.Deploy(cmd.Context(), network, backends)
+		},
+	}
+
+	return cmd
+}
+
+func newDeployNominaCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deploy-nomina",
+		Short: "Deploys the Nomina contracts",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
+
+			network, err := networkFromDef(ctx, *def)
+			if err != nil {
+				return errors.Wrap(err, "network from def")
+			}
+
+			return nomina.DeployNomina(ctx, network, def.Backends())
 		},
 	}
 
