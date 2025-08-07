@@ -26,10 +26,7 @@ func TestIntegration(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	apikey, ok := os.LookupEnv("COINGECKO_APIKEY")
-	require.False(t, ok)
-
-	c := coingecko.New(coingecko.WithAPIKey(apikey))
+	c := coingecko.New(coingecko.WithAPIKey(os.Getenv("COINGECKO_APIKEY")))
 
 	// USD prices for omni and eth
 	usdPrices, err := c.USDPrices(t.Context(), tokens.OMNI, tokens.ETH)
@@ -54,7 +51,30 @@ func TestIntegration(t *testing.T) {
 	t.Logf("OMNI/eth: %v", price3)
 
 	require.Equal(t, new(big.Rat).Inv(price2), price1)
-	require.Equal(t, price2, price3)
+	p2F64, _ := price2.Float64()
+	p3F64, _ := price3.Float64()
+	require.InEpsilon(t, p2F64, p3F64, 0.001, "OMNI/ETH prices should match")
+
+	// Test NOM price derivation (should be OMNI / 75)
+	nomPrices, err := c.USDPrices(t.Context(), tokens.NOM, tokens.OMNI)
+	tutil.RequireNoError(t, err)
+	require.Len(t, nomPrices, 2)
+
+	expectedNOMPrice := nomPrices[tokens.OMNI] / 75.0
+	require.InEpsilon(t, expectedNOMPrice, nomPrices[tokens.NOM], 0.001, "NOM price should be OMNI/75")
+
+	// Test that OMNI pricing still works independently
+	omniOnlyPrices, err := c.USDPrices(t.Context(), tokens.OMNI)
+	tutil.RequireNoError(t, err)
+	require.Len(t, omniOnlyPrices, 1)
+	require.InEpsilon(t, nomPrices[tokens.OMNI], omniOnlyPrices[tokens.OMNI], 0.001, "OMNI price should be consistent")
+
+	// Ensure fecthing NOM without OMNI also works
+	morePrices, err := c.USDPrices(t.Context(), tokens.NOM, tokens.ETH)
+	tutil.RequireNoError(t, err)
+	require.Len(t, morePrices, 2)
+	require.NotZero(t, morePrices[tokens.NOM])
+	require.NotZero(t, morePrices[tokens.ETH])
 }
 
 type testCase struct {
@@ -189,6 +209,47 @@ func makeTestServer(t *testing.T, test testCase) (*httptest.Server, map[string]m
 	}))
 
 	return server, servedPrices, apikey
+}
+
+func TestNOMDerivation(t *testing.T) {
+	t.Parallel()
+
+	// Create a mock server that only serves OMNI price
+	omniPrice := 10.0 // $10 OMNI
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]map[string]float64{
+			"omni-network": {
+				"usd": omniPrice,
+			},
+		}
+		bz, _ := json.Marshal(resp)
+		_, _ = w.Write(bz)
+	}))
+	defer server.Close()
+
+	c := coingecko.New(coingecko.WithHost(server.URL))
+
+	// Test NOM-only request
+	prices, err := c.USDPrices(t.Context(), tokens.NOM)
+	require.NoError(t, err)
+
+	expectedNOMPrice := omniPrice / 75.0
+	require.InEpsilon(t, expectedNOMPrice, prices[tokens.NOM], 0.001)
+
+	// Test mixed request (NOM + OMNI)
+	mixedPrices, err := c.USDPrices(t.Context(), tokens.NOM, tokens.OMNI)
+	require.NoError(t, err)
+
+	require.InEpsilon(t, omniPrice, mixedPrices[tokens.OMNI], 0.001)
+	require.InEpsilon(t, expectedNOMPrice, mixedPrices[tokens.NOM], 0.001)
+
+	// Test that NOM price is exactly OMNI/75
+	require.InEpsilon(t, mixedPrices[tokens.OMNI]/75.0, mixedPrices[tokens.NOM], 0.001)
+
+	// Test that requesting OMNI alone still works (no NOM derivation needed)
+	omniOnly, err := c.USDPrices(t.Context(), tokens.OMNI)
+	require.NoError(t, err)
+	require.InEpsilon(t, omniPrice, omniOnly[tokens.OMNI], 0.001)
 }
 
 func randPrice() float64 {

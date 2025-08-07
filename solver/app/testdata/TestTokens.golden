@@ -340,6 +340,46 @@
   "symbol": "OMNI"
  },
  {
+  "address": "0x6e6f6d696e610000000000000000000000000000",
+  "chainId": 1,
+  "coingeckoId": "nomina",
+  "isMock": false,
+  "maxSpend": "35000000 NOM",
+  "minSpend": "1 NOM",
+  "name": "Nomina",
+  "symbol": "NOM"
+ },
+ {
+  "address": "0x6e6f6d696e610000000000000000000000000000",
+  "chainId": 17000,
+  "coingeckoId": "nomina",
+  "isMock": false,
+  "maxSpend": "100000 NOM",
+  "minSpend": "1 NOM",
+  "name": "Nomina",
+  "symbol": "NOM"
+ },
+ {
+  "address": "0x42383afE6F9B910495e70e8E951718e065eE2A9C",
+  "chainId": 17000,
+  "coingeckoId": "nomina",
+  "isMock": false,
+  "maxSpend": "100000 NOM",
+  "minSpend": "1 NOM",
+  "name": "Nomina",
+  "symbol": "NOM"
+ },
+ {
+  "address": "0x2a621055b9443f1cDAdC5FC5251991310131b72A",
+  "chainId": 1652,
+  "coingeckoId": "nomina",
+  "isMock": false,
+  "maxSpend": "100000 NOM",
+  "minSpend": "1 NOM",
+  "name": "Nomina",
+  "symbol": "NOM"
+ },
+ {
   "address": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
   "chainId": 8453,
   "coingeckoId": "wrapped-steth",

@@ -45,6 +45,13 @@ func TestPriceConvert(t *testing.T) {
 			ExpenseAmount: 1600.0,
 		},
 		{
+			Price:         75.0, // NOM/OMNI
+			Deposit:       tokens.OMNI,
+			Expense:       tokens.NOM,
+			DepositAmount: 1.0,
+			ExpenseAmount: 75.0,
+		},
+		{
 			Price:         1000.0, // USDC/ETH
 			Deposit:       tokens.ETH,
 			Expense:       tokens.USDC,

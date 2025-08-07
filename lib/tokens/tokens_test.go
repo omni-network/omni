@@ -88,6 +88,12 @@ func TestGenTokens(t *testing.T) {
 		omniERC20(netconf.Staging),
 		omniERC20(netconf.Devnet),
 
+		// ERC20 NOM
+		nomERC20(netconf.Mainnet),
+		nomERC20(netconf.Omega),
+		nomERC20(netconf.Staging),
+		nomERC20(netconf.Devnet),
+
 		// wstETH
 		wstETH(evmchain.IDBase, addr("0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452")),
 		wstETH(evmchain.IDEthereum, addr("0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0")),
@@ -161,6 +167,11 @@ func TestAssetCGIDs(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, asset := range tokens.UniqueAssets() {
+		// TODO(zodomo): remove this once NOM is listed on CoinGecko
+		if asset.Symbol == "NOM" {
+			continue
+		}
+
 		symbol, ok := coins[asset.CoingeckoID]
 		require.True(t, ok, "missing asset %s", asset.CoingeckoID)
 		require.Equal(t, strings.ToLower(asset.Symbol), symbol, "asset %s has different symbol", asset.CoingeckoID)
@@ -229,6 +240,17 @@ func omniERC20(network netconf.ID) tokens.Token {
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    contracts.TokenAddr(network),
+	}
+}
+
+func nomERC20(network netconf.ID) tokens.Token {
+	chainID := netconf.EthereumChainID(network)
+
+	return tokens.Token{
+		Asset:      tokens.NOM,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    contracts.NomAddr(network),
 	}
 }
 

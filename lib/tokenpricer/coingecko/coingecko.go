@@ -7,9 +7,11 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
@@ -59,7 +61,7 @@ func (c Client) Price(ctx context.Context, base, quote tokens.Asset) (*big.Rat, 
 
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
-		m, err := c.getPrice(ctx, currencyUSD, base)
+		m, err := c.USDPricesRat(ctx, base)
 		if err != nil {
 			return errors.Wrap(err, "get price")
 		}
@@ -68,7 +70,7 @@ func (c Client) Price(ctx context.Context, base, quote tokens.Asset) (*big.Rat, 
 		return nil
 	})
 	eg.Go(func() error {
-		m, err := c.getPrice(ctx, currencyUSD, quote)
+		m, err := c.USDPricesRat(ctx, quote)
 		if err != nil {
 			return errors.Wrap(err, "get price")
 		}
@@ -96,7 +98,7 @@ func (c Client) USDPrice(ctx context.Context, asset tokens.Asset) (float64, erro
 
 // USDPrices returns the price of each asset in USD.
 func (c Client) USDPrices(ctx context.Context, assets ...tokens.Asset) (map[tokens.Asset]float64, error) {
-	rats, err := c.getPrice(ctx, currencyUSD, assets...)
+	rats, err := c.USDPricesRat(ctx, assets...)
 	if err != nil {
 		return nil, errors.Wrap(err, "get price")
 	}
@@ -130,15 +132,42 @@ type simplePriceResponse map[string]map[string]json.Number
 
 // GetPrice returns the price of each asset in the given currency.
 // See supported currencies: https://api.coingecko.com/api/v3/simple/supported_vs_currencies
-func (c Client) getPrice(ctx context.Context, currency string, assets ...tokens.Asset) (map[tokens.Asset]*big.Rat, error) {
+//
+//nolint:nonamedreturns // Require
+func (c Client) getPrice(ctx context.Context, currency string, assets ...tokens.Asset) (prices map[tokens.Asset]*big.Rat, err error) {
 	ctx, span := tracer.Start(ctx, "coingecko/price", trace.WithAttributes(
 		attribute.String("currency", currency),
 		attribute.String("assets", fmt.Sprint(assets)),
 	))
 	defer span.End()
 
-	ids := make([]string, len(assets))
-	for i, t := range assets {
+	// TODO(corver): Remove once coingecko supports NOM.
+	// Workaround for NOM price (x75 OMNI price).
+	hasOmni := slices.Contains(assets, tokens.OMNI)
+	var selected []tokens.Asset
+	for _, asset := range assets {
+		if asset != tokens.NOM {
+			selected = append(selected, asset)
+			continue
+		}
+
+		// Ensure we request OMNI price if NOM is requested.
+		if !hasOmni {
+			selected = append(selected, tokens.OMNI)
+		}
+
+		// Defer inject NOM price as a derived from OMNI.
+		defer func() { //nolint:revive // Defer idempotent, so calling in loop is fine.
+			omniPrice := prices[tokens.OMNI]
+			prices[tokens.NOM] = new(big.Rat).Quo(omniPrice, big.NewRat(evmredenom.Factor, 1)) // 75x NOM price is OMNI price
+			if !hasOmni {
+				delete(prices, tokens.OMNI) // Remove OMNI price if it was not requested
+			}
+		}()
+	}
+
+	ids := make([]string, len(selected))
+	for i, t := range selected {
 		ids[i] = t.CoingeckoID
 	}
 
@@ -152,9 +181,9 @@ func (c Client) getPrice(ctx context.Context, currency string, assets ...tokens.
 		return nil, errors.Wrap(err, "do req", "endpoint", "get_price")
 	}
 
-	prices := make(map[tokens.Asset]*big.Rat)
+	prices = make(map[tokens.Asset]*big.Rat)
 
-	for _, asset := range assets {
+	for _, asset := range selected {
 		priceByCurrency, ok := resp[asset.CoingeckoID]
 		if !ok {
 			return nil, errors.New("missing asset in response", "asset", asset)

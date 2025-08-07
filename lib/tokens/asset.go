@@ -111,6 +111,13 @@ var (
 		CoingeckoID: "berachain-bera",
 	}
 
+	NOM = Asset{
+		Symbol:      "NOM",
+		Name:        "Nomina",
+		Decimals:    18,
+		CoingeckoID: "nomina",
+	}
+
 	PLUME = Asset{
 		Symbol:      "PLUME",
 		Name:        "Plume",

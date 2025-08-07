@@ -23,6 +23,7 @@ var (
 	supportedAssets = map[tokens.Asset]bool{
 		tokens.ETH:    true,
 		tokens.OMNI:   true,
+		tokens.NOM:    true,
 		tokens.WSTETH: true,
 		tokens.USDC:   true,
 		tokens.USDT:   true,
@@ -84,6 +85,20 @@ var (
 			tokens.ClassDevent: {
 				MinSpend: bi.Ether(0.1),   // 0.1 OMNI
 				MaxSpend: bi.Ether(1_000), // 1k OMNI
+			},
+		},
+		tokens.NOM: {
+			tokens.ClassMainnet: {
+				MinSpend: bi.Ether(1),          // 1 NOM
+				MaxSpend: bi.Ether(35_000_000), // 35M NOM
+			},
+			tokens.ClassTestnet: {
+				MinSpend: bi.Ether(1),       // 1 NOM
+				MaxSpend: bi.Ether(100_000), // 100k NOM
+			},
+			tokens.ClassDevent: {
+				MinSpend: bi.Ether(1),       // 1 NOM
+				MaxSpend: bi.Ether(100_000), // 100k NOM
 			},
 		},
 		tokens.WSTETH: {

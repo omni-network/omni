@@ -29,6 +29,7 @@ func TestStart(t *testing.T) {
 	// mock token prices / pricer
 	initialTokenPrices := map[tokens.Asset]float64{
 		tokens.OMNI: randTokenPrice(tokens.OMNI),
+		tokens.NOM:  randTokenPrice(tokens.NOM),
 		tokens.ETH:  randTokenPrice(tokens.ETH),
 	}
 
@@ -73,11 +74,14 @@ func TestStart(t *testing.T) {
 				rate := tprices[dest.NativeToken] / tprices[src.NativeToken]
 
 				// handle maximum rate case
-				if src.NativeToken == tokens.OMNI && src.NativeToken != dest.NativeToken && rate > maxSaneOmniPerEth {
-					rate = maxSaneOmniPerEth
+				if src.NativeToken == tokens.OMNI && src.NativeToken != dest.NativeToken && rate > maxSaneNativePerEth {
+					rate = maxSaneNativePerEth
 				}
-				if src.NativeToken == tokens.ETH && src.NativeToken != dest.NativeToken && rate > maxSaneEthPerOmni {
-					rate = maxSaneEthPerOmni
+				if src.NativeToken == tokens.NOM && src.NativeToken != dest.NativeToken && rate > maxSaneNativePerEth {
+					rate = maxSaneNativePerEth
+				}
+				if src.NativeToken == tokens.ETH && src.NativeToken != dest.NativeToken && rate > maxSaneEthPerNative {
+					rate = maxSaneEthPerNative
 				}
 
 				numer := rateToNumerator(rate)
@@ -218,13 +222,14 @@ func randGasPrice() *big.Int {
 
 // randTokenPrice generates a random, reasonable token price.
 func randTokenPrice(token tokens.Asset) float64 {
-	// discriminate between ETH and other tokens (OMNI)
-	// so that test omni-per-eth conversion rates do not exceed maxOmniPerEth
+	// discriminate between ETH and other tokens (OMNI/NOM)
+	// so that test conversion rates do not exceed sane maxes
 
 	if token == tokens.ETH {
 		return float64(rand.Intn(500)) + rand.Float64() + 3000
 	}
 
+	// For OMNI and NOM, use reasonable ranges
 	return float64(rand.Intn(50)) + rand.Float64()
 }
 
