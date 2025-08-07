@@ -46,7 +46,10 @@ contract NominaBridgeL1_Test is Test {
 
         portal = new MockPortal();
         omni = new MockOmni(totalSupply, initialSupplyRecipient);
-        nomina = new Nomina(address(omni), mintAuthority, minter);
+
+        nomina = new Nomina(address(omni), mintAuthority);
+        vm.prank(mintAuthority);
+        nomina.setMinter(minter);
 
         address impl = address(new NominaBridgeL1Harness(address(omni), address(nomina)));
         b = NominaBridgeL1Harness(
