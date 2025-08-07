@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/create3"
@@ -125,6 +126,7 @@ type Addresses struct {
 	L1Bridge          common.Address
 	Portal            common.Address
 	Token             common.Address
+	NomToken          common.Address
 	SolverNetInbox    common.Address
 	SolverNetOutbox   common.Address
 	SolverNetExecutor common.Address
@@ -138,6 +140,7 @@ type Salts struct {
 	L1Bridge          string
 	Portal            string
 	Token             string
+	NomToken          string
 	SolverNetInbox    string
 	SolverNetOutbox   string
 	SolverNetExecutor string
@@ -183,6 +186,7 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		CreateXFactory:    createx.CreateXAddress,
 		AVS:               Avs(network),
 		Token:             TokenAddr(network),
+		NomToken:          NomAddr(network),
 		Portal:            addr(network, s(NamePortal)),
 		L1Bridge:          addr(network, s(NameL1Bridge)),
 		GasPump:           addr(network, s(NameGasPump)),
@@ -220,6 +224,7 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		Portal:            s(NamePortal),
 		L1Bridge:          s(NameL1Bridge),
 		Token:             s(NameOmniToken),
+		NomToken:          s(NameNomToken),
 		GasPump:           s(NameGasPump),
 		GasStation:        s(NameGasStation),
 		SolverNetInbox:    s(NameSolverNetInbox),
@@ -256,11 +261,29 @@ func TokenAddr(network netconf.ID) common.Address {
 }
 
 func NomAddr(network netconf.ID) common.Address {
+	// TODO(zodomo): Replace this once we have a proper nom token address
+	// We cannot match mainnet and omega, as they have different deployers and we shouldnt use Create3 for a token
 	if network == netconf.Mainnet || network == netconf.Omega {
 		return common.HexToAddress("0x6e6f6d696e610000000000000000000000000000")
 	}
 
-	return addr(network, prefixNetwork(network, NameNomToken))
+	salt := nominaSalt(network, NameNomToken)
+	omni := TokenAddr(network)
+	mintAuthority := eoa.MustAddress(network, eoa.RoleCold) // TODO(zodomo): Replace with proper mint authority
+	deployer := eoa.MustAddress(network, eoa.RoleDeployer)
+
+	abi, err := bindings.NominaMetaData.GetAbi()
+	if err != nil {
+		return common.Address{}
+	}
+	initCode, err := PackInitCode(abi, bindings.NominaMetaData.Bin, omni, mintAuthority)
+	if err != nil {
+		return common.Address{}
+	}
+	initCodeHash := crypto.Keccak256Hash(initCode)
+
+	// Compute CreateX CREATE2 address
+	return createx.Create2Address(salt, initCodeHash, deployer)
 }
 
 // Create3Factory returns the Create3 factory address for the given network.
@@ -273,8 +296,31 @@ func Create3Address(network netconf.ID, salt string) common.Address {
 	return addr(network, salt)
 }
 
+// nominaSalt returns the precalculated salt string for a nomina contract on mainnet or omega.
+// on other networks, the salt is calculated based on the network and name.
+func nominaSalt(network netconf.ID, name string) string {
+	deployer := eoa.MustAddress(network, eoa.RoleDeployer)
+
+	if name == NameNomToken {
+		if network == netconf.Mainnet || network == netconf.Omega {
+			// TODO(zodomo): Replace with proper salt
+			saltBytes := make([]byte, 32)
+			copy(saltBytes[:20], deployer.Bytes())
+			copy(saltBytes[21:24], []byte("nom")) // skip index 20 to disable redeploy protection
+
+			return string(saltBytes)
+		}
+	}
+
+	return prefixNetwork(network, name)
+}
+
 // salt returns the salt string for a contract on a network / version.
 func salt(network netconf.ID, name string, versions Versions) string {
+	if isNomina(name) {
+		return nominaSalt(network, name)
+	}
+
 	if !isVersioned(name) {
 		return prefixNetwork(network, name)
 	}
@@ -298,6 +344,10 @@ func isSolvernet(contract string) bool {
 	return (contract == NameSolverNetInbox ||
 		contract == NameSolverNetOutbox ||
 		contract == NameSovlerNetExecutor)
+}
+
+func isNomina(contract string) bool {
+	return contract == NameNomToken
 }
 
 func suffixVersion(contract string, version string) string {
