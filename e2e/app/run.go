@@ -100,9 +100,16 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "deploy create3")
 	}
 
+	// Cannot deploy CreateX here for some reason, tests inexplicably fail.
+
 	// Deploy portals (allowing networkFromDef to succeed)
 	if err := def.Netman().DeployPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, errors.Wrap(err, "deploy portals")
+	}
+
+	// It seems CreateX must be deployed after portal deployment.
+	if err = deployAllCreateX(ctx, def); err != nil {
+		return nil, errors.Wrap(err, "deploy createx")
 	}
 
 	var eg1 errgroup.Group

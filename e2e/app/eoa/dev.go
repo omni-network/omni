@@ -22,6 +22,8 @@ var (
 	acc8 = addr("0xACb32F1b31F818511139a67b79010fA011960764")
 	acc9 = addr("0x3c56a0cDB54D07A91791b698d8B390aB53208E92")
 
+	createXDeployer = addr("0xeD456e05CaAb11d66C4c797dD6c1D6f9A7F352b5")
+
 	pk0 = mustHexToKey("0xbb119deceaff95378015e684292e91a37ef2ae1522f300a2cfdcb5b004bbf00d")
 	pk1 = mustHexToKey("0xed3dccb053880be5b681f6f0256fc18410f99bd69fedfc80f6b37e7930d1c526")
 	pk2 = mustHexToKey("0xe0cff2136e89d72576e1e8a3af640af8509fa07191429766d89814923b9ddbc2")
@@ -89,6 +91,10 @@ func IsDevAccount(addr common.Address) bool {
 	}
 
 	return false
+}
+
+func CreateXDeployer() common.Address {
+	return createXDeployer
 }
 
 //
