@@ -159,7 +159,9 @@ func (c Client) getPrice(ctx context.Context, currency string, assets ...tokens.
 		// Defer inject NOM price as a derived from OMNI.
 		defer func() { //nolint:revive // Defer idempotent, so calling in loop is fine.
 			omniPrice := prices[tokens.OMNI]
-			prices[tokens.NOM] = new(big.Rat).Quo(omniPrice, big.NewRat(evmredenom.Factor, 1)) // 75x NOM price is OMNI price
+			if omniPrice != nil {
+				prices[tokens.NOM] = new(big.Rat).Quo(omniPrice, big.NewRat(evmredenom.Factor, 1)) // 75x NOM price is OMNI price
+			}
 			if !hasOmni {
 				delete(prices, tokens.OMNI) // Remove OMNI price if it was not requested
 			}
@@ -200,7 +202,7 @@ func (c Client) getPrice(ctx context.Context, currency string, assets ...tokens.
 		if !ok {
 			return nil, errors.New("invalid price string", "asset", asset, "price", priceStr)
 		} else if price.Sign() <= 0 {
-			return nil, errors.New("proic enot positive", "asset", asset, "price", price)
+			return nil, errors.New("price not positive", "asset", asset, "price", price)
 		}
 
 		prices[asset] = price
