@@ -19,16 +19,16 @@ contract Nomina is ERC20 {
     error Unauthorized();
 
     /**
-     * @notice Thrown when the conversion is disabled.
-     * @dev This would only take place if deployed to chains where there isn't an OMNI ERC20 token.
+     * @notice Emitted when a transfer of the mint authority is attempted.
+     * @param pendingMintAuthority The pending mint authority.
      */
-    error ConversionDisabled();
+    event MintAuthorityQueued(address indexed pendingMintAuthority);
 
     /**
      * @notice Emitted when the mint authority is set.
-     * @param mintAuthority The new mint authority.
+     * @param newMintAuthority The new mint authority.
      */
-    event MintAuthoritySet(address indexed mintAuthority);
+    event MintAuthoritySet(address indexed newMintAuthority);
 
     /**
      * @notice Emitted when the minter is set.
@@ -49,12 +49,17 @@ contract Nomina is ERC20 {
     /**
      * @notice The OMNI token contract.
      */
-    address public immutable omni;
+    address public immutable OMNI;
 
     /**
      * @notice The mint authority authorized to set the minter.
      */
     address public mintAuthority;
+
+    /**
+     * @notice The pending mint authority a transfer attempt is made to.
+     */
+    address public pendingMintAuthority;
 
     /**
      * @notice The address authorized to mint NOM tokens.
@@ -70,6 +75,14 @@ contract Nomina is ERC20 {
     }
 
     /**
+     * @notice Modifier to check if the sender is the pending mint authority.
+     */
+    modifier onlyPendingMintAuthority() {
+        if (msg.sender != pendingMintAuthority) revert Unauthorized();
+        _;
+    }
+
+    /**
      * @notice Modifier to check if the sender is the minter.
      */
     modifier onlyMinter() {
@@ -81,15 +94,14 @@ contract Nomina is ERC20 {
      * @notice Contract constructor.
      * @param _omni The OMNI token contract.
      * @param _mintAuthority The mint authority.
-     * @param _minter The minter.
      */
-    constructor(address _omni, address _mintAuthority, address _minter) {
-        omni = _omni;
+    constructor(address _omni, address _mintAuthority) {
+        if (_omni == address(0) || _mintAuthority == address(0)) revert ZeroAddress();
+
+        OMNI = _omni;
         mintAuthority = _mintAuthority;
-        minter = _minter;
 
         emit MintAuthoritySet(_mintAuthority);
-        emit MinterSet(_minter);
     }
 
     /**
@@ -135,23 +147,31 @@ contract Nomina is ERC20 {
      * @param amount The amount of OMNI tokens to convert.
      */
     function convert(address to, uint256 amount) public {
-        address _omni = omni;
         if (amount == 0) return;
         if (to == address(0)) revert ZeroAddress();
-        if (_omni == address(0)) revert ConversionDisabled();
 
-        _omni.safeTransferFrom(msg.sender, _DEAD_ADDRESS, amount);
+        OMNI.safeTransferFrom(msg.sender, _DEAD_ADDRESS, amount);
         _mint(to, amount * CONVERSION_RATE);
     }
 
     /**
      * @notice Sets the mint authority.
-     * @dev Only the mint authority can set the mint authority.
-     * @param _mintAuthority The new mint authority.
+     * @dev Only the mint authority can transfer that authority.
+     * @param newMintAuthority The new mint authority.
      */
-    function setMintAuthority(address _mintAuthority) public onlyMintAuthority {
-        mintAuthority = _mintAuthority;
-        emit MintAuthoritySet(_mintAuthority);
+    function setMintAuthority(address newMintAuthority) public onlyMintAuthority {
+        pendingMintAuthority = newMintAuthority;
+        emit MintAuthorityQueued(newMintAuthority);
+    }
+
+    /**
+     * @notice Accepts the mint authority.
+     * @dev Only the pending mint authority can accept the transfer.
+     */
+    function acceptMintAuthority() public onlyPendingMintAuthority {
+        mintAuthority = msg.sender;
+        pendingMintAuthority = address(0);
+        emit MintAuthoritySet(msg.sender);
     }
 
     /**

@@ -31,8 +31,8 @@ var (
 
 // NominaMetaData contains all meta data concerning the Nomina contract.
 var NominaMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_omni\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_mintAuthority\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_minter\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"CONVERSION_RATE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"DOMAIN_SEPARATOR\",\"inputs\":[],\"outputs\":[{\"name\":\"result\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allowance\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"approve\",\"inputs\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"balanceOf\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"burn\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"convert\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"decimals\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"mint\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"mintAuthority\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"minter\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"name\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"nonces\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"omni\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"permit\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"v\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"r\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"s\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMintAuthority\",\"inputs\":[{\"name\":\"_mintAuthority\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinter\",\"inputs\":[{\"name\":\"_minter\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"symbol\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"totalSupply\",\"inputs\":[],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transfer\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferFrom\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Approval\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MintAuthoritySet\",\"inputs\":[{\"name\":\"mintAuthority\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MinterSet\",\"inputs\":[{\"name\":\"minter\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Transfer\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AllowanceOverflow\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"AllowanceUnderflow\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ConversionDisabled\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientAllowance\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientBalance\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidPermit\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Permit2AllowanceIsFixedAtInfinity\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PermitExpired\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TotalSupplyOverflow\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Unauthorized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAddress\",\"inputs\":[]}]",
-	Bin: "0x60a060405234801561000f575f5ffd5b50604051610db2380380610db283398101604081905261002e916100e0565b6001600160a01b038084166080525f80548483166001600160a01b03199182168117835560018054948616949092169390931790556040517f7cd028240c863e3069db38011d9a2a8b46b7af1d8e075414a2539f65069012fe9190a26040516001600160a01b038216907f726b590ef91a8c76ad05bbe91a57ef84605276528f49cd47d787f558a4e755b6905f90a2505050610120565b80516001600160a01b03811681146100db575f5ffd5b919050565b5f5f5f606084860312156100f2575f5ffd5b6100fb846100c5565b9250610109602085016100c5565b9150610117604085016100c5565b90509250925092565b608051610c7361013f5f395f81816102aa01526105c90152610c735ff3fe608060405234801561000f575f5ffd5b5060043610610132575f3560e01c806340c10f19116100b45780639340b21e116100795780639340b21e1461034f57806395d89b4114610361578063a9059cbb14610380578063d505accf14610393578063dd62ed3e146103a6578063fca3b5aa146103b9575f5ffd5b806340c10f19146102cc57806342966c68146102df57806367c6e39c146102f257806370a08231146103055780637ecebe001461032a575f5ffd5b806323b872dd116100fa57806323b872dd146101e75780632c8bff31146101fa578063313ce567146102145780633644e5151461021b57806339acf9f1146102a5575f5ffd5b806306fdde0314610136578063075461721461016a578063095ea7b31461019557806318160ddd146101b857806323adc150146101d2575b5f5ffd5b6040805180820190915260068152654e6f6d696e6160d01b60208201525b6040516101619190610a73565b60405180910390f35b60015461017d906001600160a01b031681565b6040516001600160a01b039091168152602001610161565b6101a86101a3366004610ac3565b6103cc565b6040519015158152602001610161565b6805345cdf77eb68f44c545b604051908152602001610161565b6101e56101e0366004610aeb565b61044c565b005b6101a86101f5366004610b0b565b6104bc565b610202604b81565b60405160ff9091168152602001610161565b6012610202565b604080517f8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f81527fc72733118dabad3698b4044c2dc83c8c688bd907b50ed9d09d93a263878bf51860208201527fc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc69181019190915246606082015230608082015260a090206101c4565b61017d7f000000000000000000000000000000000000000000000000000000000000000081565b6101e56102da366004610ac3565b610578565b6101e56102ed366004610b45565b6105b0565b6101e5610300366004610ac3565b6105c7565b6101c4610313366004610aeb565b6387a211a2600c9081525f91909152602090205490565b6101c4610338366004610aeb565b6338377508600c9081525f91909152602090205490565b5f5461017d906001600160a01b031681565b6040805180820190915260038152624e4f4d60e81b6020820152610154565b6101a861038e366004610ac3565b610673565b6101e56103a1366004610b5c565b6106d7565b6101c46103b4366004610bc9565b61089a565b6101e56103c7366004610aeb565b6108de565b5f6001600160a01b0383166e22d473030f116ddee9f6b43ac78ba318821915176103fd57633f68539a5f526004601cfd5b82602052637f5e9f20600c52335f52816034600c2055815f52602c5160601c337f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b92560205fa35060015b92915050565b5f546001600160a01b03163314610475576040516282b42960e81b815260040160405180910390fd5b5f80546001600160a01b0319166001600160a01b038316908117825560405190917f7cd028240c863e3069db38011d9a2a8b46b7af1d8e075414a2539f65069012fe91a250565b5f8360601b6e22d473030f116ddee9f6b43ac78ba333146105115733602052637f5e9f208117600c526034600c20805480191561050e5780851115610508576313be252b5f526004601cfd5b84810382555b50505b6387a211a28117600c526020600c208054808511156105375763f4d678b85f526004601cfd5b84810382555050835f526020600c208381540181555082602052600c5160601c8160601c5f516020610c1e5f395f51905f52602080a3505060019392505050565b6001546001600160a01b031633146105a2576040516282b42960e81b815260040160405180910390fd5b6105ac8282610950565b5050565b805f036105ba5750565b6105c433826109b9565b50565b7f00000000000000000000000000000000000000000000000000000000000000005f8290036105f557505050565b6001600160a01b03831661061c5760405163d92e233d60e01b815260040160405180910390fd5b6001600160a01b03811661064357604051632efe214b60e01b815260040160405180910390fd5b61065a6001600160a01b0382163361dead85610a1a565b61066e83610669604b85610bfa565b610950565b505050565b5f6387a211a2600c52335f526020600c2080548084111561069b5763f4d678b85f526004601cfd5b83810382555050825f526020600c208281540181555081602052600c5160601c335f516020610c1e5f395f51905f52602080a350600192915050565b6001600160a01b0386166e22d473030f116ddee9f6b43ac78ba3188519151761070757633f68539a5f526004601cfd5b7fc72733118dabad3698b4044c2dc83c8c688bd907b50ed9d09d93a263878bf5187fc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc64286101561075e57631a15a3cc5f526004601cfd5b6040518960601b60601c99508860601b60601c985065383775081901600e52895f526020600c2080547f8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f835284602084015283604084015246606084015230608084015260a08320602e527f6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c983528b60208401528a60408401528960608401528060808401528860a084015260c08320604e526042602c205f528760ff16602052866040528560605260208060805f60015afa8c3d51146108465763ddafbaef5f526004601cfd5b0190556303faf4f960a51b89176040526034602c20889055888a7f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925602060608501a360405250505f60605250505050505050565b5f6e22d473030f116ddee9f6b43ac78ba2196001600160a01b038316016108c357505f19610446565b50602052637f5e9f20600c9081525f91909152603490205490565b5f546001600160a01b03163314610907576040516282b42960e81b815260040160405180910390fd5b600180546001600160a01b0319166001600160a01b0383169081179091556040517f726b590ef91a8c76ad05bbe91a57ef84605276528f49cd47d787f558a4e755b6905f90a250565b6805345cdf77eb68f44c54818101818110156109735763e5cfe9575f526004601cfd5b806805345cdf77eb68f44c5550506387a211a2600c52815f526020600c208181540181555080602052600c5160601c5f5f516020610c1e5f395f51905f52602080a35050565b6387a211a2600c52815f526020600c208054808311156109e05763f4d678b85f526004601cfd5b82900390556805345cdf77eb68f44c805482900390555f8181526001600160a01b0383165f516020610c1e5f395f51905f52602083a35050565b60405181606052826040528360601b602c526323b872dd60601b600c5260205f6064601c5f895af18060015f511416610a6557803d873b151710610a6557637939f4245f526004601cfd5b505f60605260405250505050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b80356001600160a01b0381168114610abe575f5ffd5b919050565b5f5f60408385031215610ad4575f5ffd5b610add83610aa8565b946020939093013593505050565b5f60208284031215610afb575f5ffd5b610b0482610aa8565b9392505050565b5f5f5f60608486031215610b1d575f5ffd5b610b2684610aa8565b9250610b3460208501610aa8565b929592945050506040919091013590565b5f60208284031215610b55575f5ffd5b5035919050565b5f5f5f5f5f5f5f60e0888a031215610b72575f5ffd5b610b7b88610aa8565b9650610b8960208901610aa8565b95506040880135945060608801359350608088013560ff81168114610bac575f5ffd5b9699959850939692959460a0840135945060c09093013592915050565b5f5f60408385031215610bda575f5ffd5b610be383610aa8565b9150610bf160208401610aa8565b90509250929050565b808202811582820484141761044657634e487b7160e01b5f52601160045260245ffdfeddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa26469706673582212202cbc1373f4ea754c6c3f97c23fbecb5b85267d4cbd14b76fc9e51c2e5a244a1864736f6c634300081e0033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_omni\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_mintAuthority\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"CONVERSION_RATE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"DOMAIN_SEPARATOR\",\"inputs\":[],\"outputs\":[{\"name\":\"result\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OMNI\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"acceptMintAuthority\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"allowance\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"approve\",\"inputs\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"balanceOf\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"burn\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"convert\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"decimals\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"mint\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"mintAuthority\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"minter\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"name\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"nonces\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pendingMintAuthority\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"permit\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"v\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"r\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"s\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMintAuthority\",\"inputs\":[{\"name\":\"newMintAuthority\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinter\",\"inputs\":[{\"name\":\"_minter\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"symbol\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"totalSupply\",\"inputs\":[],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transfer\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferFrom\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Approval\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MintAuthorityQueued\",\"inputs\":[{\"name\":\"pendingMintAuthority\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MintAuthoritySet\",\"inputs\":[{\"name\":\"newMintAuthority\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MinterSet\",\"inputs\":[{\"name\":\"minter\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Transfer\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AllowanceOverflow\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"AllowanceUnderflow\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientAllowance\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientBalance\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidPermit\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Permit2AllowanceIsFixedAtInfinity\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PermitExpired\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TotalSupplyOverflow\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Unauthorized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAddress\",\"inputs\":[]}]",
+	Bin: "0x60a060405234801561000f575f5ffd5b50604051610e0a380380610e0a83398101604081905261002e916100d5565b6001600160a01b038216158061004b57506001600160a01b038116155b156100695760405163d92e233d60e01b815260040160405180910390fd5b6001600160a01b038281166080525f80546001600160a01b03191691831691821781556040517f7cd028240c863e3069db38011d9a2a8b46b7af1d8e075414a2539f65069012fe9190a25050610106565b80516001600160a01b03811681146100d0575f5ffd5b919050565b5f5f604083850312156100e6575f5ffd5b6100ef836100ba565b91506100fd602084016100ba565b90509250929050565b608051610ce56101255f395f818161015101526106a70152610ce55ff3fe608060405234801561000f575f5ffd5b5060043610610148575f3560e01c806340c10f19116100bf57806395d89b411161007957806395d89b411461037b578063a85420c41461039a578063a9059cbb146103ad578063d505accf146103c0578063dd62ed3e146103d3578063fca3b5aa146103e6575f5ffd5b806340c10f19146102e657806342966c68146102f957806367c6e39c1461030c57806370a082311461031f5780637ecebe00146103445780639340b21e14610369575f5ffd5b806318160ddd1161011057806318160ddd146101fb57806323adc1501461021557806323b872dd146102285780632c8bff311461023b578063313ce567146102555780633644e5151461025c575f5ffd5b8063063bdf281461014c57806306fdde031461019057806307546172146101bb578063095ea7b3146101ce57806310e29254146101f1575b5f5ffd5b6101737f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b6040805180820190915260068152654e6f6d696e6160d01b60208201525b6040516101879190610ae5565b600254610173906001600160a01b031681565b6101e16101dc366004610b35565b6103f9565b6040519015158152602001610187565b6101f9610479565b005b6805345cdf77eb68f44c545b604051908152602001610187565b6101f9610223366004610b5d565b6104eb565b6101e1610236366004610b7d565b61055d565b610243604b81565b60405160ff9091168152602001610187565b6012610243565b604080517f8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f81527fc72733118dabad3698b4044c2dc83c8c688bd907b50ed9d09d93a263878bf51860208201527fc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc69181019190915246606082015230608082015260a09020610207565b6101f96102f4366004610b35565b610619565b6101f9610307366004610bb7565b610651565b6101f961031a366004610b35565b610668565b61020761032d366004610b5d565b6387a211a2600c9081525f91909152602090205490565b610207610352366004610b5d565b6338377508600c9081525f91909152602090205490565b5f54610173906001600160a01b031681565b6040805180820190915260038152624e4f4d60e81b60208201526101ae565b600154610173906001600160a01b031681565b6101e16103bb366004610b35565b6106e5565b6101f96103ce366004610bce565b610749565b6102076103e1366004610c3b565b61090c565b6101f96103f4366004610b5d565b610950565b5f6001600160a01b0383166e22d473030f116ddee9f6b43ac78ba3188219151761042a57633f68539a5f526004601cfd5b82602052637f5e9f20600c52335f52816034600c2055815f52602c5160601c337f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b92560205fa35060015b92915050565b6001546001600160a01b031633146104a3576040516282b42960e81b815260040160405180910390fd5b5f8054336001600160a01b0319918216811783556001805490921690915560405190917f7cd028240c863e3069db38011d9a2a8b46b7af1d8e075414a2539f65069012fe91a2565b5f546001600160a01b03163314610514576040516282b42960e81b815260040160405180910390fd5b600180546001600160a01b0319166001600160a01b0383169081179091556040517fbcee2861130b95a5d037334f2a643f2ea3909dfc2885de1dc295dcbd25824a8f905f90a250565b5f8360601b6e22d473030f116ddee9f6b43ac78ba333146105b25733602052637f5e9f208117600c526034600c2080548019156105af57808511156105a9576313be252b5f526004601cfd5b84810382555b50505b6387a211a28117600c526020600c208054808511156105d85763f4d678b85f526004601cfd5b84810382555050835f526020600c208381540181555082602052600c5160601c8160601c5f516020610c905f395f51905f52602080a3505060019392505050565b6002546001600160a01b03163314610643576040516282b42960e81b815260040160405180910390fd5b61064d82826109c2565b5050565b805f0361065b5750565b6106653382610a2b565b50565b805f03610673575050565b6001600160a01b03821661069a5760405163d92e233d60e01b815260040160405180910390fd5b6106d16001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000163361dead84610a8c565b61064d826106e0604b84610c6c565b6109c2565b5f6387a211a2600c52335f526020600c2080548084111561070d5763f4d678b85f526004601cfd5b83810382555050825f526020600c208281540181555081602052600c5160601c335f516020610c905f395f51905f52602080a350600192915050565b6001600160a01b0386166e22d473030f116ddee9f6b43ac78ba3188519151761077957633f68539a5f526004601cfd5b7fc72733118dabad3698b4044c2dc83c8c688bd907b50ed9d09d93a263878bf5187fc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6428610156107d057631a15a3cc5f526004601cfd5b6040518960601b60601c99508860601b60601c985065383775081901600e52895f526020600c2080547f8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f835284602084015283604084015246606084015230608084015260a08320602e527f6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c983528b60208401528a60408401528960608401528060808401528860a084015260c08320604e526042602c205f528760ff16602052866040528560605260208060805f60015afa8c3d51146108b85763ddafbaef5f526004601cfd5b0190556303faf4f960a51b89176040526034602c20889055888a7f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925602060608501a360405250505f60605250505050505050565b5f6e22d473030f116ddee9f6b43ac78ba2196001600160a01b0383160161093557505f19610473565b50602052637f5e9f20600c9081525f91909152603490205490565b5f546001600160a01b03163314610979576040516282b42960e81b815260040160405180910390fd5b600280546001600160a01b0319166001600160a01b0383169081179091556040517f726b590ef91a8c76ad05bbe91a57ef84605276528f49cd47d787f558a4e755b6905f90a250565b6805345cdf77eb68f44c54818101818110156109e55763e5cfe9575f526004601cfd5b806805345cdf77eb68f44c5550506387a211a2600c52815f526020600c208181540181555080602052600c5160601c5f5f516020610c905f395f51905f52602080a35050565b6387a211a2600c52815f526020600c20805480831115610a525763f4d678b85f526004601cfd5b82900390556805345cdf77eb68f44c805482900390555f8181526001600160a01b0383165f516020610c905f395f51905f52602083a35050565b60405181606052826040528360601b602c526323b872dd60601b600c5260205f6064601c5f895af18060015f511416610ad757803d873b151710610ad757637939f4245f526004601cfd5b505f60605260405250505050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b80356001600160a01b0381168114610b30575f5ffd5b919050565b5f5f60408385031215610b46575f5ffd5b610b4f83610b1a565b946020939093013593505050565b5f60208284031215610b6d575f5ffd5b610b7682610b1a565b9392505050565b5f5f5f60608486031215610b8f575f5ffd5b610b9884610b1a565b9250610ba660208501610b1a565b929592945050506040919091013590565b5f60208284031215610bc7575f5ffd5b5035919050565b5f5f5f5f5f5f5f60e0888a031215610be4575f5ffd5b610bed88610b1a565b9650610bfb60208901610b1a565b95506040880135945060608801359350608088013560ff81168114610c1e575f5ffd5b9699959850939692959460a0840135945060c09093013592915050565b5f5f60408385031215610c4c575f5ffd5b610c5583610b1a565b9150610c6360208401610b1a565b90509250929050565b808202811582820484141761047357634e487b7160e01b5f52601160045260245ffdfeddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa264697066735822122015f2cbf27f9b4502ecc97ccf96a6fff26e51de1bec79810ebc4c32fbc260842764736f6c634300081e0033",
 }
 
 // NominaABI is the input ABI used to generate the binding from.
@@ -44,7 +44,7 @@ var NominaABI = NominaMetaData.ABI
 var NominaBin = NominaMetaData.Bin
 
 // DeployNomina deploys a new Ethereum contract, binding an instance of Nomina to it.
-func DeployNomina(auth *bind.TransactOpts, backend bind.ContractBackend, _omni common.Address, _mintAuthority common.Address, _minter common.Address) (common.Address, *types.Transaction, *Nomina, error) {
+func DeployNomina(auth *bind.TransactOpts, backend bind.ContractBackend, _omni common.Address, _mintAuthority common.Address) (common.Address, *types.Transaction, *Nomina, error) {
 	parsed, err := NominaMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, nil, err
@@ -53,7 +53,7 @@ func DeployNomina(auth *bind.TransactOpts, backend bind.ContractBackend, _omni c
 		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(NominaBin), backend, _omni, _mintAuthority, _minter)
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(NominaBin), backend, _omni, _mintAuthority)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -262,6 +262,37 @@ func (_Nomina *NominaSession) DOMAINSEPARATOR() ([32]byte, error) {
 // Solidity: function DOMAIN_SEPARATOR() view returns(bytes32 result)
 func (_Nomina *NominaCallerSession) DOMAINSEPARATOR() ([32]byte, error) {
 	return _Nomina.Contract.DOMAINSEPARATOR(&_Nomina.CallOpts)
+}
+
+// OMNI is a free data retrieval call binding the contract method 0x063bdf28.
+//
+// Solidity: function OMNI() view returns(address)
+func (_Nomina *NominaCaller) OMNI(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _Nomina.contract.Call(opts, &out, "OMNI")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// OMNI is a free data retrieval call binding the contract method 0x063bdf28.
+//
+// Solidity: function OMNI() view returns(address)
+func (_Nomina *NominaSession) OMNI() (common.Address, error) {
+	return _Nomina.Contract.OMNI(&_Nomina.CallOpts)
+}
+
+// OMNI is a free data retrieval call binding the contract method 0x063bdf28.
+//
+// Solidity: function OMNI() view returns(address)
+func (_Nomina *NominaCallerSession) OMNI() (common.Address, error) {
+	return _Nomina.Contract.OMNI(&_Nomina.CallOpts)
 }
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
@@ -481,12 +512,12 @@ func (_Nomina *NominaCallerSession) Nonces(owner common.Address) (*big.Int, erro
 	return _Nomina.Contract.Nonces(&_Nomina.CallOpts, owner)
 }
 
-// Omni is a free data retrieval call binding the contract method 0x39acf9f1.
+// PendingMintAuthority is a free data retrieval call binding the contract method 0xa85420c4.
 //
-// Solidity: function omni() view returns(address)
-func (_Nomina *NominaCaller) Omni(opts *bind.CallOpts) (common.Address, error) {
+// Solidity: function pendingMintAuthority() view returns(address)
+func (_Nomina *NominaCaller) PendingMintAuthority(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
-	err := _Nomina.contract.Call(opts, &out, "omni")
+	err := _Nomina.contract.Call(opts, &out, "pendingMintAuthority")
 
 	if err != nil {
 		return *new(common.Address), err
@@ -498,18 +529,18 @@ func (_Nomina *NominaCaller) Omni(opts *bind.CallOpts) (common.Address, error) {
 
 }
 
-// Omni is a free data retrieval call binding the contract method 0x39acf9f1.
+// PendingMintAuthority is a free data retrieval call binding the contract method 0xa85420c4.
 //
-// Solidity: function omni() view returns(address)
-func (_Nomina *NominaSession) Omni() (common.Address, error) {
-	return _Nomina.Contract.Omni(&_Nomina.CallOpts)
+// Solidity: function pendingMintAuthority() view returns(address)
+func (_Nomina *NominaSession) PendingMintAuthority() (common.Address, error) {
+	return _Nomina.Contract.PendingMintAuthority(&_Nomina.CallOpts)
 }
 
-// Omni is a free data retrieval call binding the contract method 0x39acf9f1.
+// PendingMintAuthority is a free data retrieval call binding the contract method 0xa85420c4.
 //
-// Solidity: function omni() view returns(address)
-func (_Nomina *NominaCallerSession) Omni() (common.Address, error) {
-	return _Nomina.Contract.Omni(&_Nomina.CallOpts)
+// Solidity: function pendingMintAuthority() view returns(address)
+func (_Nomina *NominaCallerSession) PendingMintAuthority() (common.Address, error) {
+	return _Nomina.Contract.PendingMintAuthority(&_Nomina.CallOpts)
 }
 
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
@@ -572,6 +603,27 @@ func (_Nomina *NominaSession) TotalSupply() (*big.Int, error) {
 // Solidity: function totalSupply() view returns(uint256 result)
 func (_Nomina *NominaCallerSession) TotalSupply() (*big.Int, error) {
 	return _Nomina.Contract.TotalSupply(&_Nomina.CallOpts)
+}
+
+// AcceptMintAuthority is a paid mutator transaction binding the contract method 0x10e29254.
+//
+// Solidity: function acceptMintAuthority() returns()
+func (_Nomina *NominaTransactor) AcceptMintAuthority(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Nomina.contract.Transact(opts, "acceptMintAuthority")
+}
+
+// AcceptMintAuthority is a paid mutator transaction binding the contract method 0x10e29254.
+//
+// Solidity: function acceptMintAuthority() returns()
+func (_Nomina *NominaSession) AcceptMintAuthority() (*types.Transaction, error) {
+	return _Nomina.Contract.AcceptMintAuthority(&_Nomina.TransactOpts)
+}
+
+// AcceptMintAuthority is a paid mutator transaction binding the contract method 0x10e29254.
+//
+// Solidity: function acceptMintAuthority() returns()
+func (_Nomina *NominaTransactorSession) AcceptMintAuthority() (*types.Transaction, error) {
+	return _Nomina.Contract.AcceptMintAuthority(&_Nomina.TransactOpts)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
@@ -681,23 +733,23 @@ func (_Nomina *NominaTransactorSession) Permit(owner common.Address, spender com
 
 // SetMintAuthority is a paid mutator transaction binding the contract method 0x23adc150.
 //
-// Solidity: function setMintAuthority(address _mintAuthority) returns()
-func (_Nomina *NominaTransactor) SetMintAuthority(opts *bind.TransactOpts, _mintAuthority common.Address) (*types.Transaction, error) {
-	return _Nomina.contract.Transact(opts, "setMintAuthority", _mintAuthority)
+// Solidity: function setMintAuthority(address newMintAuthority) returns()
+func (_Nomina *NominaTransactor) SetMintAuthority(opts *bind.TransactOpts, newMintAuthority common.Address) (*types.Transaction, error) {
+	return _Nomina.contract.Transact(opts, "setMintAuthority", newMintAuthority)
 }
 
 // SetMintAuthority is a paid mutator transaction binding the contract method 0x23adc150.
 //
-// Solidity: function setMintAuthority(address _mintAuthority) returns()
-func (_Nomina *NominaSession) SetMintAuthority(_mintAuthority common.Address) (*types.Transaction, error) {
-	return _Nomina.Contract.SetMintAuthority(&_Nomina.TransactOpts, _mintAuthority)
+// Solidity: function setMintAuthority(address newMintAuthority) returns()
+func (_Nomina *NominaSession) SetMintAuthority(newMintAuthority common.Address) (*types.Transaction, error) {
+	return _Nomina.Contract.SetMintAuthority(&_Nomina.TransactOpts, newMintAuthority)
 }
 
 // SetMintAuthority is a paid mutator transaction binding the contract method 0x23adc150.
 //
-// Solidity: function setMintAuthority(address _mintAuthority) returns()
-func (_Nomina *NominaTransactorSession) SetMintAuthority(_mintAuthority common.Address) (*types.Transaction, error) {
-	return _Nomina.Contract.SetMintAuthority(&_Nomina.TransactOpts, _mintAuthority)
+// Solidity: function setMintAuthority(address newMintAuthority) returns()
+func (_Nomina *NominaTransactorSession) SetMintAuthority(newMintAuthority common.Address) (*types.Transaction, error) {
+	return _Nomina.Contract.SetMintAuthority(&_Nomina.TransactOpts, newMintAuthority)
 }
 
 // SetMinter is a paid mutator transaction binding the contract method 0xfca3b5aa.
@@ -917,6 +969,150 @@ func (_Nomina *NominaFilterer) ParseApproval(log types.Log) (*NominaApproval, er
 	return event, nil
 }
 
+// NominaMintAuthorityQueuedIterator is returned from FilterMintAuthorityQueued and is used to iterate over the raw logs and unpacked data for MintAuthorityQueued events raised by the Nomina contract.
+type NominaMintAuthorityQueuedIterator struct {
+	Event *NominaMintAuthorityQueued // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *NominaMintAuthorityQueuedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(NominaMintAuthorityQueued)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(NominaMintAuthorityQueued)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *NominaMintAuthorityQueuedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *NominaMintAuthorityQueuedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// NominaMintAuthorityQueued represents a MintAuthorityQueued event raised by the Nomina contract.
+type NominaMintAuthorityQueued struct {
+	PendingMintAuthority common.Address
+	Raw                  types.Log // Blockchain specific contextual infos
+}
+
+// FilterMintAuthorityQueued is a free log retrieval operation binding the contract event 0xbcee2861130b95a5d037334f2a643f2ea3909dfc2885de1dc295dcbd25824a8f.
+//
+// Solidity: event MintAuthorityQueued(address indexed pendingMintAuthority)
+func (_Nomina *NominaFilterer) FilterMintAuthorityQueued(opts *bind.FilterOpts, pendingMintAuthority []common.Address) (*NominaMintAuthorityQueuedIterator, error) {
+
+	var pendingMintAuthorityRule []interface{}
+	for _, pendingMintAuthorityItem := range pendingMintAuthority {
+		pendingMintAuthorityRule = append(pendingMintAuthorityRule, pendingMintAuthorityItem)
+	}
+
+	logs, sub, err := _Nomina.contract.FilterLogs(opts, "MintAuthorityQueued", pendingMintAuthorityRule)
+	if err != nil {
+		return nil, err
+	}
+	return &NominaMintAuthorityQueuedIterator{contract: _Nomina.contract, event: "MintAuthorityQueued", logs: logs, sub: sub}, nil
+}
+
+// WatchMintAuthorityQueued is a free log subscription operation binding the contract event 0xbcee2861130b95a5d037334f2a643f2ea3909dfc2885de1dc295dcbd25824a8f.
+//
+// Solidity: event MintAuthorityQueued(address indexed pendingMintAuthority)
+func (_Nomina *NominaFilterer) WatchMintAuthorityQueued(opts *bind.WatchOpts, sink chan<- *NominaMintAuthorityQueued, pendingMintAuthority []common.Address) (event.Subscription, error) {
+
+	var pendingMintAuthorityRule []interface{}
+	for _, pendingMintAuthorityItem := range pendingMintAuthority {
+		pendingMintAuthorityRule = append(pendingMintAuthorityRule, pendingMintAuthorityItem)
+	}
+
+	logs, sub, err := _Nomina.contract.WatchLogs(opts, "MintAuthorityQueued", pendingMintAuthorityRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(NominaMintAuthorityQueued)
+				if err := _Nomina.contract.UnpackLog(event, "MintAuthorityQueued", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseMintAuthorityQueued is a log parse operation binding the contract event 0xbcee2861130b95a5d037334f2a643f2ea3909dfc2885de1dc295dcbd25824a8f.
+//
+// Solidity: event MintAuthorityQueued(address indexed pendingMintAuthority)
+func (_Nomina *NominaFilterer) ParseMintAuthorityQueued(log types.Log) (*NominaMintAuthorityQueued, error) {
+	event := new(NominaMintAuthorityQueued)
+	if err := _Nomina.contract.UnpackLog(event, "MintAuthorityQueued", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // NominaMintAuthoritySetIterator is returned from FilterMintAuthoritySet and is used to iterate over the raw logs and unpacked data for MintAuthoritySet events raised by the Nomina contract.
 type NominaMintAuthoritySetIterator struct {
 	Event *NominaMintAuthoritySet // Event containing the contract specifics and raw log
@@ -986,21 +1182,21 @@ func (it *NominaMintAuthoritySetIterator) Close() error {
 
 // NominaMintAuthoritySet represents a MintAuthoritySet event raised by the Nomina contract.
 type NominaMintAuthoritySet struct {
-	MintAuthority common.Address
-	Raw           types.Log // Blockchain specific contextual infos
+	NewMintAuthority common.Address
+	Raw              types.Log // Blockchain specific contextual infos
 }
 
 // FilterMintAuthoritySet is a free log retrieval operation binding the contract event 0x7cd028240c863e3069db38011d9a2a8b46b7af1d8e075414a2539f65069012fe.
 //
-// Solidity: event MintAuthoritySet(address indexed mintAuthority)
-func (_Nomina *NominaFilterer) FilterMintAuthoritySet(opts *bind.FilterOpts, mintAuthority []common.Address) (*NominaMintAuthoritySetIterator, error) {
+// Solidity: event MintAuthoritySet(address indexed newMintAuthority)
+func (_Nomina *NominaFilterer) FilterMintAuthoritySet(opts *bind.FilterOpts, newMintAuthority []common.Address) (*NominaMintAuthoritySetIterator, error) {
 
-	var mintAuthorityRule []interface{}
-	for _, mintAuthorityItem := range mintAuthority {
-		mintAuthorityRule = append(mintAuthorityRule, mintAuthorityItem)
+	var newMintAuthorityRule []interface{}
+	for _, newMintAuthorityItem := range newMintAuthority {
+		newMintAuthorityRule = append(newMintAuthorityRule, newMintAuthorityItem)
 	}
 
-	logs, sub, err := _Nomina.contract.FilterLogs(opts, "MintAuthoritySet", mintAuthorityRule)
+	logs, sub, err := _Nomina.contract.FilterLogs(opts, "MintAuthoritySet", newMintAuthorityRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1009,15 +1205,15 @@ func (_Nomina *NominaFilterer) FilterMintAuthoritySet(opts *bind.FilterOpts, min
 
 // WatchMintAuthoritySet is a free log subscription operation binding the contract event 0x7cd028240c863e3069db38011d9a2a8b46b7af1d8e075414a2539f65069012fe.
 //
-// Solidity: event MintAuthoritySet(address indexed mintAuthority)
-func (_Nomina *NominaFilterer) WatchMintAuthoritySet(opts *bind.WatchOpts, sink chan<- *NominaMintAuthoritySet, mintAuthority []common.Address) (event.Subscription, error) {
+// Solidity: event MintAuthoritySet(address indexed newMintAuthority)
+func (_Nomina *NominaFilterer) WatchMintAuthoritySet(opts *bind.WatchOpts, sink chan<- *NominaMintAuthoritySet, newMintAuthority []common.Address) (event.Subscription, error) {
 
-	var mintAuthorityRule []interface{}
-	for _, mintAuthorityItem := range mintAuthority {
-		mintAuthorityRule = append(mintAuthorityRule, mintAuthorityItem)
+	var newMintAuthorityRule []interface{}
+	for _, newMintAuthorityItem := range newMintAuthority {
+		newMintAuthorityRule = append(newMintAuthorityRule, newMintAuthorityItem)
 	}
 
-	logs, sub, err := _Nomina.contract.WatchLogs(opts, "MintAuthoritySet", mintAuthorityRule)
+	logs, sub, err := _Nomina.contract.WatchLogs(opts, "MintAuthoritySet", newMintAuthorityRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1051,7 +1247,7 @@ func (_Nomina *NominaFilterer) WatchMintAuthoritySet(opts *bind.WatchOpts, sink 
 
 // ParseMintAuthoritySet is a log parse operation binding the contract event 0x7cd028240c863e3069db38011d9a2a8b46b7af1d8e075414a2539f65069012fe.
 //
-// Solidity: event MintAuthoritySet(address indexed mintAuthority)
+// Solidity: event MintAuthoritySet(address indexed newMintAuthority)
 func (_Nomina *NominaFilterer) ParseMintAuthoritySet(log types.Log) (*NominaMintAuthoritySet, error) {
 	event := new(NominaMintAuthoritySet)
 	if err := _Nomina.contract.UnpackLog(event, "MintAuthoritySet", log); err != nil {
