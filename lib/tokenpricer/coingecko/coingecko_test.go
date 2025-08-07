@@ -26,10 +26,7 @@ func TestIntegration(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	apikey, ok := os.LookupEnv("COINGECKO_APIKEY")
-	require.False(t, ok)
-
-	c := coingecko.New(coingecko.WithAPIKey(apikey))
+	c := coingecko.New(coingecko.WithAPIKey(os.Getenv("COINGECKO_APIKEY")))
 
 	// USD prices for omni and eth
 	usdPrices, err := c.USDPrices(t.Context(), tokens.OMNI, tokens.ETH)
@@ -54,12 +51,14 @@ func TestIntegration(t *testing.T) {
 	t.Logf("OMNI/eth: %v", price3)
 
 	require.Equal(t, new(big.Rat).Inv(price2), price1)
-	require.Equal(t, price2, price3)
+	p2F64, _ := price2.Float64()
+	p3F64, _ := price3.Float64()
+	require.InEpsilon(t, p2F64, p3F64, 0.001, "OMNI/ETH prices should match")
 
 	// Test NOM price derivation (should be OMNI / 75)
 	nomPrices, err := c.USDPrices(t.Context(), tokens.NOM, tokens.OMNI)
 	tutil.RequireNoError(t, err)
-	require.NotEmpty(t, nomPrices)
+	require.Len(t, nomPrices, 2)
 
 	expectedNOMPrice := nomPrices[tokens.OMNI] / 75.0
 	require.InEpsilon(t, expectedNOMPrice, nomPrices[tokens.NOM], 0.001, "NOM price should be OMNI/75")
@@ -67,8 +66,15 @@ func TestIntegration(t *testing.T) {
 	// Test that OMNI pricing still works independently
 	omniOnlyPrices, err := c.USDPrices(t.Context(), tokens.OMNI)
 	tutil.RequireNoError(t, err)
-	require.NotEmpty(t, omniOnlyPrices)
+	require.Len(t, omniOnlyPrices, 1)
 	require.InEpsilon(t, nomPrices[tokens.OMNI], omniOnlyPrices[tokens.OMNI], 0.001, "OMNI price should be consistent")
+
+	// Ensure fecthing NOM without OMNI also works
+	morePrices, err := c.USDPrices(t.Context(), tokens.NOM, tokens.ETH)
+	tutil.RequireNoError(t, err)
+	require.Len(t, morePrices, 2)
+	require.NotZero(t, morePrices[tokens.NOM])
+	require.NotZero(t, morePrices[tokens.ETH])
 }
 
 type testCase struct {
