@@ -100,14 +100,22 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "deploy create3")
 	}
 
+	// Cannot deploy CreateX here for some reason, tests inexplicably fail.
+
 	// Deploy portals (allowing networkFromDef to succeed)
 	if err := def.Netman().DeployPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, errors.Wrap(err, "deploy portals")
 	}
 
+	// It seems CreateX must be deployed after portal deployment.
+	if err = deployAllCreateX(ctx, def); err != nil {
+		return nil, errors.Wrap(err, "deploy createx")
+	}
+
 	var eg1 errgroup.Group
 	eg1.Go(func() error { return maybeDeploySolver(ctx, def) })                                      // Deploy solver before initPortalRegistry, so solver detects boxes after netconf.Await
 	eg1.Go(func() error { return maybeDeployL1OmniERC20(ctx, networkFromDef(def), def.Backends()) }) // Solver also requires all tokens to be deployed
+	eg1.Go(func() error { return maybeDeployNomina(ctx, def) })
 	if err := eg1.Wait(); err != nil {
 		return nil, errors.Wrap(err, "deploy solver and erc20 contracts")
 	}
