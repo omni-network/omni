@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `evmredenom` module implements a secure token redenomination process for the Omni->Nomina rebrand, multiplying all EVM account balances by a factor of 75 during the `4_earhart` network upgrade. This is a critical one-time operation that must maintain state integrity while handling the conversion from `OMNI` to `NOM` tokens.
+The `evmredenom` module implements a secure token redenomination process for the Omni->Nomina rebrand, multiplying all EVM account balances by a factor of 75 after the `4_earhart` network upgrade. This is a critical one-time operation that must maintain state integrity while handling the conversion from `OMNI` to `NOM` tokens.
 
 ## Problem Statement
 
@@ -40,6 +40,6 @@ The ethereum snapsync protocol's account sync logic is used to secure this proce
 - The same snapsync logic is used in the `evmredenom` module to verify the proofs and apply the changes.
 - This ensures that all accounts are submitted in the correct order.
 - Mapping of account hash to account address is done by EVM genesis alloc and debug_preimage queries.
-- For operational efficiency, a single fullnode can be configured to run the submission process at the upgrade height.
+- For operational efficiency, a single archive can be configured to run the submission process at the upgrade height.
 - Since that node stops processing the chain, this ensures that geth has the required state.
 - Once all batches are submitted, the `evmredenom` module marks the process as complete.
