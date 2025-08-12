@@ -11,7 +11,7 @@ jobs:
       SKIP: golangci-lint,run-go-tests,no-commit-to-branch,run-forge-tests,run-forge-fmt,run-rust-checks
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install Python
         uses: actions/setup-python@v5
       - name: Install Go

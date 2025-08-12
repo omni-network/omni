@@ -17,7 +17,7 @@ jobs:
             arch: arm64
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Verify Docker Installation
       run: docker --version
@@ -76,7 +76,7 @@ jobs:
             arch: arm64
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Foundry
         uses: ./.github/actions/setup-foundry

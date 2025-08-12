@@ -11,7 +11,7 @@ jobs:
       run:
         working-directory: contracts/core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-foundry
       - name: Install pnpm
         run: make install-pnpm
@@ -33,7 +33,7 @@ jobs:
       run:
         working-directory: contracts/avs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-foundry
       - name: Install pnpm
         run: make install-pnpm
@@ -55,7 +55,7 @@ jobs:
       run:
         working-directory: contracts/solve
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-foundry
       - name: Install pnpm
         run: make install-pnpm
@@ -77,7 +77,7 @@ jobs:
       run:
         working-directory: contracts/nomina
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-foundry
       - name: Install pnpm
         run: make install-pnpm
