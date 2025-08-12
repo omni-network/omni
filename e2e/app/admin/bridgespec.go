@@ -19,10 +19,43 @@ import (
 // To update bridge spec, update this map.
 // Then run `ensure-bridge-spec` to apply the changes.
 var bridgeSpec = map[netconf.ID]NetworkBridgeSpec{
-	netconf.Devnet:  DefaultBridgeSpec(),
-	netconf.Staging: DefaultBridgeSpec(),
-	netconf.Omega:   DefaultBridgeSpec(),
-	netconf.Mainnet: DefaultBridgeSpec(),
+	netconf.Devnet: DefaultBridgeSpec(),
+	netconf.Staging: {
+		Native: BridgeSpec{
+			PauseAll:      false,
+			PauseWithdraw: false,
+			PauseBridge:   true,
+		},
+		L1: BridgeSpec{
+			PauseAll:      false,
+			PauseWithdraw: false,
+			PauseBridge:   true,
+		},
+	},
+	netconf.Omega: {
+		Native: BridgeSpec{
+			PauseAll:      false,
+			PauseWithdraw: false,
+			PauseBridge:   true,
+		},
+		L1: BridgeSpec{
+			PauseAll:      false,
+			PauseWithdraw: false,
+			PauseBridge:   true,
+		},
+	},
+	netconf.Mainnet: {
+		Native: BridgeSpec{
+			PauseAll:      false,
+			PauseWithdraw: false,
+			PauseBridge:   true,
+		},
+		L1: BridgeSpec{
+			PauseAll:      false,
+			PauseWithdraw: false,
+			PauseBridge:   true,
+		},
+	},
 }
 
 // BridgeSpec is the specification for a bridge contract (native or L1).
