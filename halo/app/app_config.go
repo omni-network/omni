@@ -68,9 +68,8 @@ const (
 	genesisTrimLag        uint64 = 1      // Allow deleting attestations in block after approval.
 	genesisCTrimLag       uint64 = 72_000 // Delete consensus attestations state after +-1 day (given a period of 1.2s).
 
-	deliverIntervalProtected = 20_000 // Roughly ~12h assuming 0.5bps
-	deliverIntervalEphemeral = 2      // Fast updates while testing
-	deliverIntervalStaging   = 2_400  // ~1h interval on staging for testing DoS
+	deliverIntervalProtected = 1 // Disable batching in protected networks.
+	deliverIntervalEphemeral = 2 // Fast updates while testing
 
 	maxWithdrawalsPerBlock uint64 = 32 // The maximum number of withdrawals included in one block.
 )
@@ -274,8 +273,6 @@ var (
 func deliverInterval(network netconf.ID) int64 {
 	if network.IsProtected() {
 		return deliverIntervalProtected
-	} else if network == netconf.Staging {
-		return deliverIntervalStaging // TODO(corver): Remove this.
 	}
 
 	return deliverIntervalEphemeral
