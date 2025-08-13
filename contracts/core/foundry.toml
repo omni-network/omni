@@ -10,6 +10,7 @@ remappings = [
   "avs/=../avs/src",
   "solve/=../solve",
   "core/=.",
+  "nomina/=../nomina",
   # remapping for eigenlayers import
   '@openzeppelin-upgrades/contracts/=node_modules/@openzeppelin/contracts-upgradeable'
 ]
@@ -20,7 +21,7 @@ fs_permissions = [
   { access = "read", path = "./out" },
 ]
 
-allow_paths = ["../avs", "../solve"]
+allow_paths = ["../avs", "../solve", "../nomina"]
 gas_limit = 9223372036854775807 # prev foundry default
 ffi = true
 

@@ -14,7 +14,7 @@ import { Fixtures } from "./Fixtures.sol";
  */
 contract Utils is Test, Events, Fixtures {
     /// @dev Parse an XReceipt log
-    function parseReceipt(Vm.Log memory log) internal returns (TestXTypes.Receipt memory) {
+    function parseReceipt(Vm.Log memory log) internal pure returns (TestXTypes.Receipt memory) {
         assertEq(log.topics.length, 4);
         assertEq(log.topics[0], XReceipt.selector);
 
@@ -33,7 +33,7 @@ contract Utils is Test, Events, Fixtures {
     }
 
     /// _dev Assert that the logs are XReceipt events with the correct fields.
-    function assertReceipts(Vm.Log[] memory logs, XTypes.Msg[] memory xmsgs, uint64 sourceChainId) internal {
+    function assertReceipts(Vm.Log[] memory logs, XTypes.Msg[] memory xmsgs, uint64 sourceChainId) internal view {
         assertEq(logs.length, xmsgs.length);
         for (uint256 i = 0; i < logs.length; i++) {
             assertReceipt(logs[i], xmsgs[i], sourceChainId);
@@ -42,7 +42,7 @@ contract Utils is Test, Events, Fixtures {
 
     /// @dev Assert that the log is an XReceipt event with the correct fields.
     ///      We use this helper rather than vm.expectEmit(), because gasUsed is difficult to predict.
-    function assertReceipt(Vm.Log memory log, XTypes.Msg memory xmsg, uint64 sourceChainId) internal {
+    function assertReceipt(Vm.Log memory log, XTypes.Msg memory xmsg, uint64 sourceChainId) internal view {
         TestXTypes.Receipt memory receipt = parseReceipt(log);
 
         assertEq(receipt.sourceChainId, sourceChainId);

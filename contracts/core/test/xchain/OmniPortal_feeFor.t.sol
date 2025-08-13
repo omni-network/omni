@@ -10,7 +10,7 @@ import { Base } from "./common/Base.sol";
  */
 contract OmniPortal_feeFor_Test is Base {
     /// @dev Test feeFor matches oracle
-    function test_feeFor_succeeds() public {
+    function test_feeFor_succeeds() public view {
         uint64 destChainId = chainBId;
         uint64 gasLimit;
         bytes memory data = abi.encodeWithSignature("test()");
