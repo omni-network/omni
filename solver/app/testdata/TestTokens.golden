@@ -350,7 +350,7 @@
   "symbol": "NOM"
  },
  {
-  "address": "0x54088C86bc37d2A1Af0afD41EfE57098d6788AAf",
+  "address": "0x64389e4fb0dFe22d533d6a05d1C24d045C1fcc32",
   "chainId": 17000,
   "coingeckoId": "nomina",
   "isMock": false,
@@ -360,7 +360,7 @@
   "symbol": "NOM"
  },
  {
-  "address": "0x0085d690b8593B845aAA2f42258Dfd7BE69A8e35",
+  "address": "0xDD80b7fDb98CDC496fF7911164B267d815BdDb45",
   "chainId": 17000,
   "coingeckoId": "nomina",
   "isMock": false,
@@ -370,7 +370,7 @@
   "symbol": "NOM"
  },
  {
-  "address": "0x1895852A013Af1D4A01c3CEb389F4e0b854508e5",
+  "address": "0x786AbE8E5a6232F73C8f7B944867d2Fc3eaeC745",
   "chainId": 1652,
   "coingeckoId": "nomina",
   "isMock": false,

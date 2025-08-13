@@ -5,7 +5,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/createx"
 	"github.com/omni-network/omni/lib/errors"
@@ -14,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -128,18 +128,17 @@ func deployNomToken(ctx context.Context, network netconf.ID, backend *ethbackend
 
 	initCodeHash := crypto.Keccak256Hash(initCode)
 
-	saltBytes := []byte(cfg.CreateXSalt)
 	var salt [32]byte
 	var guardedSalt [32]byte
 
-	// If salt is exactly 32 bytes and starts with deployer address, it's pre-formatted
-	if len(saltBytes) == 32 && cast.MustEthAddress(saltBytes[:20]) == cfg.Deployer {
-		// Use the original salt bytes directly (already deployer-formatted)
-		copy(salt[:], saltBytes)
+	// Normalise salt: prefer 0x-hex that decodes to 32 bytes, else raw 32-byte string, else hash.
+	if b, err := hexutil.Decode(cfg.CreateXSalt); err == nil && len(b) == 32 {
+		copy(salt[:], b)
+	} else if len([]byte(cfg.CreateXSalt)) == 32 {
+		copy(salt[:], []byte(cfg.CreateXSalt))
 	} else {
-		// For string salts, hash them to get a 32-byte salt
-		hashedSalt := crypto.Keccak256Hash(saltBytes)
-		copy(salt[:], hashedSalt[:])
+		hashed := crypto.Keccak256Hash([]byte(cfg.CreateXSalt))
+		copy(salt[:], hashed[:])
 	}
 
 	guardedSalt = createx.GuardSalt(salt, cfg.Deployer)
