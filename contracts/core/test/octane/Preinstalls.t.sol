@@ -231,7 +231,7 @@ contract Preinstalls_Test is Test, AllocPredeploys {
     /**
      * @notice Compare permit2 DOMAIN_SEPARATOR() return values
      */
-    function test_permit2_domain_separator_succeeds() public {
+    function test_permit2_domain_separator_succeeds() public view {
         bytes32 calledValue = IPermit2(Preinstalls.Permit2).DOMAIN_SEPARATOR();
         bytes32 derivedValue = keccak256(
             abi.encode(
@@ -320,7 +320,7 @@ contract Preinstalls_Test is Test, AllocPredeploys {
     /**
      * @notice Test that ERC1820Registry can return an interface hash for a function signature
      */
-    function test_erc1820Registry_interfaceHash_succeeds() public {
+    function test_erc1820Registry_interfaceHash_succeeds() public pure {
         bytes32 interfaceHash = IERC1820Registry(Preinstalls.ERC1820Registry).interfaceHash("testInterface(uint256)");
         assertTrue(interfaceHash != bytes32(0), "ERC1820Registry interfaceHash returned empty bytes32");
     }

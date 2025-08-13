@@ -1,7 +1,7 @@
 {
  "sourceChainId": 1652,
  "destChainId": 1651,
- "depositToken": "0x786abe8e5a6232f73c8f7b944867d2fc3eaec745",
+ "depositToken": "0xd2734e21a0eb8bfd0fe8b26d7501a8c29adf5c73",
  "expenseToken": "0x0000000000000000000000000000000000000000",
  "includeFees": true
 }

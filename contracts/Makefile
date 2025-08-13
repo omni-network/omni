@@ -42,7 +42,8 @@ CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			OmniGasPump OmniGasStation FeeOracleV2 \
 			node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20 \
 			node_modules/createx/src/ICreateX.sol:ICreateX \
-			test/StakingProxy.sol:StakingProxy
+			test/StakingProxy.sol:StakingProxy \
+			WNomina NominaBridgeL1 NominaBridgeNative NominaPortal
 
 SOLVE_CONTRACTS := ISolverNetBindings SolverNetInbox SolverNetOutbox SolverNetExecutor \
 			test/utils/MockERC20.sol:MockERC20 test/utils/MockVault.sol:MockVault SolverNetAdmin
@@ -51,7 +52,7 @@ AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirec
 
 XAPPS_CONTRACTS := Bridge Lockbox StablecoinUpgradeable StablecoinProxy
 
-NOMINA_CONTRACTS := Nomina WNomina NominaBridgeL1 NominaBridgeNative NominaPortal
+NOMINA_CONTRACTS := Nomina
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
