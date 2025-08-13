@@ -51,6 +51,8 @@ const (
 	RoleSolver Role = "solver"
 	// RoleRedenomizer is used to submit redenomization account batches to the redenom contract.
 	RoleRedenomizer Role = "redenomizer"
+	// RoleNomAuthority is used to authorize an address to mint nom tokens.
+	RoleNomAuthority Role = "nom-mint-authority"
 )
 
 func AllRoles() []Role {
@@ -68,6 +70,7 @@ func AllRoles() []Role {
 		RoleXCaller,
 		RoleSolver,
 		RoleRedenomizer,
+		RoleNomAuthority,
 	}
 }
 

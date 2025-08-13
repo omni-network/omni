@@ -262,25 +262,26 @@ func TokenAddr(network netconf.ID) common.Address {
 
 func NomAddr(network netconf.ID) common.Address {
 	// TODO(zodomo): Replace this once we have a proper nom token address
-	// We cannot match mainnet and omega, as they have different deployers and we shouldnt use Create3 for a token
-	if network == netconf.Mainnet || network == netconf.Omega {
+	if network == netconf.Mainnet {
 		return common.HexToAddress("0x6e6f6d696e610000000000000000000000000000")
 	}
 
-	salt := nominaSalt(network, NameNomToken)
 	omni := TokenAddr(network)
-	mintAuthority := eoa.MustAddress(network, eoa.RoleCold) // TODO(zodomo): Replace with proper mint authority
+	mintAuthority := eoa.MustAddress(network, eoa.RoleNomAuthority)
 	deployer := eoa.MustAddress(network, eoa.RoleDeployer)
 
 	abi, err := bindings.NominaMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}
 	}
+
 	initCode, err := PackInitCode(abi, bindings.NominaMetaData.Bin, omni, mintAuthority)
 	if err != nil {
 		return common.Address{}
 	}
+
 	initCodeHash := crypto.Keccak256Hash(initCode)
+	salt := createxSalt(network, NameNomToken)
 
 	// Compute CreateX CREATE2 address
 	return createx.Create2Address(salt, initCodeHash, deployer)
@@ -296,29 +297,27 @@ func Create3Address(network netconf.ID, salt string) common.Address {
 	return addr(network, salt)
 }
 
-// nominaSalt returns the precalculated salt string for a nomina contract on mainnet or omega.
-// on other networks, the salt is calculated based on the network and name.
-func nominaSalt(network netconf.ID, name string) string {
-	deployer := eoa.MustAddress(network, eoa.RoleDeployer)
-
-	if name == NameNomToken {
-		if network == netconf.Mainnet || network == netconf.Omega {
-			// TODO(zodomo): Replace with proper salt
-			saltBytes := make([]byte, 32)
-			copy(saltBytes[:20], deployer.Bytes())
-			copy(saltBytes[21:24], []byte("nom")) // skip index 20 to disable redeploy protection
-
-			return string(saltBytes)
+// this does not incorporate versions, and will return deterministic salts.
+func createxSalt(network netconf.ID, name string) string {
+	if network == netconf.Mainnet {
+		if name == NameNomToken {
+			return "0x0000000000000000000000000000000000000000000000000000000000000000"
 		}
 	}
 
-	return prefixNetwork(network, name)
+	deployer := eoa.MustAddress(network, eoa.RoleDeployer)
+	saltBytes := make([]byte, 32)
+	salt := crypto.Keccak256Hash([]byte(prefixNetwork(network, name)))
+	copy(saltBytes[:20], deployer.Bytes())
+	copy(saltBytes[21:32], salt.Bytes()[:11]) // skip index 20 to disable redeploy protection
+
+	return string(saltBytes)
 }
 
 // salt returns the salt string for a contract on a network / version.
 func salt(network netconf.ID, name string, versions Versions) string {
-	if isNomina(name) {
-		return nominaSalt(network, name)
+	if usesCreateX(name) {
+		return createxSalt(network, name)
 	}
 
 	if !isVersioned(name) {
@@ -346,7 +345,7 @@ func isSolvernet(contract string) bool {
 		contract == NameSovlerNetExecutor)
 }
 
-func isNomina(contract string) bool {
+func usesCreateX(contract string) bool {
 	return contract == NameNomToken
 }
 
