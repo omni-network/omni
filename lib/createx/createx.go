@@ -4,6 +4,7 @@ import (
 	"github.com/omni-network/omni/lib/cast"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -24,15 +25,14 @@ var (
 
 // Create2Address returns the CREATE2 address for a contract deployed via CreateX factory.
 func Create2Address(salt string, initCodeHash common.Hash, deployer common.Address) common.Address {
-	saltBytes := []byte(salt)
 	var salt32 [32]byte
-
-	// If salt is exactly 32 bytes, use it directly
-	if len(saltBytes) == 32 {
-		copy(salt32[:], saltBytes)
+	// Accept 0x-hex salts which decode to 32 bytes, or raw 32-byte strings; otherwise hash.
+	if b, err := hexutil.Decode(salt); err == nil && len(b) == 32 {
+		copy(salt32[:], b)
+	} else if len([]byte(salt)) == 32 {
+		copy(salt32[:], []byte(salt))
 	} else {
-		// For string salts, hash them to get a 32-byte salt
-		hashedSalt := crypto.Keccak256Hash(saltBytes)
+		hashedSalt := crypto.Keccak256Hash([]byte(salt))
 		copy(salt32[:], hashedSalt[:])
 	}
 
