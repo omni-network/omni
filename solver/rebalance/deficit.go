@@ -93,9 +93,13 @@ func GetUSDChainDeficit(
 
 	// Add up all the token deficits
 	for _, token := range tokens.ByChain(chainID) {
+		if token.Is(tokens.NOM) { // Skip until NOM is supported
+			continue
+		}
+
 		d, err := GetUSDDeficit(ctx, client, pricer, token, solver)
 		if err != nil {
-			return nil, errors.Wrap(err, "get deficit")
+			return nil, errors.Wrap(err, "get deficit", "asset", token.Asset, "chain", evmchain.Name(chainID))
 		}
 
 		deficit = bi.Add(deficit, d)
@@ -103,6 +107,10 @@ func GetUSDChainDeficit(
 
 	// Subtract all the token surpluses
 	for _, token := range tokens.ByChain(chainID) {
+		if token.Is(tokens.NOM) { // Skip until NOM is supported
+			continue
+		}
+
 		sTkn, err := GetSurplus(ctx, client, token, solver)
 		if err != nil {
 			return nil, errors.Wrap(err, "get surplus")
