@@ -99,7 +99,7 @@ func deployNomToken(ctx context.Context, network netconf.ID, backend *ethbackend
 		CreateXFactory: addrs.CreateXFactory,
 		ExpectedAddr:   addrs.NomToken,
 		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
-		MintAuthority:  eoa.MustAddress(network, eoa.RoleCold), // TODO(zodomo): Replace with proper mint authority
+		MintAuthority:  eoa.MustAddress(network, eoa.RoleNomAuthority),
 	}
 
 	if err := validateNomTokenDeploymentConfig(cfg); err != nil {

@@ -29,6 +29,10 @@
     "min": "0.5 ETH",
     "target": "2 ETH"
    },
+   "nom-mint-authority": {
+    "min": "0 ETH",
+    "target": "0 ETH"
+   },
    "redenomizer": {
     "min": "0 ETH",
     "target": "0 ETH"
@@ -80,6 +84,10 @@
     "target": "0.2 HYPE"
    },
    "monitor": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "nom-mint-authority": {
     "min": "0 HYPE",
     "target": "0 HYPE"
    },
@@ -137,6 +145,10 @@
     "min": "0 MNT",
     "target": "0 MNT"
    },
+   "nom-mint-authority": {
+    "min": "0 MNT",
+    "target": "0 MNT"
+   },
    "redenomizer": {
     "min": "0 MNT",
     "target": "0 MNT"
@@ -190,6 +202,10 @@
    "monitor": {
     "min": "250 OMNI",
     "target": "1000 OMNI"
+   },
+   "nom-mint-authority": {
+    "min": "0 OMNI",
+    "target": "0 OMNI"
    },
    "redenomizer": {
     "min": "0 OMNI",
@@ -247,6 +263,10 @@
     "min": "0.5 ETH",
     "target": "2 ETH"
    },
+   "nom-mint-authority": {
+    "min": "0 ETH",
+    "target": "0 ETH"
+   },
    "redenomizer": {
     "min": "0 ETH",
     "target": "0 ETH"
@@ -298,6 +318,10 @@
     "target": "0 HYPE"
    },
    "monitor": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "nom-mint-authority": {
     "min": "0 HYPE",
     "target": "0 HYPE"
    },
@@ -355,6 +379,10 @@
     "min": "0 MNT",
     "target": "0 MNT"
    },
+   "nom-mint-authority": {
+    "min": "0 MNT",
+    "target": "0 MNT"
+   },
    "redenomizer": {
     "min": "0 MNT",
     "target": "0 MNT"
@@ -408,6 +436,10 @@
    "monitor": {
     "min": "250 OMNI",
     "target": "1000 OMNI"
+   },
+   "nom-mint-authority": {
+    "min": "0 OMNI",
+    "target": "0 OMNI"
    },
    "redenomizer": {
     "min": "0 OMNI",
@@ -465,6 +497,10 @@
     "min": "0.5 ETH",
     "target": "2 ETH"
    },
+   "nom-mint-authority": {
+    "min": "0 ETH",
+    "target": "0 ETH"
+   },
    "redenomizer": {
     "min": "0 ETH",
     "target": "0 ETH"
@@ -516,6 +552,10 @@
     "target": "0 HYPE"
    },
    "monitor": {
+    "min": "0 HYPE",
+    "target": "0 HYPE"
+   },
+   "nom-mint-authority": {
     "min": "0 HYPE",
     "target": "0 HYPE"
    },
@@ -573,6 +613,10 @@
     "min": "0 MNT",
     "target": "0 MNT"
    },
+   "nom-mint-authority": {
+    "min": "0 MNT",
+    "target": "0 MNT"
+   },
    "redenomizer": {
     "min": "0 MNT",
     "target": "0 MNT"
@@ -626,6 +670,10 @@
    "monitor": {
     "min": "250 OMNI",
     "target": "1000 OMNI"
+   },
+   "nom-mint-authority": {
+    "min": "0 OMNI",
+    "target": "0 OMNI"
    },
    "redenomizer": {
     "min": "10 OMNI",

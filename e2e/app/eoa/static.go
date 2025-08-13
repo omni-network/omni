@@ -7,7 +7,7 @@ import (
 //nolint:gochecknoglobals // Static mappings.
 var statics = map[netconf.ID][]Account{
 	netconf.Devnet: flatten(
-		wellKnown(DevPrivateKey0(), RoleCreate3Deployer, RoleDeployer, RoleManager, RoleUpgrader),
+		wellKnown(DevPrivateKey0(), RoleCreate3Deployer, RoleDeployer, RoleManager, RoleUpgrader, RoleNomAuthority),
 		wellKnown(DevPrivateKey1(), RoleRedenomizer),
 		wellKnown(DevPrivateKey2(), RoleFlowgen),
 		wellKnown(DevPrivateKey3(), RoleXCaller),
@@ -26,6 +26,7 @@ var statics = map[netconf.ID][]Account{
 		remote("0xC8103859Ac7CB547d70307EdeF1A2319FC305fdC", RoleCreate3Deployer),
 		remote("0x274c4B3e5d27A65196d63964532366872F81D261", RoleDeployer),
 		remote("0x7a6cF389082dc698285474976d7C75CAdE08ab7e", RoleTester), // reused shared-test with omega. Concurrent usage will result in nonce clashes.
+		remote("0x73c041A77042DceE431710761e22760A5eBbF4d7", RoleNomAuthority),
 		secret("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96", RoleRelayer),
 		secret("0x0De553555Fa19d787Af4273B18bDB77282D618c4", RoleMonitor),
 		secret("0x9a8BF80057c8E5B5526a87389cF21A631a420998", RoleFlowgen),
@@ -41,6 +42,7 @@ var statics = map[netconf.ID][]Account{
 		remote("0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9", RoleCreate3Deployer),
 		remote("0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1", RoleDeployer),
 		remote("0x7a6cF389082dc698285474976d7C75CAdE08ab7e", RoleTester), // reused shared-test with staging. Concurrent usage will result in nonce clashes.
+		remote("0x755678F0a5cB53eb8ad128a3cb0339D536D97333", RoleNomAuthority),
 		secret("0x37AD6f7267454cac494C177127aC017750c8A7DB", RoleRelayer),
 		secret("0xcef2a2c477Ec8473E4DeB9a8c2DF1D0585ea1040", RoleMonitor),
 		secret("0x16DA241141D70290F043eED299140b6EC5942CAb", RoleFlowgen),
@@ -54,6 +56,7 @@ var statics = map[netconf.ID][]Account{
 		remote("0xF8740c09f25E2cbF5C9b34Ef142ED7B343B42360", RoleUpgrader),
 		remote("0x992b9de7D42981B90A75C523842C01e27875b65B", RoleCreate3Deployer),
 		remote("0x9496Bf1Bd2Fa5BCba72062cC781cC97eA6930A13", RoleDeployer),
+		remote("0x9016516dcf1Bc94d24DA583Dfc31FEB87f852922", RoleNomAuthority),
 		secret("0xfD62020Cee216Dc543E29752058Ee9f60f7D9Ff9", RoleMonitor),
 		secret("0x7f409BaC75F5260340EbEC91066a845631Dc4859", RoleFlowgen),
 		secret("0x6191442101086253A636aecBCC870e4778490AaB", RoleRelayer),
