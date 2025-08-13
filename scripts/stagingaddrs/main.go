@@ -37,6 +37,7 @@ func run(ctx context.Context) error {
 		"portal":          addrs.Portal,
 		"l1bridge":        addrs.L1Bridge,
 		"token":           addrs.Token,
+		"nom":             addrs.NomToken,
 		"gaspump":         addrs.GasPump,
 		"gasstation":      addrs.GasStation,
 		"solvernetinbox":  addrs.SolverNetInbox,
