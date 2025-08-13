@@ -51,7 +51,7 @@ AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirec
 
 XAPPS_CONTRACTS := Bridge Lockbox StablecoinUpgradeable StablecoinProxy
 
-NOMINA_CONTRACTS := Nomina WNomina NominaBridgeL1 NominaBridgeNative
+NOMINA_CONTRACTS := Nomina WNomina NominaBridgeL1 NominaBridgeNative NominaPortal
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
@@ -65,6 +65,7 @@ bindings: check-abigen-version build ## Generate golang contract bindings.
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetinbox.go SolverNetCall SolverNetFillOriginData SolverNetTokenExpense
 	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetoutbox.go IERC7683FillInstruction IERC7683Output IERC7683ResolvedCrossChainOrder ISolverNetOutboxInboxConfig
+	go run ./bindings/scripts/commenttypes.go -- bindings/nominaportal.go XTypesBlockHeader XTypesChain XTypesMsg XTypesMsgContext XTypesSigTuple XTypesSubmission XTypesValidator
 
 .PHONY: allocs
 allocs: bindings ## Generate predeploy allocations.
