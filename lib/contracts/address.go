@@ -261,11 +261,6 @@ func TokenAddr(network netconf.ID) common.Address {
 }
 
 func NomAddr(network netconf.ID) common.Address {
-	// TODO(zodomo): Replace this once we have a proper nom token address
-	if network == netconf.Mainnet {
-		return common.HexToAddress("0x6e6f6d696e610000000000000000000000000000")
-	}
-
 	omni := TokenAddr(network)
 	mintAuthority := eoa.MustAddress(network, eoa.RoleNomAuthority)
 	deployer := eoa.MustAddress(network, eoa.RoleDeployer)
@@ -301,7 +296,7 @@ func Create3Address(network netconf.ID, salt string) common.Address {
 func createxSalt(network netconf.ID, name string) string {
 	if network == netconf.Mainnet {
 		if name == NameNomToken {
-			return "0x0000000000000000000000000000000000000000000000000000000000000000"
+			return "0x9496bf1bd2fa5bcba72062cc781cc97ea6930a13003f29c706dfdba1037ec63e"
 		}
 	}
 

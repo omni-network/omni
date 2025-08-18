@@ -19,4 +19,17 @@ contract CreateXHelper is Script {
 
         return (initCode, initCodeHash);
     }
+
+    function nom_mainnet() public pure returns (bytes memory, bytes32) {
+        address omni = 0x36E66fbBce51e4cD5bd3C62B637Eb411b18949D4;
+        address mintAuthority = 0x9016516dcf1Bc94d24DA583Dfc31FEB87f852922;
+
+        bytes memory initCode = abi.encodePacked(type(Nomina).creationCode, abi.encode(omni, mintAuthority));
+        bytes32 initCodeHash = keccak256(initCode);
+
+        // solhint-disable-next-line no-console
+        console2.logBytes(initCode);
+        // solhint-disable-next-line no-console
+        console2.logBytes32(initCodeHash);
+    }
 }
