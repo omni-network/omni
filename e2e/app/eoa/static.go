@@ -48,6 +48,7 @@ var statics = map[netconf.ID][]Account{
 		secret("0x16DA241141D70290F043eED299140b6EC5942CAb", RoleFlowgen),
 		secret("0x01A1A1C3Fe5369bc4DF3B5a5bbC10639a14113ab", RoleXCaller),
 		secret("0x2677B9165c426eF0d3EC74E0e853e2F3A3d525cd", RoleSolver),
+		secret("0x2C2609bE1788B2D4Fd875595A3f43c05Ca1Db94c", RoleRedenomizer),
 	),
 	netconf.Mainnet: flatten(
 		remote("0x8b6b217572582C57616262F9cE02A951A1D1b951", RoleCold),
@@ -62,5 +63,6 @@ var statics = map[netconf.ID][]Account{
 		secret("0x6191442101086253A636aecBCC870e4778490AaB", RoleRelayer),
 		secret("0x835c36774B28563b9a1d1ae83dD6F671F51DCb5c", RoleXCaller),
 		secret("0x8cC81c5C09394CEaCa7a53be5f547AE719D75dFC", RoleSolver),
+		secret("0x2c112A6BbFd924759c9630A7586f7B42Db238811", RoleRedenomizer),
 	),
 }

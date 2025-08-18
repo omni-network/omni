@@ -208,8 +208,8 @@
     "target": "0 OMNI"
    },
    "redenomizer": {
-    "min": "0 OMNI",
-    "target": "0 OMNI"
+    "min": "10 OMNI",
+    "target": "100 OMNI"
    },
    "relayer": {
     "min": "250 OMNI",
@@ -442,8 +442,8 @@
     "target": "0 OMNI"
    },
    "redenomizer": {
-    "min": "0 OMNI",
-    "target": "0 OMNI"
+    "min": "10 OMNI",
+    "target": "100 OMNI"
    },
    "relayer": {
     "min": "250 OMNI",
