@@ -347,8 +347,12 @@ func upgradeStaking(ctx context.Context, s shared, c chain) error {
 }
 
 func upgradeBridgeNative(ctx context.Context, s shared, c chain) error {
-	// TODO: replace if re-initialization is required
-	initializer := []byte{}
+	var nativeBridgeABI = mustGetABI(bindings.NominaBridgeNativeMetaData)
+
+	initializer, err := nativeBridgeABI.Pack("initializeV2")
+	if err != nil {
+		return errors.Wrap(err, "pack initializer")
+	}
 
 	calldata, err := adminABI.Pack("upgradeBridgeNative", s.upgrader, s.deployer, initializer)
 	if err != nil {
@@ -360,7 +364,7 @@ func upgradeBridgeNative(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
 
-	log.Info(ctx, "OmniBridgeNative upgraded ✅", "chain", c.Name, "out", out)
+	log.Info(ctx, "NominaBridgeNative upgraded ✅", "chain", c.Name, "out", out)
 
 	return nil
 }
@@ -371,10 +375,14 @@ func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	// TODO: replace if re-initialization is required
-	initializer := []byte{}
+	var l1BridgeABI = mustGetABI(bindings.NominaBridgeL1MetaData)
 
-	calldata, err := adminABI.Pack("upgradeBridgeL1", s.upgrader, s.deployer, addrs.L1Bridge, initializer)
+	initializer, err := l1BridgeABI.Pack("initializeV2")
+	if err != nil {
+		return errors.Wrap(err, "pack initializer")
+	}
+
+	calldata, err := adminABI.Pack("upgradeBridgeL1", s.upgrader, s.deployer, addrs.L1Bridge, addrs.NomToken, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
@@ -384,7 +392,7 @@ func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
 
-	log.Info(ctx, "OmniBridgeL1 upgraded ✅", "chain", c.Name, "addr", addrs.L1Bridge, "out", out)
+	log.Info(ctx, "NominaBridgeL1 upgraded ✅", "chain", c.Name, "addr", addrs.L1Bridge, "out", out)
 
 	return nil
 }

@@ -37,7 +37,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
     /**
      * @notice Emitted on setup(...)
      */
-    event Setup(uint64 l1ChainId, address portal, address l1Bridge, uint256 l1Deposits);
+    event Setup(uint64 l1ChainId, address omni, address l1Bridge, uint256 l1Deposits);
 
     /**
      * @notice xcall gas limit for OmniBridgeL1.withdraw
@@ -52,7 +52,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
     /**
      * @notice The OmniPortal contract.
      */
-    IOmniPortal public portal;
+    IOmniPortal public omni;
 
     /**
      * @notice Total OMNI tokens deposited to OmniBridgeL1.
@@ -92,9 +92,9 @@ contract OmniBridgeNative is OmniBridgeCommon {
      * @param amount    The amount of OMNI to withdraw.
      */
     function withdraw(address payor, address to, uint256 amount) external whenNotPaused(ACTION_WITHDRAW) {
-        XTypes.MsgContext memory xmsg = portal.xmsg();
+        XTypes.MsgContext memory xmsg = omni.xmsg();
 
-        require(msg.sender == address(portal), "OmniBridge: not xcall"); // this protects against reentrancy
+        require(msg.sender == address(omni), "OmniBridge: not xcall"); // this protects against reentrancy
         require(xmsg.sender == l1Bridge, "OmniBridge: not bridge");
         require(xmsg.sourceChainId == l1ChainId, "OmniBridge: not L1");
 
@@ -127,7 +127,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
 
         // if fee is overpaid, forward excess to portal.
         // balance of this contract should continue to reflect funds bridged to L1.
-        portal.xcall{ value: msg.value - amount }(
+        omni.xcall{ value: msg.value - amount }(
             l1ChainId,
             ConfLevel.Finalized,
             l1Bridge,
@@ -142,7 +142,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
      * @notice Return the xcall fee required to bridge `amount` to `to`.
      */
     function bridgeFee(address to, uint256 amount) public view returns (uint256) {
-        return portal.feeFor(l1ChainId, abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)), XCALL_WITHDRAW_GAS_LIMIT);
+        return omni.feeFor(l1ChainId, abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)), XCALL_WITHDRAW_GAS_LIMIT);
     }
 
     /**
@@ -152,9 +152,9 @@ contract OmniBridgeNative is OmniBridgeCommon {
      *      withdraw is the same as the address of a contract on Omni deployed and owned by a malicious actor.
      */
     function claim(address to) external whenNotPaused(ACTION_WITHDRAW) {
-        XTypes.MsgContext memory xmsg = portal.xmsg();
+        XTypes.MsgContext memory xmsg = omni.xmsg();
 
-        require(msg.sender == address(portal), "OmniBridge: not xcall");
+        require(msg.sender == address(omni), "OmniBridge: not xcall");
         require(xmsg.sourceChainId == l1ChainId, "OmniBridge: not L1");
         require(to != address(0), "OmniBridge: no claim to zero");
 
@@ -177,16 +177,16 @@ contract OmniBridgeNative is OmniBridgeCommon {
     /**
      * @notice Setup core contract parameters, done by owner immediately after pre-deployment.
      * @param l1ChainId_    The chain id of the L1 network.
-     * @param portal_       The address of the OmniPortal contract.
+     * @param omni_         The address of the OmniPortal contract.
      * @param l1Bridge_     The address of the L1 OmniBridge contract.
      * @param l1Deposits_   The number of tokens deposited to L1 bridge contract at setup
      *                      (to account for genesis prefunds)
      */
-    function setup(uint64 l1ChainId_, address portal_, address l1Bridge_, uint256 l1Deposits_) external onlyOwner {
+    function setup(uint64 l1ChainId_, address omni_, address l1Bridge_, uint256 l1Deposits_) external onlyOwner {
         l1ChainId = l1ChainId_;
-        portal = IOmniPortal(portal_);
+        omni = IOmniPortal(omni_);
         l1Bridge = l1Bridge_;
         l1Deposits = l1Deposits_;
-        emit Setup(l1ChainId_, portal_, l1Bridge_, l1Deposits_);
+        emit Setup(l1ChainId_, omni_, l1Bridge_, l1Deposits_);
     }
 }

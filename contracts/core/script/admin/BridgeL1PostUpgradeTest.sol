@@ -4,8 +4,8 @@ pragma solidity 0.8.24;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
-import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
-import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
+import { NominaBridgeNative } from "src/token/nomina/NominaBridgeNative.sol";
+import { NominaBridgeL1 } from "src/token/nomina/NominaBridgeL1.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { Test } from "forge-std/Test.sol";
@@ -15,12 +15,13 @@ import { VmSafe } from "forge-std/Vm.sol";
 
 /**
  * @title BridgeL1PostUpgradeTest
- * @dev Test OmniBridgeL1 post-upgrade functionality
+ * @dev Test NominaBridgeL1 post-upgrade functionality
  */
 contract BridgeL1PostUpgradeTest is Test {
-    OmniBridgeL1 b;
+    NominaBridgeL1 b;
     MockPortal portal;
     IERC20 omni;
+    IERC20 nomina;
     address owner;
 
     function run(address addr) public {
@@ -34,11 +35,12 @@ contract BridgeL1PostUpgradeTest is Test {
     }
 
     function _setup(address addr) internal {
-        b = OmniBridgeL1(addr);
+        b = NominaBridgeL1(addr);
         omni = b.omni();
+        nomina = b.nomina();
         owner = b.owner();
 
-        // OmniBridgeL1 portal at slot 0, no admin setters
+        // NominaBridgeL1 portal at slot 0, no admin setters
         portal = new MockPortal();
         vm.store(addr, bytes32(0), bytes32(uint256(uint160(address(portal)))));
 
@@ -65,7 +67,7 @@ contract BridgeL1PostUpgradeTest is Test {
                     portal.omniChainId(),
                     ConfLevel.Finalized,
                     Predeploys.OmniBridgeNative,
-                    abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
+                    abi.encodeCall(NominaBridgeNative.withdraw, (payor, to, amount)),
                     b.XCALL_WITHDRAW_GAS_LIMIT()
                 )
             )
@@ -92,7 +94,7 @@ contract BridgeL1PostUpgradeTest is Test {
             sourceChainId: portal.omniChainId(),
             sender: Predeploys.OmniBridgeNative,
             to: address(b),
-            data: abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
+            data: abi.encodeCall(NominaBridgeL1.withdraw, (to, amount)),
             gasLimit: 100_000
         });
 

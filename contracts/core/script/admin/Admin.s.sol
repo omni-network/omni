@@ -15,6 +15,8 @@ import { OmniGasStation } from "src/token/OmniGasStation.sol";
 import { OmniBridgeCommon } from "src/token/OmniBridgeCommon.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
+import { NominaBridgeNative } from "src/token/nomina/NominaBridgeNative.sol";
+import { NominaBridgeL1 } from "src/token/nomina/NominaBridgeL1.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Slashing } from "src/octane/Slashing.sol";
 import { Distribution } from "src/octane/Distribution.sol";
@@ -357,11 +359,12 @@ contract Admin is Script {
     }
 
     /**
-     * @notice Upgrade the OmniBridgeNative predeploy.
+     * @notice Upgrade the NominaBridgeNative predeploy.
      * @param admin     The address of the admin account, owner of the proxy admin
      * @param deployer  The address of the account that will deploy the new implementation.
      */
     function upgradeBridgeNative(address admin, address deployer, bytes calldata data) public {
+        // replace with NominaBridgeNative on next upgrade
         OmniBridgeNative b = OmniBridgeNative(Predeploys.OmniBridgeNative);
 
         // retrieve pause states
@@ -370,17 +373,17 @@ contract Admin is Script {
         bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
 
         // bridge must be paused
-        // require(bridgePaused, "bridge is not paused");
+        require(bridgePaused, "bridge is not paused");
 
         // read storage pre-upgrade
         address owner = b.owner();
-        address portal = address(b.portal());
+        address portal = address(b.omni());
         address l1Bridge = b.l1Bridge();
         uint64 l1ChainId = b.l1ChainId();
         uint256 l1Deposits = WithL1BridgeBalanceView(address(b)).l1BridgeBalance();
 
         vm.startBroadcast(deployer);
-        address impl = address(new OmniBridgeNative());
+        address impl = address(new NominaBridgeNative());
         vm.stopBroadcast();
 
         _upgradeProxy(admin, Predeploys.OmniBridgeNative, impl, data);
@@ -388,8 +391,10 @@ contract Admin is Script {
         // assert storage unchanged
         require(b.owner() == owner, "owner changed");
         require(b.l1ChainId() == l1ChainId, "l1ChainId changed");
-        require(address(b.portal()) == portal, "portal changed");
-        require(b.l1Deposits() == l1Deposits, "l1Deposits changed");
+        // remove casting on next upgrade, var was renamed
+        require(address(NominaBridgeNative(address(b)).portal()) == portal, "portal changed");
+        // deposits must reflect conversion rate, remove this on next upgrade
+        require(b.l1Deposits() == l1Deposits * 75, "l1Deposits changed");
         require(b.l1Bridge() == l1Bridge, "l1Bridge changed");
         require(b.isPaused(b.KeyPauseAll()) == allPaused, "all paused state changed");
         require(b.isPaused(b.ACTION_BRIDGE()) == bridgePaused, "bridge paused state changed");
@@ -399,12 +404,15 @@ contract Admin is Script {
     }
 
     /**
-     * @notice Upgrade the OmniBridgeL1 contract.
+     * @notice Upgrade the NominaBridgeL1 contract.
      * @param admin     The address of the admin account, owner of the proxy admin
      * @param deployer  The address of the account that will deploy the new implementation.
      * @param proxy     The address of the proxy to upgrade.
      */
-    function upgradeBridgeL1(address admin, address deployer, address proxy, bytes calldata data) public {
+    function upgradeBridgeL1(address admin, address deployer, address proxy, address nomina, bytes calldata data)
+        public
+    {
+        // replace with NominaBridgeL1 on next upgrade
         OmniBridgeL1 b = OmniBridgeL1(proxy);
 
         // retrieve pause states
@@ -413,23 +421,25 @@ contract Admin is Script {
         bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
 
         // bridge must be paused
-        // require(bridgePaused, "bridge is not paused");
+        require(bridgePaused, "bridge is not paused");
 
         // read storage pre-upgrade
         address owner = b.owner();
-        address omni = address(b.omni());
-        address portal = address(b.portal());
+        address omni = address(b.token());
+        address portal = address(b.omni());
 
         vm.startBroadcast(deployer);
-        address impl = address(new OmniBridgeL1(omni));
+        address impl = address(new NominaBridgeL1(omni, nomina));
         vm.stopBroadcast();
 
         _upgradeProxy(admin, proxy, impl, data);
 
         // assert storage unchanged
         require(b.owner() == owner, "owner changed");
-        require(address(b.omni()) == omni, "omni token changed");
-        require(address(b.portal()) == portal, "portal changed");
+        // remove castings on next upgrade, vars were renamed
+        require(address(NominaBridgeL1(address(b)).omni()) == omni, "omni token changed");
+        require(address(NominaBridgeL1(address(b)).nomina()) == nomina, "nomina token changed");
+        require(address(NominaBridgeL1(address(b)).portal()) == portal, "portal changed");
         require(b.isPaused(b.KeyPauseAll()) == allPaused, "all paused state changed");
         require(b.isPaused(b.ACTION_BRIDGE()) == bridgePaused, "bridge paused state changed");
         require(b.isPaused(b.ACTION_WITHDRAW()) == withdrawPaused, "withdraw paused state changed");
