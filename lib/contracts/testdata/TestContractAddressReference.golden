@@ -20,7 +20,7 @@
   "gaspump": "0x3cdf44dc0548fdd9304a4020624a5e216d8a861f",
   "gasstation": "0x5a19272100949f9e8a4ad9d98f8c1070232de626",
   "l1bridge": "0xbbb3f5bcb1c8b0ee932efaba2fdee566b83053a5",
-  "nom": "0x6e6f6d696e610000000000000000000000000000",
+  "nom": "0x6e6f6d696e61decd6605bd4a57836c5db6923340",
   "portal": "0x5e9a8aa213c912bf54c86bf64adb8ed6a79c04d1",
   "solvernetexecutor": "0xf92dd37ae11f2ccb4de9355beced42deb4158815",
   "solvernetinbox": "0x8fcfcd0b4fa2cc2965a3c7f27995b0a43f210db8",
