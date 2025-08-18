@@ -3,8 +3,8 @@ pragma solidity 0.8.24;
 
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
-import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
-import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
+import { NominaBridgeNative } from "src/token/nomina/NominaBridgeNative.sol";
+import { NominaBridgeL1 } from "src/token/nomina/NominaBridgeL1.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { NoReceive } from "test/utils/NoReceive.sol";
@@ -15,10 +15,10 @@ import { VmSafe } from "forge-std/Vm.sol";
 
 /**
  * @title BridgeNativePostUpgradeTest
- * @dev Test OmniBridgeNative post-upgrade functionality
+ * @dev Test NominaBridgeNative post-upgrade functionality
  */
 contract BridgeNativePostUpgradeTest is Test {
-    OmniBridgeNative b;
+    NominaBridgeNative b;
     MockPortal portal;
     address l1Bridge;
     address owner;
@@ -36,7 +36,7 @@ contract BridgeNativePostUpgradeTest is Test {
     }
 
     function _setup() internal {
-        b = OmniBridgeNative(Predeploys.OmniBridgeNative);
+        b = NominaBridgeNative(Predeploys.OmniBridgeNative);
         l1Bridge = b.l1Bridge();
         l1ChainId = b.l1ChainId();
         owner = b.owner();
@@ -71,7 +71,7 @@ contract BridgeNativePostUpgradeTest is Test {
             sourceChainId: l1ChainId,
             sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
+            data: abi.encodeCall(NominaBridgeNative.withdraw, (payor, to, amount)),
             gasLimit: 100_000
         });
 
@@ -92,7 +92,7 @@ contract BridgeNativePostUpgradeTest is Test {
                     l1ChainId,
                     ConfLevel.Finalized,
                     address(l1Bridge),
-                    abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
+                    abi.encodeCall(NominaBridgeL1.withdraw, (to, amount)),
                     b.XCALL_WITHDRAW_GAS_LIMIT()
                 )
             )
@@ -116,7 +116,7 @@ contract BridgeNativePostUpgradeTest is Test {
             sourceChainId: l1ChainId,
             sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, noReceiver, amount)),
+            data: abi.encodeCall(NominaBridgeNative.withdraw, (payor, noReceiver, amount)),
             gasLimit: 100_000
         });
 
@@ -128,7 +128,7 @@ contract BridgeNativePostUpgradeTest is Test {
             sourceChainId: l1ChainId,
             sender: payor,
             to: address(b),
-            data: abi.encodeCall(OmniBridgeNative.claim, to),
+            data: abi.encodeCall(NominaBridgeNative.claim, to),
             gasLimit: 100_000
         });
 

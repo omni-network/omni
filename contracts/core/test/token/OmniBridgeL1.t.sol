@@ -137,7 +137,7 @@ contract OmniBridgeL1_Test is Test {
         });
 
         // xmsg must be from omni evm
-        vm.expectRevert("OmniBridge: not omni portal");
+        vm.expectRevert("OmniBridge: not omni");
         portal.mockXCall({
             sourceChainId: omniChainId + 1, // wrong
             sender: Predeploys.OmniBridgeNative,

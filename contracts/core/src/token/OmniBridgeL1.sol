@@ -33,22 +33,22 @@ contract OmniBridgeL1 is OmniBridgeCommon {
     /**
      * @notice The OMNI token contract.
      */
-    IERC20 public immutable omni;
+    IERC20 public immutable token;
 
     /**
      * @notice The OmniPortal contract.
      */
-    IOmniPortal public portal;
+    IOmniPortal public omni;
 
-    constructor(address omni_) {
-        omni = IERC20(omni_);
+    constructor(address token_) {
+        token = IERC20(token_);
         _disableInitializers();
     }
 
-    function initialize(address owner_, address portal_) external initializer {
-        require(portal_ != address(0), "OmniBridge: no zero addr");
+    function initialize(address owner_, address omni_) external initializer {
+        require(omni_ != address(0), "OmniBridge: no zero addr");
         __Ownable_init(owner_);
-        portal = IOmniPortal(portal_);
+        omni = IOmniPortal(omni_);
     }
 
     /**
@@ -57,13 +57,13 @@ contract OmniBridgeL1 is OmniBridgeCommon {
      *     have enough balance to cover the withdrawal.
      */
     function withdraw(address to, uint256 amount) external whenNotPaused(ACTION_WITHDRAW) {
-        XTypes.MsgContext memory xmsg = portal.xmsg();
+        XTypes.MsgContext memory xmsg = omni.xmsg();
 
-        require(msg.sender == address(portal), "OmniBridge: not xcall");
+        require(msg.sender == address(omni), "OmniBridge: not xcall");
         require(xmsg.sender == Predeploys.OmniBridgeNative, "OmniBridge: not bridge");
-        require(xmsg.sourceChainId == portal.omniChainId(), "OmniBridge: not omni portal");
+        require(xmsg.sourceChainId == omni.omniChainId(), "OmniBridge: not omni");
 
-        omni.transfer(to, amount);
+        token.transfer(to, amount);
 
         emit Withdraw(to, amount);
     }
@@ -82,15 +82,15 @@ contract OmniBridgeL1 is OmniBridgeCommon {
         require(amount > 0, "OmniBridge: amount must be > 0");
         require(to != address(0), "OmniBridge: no bridge to zero");
 
-        uint64 omniChainId = portal.omniChainId();
+        uint64 omniChainId = omni.omniChainId();
         bytes memory xcalldata = abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount));
 
         require(
-            msg.value >= portal.feeFor(omniChainId, xcalldata, XCALL_WITHDRAW_GAS_LIMIT), "OmniBridge: insufficient fee"
+            msg.value >= omni.feeFor(omniChainId, xcalldata, XCALL_WITHDRAW_GAS_LIMIT), "OmniBridge: insufficient fee"
         );
-        require(omni.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
+        require(token.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
 
-        portal.xcall{ value: msg.value }(
+        omni.xcall{ value: msg.value }(
             omniChainId, ConfLevel.Finalized, Predeploys.OmniBridgeNative, xcalldata, XCALL_WITHDRAW_GAS_LIMIT
         );
 
@@ -101,10 +101,8 @@ contract OmniBridgeL1 is OmniBridgeCommon {
      * @notice Return the xcall fee required to bridge `amount` to `to`.
      */
     function bridgeFee(address payor, address to, uint256 amount) public view returns (uint256) {
-        return portal.feeFor(
-            portal.omniChainId(),
-            abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
-            XCALL_WITHDRAW_GAS_LIMIT
+        return omni.feeFor(
+            omni.omniChainId(), abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)), XCALL_WITHDRAW_GAS_LIMIT
         );
     }
 }
