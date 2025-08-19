@@ -20,7 +20,6 @@ import { VmSafe } from "forge-std/Vm.sol";
 contract BridgeL1PostUpgradeTest is Test {
     NominaBridgeL1 b;
     MockPortal portal;
-    IERC20 omni;
     IERC20 nomina;
     address owner;
 
@@ -36,7 +35,6 @@ contract BridgeL1PostUpgradeTest is Test {
 
     function _setup(address addr) internal {
         b = NominaBridgeL1(addr);
-        omni = b.omni();
         nomina = b.nomina();
         owner = b.owner();
 
@@ -56,7 +54,7 @@ contract BridgeL1PostUpgradeTest is Test {
         uint256 amount = 1e18;
         address payor = address(this);
         uint256 fee = b.bridgeFee(payor, to, amount);
-        uint256 bridgeBalance = omni.balanceOf(address(b));
+        uint256 bridgeBalance = nomina.balanceOf(address(b));
 
         vm.expectCall(
             address(portal),
@@ -73,23 +71,23 @@ contract BridgeL1PostUpgradeTest is Test {
             )
         );
 
-        deal(address(omni), payor, amount);
+        deal(address(nomina), payor, amount);
         vm.deal(payor, fee);
         vm.startPrank(payor);
-        omni.approve(address(b), amount);
+        nomina.approve(address(b), amount);
         b.bridge{ value: fee }(to, amount);
         vm.stopPrank();
 
-        assertEq(omni.balanceOf(address(b)), bridgeBalance + amount);
-        assertEq(omni.balanceOf(payor), 0);
+        assertEq(nomina.balanceOf(address(b)), bridgeBalance + amount);
+        assertEq(nomina.balanceOf(payor), 0);
     }
 
     function _testWithdraw() internal {
         address to = makeAddr("to");
         uint256 amount = 1e18;
-        uint256 bridgeBalance = omni.balanceOf(address(b));
+        uint256 bridgeBalance = nomina.balanceOf(address(b));
 
-        vm.expectCall(address(omni), abi.encodeCall(omni.transfer, (to, amount)));
+        vm.expectCall(address(nomina), abi.encodeCall(nomina.transfer, (to, amount)));
         portal.mockXCall({
             sourceChainId: portal.omniChainId(),
             sender: Predeploys.OmniBridgeNative,
@@ -98,8 +96,8 @@ contract BridgeL1PostUpgradeTest is Test {
             gasLimit: 100_000
         });
 
-        assertEq(omni.balanceOf(to), amount);
-        assertEq(omni.balanceOf(address(b)), bridgeBalance - amount);
+        assertEq(nomina.balanceOf(to), amount);
+        assertEq(nomina.balanceOf(address(b)), bridgeBalance - amount);
     }
 
     function _testPauseUnpause() internal {
