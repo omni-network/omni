@@ -372,9 +372,6 @@ contract Admin is Script {
         bool bridgePaused = b.isPaused(b.ACTION_BRIDGE());
         bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
 
-        // bridge must be paused
-        require(bridgePaused, "bridge is not paused");
-
         // read storage pre-upgrade
         address owner = b.owner();
         address portal = address(b.omni());
@@ -419,9 +416,6 @@ contract Admin is Script {
         bool allPaused = b.isPaused(b.KeyPauseAll());
         bool bridgePaused = b.isPaused(b.ACTION_BRIDGE());
         bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
-
-        // bridge must be paused
-        require(bridgePaused, "bridge is not paused");
 
         // read storage pre-upgrade
         address owner = b.owner();
