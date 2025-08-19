@@ -2,9 +2,9 @@
 pragma solidity 0.8.24;
 
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { MockPortal } from "test/utils/nomina/MockPortal.sol";
+import { MockPortal } from "test/utils/MockPortal.sol";
 import { NoReceive } from "test/utils/NoReceive.sol";
-import { INominaPortal } from "src/interfaces/nomina/INominaPortal.sol";
+import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { NominaBridgeNative } from "src/token/nomina/NominaBridgeNative.sol";
 import { NominaBridgeL1 } from "src/token/nomina/NominaBridgeL1.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
@@ -111,7 +111,7 @@ contract NominaBridgeNative_Test is Test {
             address(portal),
             feeWithExcess,
             abi.encodeCall(
-                INominaPortal.xcall,
+                IOmniPortal.xcall,
                 (
                     l1ChainId,
                     ConfLevel.Finalized,

@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import { NominaBridgeCommon } from "./NominaBridgeCommon.sol";
-import { INominaPortal } from "src/interfaces/nomina/INominaPortal.sol";
+import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { NominaBridgeL1 } from "./NominaBridgeL1.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
@@ -55,9 +55,9 @@ contract NominaBridgeNative is NominaBridgeCommon {
     uint64 public l1ChainId;
 
     /**
-     * @notice The NominaPortal contract.
+     * @notice The OmniPortal contract.
      */
-    INominaPortal public portal;
+    IOmniPortal public portal;
 
     /**
      * @notice Total NOM tokens deposited to NominaBridgeL1.
@@ -193,7 +193,7 @@ contract NominaBridgeNative is NominaBridgeCommon {
      */
     function setup(uint64 l1ChainId_, address portal_, address l1Bridge_, uint256 l1Deposits_) external onlyOwner {
         l1ChainId = l1ChainId_;
-        portal = INominaPortal(portal_);
+        portal = IOmniPortal(portal_);
         l1Bridge = l1Bridge_;
         l1Deposits = l1Deposits_;
         emit Setup(l1ChainId_, portal_, l1Bridge_, l1Deposits_);

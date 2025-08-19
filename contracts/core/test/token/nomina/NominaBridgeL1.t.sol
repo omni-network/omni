@@ -2,8 +2,8 @@
 pragma solidity 0.8.24;
 
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { MockPortal } from "test/utils/nomina/MockPortal.sol";
-import { INominaPortal } from "src/interfaces/nomina/INominaPortal.sol";
+import { MockPortal } from "test/utils/MockPortal.sol";
+import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { Predeploys } from "src/libraries/nomina/Predeploys.sol";
 import { MockOmni } from "nomina/test/utils/MockOmni.sol";
 import { Nomina } from "nomina/src/token/Nomina.sol";
@@ -127,9 +127,9 @@ contract NominaBridgeL1_Test is Test {
             address(portal),
             fee,
             abi.encodeCall(
-                INominaPortal.xcall,
+                IOmniPortal.xcall,
                 (
-                    portal.nominaChainId(),
+                    portal.omniChainId(),
                     ConfLevel.Finalized,
                     Predeploys.NominaBridgeNative,
                     abi.encodeCall(NominaBridgeNative.withdraw, (payor, to, amount)),
@@ -146,7 +146,7 @@ contract NominaBridgeL1_Test is Test {
 
     function test_withdraw() public {
         address to = makeAddr("to");
-        uint64 nominaChainId = portal.nominaChainId();
+        uint64 omniChainId = portal.omniChainId();
         uint64 gasLimit = new NominaBridgeNative().XCALL_WITHDRAW_GAS_LIMIT();
 
         // sender must be portal
@@ -156,7 +156,7 @@ contract NominaBridgeL1_Test is Test {
         // xmsg must be from native bridge
         vm.expectRevert("NominaBridge: not bridge");
         portal.mockXCall({
-            sourceChainId: nominaChainId,
+            sourceChainId: omniChainId,
             sender: address(1234), // wrong
             to: address(b),
             data: abi.encodeCall(NominaBridgeL1.withdraw, (to, amount)),
@@ -164,9 +164,9 @@ contract NominaBridgeL1_Test is Test {
         });
 
         // xmsg must be from nomina evm
-        vm.expectRevert("NominaBridge: not nomina portal");
+        vm.expectRevert("NominaBridge: not omni portal");
         portal.mockXCall({
-            sourceChainId: nominaChainId + 1, // wrong
+            sourceChainId: omniChainId + 1, // wrong
             sender: Predeploys.NominaBridgeNative,
             to: address(b),
             data: abi.encodeCall(NominaBridgeL1.withdraw, (to, amount)),
@@ -188,7 +188,7 @@ contract NominaBridgeL1_Test is Test {
         // tranfers amount to to
         vm.expectCall(address(nomina), abi.encodeCall(nomina.transfer, (to, amount)));
         uint256 gasUsed = portal.mockXCall({
-            sourceChainId: portal.nominaChainId(),
+            sourceChainId: portal.omniChainId(),
             sender: Predeploys.NominaBridgeNative,
             to: address(b),
             data: abi.encodeCall(NominaBridgeL1.withdraw, (to, amount)),
