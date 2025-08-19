@@ -25,8 +25,16 @@ type checkFunc func(context.Context, types.CheckRequest) error
 
 // newChecker returns a checkFunc that can be used to see if an order would be accepted or rejected.
 // It is the logic behind the /check endpoint.
-func newChecker(backends unibackend.Backends, isAllowedCall callAllowFunc, priceFunc priceFunc, solverAddr, outboxAddr common.Address) checkFunc {
+func newChecker(backends unibackend.Backends, isAllowedCall callAllowFunc, priceFunc priceFunc, solverAddr, outboxAddr common.Address, disabledChains []uint64) checkFunc {
 	return func(ctx context.Context, req types.CheckRequest) error {
+		if isChainDisabled(req.SourceChainID, disabledChains) {
+			return newRejection(types.RejectChainDisabled, errors.New("source chain disabled", "chain_id", req.SourceChainID))
+		}
+
+		if isChainDisabled(req.DestinationChainID, disabledChains) {
+			return newRejection(types.RejectChainDisabled, errors.New("destination chain disabled", "chain_id", req.DestinationChainID))
+		}
+
 		if _, err := backends.Backend(req.SourceChainID); err != nil {
 			return newRejection(types.RejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
 		}

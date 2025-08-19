@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -54,7 +55,7 @@ func TestShouldReject(t *testing.T) {
 			backends, clients := testBackends(t)
 
 			callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return !tt.disallowCall }
-			shouldReject := newShouldRejector(backends, callAllower, priceFunc, solver, outbox)
+			shouldReject := newShouldRejector(backends, callAllower, priceFunc, solver, outbox, nil)
 
 			if tt.mock != nil {
 				tt.mock(clients)
@@ -79,4 +80,72 @@ func TestShouldReject(t *testing.T) {
 			clients.Finish(t)
 		})
 	}
+}
+
+//nolint:tparallel,paralleltest // subtests use same mock controller
+func TestShouldRejectDisabledChains(t *testing.T) {
+	t.Parallel()
+
+	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
+
+	// outbox addr only matters for mocks, using devnet
+	addrs, err := contracts.GetAddresses(t.Context(), netconf.Devnet)
+	require.NoError(t, err)
+	outbox := addrs.SolverNetOutbox
+
+	priceFunc := unaryPrice
+
+	// Get a sample test case order
+	testCases := rejectTestCases(t, solver, outbox)
+	require.NotEmpty(t, testCases)
+	sampleOrder := testCases[0].order
+
+	t.Run("source_chain_disabled", func(t *testing.T) {
+		backends, clients := testBackends(t)
+		defer clients.Finish(t)
+
+		callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return true }
+		// Disable the source chain
+		disabledChains := []uint64{sampleOrder.SourceChainID}
+		shouldReject := newShouldRejector(backends, callAllower, priceFunc, solver, outbox, disabledChains)
+
+		reason, reject, err := shouldReject(t.Context(), sampleOrder)
+		require.True(t, reject)
+		require.Error(t, err)
+		require.Equal(t, types.RejectChainDisabled, reason)
+		require.Contains(t, err.Error(), "source chain disabled")
+	})
+
+	t.Run("destination_chain_disabled", func(t *testing.T) {
+		backends, clients := testBackends(t)
+		defer clients.Finish(t)
+
+		callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return true }
+		// Disable the destination chain
+		disabledChains := []uint64{sampleOrder.pendingData.DestinationChainID}
+		shouldReject := newShouldRejector(backends, callAllower, priceFunc, solver, outbox, disabledChains)
+
+		reason, reject, err := shouldReject(t.Context(), sampleOrder)
+		require.True(t, reject)
+		require.Error(t, err)
+		require.Equal(t, types.RejectChainDisabled, reason)
+		require.Contains(t, err.Error(), "destination chain disabled")
+	})
+
+	t.Run("both_chains_disabled", func(t *testing.T) {
+		backends, clients := testBackends(t)
+		defer clients.Finish(t)
+
+		callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return true }
+		// Disable both chains
+		disabledChains := []uint64{sampleOrder.SourceChainID, sampleOrder.pendingData.DestinationChainID}
+		shouldReject := newShouldRejector(backends, callAllower, priceFunc, solver, outbox, disabledChains)
+
+		reason, reject, err := shouldReject(t.Context(), sampleOrder)
+		require.True(t, reject)
+		require.Error(t, err)
+		require.Equal(t, types.RejectChainDisabled, reason)
+		// Should reject on source chain first
+		require.Contains(t, err.Error(), "source chain disabled")
+	})
 }

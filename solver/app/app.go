@@ -176,7 +176,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	go monitorPricesForever(ctx, priceFunc)
 
-	err = startProcessingEvents(ctx, network, xprov, jobDB, uniBackends, privKey, addrs, cursors, pricer, priceFunc, inboxContracts)
+	err = startProcessingEvents(ctx, network, xprov, jobDB, uniBackends, privKey, addrs, cursors, pricer, priceFunc, inboxContracts, cfg.DisabledChains)
 	if err != nil {
 		return errors.Wrap(err, "start event streams")
 	}
@@ -196,7 +196,7 @@ func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
 
 	// Build base handlers that are always available
-	checkFunc := newChecker(uniBackends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox)
+	checkFunc := newChecker(uniBackends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox, cfg.DisabledChains)
 	handlers := []Handler{
 		newCheckHandler(
 			checkFunc,
@@ -293,6 +293,7 @@ func startProcessingEvents(
 	pricer tokenpricer.Pricer,
 	priceFunc priceFunc,
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
+	disabledChains []uint64,
 ) error {
 	solverAddr := ethcrypto.PubkeyToAddress(solverKey.PublicKey)
 	ethBackends := backends.EVMBackends()
@@ -364,7 +365,7 @@ func startProcessingEvents(
 
 	deps := procDeps{
 		GetOrder:          newOrderGetter(inboxContracts),
-		ShouldReject:      newShouldRejector(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
+		ShouldReject:      newShouldRejector(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox, disabledChains),
 		DidFill:           newDidFiller(outboxContracts),
 		Reject:            newRejector(inboxContracts, backends, solverAddr, updatePnL),
 		Fill:              newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),

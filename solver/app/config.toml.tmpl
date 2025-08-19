@@ -25,6 +25,9 @@ monitoring-addr = "{{ .MonitoringAddr }}"
 # The CoinGecko API key to use for fetching token prices.
 coingecko-apikey = "{{ .CoinGeckoAPIKey }}"
 
+# Orders to or from these chains will be rejected.
+disabled-chains = [{{ range $i, $v := .DisabledChains }}{{ if $i }}, {{ end }}{{ $v }}{{ end }}]
+
 #######################################################################
 ###                             X-Chain                             ###
 #######################################################################

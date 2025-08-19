@@ -48,6 +48,17 @@ func newRejection(reason types.RejectReason, err error) *RejectionError {
 	return &RejectionError{Reason: reason, Err: err}
 }
 
+// isChainDisabled checks if a chain ID is in the disabled chains list.
+func isChainDisabled(chainID uint64, disabledChains []uint64) bool {
+	for _, disabled := range disabledChains {
+		if disabled == chainID {
+			return true
+		}
+	}
+
+	return false
+}
+
 // newShouldRejector returns as ShouldReject function for the given network.
 //
 // ShouldReject returns true and a reason if the request should be rejected.
@@ -61,6 +72,7 @@ func newShouldRejector(
 	isAllowedCall callAllowFunc,
 	priceFunc priceFunc,
 	solverAddr, outboxAddr common.Address,
+	disabledChains []uint64,
 ) func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
 	return func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
 		ctx, span := tracer.Start(ctx, "proc/should_reject")
@@ -69,6 +81,16 @@ func newShouldRejector(
 		pendingData, err := order.PendingData()
 		if err != nil {
 			return types.RejectNone, false, err
+		}
+
+		if isChainDisabled(order.SourceChainID, disabledChains) {
+			return types.RejectChainDisabled, true, newRejection(types.RejectChainDisabled,
+				errors.New("source chain disabled", "chain_id", order.SourceChainID))
+		}
+
+		if isChainDisabled(pendingData.DestinationChainID, disabledChains) {
+			return types.RejectChainDisabled, true, newRejection(types.RejectChainDisabled,
+				errors.New("destination chain disabled", "chain_id", pendingData.DestinationChainID))
 		}
 
 		// Internal logic just return errors (convert them to rejections below)

@@ -595,6 +595,11 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 		return errors.Wrap(err, "write private key")
 	}
 
+	omniChain, ok := def.Testnet.OmniEVMChain()
+	if !ok {
+		return errors.New("omni chain not found")
+	}
+
 	solverCfg := solverapp.DefaultConfig()
 	solverCfg.SolverPrivKey = privKeyFile
 	solverCfg.Network = def.Testnet.Network
@@ -602,6 +607,8 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 	solverCfg.Tracer.Endpoint = def.Cfg.TracingEndpoint
 	solverCfg.Tracer.Headers = def.Cfg.TracingHeaders
 	solverCfg.CoinGeckoAPIKey = def.Cfg.CoinGeckoAPIKey
+	// TODO(zodomo): Remove Omni chain from disabled chains once network upgrade is complete
+	solverCfg.DisabledChains = append(solverCfg.DisabledChains, omniChain.ChainID)
 
 	if err := solverapp.WriteConfigTOML(solverCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write solver config")

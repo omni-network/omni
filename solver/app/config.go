@@ -25,6 +25,7 @@ type Config struct {
 	DBDir           string
 	Tracer          tracer.Config
 	CoinGeckoAPIKey string
+	DisabledChains  []uint64
 }
 
 func DefaultConfig() Config {

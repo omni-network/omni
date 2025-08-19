@@ -25,6 +25,9 @@ monitoring-addr = ":26660"
 # The CoinGecko API key to use for fetching token prices.
 coingecko-apikey = "secret"
 
+# Orders to or from these chains will be rejected.
+disabled-chains = []
+
 #######################################################################
 ###                             X-Chain                             ###
 #######################################################################

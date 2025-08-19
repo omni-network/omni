@@ -58,7 +58,7 @@ func TestCheckSameChainIntegration(t *testing.T) {
 
 	// Create check handler
 	handler := newCheckHandler(
-		newChecker(unibackend.EVMBackends(backends), func(_ uint64, _ common.Address, _ []byte) bool { return true }, unaryPrice, solver, outbox),
+		newChecker(unibackend.EVMBackends(backends), func(_ uint64, _ common.Address, _ []byte) bool { return true }, unaryPrice, solver, outbox, nil),
 		newTracer(backends, solver, outbox),
 	)
 

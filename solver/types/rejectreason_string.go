@@ -21,24 +21,25 @@ func _() {
 	_ = x[RejectExpenseOverMax-11]
 	_ = x[RejectExpenseUnderMin-12]
 	_ = x[RejectCallNotAllowed-13]
-	_ = x[rejectSentinel-14]
+	_ = x[RejectChainDisabled-14]
+	_ = x[rejectSentinel-15]
 }
 
 const (
 	_RejectReason_name_0 = "NoneDestCallRevertsInvalidDepositInvalidExpenseInsufficientDepositInsufficientInventoryUnsupportedDepositUnsupportedExpenseUnsupportedDestChainUnsupportedSrcChain"
-	_RejectReason_name_1 = "ExpenseOverMaxExpenseUnderMinCallNotAllowedrejectSentinel"
+	_RejectReason_name_1 = "ExpenseOverMaxExpenseUnderMinCallNotAllowedChainDisabledrejectSentinel"
 )
 
 var (
 	_RejectReason_index_0 = [...]uint8{0, 4, 19, 33, 47, 66, 87, 105, 123, 143, 162}
-	_RejectReason_index_1 = [...]uint8{0, 14, 29, 43, 57}
+	_RejectReason_index_1 = [...]uint8{0, 14, 29, 43, 56, 70}
 )
 
 func (i RejectReason) String() string {
 	switch {
 	case i <= 9:
 		return _RejectReason_name_0[_RejectReason_index_0[i]:_RejectReason_index_0[i+1]]
-	case 11 <= i && i <= 14:
+	case 11 <= i && i <= 15:
 		i -= 11
 		return _RejectReason_name_1[_RejectReason_index_1[i]:_RejectReason_index_1[i+1]]
 	default:
