@@ -93,6 +93,8 @@ func DeployBridge(ctx context.Context, testnet types.Testnet, backends ethbacken
 		return errors.Wrap(err, "setup bridge native")
 	}
 
+	log.Debug(ctx, "Native bridge setup", "l1chainid", l1.ChainID, "portal", addrs.Portal, "l1bridge", l1BridgeAddr, "l1deposits", l1Deposits, "tx", tx.Data())
+
 	_, err = omniBackend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined")
