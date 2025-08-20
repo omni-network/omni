@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/solver/client"
@@ -38,6 +39,20 @@ func TestCheck(t *testing.T) {
 	outbox := addrs.SolverNetOutbox
 
 	for _, tt := range checkTestCases(t, solver, outbox) {
+		// TODO(zodomo): Remove this once network upgrade is complete
+		if tt.req.SourceChainID == evmchain.IDOmniMainnet || tt.req.SourceChainID == evmchain.IDOmniOmega || tt.req.SourceChainID == evmchain.IDOmniStaging {
+			tt.res.Accepted = false
+			tt.res.Rejected = true
+			tt.res.RejectReason = types.RejectUnsupportedSrcChain.String()
+		}
+
+		// TODO(zodomo): Remove this once network upgrade is complete
+		if tt.req.DestinationChainID == evmchain.IDOmniMainnet || tt.req.DestinationChainID == evmchain.IDOmniOmega || tt.req.DestinationChainID == evmchain.IDOmniStaging {
+			tt.res.Accepted = false
+			tt.res.Rejected = true
+			tt.res.RejectReason = types.RejectUnsupportedDestChain.String()
+		}
+
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 

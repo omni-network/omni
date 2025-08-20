@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/unibackend"
 	"github.com/omni-network/omni/solver/types"
@@ -27,6 +28,16 @@ type checkFunc func(context.Context, types.CheckRequest) error
 // It is the logic behind the /check endpoint.
 func newChecker(backends unibackend.Backends, isAllowedCall callAllowFunc, priceFunc priceFunc, solverAddr, outboxAddr common.Address) checkFunc {
 	return func(ctx context.Context, req types.CheckRequest) error {
+		// TODO(zodomo): Remove this once network upgrade is complete
+		if req.SourceChainID == evmchain.IDOmniMainnet || req.SourceChainID == evmchain.IDOmniOmega || req.SourceChainID == evmchain.IDOmniStaging {
+			return newRejection(types.RejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
+		}
+
+		// TODO(zodomo): Remove this once network upgrade is complete
+		if req.DestinationChainID == evmchain.IDOmniMainnet || req.DestinationChainID == evmchain.IDOmniOmega || req.DestinationChainID == evmchain.IDOmniStaging {
+			return newRejection(types.RejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
+		}
+
 		if _, err := backends.Backend(req.SourceChainID); err != nil {
 			return newRejection(types.RejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
 		}
