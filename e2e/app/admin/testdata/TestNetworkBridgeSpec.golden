@@ -39,12 +39,12 @@
   "Native": {
    "PauseAll": false,
    "PauseWithdraw": false,
-   "PauseBridge": true
+   "PauseBridge": false
   },
   "L1": {
    "PauseAll": false,
    "PauseWithdraw": false,
-   "PauseBridge": true
+   "PauseBridge": false
   }
  }
 }
