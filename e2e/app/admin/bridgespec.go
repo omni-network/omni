@@ -19,19 +19,8 @@ import (
 // To update bridge spec, update this map.
 // Then run `ensure-bridge-spec` to apply the changes.
 var bridgeSpec = map[netconf.ID]NetworkBridgeSpec{
-	netconf.Devnet: DefaultBridgeSpec(),
-	netconf.Staging: {
-		Native: BridgeSpec{
-			PauseAll:      false,
-			PauseWithdraw: false,
-			PauseBridge:   true,
-		},
-		L1: BridgeSpec{
-			PauseAll:      false,
-			PauseWithdraw: false,
-			PauseBridge:   true,
-		},
-	},
+	netconf.Devnet:  DefaultBridgeSpec(),
+	netconf.Staging: DefaultBridgeSpec(),
 	netconf.Omega: {
 		Native: BridgeSpec{
 			PauseAll:      false,
