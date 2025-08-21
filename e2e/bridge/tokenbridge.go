@@ -8,7 +8,6 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/types"
-	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
@@ -27,6 +26,15 @@ import (
 // DeployBridge deploys the OmniBridgeL1 & OmniToken contracts (if necessary), and configures the OmniBridgeNative predeploy.
 func DeployBridge(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends) error {
 	networkID := testnet.Network
+
+	if networkID.IsProtected() {
+		return errors.New("cannot deploy bridge on protected networks")
+	}
+
+	// Amount deposited to L1 bridge on network creation.
+	// We only deploy bridge on ephemeral networks now, so l1Deposits is always zero.
+	l1Deposits := bi.Zero()
+
 	l1, ok := testnet.EthereumChain()
 	if !ok {
 		log.Warn(ctx, "Skipping token bridge setup", errors.New("no ethereum L1 chain"))
@@ -79,19 +87,6 @@ func DeployBridge(ctx context.Context, testnet types.Testnet, backends ethbacken
 	txOpts, err := l1Backend.BindOpts(ctx, manager)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
-	}
-
-	balance, err := omniBackend.BalanceAt(ctx, nativeBridgeAddr, nil)
-	if err != nil {
-		return errors.Wrap(err, "balance")
-	}
-
-	// initialize l1Deposits to total supply - native bridge balance
-	l1Deposits := bi.Sub(omnitoken.TotalSupply(), balance)
-
-	// if the native bridge balance is greater than the total supply, assume redenomination has occurred and recalculate
-	if bi.GT(balance, omnitoken.TotalSupply()) {
-		l1Deposits = bi.Sub(bi.MulRaw(omnitoken.TotalSupply(), evmredenom.Factor), balance)
 	}
 
 	tx, err := nativeBridge.Setup(txOpts, l1.ChainID, addrs.Portal, l1BridgeAddr, l1Deposits)
