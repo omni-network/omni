@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/halo/evmredenom"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
@@ -88,12 +89,15 @@ func DeployBridge(ctx context.Context, testnet types.Testnet, backends ethbacken
 	// initialize l1Deposits to total supply - native bridge balance
 	l1Deposits := bi.Sub(omnitoken.TotalSupply(), balance)
 
+	// if the native bridge balance is greater than the total supply, assume redenomination has occurred and recalculate
+	if bi.GT(balance, omnitoken.TotalSupply()) {
+		l1Deposits = bi.Sub(bi.MulRaw(omnitoken.TotalSupply(), evmredenom.Factor), balance)
+	}
+
 	tx, err := nativeBridge.Setup(txOpts, l1.ChainID, addrs.Portal, l1BridgeAddr, l1Deposits)
 	if err != nil {
 		return errors.Wrap(err, "setup bridge native")
 	}
-
-	log.Debug(ctx, "Native bridge setup", "l1chainid", l1.ChainID, "portal", addrs.Portal, "l1bridge", l1BridgeAddr, "l1deposits", l1Deposits, "tx", tx.Data())
 
 	_, err = omniBackend.WaitMined(ctx, tx)
 	if err != nil {
