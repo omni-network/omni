@@ -14,7 +14,10 @@ func DeployNomina(ctx context.Context, network netconf.Network, backends ethback
 		return errors.Wrap(err, "deploy nom token")
 	}
 
-	// TODO(zodomo): Deploy WNOM after EVM is upgraded
+	err = deployWnomTokenIfNeeded(ctx, network, backends)
+	if err != nil {
+		return errors.Wrap(err, "deploy wnom token")
+	}
 
 	return nil
 }

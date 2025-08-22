@@ -126,3 +126,27 @@ func Array4[A any](slice []A) ([4]A, error) {
 
 	return [4]A{}, errors.New("slice length not 4", "len", len(slice))
 }
+
+// BytesToAddress converts a byte slice to an Ethereum address.
+// Handles both 20-byte addresses and 32-byte storage slots (takes last 20 bytes).
+func BytesToAddress(b []byte) (common.Address, error) {
+	switch len(b) {
+	case 20:
+		return EthAddress(b)
+	case 32:
+		// Take the last 20 bytes (addresses are right-aligned in 32-byte slots)
+		return EthAddress(b[12:])
+	default:
+		return common.Address{}, errors.New("invalid bytes length for address", "len", len(b))
+	}
+}
+
+// MustBytesToAddress converts a byte slice to an Ethereum address, panicking on error.
+func MustBytesToAddress(b []byte) common.Address {
+	addr, err := BytesToAddress(b)
+	if err != nil {
+		panic(err)
+	}
+
+	return addr
+}
