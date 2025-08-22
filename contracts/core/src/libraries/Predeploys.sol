@@ -14,6 +14,8 @@ library Predeploys {
     address internal constant PortalRegistry = 0x121E240000000000000000000000000000000001;
     address internal constant OmniBridgeNative = 0x121E240000000000000000000000000000000002;
     address internal constant WOmni = 0x121E240000000000000000000000000000000003;
+    // Proxy predeployed but implementation is not automatically initialized, handled manually
+    address internal constant WNomina = 0x121E240000000000000000000000000000000004;
 
     // octane predeploys
     address internal constant Staking = 0xCCcCcC0000000000000000000000000000000001;
