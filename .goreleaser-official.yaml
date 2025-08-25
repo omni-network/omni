@@ -148,8 +148,8 @@ docker_manifests:
       - omniops/omni:{{.Tag}}-arm64
 
 archives:
-  - format: tar.gz
-    builds: # Only include external facing binaries. We use docker internally.
+  - formats: [ tar.gz ]
+    ids: # Only include external facing binaries. We use docker internally.
       - halo
       - omni
     # this name template makes the OS and Arch compatible with the results of `uname`.
