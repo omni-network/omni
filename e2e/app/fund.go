@@ -156,7 +156,7 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 			return errors.Wrap(err, "get contracts to fund")
 		}
 
-		log.Info(ctx, "Checking contracts to fund", "network", network, "count", len(toFund))
+		log.Debug(ctx, "Checking contracts to fund", "chain", chain.Name, "count", len(toFund))
 
 		for _, contract := range toFund {
 			ctrCtx := log.WithCtx(ctx,
