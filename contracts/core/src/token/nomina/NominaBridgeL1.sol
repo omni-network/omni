@@ -32,23 +32,23 @@ contract NominaBridgeL1 is NominaBridgeCommon {
     uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 80_000;
 
     /**
-     * @notice The NOM token contract.
+     * @notice The OMNI token contract.
      */
-    IERC20 public immutable omni;
+    IERC20 public immutable OMNI;
 
     /**
-     * @notice The Nomina token contract.
+     * @notice The NOM token contract.
      */
-    IERC20 public immutable nomina;
+    IERC20 public immutable NOMINA;
 
     /**
      * @notice The OmniPortal contract.
      */
     IOmniPortal public portal;
 
-    constructor(address omni_, address nomina_) {
-        omni = IERC20(omni_);
-        nomina = IERC20(nomina_);
+    constructor(address omni, address nomina) {
+        OMNI = IERC20(omni);
+        NOMINA = IERC20(nomina);
         _disableInitializers();
     }
 
@@ -59,9 +59,8 @@ contract NominaBridgeL1 is NominaBridgeCommon {
     }
 
     function initializeV2() external reinitializer(2) {
-        address _nomina = address(nomina);
-        omni.approve(_nomina, type(uint256).max);
-        INomina(_nomina).convert(address(this), omni.balanceOf(address(this)));
+        OMNI.approve(address(NOMINA), type(uint256).max);
+        INomina(address(NOMINA)).convert(address(this), OMNI.balanceOf(address(this)));
     }
 
     /**
@@ -76,7 +75,7 @@ contract NominaBridgeL1 is NominaBridgeCommon {
         require(xmsg.sender == Predeploys.NominaBridgeNative, "NominaBridge: not bridge");
         require(xmsg.sourceChainId == portal.omniChainId(), "NominaBridge: not omni portal");
 
-        nomina.transfer(to, amount);
+        NOMINA.transfer(to, amount);
 
         emit Withdraw(to, amount);
     }
@@ -102,7 +101,7 @@ contract NominaBridgeL1 is NominaBridgeCommon {
             msg.value >= portal.feeFor(omniChainId, xcalldata, XCALL_WITHDRAW_GAS_LIMIT),
             "NominaBridge: insufficient fee"
         );
-        require(nomina.transferFrom(payor, address(this), amount), "NominaBridge: transfer failed");
+        require(NOMINA.transferFrom(payor, address(this), amount), "NominaBridge: transfer failed");
 
         portal.xcall{ value: msg.value }(
             omniChainId, ConfLevel.Finalized, Predeploys.NominaBridgeNative, xcalldata, XCALL_WITHDRAW_GAS_LIMIT
