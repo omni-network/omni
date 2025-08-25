@@ -431,8 +431,8 @@ contract Admin is Script {
         // assert storage unchanged
         require(b.owner() == owner, "owner changed");
         // remove castings on next upgrade, vars were renamed
-        require(address(NominaBridgeL1(address(b)).omni()) == omni, "omni token changed");
-        require(address(NominaBridgeL1(address(b)).nomina()) == nomina, "nomina token changed");
+        require(address(NominaBridgeL1(address(b)).OMNI()) == omni, "omni token changed");
+        require(address(NominaBridgeL1(address(b)).NOMINA()) == nomina, "nomina token changed");
         require(address(NominaBridgeL1(address(b)).portal()) == portal, "portal changed");
         require(b.isPaused(b.KeyPauseAll()) == allPaused, "all paused state changed");
         require(b.isPaused(b.ACTION_BRIDGE()) == bridgePaused, "bridge paused state changed");

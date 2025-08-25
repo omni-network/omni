@@ -45,6 +45,11 @@ contract NominaBridgeNative is NominaBridgeCommon {
     uint8 private constant _CONVERSION_RATE = 75;
 
     /**
+     * @notice Reserved gas after transfer to write to claimable mapping if needed.
+     */
+    uint64 private constant CLAIMABLE_GAS = 22_500;
+
+    /**
      * @notice xcall gas limit for NominaBridgeL1.withdraw
      */
     uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 80_000;
@@ -109,7 +114,7 @@ contract NominaBridgeNative is NominaBridgeCommon {
 
         l1Deposits += amount;
 
-        (bool success,) = to.call{ value: amount }("");
+        (bool success,) = to.call{ value: amount, gas: gasleft() - CLAIMABLE_GAS }("");
 
         if (!success) claimable[payor] += amount;
 

@@ -35,7 +35,7 @@ contract BridgeL1PostUpgradeTest is Test {
 
     function _setup(address addr) internal {
         b = NominaBridgeL1(addr);
-        nomina = b.nomina();
+        nomina = b.NOMINA();
         owner = b.owner();
 
         // NominaBridgeL1 portal at slot 0, no admin setters
