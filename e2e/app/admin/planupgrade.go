@@ -6,7 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/eoa"
-	drake3 "github.com/omni-network/omni/halo/app/upgrades/drake"
+	earhart4 "github.com/omni-network/omni/halo/app/upgrades/earhart"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/cchain/queryutil"
@@ -18,14 +18,14 @@ import (
 )
 
 var upgradePlans = map[netconf.ID]bindings.UpgradePlan{
-	// netconf.Omega: {
-	//	Name:   drake3.UpgradeName,
-	//	Height: 13_926_000, // Tue 20 May 12pm UTC
-	// },
-	netconf.Mainnet: {
-		Name:   drake3.UpgradeName,
-		Height: 12_110_000, // Thu 22 May 12pm UTC
+	netconf.Omega: {
+		Name:   earhart4.UpgradeName,
+		Height: 20_128_000, // Tue 26 Aug 13pm UTC
 	},
+	// netconf.Mainnet: {
+	//	Name:   drake3.UpgradeName,
+	//	Height: 12_110_000, // Thu 22 May 12pm UTC
+	// },
 }
 
 // PlanUpgrade plans the above configured network upgrade.
