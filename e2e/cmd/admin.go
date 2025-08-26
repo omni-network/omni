@@ -223,7 +223,7 @@ func newUpgradeRedenomCmd(def *app.Definition, cfg *admin.Config) *cobra.Command
 		Use:   "upgrade-redenom",
 		Short: "Upgrade the Redenom predeploy.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return admin.UpgradeDistribution(cmd.Context(), *def, *cfg)
+			return admin.UpgradeRedenom(cmd.Context(), *def, *cfg)
 		},
 	}
 
