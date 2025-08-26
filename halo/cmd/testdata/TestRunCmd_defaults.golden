@@ -34,6 +34,7 @@
   "RPCSubmit": "",
   "RPCArchive": "",
   "BatchSize": 0,
+  "Concurrency": 0,
   "Genesis": ""
  },
  "Comet": {
