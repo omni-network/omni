@@ -54,7 +54,7 @@ const (
 	PrivvalStateFile   = "data/priv_validator_state.json"
 	RedenomPrivKeyFile = "config/redenom_priv_key"
 	RedenomBatchSize   = 32 * 1024 // 32 KiB (max=128KiB)
-	RedenomConcurrency = 16
+	RedenomConcurrency = 4
 )
 
 // Setup sets up the testnet configuration.
