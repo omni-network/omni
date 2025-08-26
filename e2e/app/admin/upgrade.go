@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"github.com/omni-network/omni/e2e/app/eoa"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
@@ -76,7 +77,7 @@ func UpgradeRedenom(ctx context.Context, def app.Definition, cfg Config) error {
 		return errors.Wrap(err, "setup chain")
 	}
 
-	return ugpradeRedenom(ctx, s, c)
+	return upgradeRedenom(ctx, s, c)
 }
 
 // UpgradeStaking upgrades the Staking predeploy.
@@ -299,9 +300,12 @@ func ugpradeDistribution(ctx context.Context, s shared, c chain) error {
 	return nil
 }
 
-func ugpradeRedenom(ctx context.Context, s shared, c chain) error {
-	// TODO: replace if re-initialization is required
-	initializer := []byte{}
+func upgradeRedenom(ctx context.Context, s shared, c chain) error {
+	var redenomABI = mustGetABI(bindings.RedenomMetaData)
+	initializer, err := redenomABI.Pack("initialize", eoa.MustAddress(s.testnet.Network, eoa.RoleRedenomizer))
+	if err != nil {
+		return errors.Wrap(err, "pack initializer")
+	}
 
 	calldata, err := adminABI.Pack("upgradeRedenom", s.upgrader, s.deployer, initializer)
 	if err != nil {
