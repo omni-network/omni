@@ -4,7 +4,7 @@ public_chains = ["ethereum","arbitrum_one","base","optimism"]
 multi_omni_evms = true
 prometheus   = true
 
-pinned_halo_tag = "v0.17.0"
+pinned_halo_tag = "0609013" # redenom concurrency fix
 pinned_relayer_tag = "07c4ac7"
 pinned_monitor_tag = "ee06e15"
 pinned_solver_tag = "ee06e15"
