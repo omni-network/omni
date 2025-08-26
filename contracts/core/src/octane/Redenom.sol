@@ -27,6 +27,10 @@ contract Redenom is OwnableUpgradeable {
         bytes[] proof;
     }
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(address owner_) public initializer {
         __Ownable_init(owner_);
     }
