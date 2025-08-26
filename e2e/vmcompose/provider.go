@@ -195,6 +195,7 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 		addFile(node.Name, "config", "config.toml")
 		addFile(node.Name, "config", "priv_validator_key.json")
 		addFile(node.Name, "config", "node_key.json")
+		addFile(node.Name, "config", "redenom_priv_key")
 	}
 
 	// Include geth config
@@ -258,6 +259,10 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 
 			for local, remote := range filesToCopy {
 				localPath := filepath.Join(p.Testnet.Dir, local)
+				if _, err := os.Stat(localPath); os.IsNotExist(err) {
+					continue // Ignore if local file does not exist
+				}
+
 				remotePath := filepath.Join("/omni", p.Testnet.Name, remote)
 				if err := copyFileToVM(ctx, vmName, localPath, remotePath); err != nil {
 					return errors.Wrap(err, "copy file to VM", "vm", vmName, "local", local, "remote", remotePath)
