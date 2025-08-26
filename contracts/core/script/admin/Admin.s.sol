@@ -353,7 +353,7 @@ contract Admin is Script {
         address impl = address(new Redenom());
         vm.stopBroadcast();
 
-        _upgradeProxy(admin, Predeploys.Redenom, impl, data, false, false); // Redenom has no initializers
+        _upgradeProxy(admin, Predeploys.Redenom, impl, data, true, false);
 
         // TODO: add post upgrade tests
     }
