@@ -162,3 +162,6 @@ genesis = ""
 
 # Size of account batch transactions to submit (in bytes).
 batch-size = 0
+
+# Number of concurrent account batch transactions to submit.
+concurrency = 0

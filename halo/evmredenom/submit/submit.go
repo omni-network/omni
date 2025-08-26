@@ -24,6 +24,7 @@ import (
 
 	"github.com/holiman/uint256"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 )
 
 // Do submits the account range batches to the redenom contract.
@@ -37,8 +38,13 @@ func Do(
 	peer *enode.Node,
 	stateRoot common.Hash,
 	batchSize uint64,
+	concurrency int64,
 	preimages map[common.Hash]common.Address,
 ) error {
+	if concurrency <= 0 || batchSize == 0 {
+		return errors.New("invalid concurrency or batch size", "concurrency", concurrency, "batch_size", batchSize)
+	}
+
 	nodeKey, err := crypto.GenerateKey() // Random node key
 	if err != nil {
 		return errors.Wrap(err, "generate node key")
@@ -64,6 +70,7 @@ func Do(
 	var next common.Hash
 	var prevNonce uint64
 	eg, ctx := errgroup.WithContext(ctx)
+	sema := semaphore.NewWeighted(concurrency)
 	for i := 0; ; i++ {
 		resp, err := cl.AccountRange(ctx, stateRoot, next, batchSize)
 		if err != nil {
@@ -79,6 +86,10 @@ func Do(
 
 		next = incHash(resp.Accounts[len(resp.Accounts)-1].Hash)
 
+		if err := sema.Acquire(ctx, 1); err != nil {
+			return errors.Wrap(err, "acquire semaphore")
+		}
+
 		nonceCtx, nonce, err := backend.WithReservedNonce(ctx, from)
 		if err != nil {
 			return errors.Wrap(err, "get reserved nonce")
@@ -86,7 +97,12 @@ func Do(
 			return errors.New("nonce not incremented", "prev", prevNonce, "got", nonce)
 		}
 
-		eg.Go(submitBatch(nonceCtx, from, contract, backend, archive, preimages, resp))
+		log.Debug(ctx, "Submitting redenomination account range batch", "batch", i, "len", len(resp.Accounts), "from_map", len(preimages), "nonce", nonce)
+
+		eg.Go(func() error {
+			defer sema.Release(1)
+			return submitBatch(nonceCtx, from, contract, backend, archive, preimages, resp)()
+		})
 
 		if !done {
 			continue

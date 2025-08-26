@@ -53,7 +53,8 @@ const (
 	PrivvalKeyFile     = "config/priv_validator_key.json"
 	PrivvalStateFile   = "data/priv_validator_state.json"
 	RedenomPrivKeyFile = "config/redenom_priv_key"
-	RedenomBatchSize   = 64 * 1024 // 64 KiB (max=128KiB)
+	RedenomBatchSize   = 32 * 1024 // 32 KiB (max=128KiB)
+	RedenomConcurrency = 16
 )
 
 // Setup sets up the testnet configuration.
@@ -467,13 +468,14 @@ func writeHaloConfig(
 
 	if isRedenomSubmittter(def, node) {
 		cfg.EVMRedenomSubmit = evmredenomsubmit.Config{
-			Enabled:    true,
-			PrivKey:    filepath.Join("halo", RedenomPrivKeyFile),
-			EVMENR:     evmInstance.Enode.URLv4(),
-			RPCArchive: cfg.EVMProxyTarget, // Submitters are archives
-			RPCSubmit:  def.Testnet.BroadcastOmniEVM().InternalRPC,
-			BatchSize:  RedenomBatchSize,
-			Genesis:    filepath.Join("halo", "config", "execution_genesis.json"),
+			Enabled:     true,
+			PrivKey:     filepath.Join("halo", RedenomPrivKeyFile),
+			EVMENR:      evmInstance.Enode.URLv4(),
+			RPCArchive:  cfg.EVMProxyTarget, // Submitters are archives
+			RPCSubmit:   def.Testnet.BroadcastOmniEVM().InternalRPC,
+			BatchSize:   RedenomBatchSize,
+			Concurrency: RedenomConcurrency,
+			Genesis:     filepath.Join("halo", "config", "execution_genesis.json"),
 		}
 	}
 
