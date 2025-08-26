@@ -72,13 +72,13 @@ func newShouldRejector(
 		}
 
 		// TODO(zodomo): Remove this once network upgrade is complete
-		if order.SourceChainID == evmchain.IDOmniMainnet || order.SourceChainID == evmchain.IDOmniOmega || order.SourceChainID == evmchain.IDOmniStaging {
+		if order.SourceChainID == evmchain.IDOmniMainnet {
 			return types.RejectUnsupportedSrcChain, true, newRejection(types.RejectUnsupportedSrcChain,
 				errors.New("unsupported source chain", "chain_id", order.SourceChainID))
 		}
 
 		// TODO(zodomo): Remove this once network upgrade is complete
-		if pendingData.DestinationChainID == evmchain.IDOmniMainnet || pendingData.DestinationChainID == evmchain.IDOmniOmega || pendingData.DestinationChainID == evmchain.IDOmniStaging {
+		if pendingData.DestinationChainID == evmchain.IDOmniMainnet {
 			return types.RejectUnsupportedDestChain, true, newRejection(types.RejectUnsupportedDestChain,
 				errors.New("unsupported destination chain", "chain_id", pendingData.DestinationChainID))
 		}

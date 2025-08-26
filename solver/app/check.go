@@ -29,12 +29,12 @@ type checkFunc func(context.Context, types.CheckRequest) error
 func newChecker(backends unibackend.Backends, isAllowedCall callAllowFunc, priceFunc priceFunc, solverAddr, outboxAddr common.Address) checkFunc {
 	return func(ctx context.Context, req types.CheckRequest) error {
 		// TODO(zodomo): Remove this once network upgrade is complete
-		if req.SourceChainID == evmchain.IDOmniMainnet || req.SourceChainID == evmchain.IDOmniOmega || req.SourceChainID == evmchain.IDOmniStaging {
+		if req.SourceChainID == evmchain.IDOmniMainnet {
 			return newRejection(types.RejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
 		}
 
 		// TODO(zodomo): Remove this once network upgrade is complete
-		if req.DestinationChainID == evmchain.IDOmniMainnet || req.DestinationChainID == evmchain.IDOmniOmega || req.DestinationChainID == evmchain.IDOmniStaging {
+		if req.DestinationChainID == evmchain.IDOmniMainnet {
 			return newRejection(types.RejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
 		}
 

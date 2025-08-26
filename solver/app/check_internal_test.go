@@ -40,14 +40,14 @@ func TestCheck(t *testing.T) {
 
 	for _, tt := range checkTestCases(t, solver, outbox) {
 		// TODO(zodomo): Remove this once network upgrade is complete
-		if tt.req.SourceChainID == evmchain.IDOmniMainnet || tt.req.SourceChainID == evmchain.IDOmniOmega || tt.req.SourceChainID == evmchain.IDOmniStaging {
+		if tt.req.SourceChainID == evmchain.IDOmniMainnet {
 			tt.res.Accepted = false
 			tt.res.Rejected = true
 			tt.res.RejectReason = types.RejectUnsupportedSrcChain.String()
 		}
 
 		// TODO(zodomo): Remove this once network upgrade is complete
-		if tt.req.DestinationChainID == evmchain.IDOmniMainnet || tt.req.DestinationChainID == evmchain.IDOmniOmega || tt.req.DestinationChainID == evmchain.IDOmniStaging {
+		if tt.req.DestinationChainID == evmchain.IDOmniMainnet {
 			tt.res.Accepted = false
 			tt.res.Rejected = true
 			tt.res.RejectReason = types.RejectUnsupportedDestChain.String()

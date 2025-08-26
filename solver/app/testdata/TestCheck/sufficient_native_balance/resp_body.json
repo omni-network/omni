@@ -1,8 +1,8 @@
 {
-  "accepted": false,
-  "rejected": true,
-  "rejectCode": 8,
-  "rejectReason": "UnsupportedDestChain",
-  "rejectDescription": "unsupported destination chain [chain_id=164]",
+  "accepted": true,
+  "rejected": false,
+  "rejectCode": 0,
+  "rejectReason": "",
+  "rejectDescription": "",
   "trace": null
 }
