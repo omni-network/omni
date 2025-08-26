@@ -53,13 +53,13 @@ func TestShouldReject(t *testing.T) {
 
 	for _, tt := range rejectTestCases(t, solver, outbox) {
 		// TODO(zodomo): Remove this once network upgrade is complete
-		if tt.order.SourceChainID == evmchain.IDOmniMainnet || tt.order.SourceChainID == evmchain.IDOmniOmega || tt.order.SourceChainID == evmchain.IDOmniStaging {
+		if tt.order.SourceChainID == evmchain.IDOmniMainnet {
 			tt.reject = true
 			tt.reason = types.RejectUnsupportedSrcChain
 		}
 
 		// TODO(zodomo): Remove this once network upgrade is complete
-		if tt.order.pendingData.DestinationChainID == evmchain.IDOmniMainnet || tt.order.pendingData.DestinationChainID == evmchain.IDOmniOmega || tt.order.pendingData.DestinationChainID == evmchain.IDOmniStaging {
+		if tt.order.pendingData.DestinationChainID == evmchain.IDOmniMainnet {
 			tt.reject = true
 			tt.reason = types.RejectUnsupportedDestChain
 		}
