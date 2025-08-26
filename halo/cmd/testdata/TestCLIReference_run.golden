@@ -14,6 +14,7 @@ Flags:
       --evm-proxy-listen string                   The address to listen for EVM proxy requests on. Empty string disables the proxy
       --evm-proxy-target string                   The target address to proxy EVM requests to. Empty string disables the proxy
       --evmredenom-batch-size uint                Size of account batch transactions to submit (in bytes)
+      --evmredenom-concurrency int                Number of concurrent account batch submissions (1 = sequential)
       --evmredenom-evm-enr string                 EVM ENR to snap-sync account from. Must be local paired geth instance.
       --evmredenom-genesis string                 Path to evm genesis file; for preimage lookups
       --evmredenom-privkey string                 Path to redenom contract owner private key to submit transaction with

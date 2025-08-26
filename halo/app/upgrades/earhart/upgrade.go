@@ -132,7 +132,7 @@ func maybeSubmitRedenomination(ctx context.Context, cfg evmredenomsubmit.Config,
 	}
 	log.Debug(ctx, "Using preimages from genesis allocs", "count", len(preimages))
 
-	return evmredenomsubmit.Do(ctx, from, backend, archiveCl, enr, root, cfg.BatchSize, preimages)
+	return evmredenomsubmit.Do(ctx, from, backend, archiveCl, enr, root, cfg.BatchSize, cfg.Concurrency, preimages)
 }
 
 func GenesisState(codec.JSONCodec) (map[string]json.RawMessage, error) {

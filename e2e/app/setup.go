@@ -50,10 +50,13 @@ const (
 	AppAddressTCP  = "tcp://127.0.0.1:30000"
 	AppAddressUNIX = "unix:///var/run/app.sock"
 
-	PrivvalKeyFile     = "config/priv_validator_key.json"
-	PrivvalStateFile   = "data/priv_validator_state.json"
-	RedenomPrivKeyFile = "config/redenom_priv_key"
-	RedenomBatchSize   = 64 * 1024 // 64 KiB (max=128KiB)
+	PrivvalKeyFile           = "config/priv_validator_key.json"
+	PrivvalStateFile         = "data/priv_validator_state.json"
+	RedenomPrivKeyFile       = "config/redenom_priv_key"
+	RedenomBatchSize         = 32 * 1024 // 32 KiB (max=128KiB)
+	RedenomBatchSizeDevnet   = 64 * 1024 // 64 KiB (max=128KiB)
+	RedenomConcurrency       = 8
+	RedenomConcurrencyDevnet = 16
 )
 
 // Setup sets up the testnet configuration.
@@ -467,13 +470,14 @@ func writeHaloConfig(
 
 	if isRedenomSubmittter(def, node) {
 		cfg.EVMRedenomSubmit = evmredenomsubmit.Config{
-			Enabled:    true,
-			PrivKey:    filepath.Join("halo", RedenomPrivKeyFile),
-			EVMENR:     evmInstance.Enode.URLv4(),
-			RPCArchive: cfg.EVMProxyTarget, // Submitters are archives
-			RPCSubmit:  def.Testnet.BroadcastOmniEVM().InternalRPC,
-			BatchSize:  RedenomBatchSize,
-			Genesis:    filepath.Join("halo", "config", "execution_genesis.json"),
+			Enabled:     true,
+			PrivKey:     filepath.Join("halo", RedenomPrivKeyFile),
+			EVMENR:      evmInstance.Enode.URLv4(),
+			RPCArchive:  cfg.EVMProxyTarget, // Submitters are archives
+			RPCSubmit:   def.Testnet.BroadcastOmniEVM().InternalRPC,
+			BatchSize:   getBatchSize(def.Testnet.Network),
+			Concurrency: getConcurrency(def.Testnet.Network),
+			Genesis:     filepath.Join("halo", "config", "execution_genesis.json"),
 		}
 	}
 
@@ -763,4 +767,20 @@ func filterFeatureFlags(node *e2e.Node, flags feature.Flags) feature.Flags {
 	}
 
 	return resp
+}
+
+func getConcurrency(network netconf.ID) int64 {
+	if network == netconf.Devnet {
+		return RedenomConcurrencyDevnet
+	}
+
+	return RedenomConcurrency
+}
+
+func getBatchSize(network netconf.ID) uint64 {
+	if network == netconf.Devnet {
+		return RedenomBatchSizeDevnet
+	}
+
+	return RedenomBatchSize
 }
