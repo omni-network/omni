@@ -126,6 +126,18 @@ func deployNomToken(ctx context.Context, network netconf.ID, backend *ethbackend
 		return errors.Wrap(err, "pack nomina init code")
 	}
 
+	if network.IsEphemeral() {
+		abi, err = bindings.MockNominaMetaData.GetAbi()
+		if err != nil {
+			return errors.Wrap(err, "get mock nomina abi")
+		}
+
+		initCode, err = contracts.PackInitCode(abi, bindings.MockNominaMetaData.Bin, addrs.Token)
+		if err != nil {
+			return errors.Wrap(err, "pack mock nomina init code")
+		}
+	}
+
 	initCodeHash := crypto.Keccak256Hash(initCode)
 
 	var salt [32]byte

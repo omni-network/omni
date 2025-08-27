@@ -18,9 +18,9 @@ const (
 	Expense Type = "expense"
 	Income  Type = "income"
 
-	USD  Currency = "USD"
-	ETH  Currency = "ETH"
-	OMNI Currency = "OMNI"
+	USD Currency = "USD"
+	ETH Currency = "ETH"
+	NOM Currency = "NOM"
 )
 
 type LogP struct {

@@ -8,7 +8,7 @@ import type {
 } from 'viem'
 import { http, createTestClient, createWalletClient, publicActions } from 'viem'
 import { testAccount } from './accounts.js'
-import { inbox, mockL1Chain, omniTokenAbi, tokenAddress } from './constants.js'
+import { inbox, mockL1Chain, nomAddress, nomTokenAbi } from './constants.js'
 
 export function createAnvilClient(chain: Chain): TestClient {
   return createTestClient({ chain, mode: 'anvil', transport: http() })
@@ -35,7 +35,7 @@ export const mockL1Client: Client<typeof mockL1Chain> = createClient({
   chain: mockL1Chain,
 })
 
-export async function mintOMNI(
+export async function mintNOM(
   client: Client<Chain>,
   amount: bigint,
 ): Promise<void> {
@@ -45,8 +45,8 @@ export async function mintOMNI(
   }
   const mintHash = await client.writeContract({
     account,
-    address: tokenAddress,
-    abi: omniTokenAbi,
+    address: nomAddress,
+    abi: nomTokenAbi,
     functionName: 'mint',
     args: [account.address, amount],
   })
@@ -56,8 +56,8 @@ export async function mintOMNI(
   })
   const approveHash = await client.writeContract({
     account,
-    address: tokenAddress,
-    abi: omniTokenAbi,
+    address: nomAddress,
+    abi: nomTokenAbi,
     functionName: 'approve',
     args: [inbox, amount],
   })

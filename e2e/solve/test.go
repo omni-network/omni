@@ -155,7 +155,7 @@ func Test(ctx context.Context, network netconf.Network, backends ethbackend.Back
 				continue
 			}
 
-			// if done, wait for solver to rebalance OMNI (bridge L1 back to native)
+			// if done, wait for solver to rebalance NOM (bridge L1 back to native)
 			if err := waitRebalance(ctx, backends); err != nil {
 				return errors.Wrap(err, "wait rebalance")
 			}
@@ -196,13 +196,13 @@ func makeOrders() []TestOrder {
 		}
 
 		orders = append(orders,
-			swapOrder(user, evmchain.IDMockL1, tokens.ETH, evmchain.IDOmniDevnet, tokens.OMNI),
-			swapOrder(user, evmchain.IDMockL1, tokens.OMNI, evmchain.IDMockL2, tokens.ETH),
-			swapOrder(user, evmchain.IDMockL1, tokens.USDC, evmchain.IDOmniDevnet, tokens.OMNI),
-			swapOrder(user, evmchain.IDMockL1, tokens.OMNI, evmchain.IDMockL1, tokens.ETH), // same chain swap
+			swapOrder(user, evmchain.IDMockL1, tokens.ETH, evmchain.IDOmniDevnet, tokens.NOM),
+			swapOrder(user, evmchain.IDMockL1, tokens.NOM, evmchain.IDMockL2, tokens.ETH),
+			swapOrder(user, evmchain.IDMockL1, tokens.USDC, evmchain.IDOmniDevnet, tokens.NOM),
+			swapOrder(user, evmchain.IDMockL1, tokens.NOM, evmchain.IDMockL1, tokens.ETH), // same chain swap
 		)
 	}
-	// erc20 OMNI -> native OMNI orders
+	// erc20 NOM -> native NOM orders
 	{
 		omniBridgeOrder := func(addr common.Address, expense *big.Int, deposit solvernet.Deposit, rejectReason string) TestOrder {
 			return TestOrder{
@@ -218,9 +218,9 @@ func makeOrders() []TestOrder {
 			}
 		}
 
-		expense := bi.Ether(10) // Note that fee is not charged for OMNI, so deposit==expense
+		expense := bi.Ether(10) // Note that fee is not charged for NOM, so deposit==expense
 		orders = append(orders,
-			omniBridgeOrder(user, expense, erc20Deposit(expense, addrs.Token), ""),
+			omniBridgeOrder(user, expense, erc20Deposit(expense, addrs.NomToken), ""),
 			omniBridgeOrder(user, expense, unsupportedERC20Deposit(expense), solver.RejectUnsupportedDeposit.String()),
 		)
 	}
@@ -273,7 +273,7 @@ func makeOrders() []TestOrder {
 		DestChainID:   invalidChainID,
 		Expenses:      nativeExpense(bi.Wei(1)),
 		Calls:         nativeTransferCall(bi.Wei(1), user),
-		Deposit:       erc20Deposit(bi.Wei(1), addrs.Token),
+		Deposit:       erc20Deposit(bi.Wei(1), addrs.NomToken),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedDestChain.String(),
 	})
@@ -286,7 +286,7 @@ func makeOrders() []TestOrder {
 		DestChainID:   evmchain.IDMockL2,
 		Expenses:      unsupportedExpense(bi.Wei(1)),
 		Calls:         nativeTransferCall(bi.Wei(1), user),
-		Deposit:       erc20Deposit(bi.Wei(1), addrs.Token),
+		Deposit:       erc20Deposit(bi.Wei(1), addrs.NomToken),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedExpense.String(),
 	})
@@ -299,7 +299,7 @@ func makeOrders() []TestOrder {
 		DestChainID:   evmchain.IDMockL2,
 		Expenses:      invalidExpenseOutOfBounds(),
 		Calls:         nativeTransferCall(bi.Wei(1), user),
-		Deposit:       erc20Deposit(bi.Wei(1), addrs.Token),
+		Deposit:       erc20Deposit(bi.Wei(1), addrs.NomToken),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectInvalidExpense.String(),
 	})
@@ -543,7 +543,7 @@ func waitRebalance(ctx context.Context, backends ethbackend.Backends) error {
 				return errors.Wrap(err, "balance of")
 			}
 
-			// solver will have claimed much more than 1 OMNI
+			// solver will have claimed much more than 1 NOM
 			// if balance is < 1, rebalancing is working
 			if bi.LTE(balance, bi.Ether(1)) {
 				return nil

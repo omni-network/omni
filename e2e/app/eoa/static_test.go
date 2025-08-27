@@ -17,7 +17,7 @@ import (
 //go:generate go test . -run=TestThresholdReference -golden
 
 var (
-	fundTokens = []tokens.Asset{tokens.ETH, tokens.OMNI, tokens.MNT, tokens.HYPE}
+	fundTokens = []tokens.Asset{tokens.ETH, tokens.OMNI, tokens.MNT, tokens.HYPE, tokens.NOM}
 )
 
 func TestThresholdReference(t *testing.T) {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
-import { SolverNetStagingFixtures } from "../SolverNetStagingFixtures.sol";
+import { SolverNetStagingFixtures } from "../fixtures/SolverNetStagingFixtures.sol";
 import { SolverNet } from "src/lib/SolverNet.sol";
 import { IERC7683 } from "src/erc7683/IERC7683.sol";
 
@@ -76,7 +76,7 @@ contract Omni_transfer is SolverNetStagingFixtures {
         });
 
         return IERC7683.OnchainCrossChainOrder({
-            fillDeadline: 0,
+            fillDeadline: uint32(block.timestamp + 1 hours),
             orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });

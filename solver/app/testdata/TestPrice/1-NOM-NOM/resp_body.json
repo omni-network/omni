@@ -2,6 +2,6 @@
  "numerator": "0x1",
  "denominator": "0x1",
  "imprecise_rate": 1,
- "deposit": "OMNI",
- "expense": "OMNI"
+ "deposit": "NOM",
+ "expense": "NOM"
 }

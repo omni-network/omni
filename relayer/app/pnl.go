@@ -63,12 +63,12 @@ func (l pnlLogger) logE(ctx context.Context, tx *ethtypes.Transaction, receipt *
 	spendGwei := totalSpendGwei(tx, receipt)
 	spendTotal.WithLabelValues(dest.Name, dest.NativeToken.Symbol).Add(spendGwei)
 
-	prices, err := l.pricer.USDPrices(ctx, tokens.OMNI, tokens.ETH)
+	prices, err := l.pricer.USDPrices(ctx, tokens.NOM, tokens.ETH)
 	if err != nil {
 		return errors.Wrap(err, "get prices")
 	}
 
-	log.Debug(ctx, "Using token prices", "omni", prices[tokens.OMNI], "eth", prices[tokens.ETH])
+	log.Debug(ctx, "Using token prices", "nom", prices[tokens.NOM], "eth", prices[tokens.ETH])
 
 	spend, err := spendByDenom(dest, spendGwei, prices)
 	if err != nil {
@@ -97,7 +97,7 @@ func (l pnlLogger) logE(ctx context.Context, tx *ethtypes.Transaction, receipt *
 			Chain: dest.Name, ID: id, Metadata: md,
 		},
 		pnl.LogP{
-			Type: pnl.Expense, AmountGwei: spend.nOMNI, Currency: pnl.OMNI,
+			Type: pnl.Expense, AmountGwei: spend.nNOM, Currency: pnl.NOM,
 			Category: "gas", Subcategory: "xsubmit",
 			Chain: dest.Name, ID: id, Metadata: md,
 		},
@@ -133,7 +133,7 @@ func (l pnlLogger) logE(ctx context.Context, tx *ethtypes.Transaction, receipt *
 			Chain: src.Name, ID: id, Metadata: md,
 		},
 		pnl.LogP{
-			Type: pnl.Income, AmountGwei: fees.nOMNI, Currency: pnl.OMNI,
+			Type: pnl.Income, AmountGwei: fees.nNOM, Currency: pnl.NOM,
 			Category: "fees", Subcategory: "xcall",
 			Chain: src.Name, ID: id, Metadata: md,
 		},
@@ -143,12 +143,12 @@ func (l pnlLogger) logE(ctx context.Context, tx *ethtypes.Transaction, receipt *
 }
 
 type amtByDenom struct {
-	nUSD  float64 // "nano" USD (gwei)
-	nOMNI float64 // "nano" OMNI (gwei)
-	nETH  float64 // "nano" ETH (gwei)
+	nUSD float64 // "nano" USD (gwei)
+	nNOM float64 // "nano" NOM (gwei)
+	nETH float64 // "nano" ETH (gwei)
 }
 
-// feeByDenom returns the amount fees collected from a receipt in omni, eth, and usd.
+// feeByDenom returns the amount fees collected from a receipt in nom, eth, and usd.
 func feeByDenom(
 	src evmchain.Metadata,
 	sub xchain.Submission,
@@ -164,9 +164,9 @@ func feeByDenom(
 		feesGwei := bi.ToGweiF64(msg.Fees)
 
 		switch src.NativeToken {
-		case tokens.OMNI:
-			fees.nOMNI += feesGwei
-			fees.nUSD += feesGwei * prices[tokens.OMNI]
+		case tokens.NOM:
+			fees.nNOM += feesGwei
+			fees.nUSD += feesGwei * prices[tokens.NOM]
 		case tokens.ETH:
 			fees.nETH += feesGwei
 			fees.nUSD += feesGwei * prices[tokens.ETH]
@@ -178,7 +178,7 @@ func feeByDenom(
 	return fees, nil
 }
 
-// spendByDenom returns the amount spent on a transaction in omni, eth, and usd.
+// spendByDenom returns the amount spent on a transaction in nom, eth, and usd.
 func spendByDenom(
 	dest evmchain.Metadata,
 	spendGwei float64,
@@ -187,9 +187,9 @@ func spendByDenom(
 	var spend amtByDenom
 
 	switch dest.NativeToken {
-	case tokens.OMNI:
-		spend.nOMNI = spendGwei
-		spend.nUSD = spendGwei * prices[tokens.OMNI]
+	case tokens.NOM:
+		spend.nNOM = spendGwei
+		spend.nUSD = spendGwei * prices[tokens.NOM]
 	case tokens.ETH:
 		spend.nETH = spendGwei
 		spend.nUSD = spendGwei * prices[tokens.ETH]

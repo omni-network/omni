@@ -25,6 +25,7 @@ var (
 	// tokenConversion defines conversion rate for fund threshold amounts.
 	tokenConversion = map[tokens.Asset]float64{
 		tokens.OMNI: 500,
+		tokens.NOM:  37500,
 		tokens.ETH:  1,
 		tokens.MNT:  1,
 		tokens.HYPE: 1,
@@ -97,6 +98,7 @@ var (
 	nativeTokens = map[tokens.Asset]bool{
 		tokens.ETH:  true,
 		tokens.OMNI: true,
+		tokens.NOM:  true,
 		tokens.MNT:  true,
 		tokens.HYPE: true,
 	}

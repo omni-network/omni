@@ -54,10 +54,13 @@ func TestGenTokens(t *testing.T) {
 		nativeETH(evmchain.IDMockL2),
 
 		// Native OMNI
+		// TODO(zodomo): remove this once all Omni chains are migrated to NOM
 		nativeOMNI(evmchain.IDOmniMainnet),
-		nativeOMNI(evmchain.IDOmniOmega),
-		nativeOMNI(evmchain.IDOmniStaging),
-		nativeOMNI(evmchain.IDOmniDevnet),
+
+		// Native NOM
+		nativeNOM(evmchain.IDOmniOmega),
+		nativeNOM(evmchain.IDOmniStaging),
+		nativeNOM(evmchain.IDOmniDevnet),
 
 		// USDC (mainnet)
 		usdc(evmchain.IDEthereum, addr("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")),
@@ -199,6 +202,15 @@ func weth(chainID uint64, addr common.Address) tokens.Token {
 func nativeOMNI(chainID uint64) tokens.Token {
 	return tokens.Token{
 		Asset:      tokens.OMNI,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    tokens.NativeAddr,
+	}
+}
+
+func nativeNOM(chainID uint64) tokens.Token {
+	return tokens.Token{
+		Asset:      tokens.NOM,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    tokens.NativeAddr,

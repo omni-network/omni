@@ -122,32 +122,32 @@
  {
   "address": "0x0000000000000000000000000000000000000000",
   "chainId": 164,
-  "coingeckoId": "omni-network",
+  "coingeckoId": "nomina",
   "isMock": false,
-  "maxSpend": "1000 OMNI",
-  "minSpend": "0.1 OMNI",
-  "name": "Omni Network",
-  "symbol": "OMNI"
+  "maxSpend": "100000 NOM",
+  "minSpend": "1 NOM",
+  "name": "Nomina",
+  "symbol": "NOM"
  },
  {
   "address": "0x0000000000000000000000000000000000000000",
   "chainId": 1650,
-  "coingeckoId": "omni-network",
+  "coingeckoId": "nomina",
   "isMock": false,
-  "maxSpend": "1000 OMNI",
-  "minSpend": "0.1 OMNI",
-  "name": "Omni Network",
-  "symbol": "OMNI"
+  "maxSpend": "100000 NOM",
+  "minSpend": "1 NOM",
+  "name": "Nomina",
+  "symbol": "NOM"
  },
  {
   "address": "0x0000000000000000000000000000000000000000",
   "chainId": 1651,
-  "coingeckoId": "omni-network",
+  "coingeckoId": "nomina",
   "isMock": false,
-  "maxSpend": "1000 OMNI",
-  "minSpend": "0.1 OMNI",
-  "name": "Omni Network",
-  "symbol": "OMNI"
+  "maxSpend": "100000 NOM",
+  "minSpend": "1 NOM",
+  "name": "Nomina",
+  "symbol": "NOM"
  },
  {
   "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
@@ -360,7 +360,7 @@
   "symbol": "NOM"
  },
  {
-  "address": "0xd166b617eA5F80f2287A0E6642749eff0D53E4eb",
+  "address": "0x8b5793dC5566b0ab7A89e592AD19d123971ff00f",
   "chainId": 17000,
   "coingeckoId": "nomina",
   "isMock": false,
@@ -370,7 +370,7 @@
   "symbol": "NOM"
  },
  {
-  "address": "0xD2734E21a0Eb8bfD0fe8b26d7501a8c29ADF5c73",
+  "address": "0x31EB5432c37540A12a3ED647777283c9F185770D",
   "chainId": 1652,
   "coingeckoId": "nomina",
   "isMock": false,

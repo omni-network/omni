@@ -26,6 +26,7 @@ export const mockL2Id = 1654
 export const inbox = '0x7c7759b801078ecb2c41c9caecc2db13c3079c76' as const
 export const tokenAddress =
   '0x73cc960fb6705e9a6a3d9eaf4de94a828cfa6d2a' as const
+export const nomAddress = '0x31eb5432c37540a12a3ed647777283c9f185770d' as const
 export const invalidTokenAddress =
   '0x1234000000000000000000000000000000000000' as const
 export const outbox = '0x29d9e8faa760841aacbe79a8632c1f42e0a858e6' as const
@@ -80,6 +81,39 @@ export const omniTokenAbi = [
       { name: 'value', type: 'uint256', internalType: 'uint256' },
     ],
     outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'mint',
+    inputs: [
+      { name: 'to', type: 'address', internalType: 'address' },
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+] as const
+
+export const nomTokenAbi = [
+  {
+    type: 'function',
+    name: 'approve',
+    inputs: [
+      { name: 'spender', type: 'address', internalType: 'address' },
+      { name: 'value', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'convert',
+    inputs: [
+      { name: 'to', type: 'address', internalType: 'address' },
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [],
     stateMutability: 'nonpayable',
   },
   {
