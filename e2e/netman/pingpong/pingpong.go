@@ -128,9 +128,9 @@ func (d *XDapp) fund(ctx context.Context) error {
 		// For ETH chains, fund it with 0.5 ETH
 		fund := bi.Ether(0.5)
 
-		// for OMNI chains, fund it with 100 OMNI
+		// for NOM chains, fund it with 7500 NOM
 		if contract.Chain.ID == d.network.Static().OmniExecutionChainID {
-			fund = bi.Ether(100)
+			fund = bi.Ether(7500)
 		}
 
 		txOpts.Value = fund

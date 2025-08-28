@@ -1,20 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
-import { SolverNetStagingFixtures } from "../fixtures/SolverNetStagingFixtures.sol";
-import { SolverNet } from "src/lib/SolverNet.sol";
-import { IERC7683 } from "src/erc7683/IERC7683.sol";
-import { IStaking } from "core/src/interfaces/IStaking.sol";
+import "../fixtures/SolverNetOmegaFixtures.sol";
 
-contract Staking_delegateFor is SolverNetStagingFixtures {
-    IStaking internal constant staking = IStaking(0xCCcCcC0000000000000000000000000000000001);
-    address internal constant validator1 = 0xD6CD71dF91a6886f69761826A9C4D123178A8d9D;
-    address internal constant validator2 = 0x9C7bf21f72CA34af89F620D27E0F18C4366b88c6;
-    uint96 internal constant defaultAmount = 100 ether;
+contract Omega_Nomina_transfer is SolverNetOmegaFixtures {
+    uint96 internal constant defaultAmount = 10_000 ether;
 
     function run() public {
-        IERC7683.OnchainCrossChainOrder memory order =
-            _getOrder(defaultAmount, block.number % 2 == 0 ? validator1 : validator2);
+        IERC7683.OnchainCrossChainOrder memory order = _getOrder(defaultAmount, address(0));
         bool isApproved = _checkApprovals(defaultAmount);
 
         // Send order, approve tokens if needed
@@ -25,8 +18,7 @@ contract Staking_delegateFor is SolverNetStagingFixtures {
     }
 
     function run(uint96 amount) public {
-        IERC7683.OnchainCrossChainOrder memory order =
-            _getOrder(amount, block.number % 2 == 0 ? validator1 : validator2);
+        IERC7683.OnchainCrossChainOrder memory order = _getOrder(amount, address(0));
         bool isApproved = _checkApprovals(amount);
 
         // Send order, approve tokens if needed
@@ -36,8 +28,8 @@ contract Staking_delegateFor is SolverNetStagingFixtures {
         vm.stopBroadcast();
     }
 
-    function run(uint96 amount, address validator) public {
-        IERC7683.OnchainCrossChainOrder memory order = _getOrder(amount, validator);
+    function run(uint96 amount, address recipient) public {
+        IERC7683.OnchainCrossChainOrder memory order = _getOrder(amount, recipient);
         bool isApproved = _checkApprovals(amount);
 
         // Send order, approve tokens if needed
@@ -47,30 +39,30 @@ contract Staking_delegateFor is SolverNetStagingFixtures {
         vm.stopBroadcast();
     }
 
-    function _getOrder(uint96 amount, address validator)
+    function _getOrder(uint96 amount, address recipient)
         internal
         view
         returns (IERC7683.OnchainCrossChainOrder memory)
     {
         // Get order, validate it, and check for token approval
-        IERC7683.OnchainCrossChainOrder memory order = _getSolverNetOrder(amount, validator);
+        IERC7683.OnchainCrossChainOrder memory order = _getSolverNetOrder(amount, recipient);
         require(inbox.validate(order) == true, "Order is invalid");
         return order;
     }
 
-    function _getSolverNetOrder(uint96 amount, address validator)
+    function _getSolverNetOrder(uint96 amount, address recipient)
         internal
         view
         returns (IERC7683.OnchainCrossChainOrder memory)
     {
-        SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(omni), amount: amount });
+        SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(nomina), amount: amount });
 
         SolverNet.Call[] memory call = new SolverNet.Call[](1);
         call[0] = SolverNet.Call({
-            target: address(staking),
-            selector: IStaking.delegateFor.selector,
+            target: recipient != address(0) ? recipient : msg.sender,
+            selector: bytes4(""),
             value: amount,
-            params: abi.encode(msg.sender, validator)
+            params: ""
         });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
@@ -82,17 +74,17 @@ contract Staking_delegateFor is SolverNetStagingFixtures {
         });
 
         return IERC7683.OnchainCrossChainOrder({
-            fillDeadline: 0,
+            fillDeadline: uint32(block.timestamp + 1 hours),
             orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
     }
 
     function _checkApprovals(uint96 amount) internal view returns (bool) {
-        return omni.allowance(msg.sender, address(inbox)) >= amount;
+        return nomina.allowance(msg.sender, address(inbox)) >= amount;
     }
 
     function _setApprovals() internal {
-        omni.approve(address(inbox), type(uint256).max);
+        nomina.approve(address(inbox), type(uint256).max);
     }
 }

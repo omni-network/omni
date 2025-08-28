@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
-import { SolverNetStagingFixtures } from "../SolverNetStagingFixtures.sol";
+import { SolverNetStagingFixtures } from "../fixtures/SolverNetStagingFixtures.sol";
 import { SolverNet } from "src/lib/SolverNet.sol";
 import { IERC7683 } from "src/erc7683/IERC7683.sol";
 import { IStaking } from "core/src/interfaces/IStaking.sol";

@@ -20,8 +20,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-const saneMaxETH = 121    // Maximum amount of ETH to fund (in ether).
-const saneMaxOmni = 60420 // Maximum amount of OMNI to fund (in ether OMNI).
+const saneMaxETH = 121     // Maximum amount of ETH to fund (in ether).
+const saneMaxOmni = 60420  // Maximum amount of OMNI to fund (in ether OMNI).
+const saneMaxNom = 4531500 // Maximum amount of NOM to fund (in ether NOM).
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
 func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool) error {
@@ -284,6 +285,11 @@ func etherStr(amount *big.Int) string {
 func saneMax(token tokens.Asset) *big.Int {
 	saneETH := bi.Ether(saneMaxETH)
 	saneOmni := bi.Ether(saneMaxOmni)
+	saneNom := bi.Ether(saneMaxNom)
+
+	if token == tokens.NOM {
+		return saneNom
+	}
 
 	if token == tokens.OMNI {
 		return saneOmni

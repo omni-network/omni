@@ -179,7 +179,7 @@ func makeChains(chainIDs []uint64) []evmchain.Metadata {
 		// use ETH for all chains, except the first
 		token := tokens.ETH
 		if i == 0 {
-			token = tokens.OMNI
+			token = tokens.NOM
 		}
 
 		// every even chian "postsTo" the last chain

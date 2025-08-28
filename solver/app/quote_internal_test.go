@@ -106,7 +106,7 @@ func addThousandSeparators(num string) string {
 func TestQuote(t *testing.T) {
 	t.Parallel()
 
-	omegaOMNIAddr := omniERC20(netconf.Omega).UniAddress()
+	omegaNOMAddr := nomERC20(netconf.Omega).UniAddress()
 
 	tests := []struct {
 		name     string
@@ -156,30 +156,30 @@ func TestQuote(t *testing.T) {
 			},
 		},
 		{
-			// no fees for OMNI
-			name: "quote deposit 1 OMNI expense",
+			// no fees for NOM
+			name: "quote deposit 1 NOM expense",
 			req: types.QuoteRequest{
 				SourceChainID:      evmchain.IDHolesky,
 				DestinationChainID: evmchain.IDOmniOmega,
-				Deposit:            types.AddrAmt{Token: omegaOMNIAddr},
+				Deposit:            types.AddrAmt{Token: omegaNOMAddr},
 				Expense:            mockAddrAmt("10000000000000000000"),
 			},
 			res: types.QuoteResponse{
-				Deposit: types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaOMNIAddr},
+				Deposit: types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaNOMAddr},
 				Expense: mockAddrAmt("10000000000000000000"),
 			},
 		},
 		{
-			// no fees for OMNI
-			name: "quote expense 1 OMNI deposit",
+			// no fees for NOM
+			name: "quote expense 1 NOM deposit",
 			req: types.QuoteRequest{
 				SourceChainID:      evmchain.IDHolesky,
 				DestinationChainID: evmchain.IDOmniOmega,
-				Deposit:            types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaOMNIAddr},
+				Deposit:            types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaNOMAddr},
 				Expense:            zeroAddrAmt,
 			},
 			res: types.QuoteResponse{
-				Deposit: types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaOMNIAddr},
+				Deposit: types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaNOMAddr},
 				Expense: mockAddrAmt("10000000000000000000"),
 			},
 			testdata: true,

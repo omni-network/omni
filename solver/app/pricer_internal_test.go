@@ -51,24 +51,24 @@ func TestPrice(t *testing.T) {
 		{
 			Deposit: l1OMNI,
 			Expense: omniNative,
-			Price:   big.NewRat(1, 1),
+			Price:   big.NewRat(75, 1),
 			NoFees:  true,
 		},
 		{
 			Deposit: l1NOM,
 			Expense: omniNative,
-			Price:   big.NewRat(1, 75),
+			Price:   big.NewRat(1, 1),
 			NoFees:  true,
 		},
 		{
 			Deposit: l1Native,
 			Expense: omniNative,
-			Price:   big.NewRat(3000.0, 5.0), // 1 unit ETH in OMNI =  3000 / 5 = 600 OMNI/ETH
+			Price:   big.NewRat(3000.0*75.0, 5.0), // 1 unit ETH in NOM =  3000 * 75 (conversion rate) / 5 = 45000 NOM/ETH
 		},
 		{
 			Deposit: l2wstETH,
 			Expense: l1wstETH,
-			Price:   big.NewRat(1, 1), // 1 unit WSTETH in OMNI = 1 WSTETH
+			Price:   big.NewRat(1, 1), // 1 unit WSTETH in NOM = 1 WSTETH
 		},
 		{
 			Deposit: l1wstETH,

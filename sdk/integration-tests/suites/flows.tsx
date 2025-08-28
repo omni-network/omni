@@ -11,15 +11,15 @@ import {
   createClient,
   inbox,
   invalidTokenAddress,
-  mintOMNI,
+  mintNOM,
   mockL1Chain,
   mockL1Id,
   mockL2Chain,
   mockL2Id,
+  nomAddress,
   omniDevnetChain,
   omniDevnetId,
   testAccount,
-  tokenAddress,
   vault,
 } from '@omni-network/test-utils'
 import { act, waitFor } from '@testing-library/react'
@@ -48,7 +48,7 @@ function getNextAccount(): PrivateKeyAccount {
   return privateKeyToAccount(pk)
 }
 
-describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
+describe.concurrent('ERC20 NOM to native NOM transfer orders', () => {
   describe.sequential('default: succeeds with valid expense', async () => {
     const account = getNextAccount()
     const srcClient = createClient({ account, chain: mockL1Chain })
@@ -60,7 +60,7 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
       destChainId: omniDevnetId,
       expense: { token: zeroAddress, amount },
       calls: [{ target: account.address, value: amount }],
-      deposit: { token: tokenAddress, amount },
+      deposit: { token: nomAddress, amount },
     }
 
     beforeAll(async () => {
@@ -68,7 +68,7 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
         address: account.address,
         value: amount * 10n,
       })
-      await mintOMNI(srcClient, amount * 3n)
+      await mintNOM(srcClient, amount * 3n)
     })
 
     test('using core APIs', async () => {
@@ -99,7 +99,7 @@ describe.concurrent('ERC20 OMNI to native OMNI transfer orders', () => {
         address: account.address,
         value: amount * 10n,
       })
-      await mintOMNI(srcClient, amount * 3n)
+      await mintNOM(srcClient, amount * 3n)
     })
 
     test('using core APIs', async () => {

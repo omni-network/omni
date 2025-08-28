@@ -191,7 +191,7 @@ var static = map[uint64]Metadata{
 		Name:        omniEVMName,
 		PrettyName:  "Omni Omega",
 		BlockPeriod: omniEVMBlockPeriod,
-		NativeToken: tokens.OMNI,
+		NativeToken: tokens.NOM,
 	},
 	IDHyperEVMTestnet: {
 		ChainID:     IDHyperEVMTestnet,
@@ -270,14 +270,14 @@ var static = map[uint64]Metadata{
 		Name:        omniEVMName,
 		PrettyName:  "Omni Staging",
 		BlockPeriod: omniEVMBlockPeriod,
-		NativeToken: tokens.OMNI,
+		NativeToken: tokens.NOM,
 	},
 	IDOmniDevnet: {
 		ChainID:     IDOmniDevnet,
 		Name:        omniEVMName,
 		PrettyName:  "Omni Devnet",
 		BlockPeriod: omniEVMBlockPeriod,
-		NativeToken: tokens.OMNI,
+		NativeToken: tokens.NOM,
 	},
 	IDMockL1: {
 		ChainID:     IDMockL1,

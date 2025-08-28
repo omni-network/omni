@@ -24,11 +24,19 @@ func TestSaneMax(t *testing.T) {
 			require.GreaterOrEqual(t, expect, actual, "ETH %s %s", network, role)
 		}
 
+		// TODO(zodomo): remove this once we have deprecated OMNI.
 		thresh, ok = eoa.GetFundThresholds(tokens.OMNI, network, role)
 		if ok {
 			expect := bi.ToEtherF64(saneMax(tokens.OMNI))
 			actual := bi.ToEtherF64(thresh.TargetBalance())
 			require.GreaterOrEqual(t, expect, actual, "OMNI %s %s", network, role)
+		}
+
+		thresh, ok = eoa.GetFundThresholds(tokens.NOM, network, role)
+		if ok {
+			expect := bi.ToEtherF64(saneMax(tokens.NOM))
+			actual := bi.ToEtherF64(thresh.TargetBalance())
+			require.GreaterOrEqual(t, expect, actual, "NOM %s %s", network, role)
 		}
 	}
 }

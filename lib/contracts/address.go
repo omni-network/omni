@@ -261,6 +261,12 @@ func TokenAddr(network netconf.ID) common.Address {
 }
 
 func NomAddr(network netconf.ID) common.Address {
+	if network == netconf.Mainnet {
+		return common.HexToAddress("0x6e6f6d696e61decd6605bd4a57836c5db6923340")
+	} else if network == netconf.Omega {
+		return common.HexToAddress("0xb7da35e8f69aa04422cbef30850da77614343087")
+	}
+
 	omni := TokenAddr(network)
 	mintAuthority := eoa.MustAddress(network, eoa.RoleNomAuthority)
 	deployer := eoa.MustAddress(network, eoa.RoleDeployer)
@@ -273,6 +279,18 @@ func NomAddr(network netconf.ID) common.Address {
 	initCode, err := PackInitCode(abi, bindings.NominaMetaData.Bin, omni, mintAuthority)
 	if err != nil {
 		return common.Address{}
+	}
+
+	if network.IsEphemeral() {
+		abi, err = bindings.MockNominaMetaData.GetAbi()
+		if err != nil {
+			return common.Address{}
+		}
+
+		initCode, err = PackInitCode(abi, bindings.MockNominaMetaData.Bin, omni)
+		if err != nil {
+			return common.Address{}
+		}
 	}
 
 	initCodeHash := crypto.Keccak256Hash(initCode)

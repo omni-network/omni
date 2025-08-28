@@ -31,5 +31,7 @@ contract CreateXHelper is Script {
         console2.logBytes(initCode);
         // solhint-disable-next-line no-console
         console2.logBytes32(initCodeHash);
+
+        return (initCode, initCodeHash);
     }
 }

@@ -1,7 +1,7 @@
 import type { Address, Hex } from 'viem'
 import { type PrivateKeyAccount, privateKeyToAccount } from 'viem/accounts'
 
-// Accounts available for tests, funded with 1M OMNI - from lib/anvil/accounts.go
+// Accounts available for tests, funded with 1M NOM - from lib/anvil/accounts.go
 export const availableTestAccounts = {
   '0xecC80DF24e41FcEaF49FE9C27FC962E540c22178':
     '0x5e8288546360010e8d03eee564dbdd5dcb049c3548ddd3b163eb88f2577a0682',

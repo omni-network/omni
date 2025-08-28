@@ -14,7 +14,7 @@ func TestDevnetPricer(t *testing.T) {
 
 	pricer := NewDevnetMock()
 
-	price, err := pricer.Price(t.Context(), tokens.OMNI, tokens.ETH)
+	price, err := pricer.Price(t.Context(), tokens.NOM, tokens.ETH)
 	require.NoError(t, err)
-	require.Equal(t, big.NewRat(5.0, 3000.0), price)
+	require.Equal(t, big.NewRat(5.0, 3000.0*75.0), price)
 }
