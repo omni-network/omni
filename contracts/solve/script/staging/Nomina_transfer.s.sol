@@ -5,8 +5,8 @@ import { SolverNetStagingFixtures } from "../fixtures/SolverNetStagingFixtures.s
 import { SolverNet } from "src/lib/SolverNet.sol";
 import { IERC7683 } from "src/erc7683/IERC7683.sol";
 
-contract Omni_transfer is SolverNetStagingFixtures {
-    uint96 internal constant defaultAmount = 100 ether;
+contract Staging_Nomina_transfer is SolverNetStagingFixtures {
+    uint96 internal constant defaultAmount = 10_000 ether;
 
     function run() public {
         IERC7683.OnchainCrossChainOrder memory order = _getOrder(defaultAmount, address(0));
@@ -57,7 +57,7 @@ contract Omni_transfer is SolverNetStagingFixtures {
         view
         returns (IERC7683.OnchainCrossChainOrder memory)
     {
-        SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(omni), amount: amount });
+        SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(nom), amount: amount });
 
         SolverNet.Call[] memory call = new SolverNet.Call[](1);
         call[0] = SolverNet.Call({
@@ -83,10 +83,10 @@ contract Omni_transfer is SolverNetStagingFixtures {
     }
 
     function _checkApprovals(uint96 amount) internal view returns (bool) {
-        return omni.allowance(msg.sender, address(inbox)) >= amount;
+        return nom.allowance(msg.sender, address(inbox)) >= amount;
     }
 
     function _setApprovals() internal {
-        omni.approve(address(inbox), type(uint256).max);
+        nom.approve(address(inbox), type(uint256).max);
     }
 }
