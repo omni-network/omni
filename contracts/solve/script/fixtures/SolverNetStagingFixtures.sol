@@ -10,6 +10,7 @@ import { ISolverNetInbox } from "src/interfaces/ISolverNetInbox.sol";
 
 contract SolverNetStagingFixtures is Script {
     IERC20 internal omni;
+    IERC20 internal nom;
     IOmniPortal internal portal;
     ISolverNetInbox internal inbox;
 
@@ -36,6 +37,7 @@ contract SolverNetStagingFixtures is Script {
         JSONParserLib.Item memory object = JSONParserLib.parse(stagingAddrsJson);
         /* solhint-disable quotes */
         JSONParserLib.Item memory omniItem = JSONParserLib.at(object, '"token"');
+        JSONParserLib.Item memory nomItem = JSONParserLib.at(object, '"nom"');
         JSONParserLib.Item memory portalItem = JSONParserLib.at(object, '"portal"');
         JSONParserLib.Item memory inboxItem = JSONParserLib.at(object, '"solvernetinbox"');
         /* solhint-enable quotes */
@@ -43,6 +45,10 @@ contract SolverNetStagingFixtures is Script {
         string memory omniAddr = JSONParserLib.value(omniItem);
         omniAddr = LibString.slice(omniAddr, 1, bytes(omniAddr).length - 1);
         omni = IERC20(vm.parseAddress(omniAddr));
+
+        string memory nomAddr = JSONParserLib.value(nomItem);
+        nomAddr = LibString.slice(nomAddr, 1, bytes(nomAddr).length - 1);
+        nom = IERC20(vm.parseAddress(nomAddr));
 
         string memory portalAddr = JSONParserLib.value(portalItem);
         portalAddr = LibString.slice(portalAddr, 1, bytes(portalAddr).length - 1);
