@@ -130,18 +130,8 @@ func areEqualBySymbol(a, b tokens.Token) bool {
 
 // feeBips returns the fee in bips for a given pair.
 func feeBips(a, b tokens.Asset) int64 {
-	// if OMNI<>OMNI, charge no fee
-	if a == tokens.OMNI && b == tokens.OMNI {
-		return 0
-	}
-
 	// if NOM<>NOM, charge no fee
 	if a == tokens.NOM && b == tokens.NOM {
-		return 0
-	}
-
-	// if NOM<>OMNI, charge no fee
-	if (a == tokens.NOM && b == tokens.OMNI) || (a == tokens.OMNI && b == tokens.NOM) {
 		return 0
 	}
 

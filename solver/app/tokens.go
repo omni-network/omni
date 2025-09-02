@@ -22,7 +22,6 @@ var (
 	// supportedAssets maps asset to true, if the asset is supported on all chains.
 	supportedAssets = map[tokens.Asset]bool{
 		tokens.ETH:    true,
-		tokens.OMNI:   true,
 		tokens.NOM:    true,
 		tokens.WSTETH: true,
 		tokens.USDC:   true,
@@ -71,20 +70,6 @@ var (
 			tokens.ClassDevent: {
 				MinSpend: bi.Ether(0.001), // 0.001 ETH
 				MaxSpend: bi.Ether(3),     // 3 ETH
-			},
-		},
-		tokens.OMNI: {
-			tokens.ClassMainnet: {
-				MinSpend: bi.Ether(0.1),     // 0.1 OMNI
-				MaxSpend: bi.Ether(450_000), // 450k OMNI
-			},
-			tokens.ClassTestnet: {
-				MinSpend: bi.Ether(0.1),   // 0.1 OMNI
-				MaxSpend: bi.Ether(1_000), // 1k OMNI
-			},
-			tokens.ClassDevent: {
-				MinSpend: bi.Ether(0.1),   // 0.1 OMNI
-				MaxSpend: bi.Ether(1_000), // 1k OMNI
 			},
 		},
 		tokens.NOM: {

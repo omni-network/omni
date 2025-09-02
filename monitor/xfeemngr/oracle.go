@@ -217,16 +217,6 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 	bufferedRate := destPrice / srcPrice
 
 	log.Info(ctx, "Syncing native token rate", "source_price", srcPrice, "destination_price", destPrice, "buffered_rate", bufferedRate)
-	if o.chain.NativeToken == tokens.OMNI && dest.NativeToken == tokens.ETH && bufferedRate > maxSaneNativePerEth {
-		log.Warn(ctx, "Buffered omni-per-eth exceeds sane max", errors.New("unexpected conversion rate"), "buffered", bufferedRate, "max_sane", maxSaneNativePerEth)
-		bufferedRate = maxSaneNativePerEth
-	}
-
-	if o.chain.NativeToken == tokens.ETH && dest.NativeToken == tokens.OMNI && bufferedRate > maxSaneEthPerNative {
-		log.Warn(ctx, "Buffered eth-per-omni exceeds sane max", errors.New("unexpected conversion rate"), "buffered", bufferedRate, "max_sane", maxSaneEthPerNative)
-		bufferedRate = maxSaneEthPerNative
-	}
-
 	if o.chain.NativeToken == tokens.NOM && dest.NativeToken == tokens.ETH && bufferedRate > maxSaneNativePerEth {
 		log.Warn(ctx, "Buffered nom-per-eth exceeds sane max", errors.New("unexpected conversion rate"), "buffered", bufferedRate, "max_sane", maxSaneNativePerEth)
 		bufferedRate = maxSaneNativePerEth

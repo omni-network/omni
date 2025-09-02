@@ -112,12 +112,12 @@
  {
   "address": "0x0000000000000000000000000000000000000000",
   "chainId": 166,
-  "coingeckoId": "omni-network",
+  "coingeckoId": "nomina",
   "isMock": false,
-  "maxSpend": "450000 OMNI",
-  "minSpend": "0.1 OMNI",
-  "name": "Omni Network",
-  "symbol": "OMNI"
+  "maxSpend": "35000000 NOM",
+  "minSpend": "1 NOM",
+  "name": "Nomina",
+  "symbol": "NOM"
  },
  {
   "address": "0x0000000000000000000000000000000000000000",
@@ -298,26 +298,6 @@
   "minSpend": "0.1 USDT0",
   "name": "Tether Zero",
   "symbol": "USDT0"
- },
- {
-  "address": "0x36E66fbBce51e4cD5bd3C62B637Eb411b18949D4",
-  "chainId": 1,
-  "coingeckoId": "omni-network",
-  "isMock": false,
-  "maxSpend": "450000 OMNI",
-  "minSpend": "0.1 OMNI",
-  "name": "Omni Network",
-  "symbol": "OMNI"
- },
- {
-  "address": "0x73cC960fb6705e9a6A3d9EAf4De94a828CFa6d2a",
-  "chainId": 1652,
-  "coingeckoId": "omni-network",
-  "isMock": false,
-  "maxSpend": "1000 OMNI",
-  "minSpend": "0.1 OMNI",
-  "name": "Omni Network",
-  "symbol": "OMNI"
  },
  {
   "address": "0x6e6F6d696e61decd6605bD4a57836c5DB6923340",
@@ -538,35 +518,5 @@
   "minSpend": "0.1 USDC",
   "name": "USD Coin",
   "symbol": "USDC"
- },
- {
-  "address": "0xe4075366F03C286846dECE8AAF104cF2a542294d",
-  "chainId": 84532,
-  "coingeckoId": "omni-network",
-  "isMock": true,
-  "maxSpend": "1000 OMNI",
-  "minSpend": "0.1 OMNI",
-  "name": "Omni Network",
-  "symbol": "OMNI"
- },
- {
-  "address": "0x0b3AED256a51919b660fF79a280A309EecA9d688",
-  "chainId": 11155420,
-  "coingeckoId": "omni-network",
-  "isMock": true,
-  "maxSpend": "1000 OMNI",
-  "minSpend": "0.1 OMNI",
-  "name": "Omni Network",
-  "symbol": "OMNI"
- },
- {
-  "address": "0xd859f9Ff3C9700fB623Dc8e76217ba2a9f8613F0",
-  "chainId": 421614,
-  "coingeckoId": "omni-network",
-  "isMock": true,
-  "maxSpend": "1000 OMNI",
-  "minSpend": "0.1 OMNI",
-  "name": "Omni Network",
-  "symbol": "OMNI"
  }
 ]

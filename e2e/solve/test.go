@@ -323,7 +323,7 @@ func makeOrders() []TestOrder {
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL2,
 		DestChainID:   evmchain.IDMockL1,
-		Expenses:      multipleERC20Expenses(validETHSpend),
+		Expenses:      multipleERC20Expenses(bi.Ether(1)),
 		Deposit:       nativeDeposit(maxETHSpend),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectInvalidExpense.String(),

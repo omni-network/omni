@@ -111,7 +111,7 @@ func multipleNativeExpenses(amt *big.Int) []solvernet.Expense {
 }
 
 func multipleERC20Expenses(amt *big.Int) []solvernet.Expense {
-	return []solvernet.Expense{{Amount: amt, Token: addrs.Token}, {Amount: amt, Token: addrs.Token}}
+	return []solvernet.Expense{{Amount: amt, Token: addrs.NomToken}, {Amount: amt, Token: addrs.NomToken}}
 }
 
 func unsupportedExpense(amt *big.Int) []solvernet.Expense {
