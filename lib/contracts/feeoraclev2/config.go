@@ -128,7 +128,7 @@ var (
 			ID:         evmchain.IDOmniMainnet,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.OMNI],
+			GasToken:   gasTokenIDs[tokens.NOM],
 		},
 
 		// Testnets.
@@ -136,13 +136,13 @@ var (
 			ID:         evmchain.IDOmniStaging,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.OMNI],
+			GasToken:   gasTokenIDs[tokens.NOM],
 		},
 		evmchain.IDOmniOmega: {
 			ID:         evmchain.IDOmniOmega,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.OMNI],
+			GasToken:   gasTokenIDs[tokens.NOM],
 		},
 		evmchain.IDHolesky: {
 			ID:         evmchain.IDHolesky,
@@ -162,7 +162,7 @@ var (
 			ID:         evmchain.IDOmniDevnet,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.OMNI],
+			GasToken:   gasTokenIDs[tokens.NOM],
 		},
 		evmchain.IDMockL1: {
 			ID:         evmchain.IDMockL1,

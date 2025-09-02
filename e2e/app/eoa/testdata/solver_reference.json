@@ -64,8 +64,8 @@
    }
   },
   "omni_evm": {
-   "OMNI": {
-    "min": "0 OMNI"
+   "NOM": {
+    "min": "0 NOM"
    }
   },
   "optimism": {
