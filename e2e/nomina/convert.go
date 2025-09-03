@@ -2,7 +2,6 @@ package nomina
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -61,12 +60,12 @@ func ConvertOmni(ctx context.Context, network netconf.Network, backends ethbacke
 			From:    address,
 		}
 
-		balance, err := omni.BalanceOf(callOpts, address)
+		omniBalance, err := omni.BalanceOf(callOpts, address)
 		if err != nil {
-			return errors.Wrap(err, "balance of")
+			return errors.Wrap(err, "balance of", "address", address, "role", account.Role)
 		}
 
-		if balance == big.NewInt(0) {
+		if bi.IsZero(omniBalance) {
 			log.Info(ctx, "Skipping account with no OMNI balance",
 				"network", network.ID,
 				"address", address,
@@ -76,37 +75,50 @@ func ConvertOmni(ctx context.Context, network netconf.Network, backends ethbacke
 			continue
 		}
 
+		ethBalance, err := backend.BalanceAt(ctx, address, nil)
+		if err != nil {
+			return errors.Wrap(err, "balance at", "address", address, "role", account.Role)
+		}
+
+		if bi.IsZero(ethBalance) {
+			log.Info(ctx, "Skipping account with no ETH balance",
+				"network", network.ID,
+				"address", address,
+				"role", account.Role,
+			)
+		}
+
 		txOpts, err := backend.BindOpts(ctx, address)
 		if err != nil {
-			return errors.Wrap(err, "bind opts")
+			return errors.Wrap(err, "bind opts", "address", address, "role", account.Role)
 		}
 
-		tx, err := omni.Approve(txOpts, addrs.NomToken, balance)
+		tx, err := omni.Approve(txOpts, addrs.NomToken, omniBalance)
 		if err != nil {
-			return errors.Wrap(err, "approve")
-		}
-
-		_, err = backend.WaitMined(ctx, tx)
-		if err != nil {
-			return errors.Wrap(err, "wait approve mined")
-		}
-
-		tx, err = nomina.Convert(txOpts, address, balance)
-		if err != nil {
-			return errors.Wrap(err, "convert")
+			return errors.Wrap(err, "approve", "address", address, "role", account.Role)
 		}
 
 		_, err = backend.WaitMined(ctx, tx)
 		if err != nil {
-			return errors.Wrap(err, "wait convert mined")
+			return errors.Wrap(err, "wait approve mined", "address", address, "role", account.Role)
+		}
+
+		tx, err = nomina.Convert(txOpts, address, omniBalance)
+		if err != nil {
+			return errors.Wrap(err, "convert", "address", address, "role", account.Role)
+		}
+
+		_, err = backend.WaitMined(ctx, tx)
+		if err != nil {
+			return errors.Wrap(err, "wait convert mined", "address", address, "role", account.Role)
 		}
 
 		log.Info(ctx, "Converted OMNI to NOM",
 			"network", network.ID,
 			"address", address,
 			"role", account.Role,
-			"omni", bi.ToEtherF64(balance),
-			"nom", bi.ToEtherF64(bi.MulRaw(balance, evmredenom.Factor)),
+			"omni", bi.ToEtherF64(omniBalance),
+			"nom", bi.ToEtherF64(bi.MulRaw(omniBalance, evmredenom.Factor)),
 		)
 	}
 
