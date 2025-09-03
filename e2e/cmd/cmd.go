@@ -104,6 +104,7 @@ func New() *cobra.Command {
 		newHyperliquidUseBigBlocksCmd(&defCfg),
 		fundAccounts(&def),
 		newFundOpsFromSolverCmd(&def),
+		newConvertOmniCmd(&def),
 	)
 
 	return cmd
@@ -488,6 +489,27 @@ func newFundOpsFromSolverCmd(def *app.Definition) *cobra.Command {
 	_ = cmd.MarkFlagRequired("token")
 	_ = cmd.MarkFlagRequired("chain")
 	_ = cmd.MarkFlagRequired("amount")
+
+	return cmd
+}
+
+func newConvertOmniCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "convert-omni",
+		Short: "Converts OMNI tokens to NOM tokens",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
+
+			network, err := networkFromDef(ctx, *def)
+			if err != nil {
+				return errors.Wrap(err, "network from def")
+			}
+
+			backends := def.Backends()
+
+			return nomina.ConvertOmni(ctx, network, backends)
+		},
+	}
 
 	return cmd
 }
