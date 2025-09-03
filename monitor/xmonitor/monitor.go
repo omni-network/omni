@@ -53,7 +53,7 @@ func Start(
 	return nil
 }
 
-// monitorConsOffsetsForever blocks and periodically monitors the emitted
+// monitorConsOffsetForever blocks and periodically monitors the emitted
 // offsets for a given consensus chain.
 // Note that submitted offsets are not monitored as the consensus chain doesn't support submissions.
 func monitorConsOffsetForever(ctx context.Context, network netconf.Network, xprovider xchain.Provider) {
