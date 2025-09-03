@@ -34,3 +34,6 @@ scripts/join/join_test.log
 
 # Local Solana deployment files
 deploy
+
+# AI knowledge
+WARP.md
