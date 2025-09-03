@@ -90,7 +90,7 @@ func Start(
 	}
 
 	tprice := tokenprice.NewBuffer(cgCl,
-		[]tokens.Asset{tokens.OMNI, tokens.NOM, tokens.ETH},
+		[]tokens.Asset{tokens.NOM, tokens.ETH},
 		tokenPriceBufferThreshold,
 		ticker.New(tokenPriceBufferSyncInterval))
 

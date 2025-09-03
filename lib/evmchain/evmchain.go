@@ -120,7 +120,7 @@ var static = map[uint64]Metadata{
 		Name:        omniEVMName,
 		PrettyName:  "Omni Mainnet",
 		BlockPeriod: omniEVMBlockPeriod,
-		NativeToken: tokens.OMNI,
+		NativeToken: tokens.NOM,
 	},
 	IDSolana: {
 		ChainID:     IDSolana,
