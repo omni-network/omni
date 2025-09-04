@@ -17,7 +17,7 @@
     "multiproof": "github:sigp/multiproof"
   },
   "dependencies": {
-    "@hyperlane-xyz/core": "^7.1.1",
+    "@hyperlane-xyz/core": "^7.1.10",
     "@nomad-xyz/excessively-safe-call": "github:nomad-xyz/ExcessivelySafeCall",
     "@openzeppelin-v4/contracts": "npm:@openzeppelin/contracts@4.9.6",
     "@openzeppelin-v4/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.9.6",
@@ -31,5 +31,10 @@
     "murky": "github:dmfxyz/murky",
     "solady": "^0.1.14",
     "solmate": "^6.8.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "brace-expansion": "^2.0.2"
+    }
   }
 }

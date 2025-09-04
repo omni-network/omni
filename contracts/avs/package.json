@@ -22,5 +22,10 @@
     "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",
     "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware",
     "solmate": "^6.2.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "brace-expansion": "^2.0.2"
+    }
   }
 }

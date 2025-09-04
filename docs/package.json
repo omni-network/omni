@@ -18,6 +18,11 @@
   "devDependencies": {
     "@types/node": "^22.14.0"
   },
+  "pnpm": {
+    "overrides": {
+      "brace-expansion": "^2.0.2"
+    }
+  },
   "browserslist": {
     "production": [
       ">0.5%",
