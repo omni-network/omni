@@ -60,9 +60,9 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 		return errors.Wrap(err, "backend")
 	}
 
-	token, err := bindings.NewOmni(addrs.Token, backend)
+	token, err := bindings.NewNomina(addrs.NomToken, backend)
 	if err != nil {
-		return errors.Wrap(err, "new omni")
+		return errors.Wrap(err, "new nomina")
 	}
 
 	txOpts, err := backend.BindOpts(ctx, funder)
@@ -80,7 +80,7 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 		return errors.Wrap(err, "wait mined")
 	}
 
-	log.Info(ctx, "Funded", "addr", account.Hex(), "token", addrs.Token, "amount", cfg.Amount, "tx", rec.TxHash.Hex())
+	log.Info(ctx, "Funded", "addr", account.Hex(), "token", addrs.NomToken, "amount", cfg.Amount, "tx", rec.TxHash.Hex())
 
 	return nil
 }
