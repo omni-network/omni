@@ -90,7 +90,7 @@ func ConvertOmni(ctx context.Context, network netconf.Network, backends ethbacke
 
 		txOpts, err := backend.BindOpts(ctx, address)
 		if err != nil {
-			return errors.Wrap(err, "bind opts", "address", address, "role", account.Role)
+			return errors.Wrap(err, "bind opts approve", "address", address, "role", account.Role)
 		}
 
 		tx, err := omni.Approve(txOpts, addrs.NomToken, omniBalance)
@@ -101,6 +101,11 @@ func ConvertOmni(ctx context.Context, network netconf.Network, backends ethbacke
 		_, err = backend.WaitMined(ctx, tx)
 		if err != nil {
 			return errors.Wrap(err, "wait approve mined", "address", address, "role", account.Role)
+		}
+
+		txOpts, err = backend.BindOpts(ctx, address)
+		if err != nil {
+			return errors.Wrap(err, "bind opts convert", "address", address, "role", account.Role)
 		}
 
 		tx, err = nomina.Convert(txOpts, address, omniBalance)
