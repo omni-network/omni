@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/omni-network/omni/e2e/app"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/bridge"
 	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/gasstation"
@@ -506,6 +507,16 @@ func newConvertOmniCmd(def *app.Definition) *cobra.Command {
 			}
 
 			backends := def.Backends()
+
+			// solver key is not included in backends from def, so we add it manually
+			solverKey, err := eoa.PrivateKey(ctx, network.ID, eoa.RoleSolver)
+			if err != nil {
+				return errors.Wrap(err, "solver private key")
+			}
+			_, err = backends.AddAccount(solverKey)
+			if err != nil {
+				return errors.Wrap(err, "add solver account")
+			}
 
 			return nomina.ConvertOmni(ctx, network, backends)
 		},
