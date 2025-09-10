@@ -34,7 +34,6 @@ func TestPrice(t *testing.T) {
 	omniNative := must(tokens.Native(evmchain.IDOmniDevnet))
 	l1Native := must(tokens.Native(evmchain.IDMockL1))
 	l2Native := must(tokens.Native(evmchain.IDMockL2))
-	l1OMNI := must(tokens.ByAsset(evmchain.IDMockL1, tokens.OMNI))
 	l1NOM := must(tokens.ByAsset(evmchain.IDMockL1, tokens.NOM))
 	l1USDC := must(tokens.ByAsset(evmchain.IDMockL1, tokens.USDC))
 	l2wstETH := must(tokens.ByAsset(evmchain.IDMockL2, tokens.WSTETH))
@@ -48,12 +47,6 @@ func TestPrice(t *testing.T) {
 		Price   *big.Rat // See tokenpricer.NewDevnetMock for prices
 		NoFees  bool
 	}{
-		{
-			Deposit: l1OMNI,
-			Expense: omniNative,
-			Price:   big.NewRat(75, 1),
-			NoFees:  true,
-		},
 		{
 			Deposit: l1NOM,
 			Expense: omniNative,

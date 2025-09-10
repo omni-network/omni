@@ -83,13 +83,6 @@
   "surplus": "inf",
   "target": "0 NOM"
  },
- "ethereum:OMNI": {
-  "maxSwap": "0 OMNI",
-  "min": "0 OMNI",
-  "minSwap": "0 OMNI",
-  "surplus": "inf",
-  "target": "0 OMNI"
- },
  "ethereum:USDC": {
   "maxSwap": "10000 USDC",
   "min": "50000 USDC",
@@ -167,12 +160,12 @@
   "surplus": "8 mETH",
   "target": "8 mETH"
  },
- "omni_evm:OMNI": {
-  "maxSwap": "0 OMNI",
-  "min": "0 OMNI",
-  "minSwap": "0 OMNI",
+ "omni_evm:NOM": {
+  "maxSwap": "0 NOM",
+  "min": "0 NOM",
+  "minSwap": "0 NOM",
   "surplus": "inf",
-  "target": "0 OMNI"
+  "target": "0 NOM"
  },
  "optimism:ETH": {
   "maxSwap": "5 ETH",
