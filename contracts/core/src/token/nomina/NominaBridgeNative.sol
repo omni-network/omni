@@ -47,7 +47,7 @@ contract NominaBridgeNative is NominaBridgeCommon {
     /**
      * @notice Reserved gas after transfer to write to claimable mapping if needed.
      */
-    uint64 private constant CLAIMABLE_GAS = 22_500;
+    uint64 private constant CLAIMABLE_GAS = 32_000;
 
     /**
      * @notice xcall gas limit for NominaBridgeL1.withdraw
