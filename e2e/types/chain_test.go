@@ -28,10 +28,6 @@ func TestPublicChains(t *testing.T) {
 		require.NoError(t, err)
 
 		for _, meta := range chains {
-			// TODO(zodomo): remove this once all Omni chains are migrated to NOM
-			if meta.NativeToken == tokens.OMNI {
-				continue
-			}
 			if meta.NativeToken == tokens.NOM {
 				continue
 			}

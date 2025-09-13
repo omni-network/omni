@@ -6,8 +6,8 @@ import (
 
 var (
 	gasTokenIDs = map[tokens.Asset]uint16{
-		tokens.OMNI: 1,
-		tokens.ETH:  2,
+		tokens.NOM: 1,
+		tokens.ETH: 2,
 	}
 )
 
