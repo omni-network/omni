@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Nomina (ERC-20)",
+    "address": "0x6e6F6d696e61decd6605bD4a57836c5DB6923340",
+    "symbol": "NOM",
+    "decimals": 18,
+    "chainId": 1,
+    "logoURI": "https://raw.githubusercontent.com/omni-network/omni/refs/heads/main/docs/docs/public/nom/logo.png"
+  },
+  {
+    "name": "Nomina",
+    "address": "0x0000000000000000000000000000000000000000",
+    "symbol": "NOM",
+    "decimals": 18,
+    "chainId": 166,
+    "logoURI": "https://raw.githubusercontent.com/omni-network/omni/refs/heads/main/docs/docs/public/nom/logo.png",
+    "native": true
+  }
+]
