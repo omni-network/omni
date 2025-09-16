@@ -86,13 +86,6 @@
    }
   }
  },
- "omega": {
-  "holesky": {
-   "wstETH": {
-    "min": "1 wstETH"
-   }
-  }
- },
  "staging": {
   "holesky": {
    "wstETH": {
