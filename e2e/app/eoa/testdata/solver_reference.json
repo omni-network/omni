@@ -85,12 +85,5 @@
     "min": "0 WETH"
    }
   }
- },
- "staging": {
-  "holesky": {
-   "wstETH": {
-    "min": "1 wstETH"
-   }
-  }
  }
 }
