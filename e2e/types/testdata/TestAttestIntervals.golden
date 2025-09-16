@@ -24,11 +24,6 @@
   "ephemeral_attest_interval": 50,
   "protected_attest_interval": 300
  },
- "holesky": {
-  "block_period": "12s",
-  "ephemeral_attest_interval": 50,
-  "protected_attest_interval": 300
- },
  "omni_evm": {
   "block_period": "2s",
   "ephemeral_attest_interval": 300,

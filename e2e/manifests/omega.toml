@@ -1,5 +1,5 @@
 network = "omega"
-public_chains = ["holesky","op_sepolia", "base_sepolia","arb_sepolia"]
+public_chains = ["op_sepolia", "base_sepolia","arb_sepolia"]
 
 multi_omni_evms = true
 prometheus = true
