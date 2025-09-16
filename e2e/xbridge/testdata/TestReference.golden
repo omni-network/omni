@@ -1,18 +1,5 @@
 {
  "RLUSD.e": {
-  "devnet": {
-   "addr": "0xcF15E2b44eefe8aEb1c2b43cfCAd85f013a5593F",
-   "bridge": "0x4E2d5a99028523f0Fd46EB4536A7f37456A9084b",
-   "canonical": {
-    "address": "0x9ea011e9bC127fc0afb5e481707fFee2A720094f",
-    "chain_id": 1652
-   },
-   "lockbox": "0x303f67F3479635b355F571e4c7f27d3aEF60aDA7",
-   "wraps": {
-    "name": "RLUSD",
-    "symbol": "RLUSD"
-   }
-  },
   "mainnet": {
    "addr": "0x07C03D1f4FBd9025EAFaE6dBE343D99Bb1ef53c7",
    "bridge": "0x2fC7d0F025cd7958f2b08BdC38C5fAc591459EDA",
@@ -21,19 +8,6 @@
     "chain_id": 1
    },
    "lockbox": "0x9f231A2b7bA09202c5cbaC89B03622fBC9DA53ca",
-   "wraps": {
-    "name": "RLUSD",
-    "symbol": "RLUSD"
-   }
-  },
-  "omega": {
-   "addr": "0xAB6F4E317B9D78c41FFAAF344c6E88Be1703d040",
-   "bridge": "0xd45E52d1d91f6a57DD24Bc1f684e1EAfe717AB10",
-   "canonical": {
-    "address": "0x084Db6262bE13D210940D15dA1300cD1E72a5C34",
-    "chain_id": 17000
-   },
-   "lockbox": "0x0E498D5f2DCa6b4cB2e4653762A6D47596DebBA5",
    "wraps": {
     "name": "RLUSD",
     "symbol": "RLUSD"

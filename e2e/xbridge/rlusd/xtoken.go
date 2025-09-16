@@ -44,10 +44,15 @@ func (rlusd) Canonical(ctx context.Context, networkID netconf.ID) (types.TokenDe
 		return types.TokenDeployment{}, errors.Wrap(err, "salt")
 	}
 
+	l1, ok := netconf.EthereumChainID(networkID)
+	if !ok {
+		return types.TokenDeployment{}, errors.New("no L1 chain for network")
+	}
+
 	return types.TokenDeployment{
 		Name:    wraps.Name,
 		Symbol:  wraps.Symbol,
-		ChainID: netconf.EthereumChainID(networkID),
+		ChainID: l1,
 		Address: addr,
 	}, nil
 }

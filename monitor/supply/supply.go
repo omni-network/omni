@@ -21,6 +21,10 @@ import (
 )
 
 func MonitorForever(ctx context.Context, cprov cchain.Provider, network netconf.Network, ethCls map[uint64]ethclient.Client) {
+	if _, ok := netconf.EthereumChainID(network.ID); !ok {
+		return // No L1 chain, nothing to monitor
+	}
+
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 
@@ -58,10 +62,13 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 		return errors.Wrap(err, "get addresses")
 	}
 
-	ethChainID := netconf.EthereumChainID(network.ID)
-	l1Client, ok := ethCls[ethChainID]
+	l1, ok := netconf.EthereumChainID(network.ID)
 	if !ok {
-		return errors.Wrap(err, "ethereum client")
+		return errors.New("no L1 chain for network")
+	}
+	l1Client, ok := ethCls[l1]
+	if !ok {
+		return errors.New("ethereum client")
 	}
 	l1Token, err := bindings.NewOmni(addrs.Token, l1Client)
 	if err != nil {

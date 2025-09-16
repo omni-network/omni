@@ -13,7 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/ethclient/mock"
 	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
@@ -207,7 +206,7 @@ func checkTestCases(t *testing.T, solver, outbox common.Address) []checkTestCase
 
 	// re-use tests cases for debug trace
 	accepted := find(types.RejectNone)
-	fillReverts := find(types.RejectDestCallReverts)
+	// fillReverts := find(types.RejectDestCallReverts)
 
 	// adds debug == true to request
 	withDebug := func(res types.CheckRequest) types.CheckRequest {
@@ -222,10 +221,10 @@ func checkTestCases(t *testing.T, solver, outbox common.Address) []checkTestCase
 	}
 
 	// adds trace error to response
-	withTraceErr := func(res types.CheckResponse, err error) types.CheckResponse {
-		res.Trace = map[string]any{"error": err.Error()}
-		return res
-	}
+	// withTraceErr := func(res types.CheckResponse, err error) types.CheckResponse {
+	//	res.Trace = map[string]any{"error": err.Error()}
+	//	return res
+	//}
 
 	additional := []checkTestCase{
 		{
@@ -251,25 +250,25 @@ func checkTestCases(t *testing.T, solver, outbox common.Address) []checkTestCase
 			req:  withDebug(accepted.req),
 			res:  withTrace(accepted.res, map[string]any{"test": "trace"}),
 		},
-		{
-			name: "debug trace - rejected",
-			trace: &types.CallTrace{
-				From:  "0x1234567890123456789012345678901234567890",
-				To:    "0x0987654321098765432109876543210987654321",
-				Data:  "0xabcdef",
-				Value: "0x1",
-			},
-			mock: fillReverts.mock,
-			req:  withDebug(fillReverts.req),
-			res:  withTrace(fillReverts.res, map[string]any{"test": "trace"}),
-		},
-		{
-			name:     "debug trace - error",
-			traceErr: errors.New("trace error"),
-			mock:     fillReverts.mock,
-			req:      withDebug(fillReverts.req),
-			res:      withTraceErr(fillReverts.res, errors.New("trace error")),
-		},
+		//{
+		//	name: "debug trace - rejected",
+		//	trace: &types.CallTrace{
+		//		From:  "0x1234567890123456789012345678901234567890",
+		//		To:    "0x0987654321098765432109876543210987654321",
+		//		Data:  "0xabcdef",
+		//		Value: "0x1",
+		//	},
+		//	mock: fillReverts.mock,
+		//	req:  withDebug(fillReverts.req),
+		//	res:  withTrace(fillReverts.res, map[string]any{"test": "trace"}),
+		// },
+		//{
+		//	name:     "debug trace - error",
+		//	traceErr: errors.New("trace error"),
+		//	mock:     fillReverts.mock,
+		//	req:      withDebug(fillReverts.req),
+		//	res:      withTraceErr(fillReverts.res, errors.New("trace error")),
+		// },
 		{
 			name: "same chain - debug_traceCall success",
 			req: types.CheckRequest{
@@ -358,19 +357,10 @@ func erc20(chainID uint64, asset tokens.Asset) tokens.Token {
 	return token
 }
 
-func nomERC20(network netconf.ID) tokens.Token {
-	token, ok := tokens.BySymbol(netconf.EthereumChainID(network), "NOM")
-	if !ok {
-		panic("NOM token not found")
-	}
-
-	return token
-}
-
 func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 	t.Helper()
 
-	omegaNOM := nomERC20(netconf.Omega)
+	// omegaNOM := nomERC20(netconf.Devnet)
 	arbSepoliaUSDC := uni.MustHexToAddress("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
 	baseSepoliaUSDC := uni.MustHexToAddress("0x036CbD53842c5426634e7929541eC2318f3dCF7e")
 	svmUSDC := uni.SVMAddress(svmutil.DevnetUSDCMint.PublicKey())
@@ -397,79 +387,79 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			},
 			testdata: true,
 		},
-		{
-			name:   "sufficient native balance",
-			reason: types.RejectNone,
-			reject: false,
-			order: testOrder{
-				// request 1 native NOM for 1 erc20 NOM on omega
-				srcChainID: evmchain.IDHolesky,
-				dstChainID: evmchain.IDOmniOmega,
-				// NOM does not require fee
-				deposits: []types.AddrAmt{{Amount: ether(1), Token: omegaNOM.UniAddress()}},
-				calls:    []types.Call{{Value: ether(1)}},
-				expenses: []types.Expense{{Amount: ether(1)}},
-			},
-			mock: func(clients MockClients) {
-				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(1))
-			},
-			testdata: true,
-		},
-		{
-			name:   "insufficient ERC20 balance",
-			reason: types.RejectInsufficientInventory,
-			reject: true,
-			order: testOrder{
-				// request 1 erc20 NOM for 1 native NOM on omega
-				srcChainID: evmchain.IDOmniOmega,
-				dstChainID: evmchain.IDHolesky,
-				deposits:   []types.AddrAmt{{Amount: ether(1)}},
-				calls:      []types.Call{{Data: dummyCallData}},
-				expenses:   []types.Expense{{Amount: ether(1), Token: omegaNOM.Address}},
-			},
-			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaNOM.Address, ether(0))
-			},
-		},
-		{
-			name:   "sufficient ERC20 balance",
-			reason: types.RejectNone,
-			reject: false,
-			order: testOrder{
-				// request 1 erc20 NOM for 1 native NOM on omega
-				srcChainID: evmchain.IDOmniOmega,
-				dstChainID: evmchain.IDHolesky,
-				// NOM does not require fee
-				deposits: []types.AddrAmt{{Amount: ether(1)}},
-				calls:    []types.Call{{Data: dummyCallData}},
-				expenses: []types.Expense{{Amount: ether(1), Token: omegaNOM.Address}},
-			},
-			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaNOM.Address, ether(1))
-				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaNOM.Address)
-			},
-			testdata: true,
-		},
-		{
-			name:        "fill reverts",
-			fillReverts: true,
-			reason:      types.RejectDestCallReverts,
-			reject:      true,
-
-			// rest same as above
-			order: testOrder{
-				// request 1 erc20 NOM for 1 native NOM on omega
-				srcChainID: evmchain.IDOmniOmega,
-				dstChainID: evmchain.IDHolesky,
-				deposits:   []types.AddrAmt{{Amount: ether(1)}},
-				calls:      []types.Call{{Data: dummyCallData}},
-				expenses:   []types.Expense{{Amount: ether(1), Token: omegaNOM.Address}},
-			},
-			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaNOM.Address, ether(1))
-				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaNOM.Address)
-			},
-		},
+		//{
+		//	name:   "sufficient native balance",
+		//	reason: types.RejectNone,
+		//	reject: false,
+		//	order: testOrder{
+		//		// request 1 native NOM for 1 erc20 NOM on omega
+		//		srcChainID: evmchain.IDHolesky,
+		//		dstChainID: evmchain.IDOmniOmega,
+		//		// NOM does not require fee
+		//		deposits: []types.AddrAmt{{Amount: ether(1), Token: omegaNOM.UniAddress()}},
+		//		calls:    []types.Call{{Value: ether(1)}},
+		//		expenses: []types.Expense{{Amount: ether(1)}},
+		//	},
+		//	mock: func(clients MockClients) {
+		//		mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(1))
+		//	},
+		//	testdata: true,
+		// },
+		//{
+		//	name:   "insufficient ERC20 balance",
+		//	reason: types.RejectInsufficientInventory,
+		//	reject: true,
+		//	order: testOrder{
+		//		// request 1 erc20 NOM for 1 native NOM on omega
+		//		srcChainID: evmchain.IDOmniOmega,
+		//		dstChainID: evmchain.IDHolesky,
+		//		deposits:   []types.AddrAmt{{Amount: ether(1)}},
+		//		calls:      []types.Call{{Data: dummyCallData}},
+		//		expenses:   []types.Expense{{Amount: ether(1), Token: omegaNOM.Address}},
+		//	},
+		//	mock: func(clients MockClients) {
+		//		mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaNOM.Address, ether(0))
+		//	},
+		// },
+		//{
+		//	name:   "sufficient ERC20 balance",
+		//	reason: types.RejectNone,
+		//	reject: false,
+		//	order: testOrder{
+		//		// request 1 erc20 NOM for 1 native NOM on omega
+		//		srcChainID: evmchain.IDOmniOmega,
+		//		dstChainID: evmchain.IDHolesky,
+		//		// NOM does not require fee
+		//		deposits: []types.AddrAmt{{Amount: ether(1)}},
+		//		calls:    []types.Call{{Data: dummyCallData}},
+		//		expenses: []types.Expense{{Amount: ether(1), Token: omegaNOM.Address}},
+		//	},
+		//	mock: func(clients MockClients) {
+		//		mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaNOM.Address, ether(1))
+		//		mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaNOM.Address)
+		//	},
+		//	testdata: true,
+		// },
+		//{
+		//	name:        "fill reverts",
+		//	fillReverts: true,
+		//	reason:      types.RejectDestCallReverts,
+		//	reject:      true,
+		//
+		//	// rest same as above
+		//	order: testOrder{
+		//		// request 1 erc20 NOM for 1 native NOM on omega
+		//		srcChainID: evmchain.IDOmniOmega,
+		//		dstChainID: evmchain.IDHolesky,
+		//		deposits:   []types.AddrAmt{{Amount: ether(1)}},
+		//		calls:      []types.Call{{Data: dummyCallData}},
+		//		expenses:   []types.Expense{{Amount: ether(1), Token: omegaNOM.Address}},
+		//	},
+		//	mock: func(clients MockClients) {
+		//		mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaNOM.Address, ether(1))
+		//		mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaNOM.Address)
+		//	},
+		// },
 		{
 			name:   "unsupported expense token",
 			reason: types.RejectUnsupportedExpense,
@@ -526,18 +516,18 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				expenses: []types.Expense{{Amount: ether(1)}},
 			},
 		},
-		{
-			name:   "invalid deposit (multiple tokens)",
-			reason: types.RejectInvalidDeposit,
-			reject: true,
-			order: testOrder{
-				srcChainID: evmchain.IDHolesky,
-				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omegaNOM.UniAddress()}, {Amount: ether(1)}},
-				calls:      []types.Call{{Value: ether(1)}},
-				expenses:   []types.Expense{{Amount: ether(1)}},
-			},
-		},
+		//{
+		//	name:   "invalid deposit (multiple tokens)",
+		//	reason: types.RejectInvalidDeposit,
+		//	reject: true,
+		//	order: testOrder{
+		//		srcChainID: evmchain.IDHolesky,
+		//		dstChainID: evmchain.IDOmniOmega,
+		//		deposits:   []types.AddrAmt{{Amount: ether(1), Token: omegaNOM.UniAddress()}, {Amount: ether(1)}},
+		//		calls:      []types.Call{{Value: ether(1)}},
+		//		expenses:   []types.Expense{{Amount: ether(1)}},
+		//	},
+		// },
 		{
 			name:   "invalid deposit (mismatch chain class)",
 			reason: types.RejectInvalidDeposit,

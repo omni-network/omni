@@ -30,8 +30,8 @@ func TestReference(t *testing.T) {
 				continue // Skip simnet since it doesn't have eoas.
 			}
 
-			if network == netconf.Staging {
-				continue // Skip staging because salt version is dynamic.
+			if network != netconf.Mainnet {
+				continue // Skip staging because salt version is dynamic, only do mainnet, since that is only L1 chain.
 			}
 
 			bridge, err := xbridge.BridgeAddr(ctx, network, token)

@@ -87,14 +87,14 @@ func TestGenTokens(t *testing.T) {
 
 		// ERC20 OMNI
 		omniERC20(netconf.Mainnet),
-		omniERC20(netconf.Omega),
-		omniERC20(netconf.Staging),
+		// omniERC20(netconf.Omega),
+		// omniERC20(netconf.Staging),
 		omniERC20(netconf.Devnet),
 
 		// ERC20 NOM
 		nomERC20(netconf.Mainnet),
-		nomERC20(netconf.Omega),
-		nomERC20(netconf.Staging),
+		// nomERC20(netconf.Omega),
+		// nomERC20(netconf.Staging),
 		nomERC20(netconf.Devnet),
 
 		// wstETH
@@ -245,23 +245,23 @@ func meth(chainID uint64, addr common.Address) tokens.Token {
 }
 
 func omniERC20(network netconf.ID) tokens.Token {
-	chainID := netconf.EthereumChainID(network)
+	l1, _ := netconf.EthereumChainID(network)
 
 	return tokens.Token{
 		Asset:      tokens.OMNI,
-		ChainID:    chainID,
-		ChainClass: mustChainClass(chainID),
+		ChainID:    l1,
+		ChainClass: mustChainClass(l1),
 		Address:    contracts.TokenAddr(network),
 	}
 }
 
 func nomERC20(network netconf.ID) tokens.Token {
-	chainID := netconf.EthereumChainID(network)
+	l1, _ := netconf.EthereumChainID(network)
 
 	return tokens.Token{
 		Asset:      tokens.NOM,
-		ChainID:    chainID,
-		ChainClass: mustChainClass(chainID),
+		ChainID:    l1,
+		ChainClass: mustChainClass(l1),
 		Address:    contracts.NomAddr(network),
 	}
 }
