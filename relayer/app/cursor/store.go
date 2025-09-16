@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -211,6 +212,10 @@ func (s *Store) confirmOnce(ctx context.Context) error {
 
 			var unconfirmed bool
 			for shardID, offset := range c.GetStreamOffsetsByShard() {
+				if evmchain.IsDisabled(c.GetSrcChainId()) || evmchain.IsDisabled(c.GetDstChainId()) {
+					continue // Treat disabled chains as always confirmed.
+				}
+
 				stream := xchain.StreamID{SourceChainID: c.GetSrcChainId(), DestChainID: c.GetDstChainId(), ShardID: xchain.ShardID(shardID)}
 				submitted, ok, err := s.submitCursorFunc(ctx, xchain.FinalizedRef, stream)
 				if err != nil {
