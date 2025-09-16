@@ -303,6 +303,10 @@ func (i *indexer) index(ctx context.Context, block xchain.Block) error {
 
 	// Upsert msg links
 	for _, msg := range block.Msgs {
+		if evmchain.IsDisabled(msg.DestChainID) {
+			continue // Ignore msgs to disabled chains
+		}
+
 		link, _, err := i.getLink(ctx, msg.MsgID)
 		if err != nil {
 			return err
@@ -329,6 +333,10 @@ func (i *indexer) index(ctx context.Context, block xchain.Block) error {
 
 	// Upsert receipt links
 	for _, receipt := range block.Receipts {
+		if evmchain.IsDisabled(receipt.SourceChainID) {
+			continue // Ignore receipts from disabled chains
+		}
+
 		link, _, err := i.getLink(ctx, receipt.MsgID)
 		if err != nil {
 			return err
