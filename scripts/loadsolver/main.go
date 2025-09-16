@@ -56,7 +56,10 @@ func run(ctx context.Context) error {
 		return errors.New("no mainnet")
 	}
 
-	chainID := netconf.EthereumChainID(network)
+	chainID, ok := netconf.EthereumChainID(network)
+	if !ok {
+		return errors.New("no L1 chain for network")
+	}
 
 	chain, ok := evmchain.MetadataByID(chainID)
 	if !ok {

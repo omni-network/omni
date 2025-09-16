@@ -40,7 +40,7 @@ import (
 // chainVerFromID returns the chain version to stream/process per chain ID.
 func chainVerFromID(network netconf.ID, chainID uint64) xchain.ChainVersion {
 	// For ethereum L1, we stream min2 to reduce reorg risk
-	if chainID == netconf.EthereumChainID(network) {
+	if l1, _ := netconf.EthereumChainID(network); l1 == chainID {
 		return xchain.NewChainVersion(chainID, xchain.ConfMin2)
 	}
 

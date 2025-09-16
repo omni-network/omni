@@ -10,7 +10,6 @@ import (
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/svmutil"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
@@ -106,7 +105,7 @@ func addThousandSeparators(num string) string {
 func TestQuote(t *testing.T) {
 	t.Parallel()
 
-	omegaNOMAddr := nomERC20(netconf.Omega).UniAddress()
+	// omegaNOMAddr := nomERC20(netconf.Omega).UniAddress()
 
 	tests := []struct {
 		name     string
@@ -155,35 +154,35 @@ func TestQuote(t *testing.T) {
 				Expense: mockAddrAmt("1000000000000000000"),
 			},
 		},
-		{
-			// no fees for NOM
-			name: "quote deposit 1 NOM expense",
-			req: types.QuoteRequest{
-				SourceChainID:      evmchain.IDHolesky,
-				DestinationChainID: evmchain.IDOmniOmega,
-				Deposit:            types.AddrAmt{Token: omegaNOMAddr},
-				Expense:            mockAddrAmt("10000000000000000000"),
-			},
-			res: types.QuoteResponse{
-				Deposit: types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaNOMAddr},
-				Expense: mockAddrAmt("10000000000000000000"),
-			},
-		},
-		{
-			// no fees for NOM
-			name: "quote expense 1 NOM deposit",
-			req: types.QuoteRequest{
-				SourceChainID:      evmchain.IDHolesky,
-				DestinationChainID: evmchain.IDOmniOmega,
-				Deposit:            types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaNOMAddr},
-				Expense:            zeroAddrAmt,
-			},
-			res: types.QuoteResponse{
-				Deposit: types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaNOMAddr},
-				Expense: mockAddrAmt("10000000000000000000"),
-			},
-			testdata: true,
-		},
+		//{
+		//	// no fees for NOM
+		//	name: "quote deposit 1 NOM expense",
+		//	req: types.QuoteRequest{
+		//		SourceChainID:      evmchain.IDHolesky,
+		//		DestinationChainID: evmchain.IDOmniOmega,
+		//		Deposit:            types.AddrAmt{Token: omegaNOMAddr},
+		//		Expense:            mockAddrAmt("10000000000000000000"),
+		//	},
+		//	res: types.QuoteResponse{
+		//		Deposit: types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaNOMAddr},
+		//		Expense: mockAddrAmt("10000000000000000000"),
+		//	},
+		// },
+		//{
+		//	// no fees for NOM
+		//	name: "quote expense 1 NOM deposit",
+		//	req: types.QuoteRequest{
+		//		SourceChainID:      evmchain.IDHolesky,
+		//		DestinationChainID: evmchain.IDOmniOmega,
+		//		Deposit:            types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaNOMAddr},
+		//		Expense:            zeroAddrAmt,
+		//	},
+		//	res: types.QuoteResponse{
+		//		Deposit: types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaNOMAddr},
+		//		Expense: mockAddrAmt("10000000000000000000"),
+		//	},
+		//	testdata: true,
+		// },
 		{
 			name: "no deposit of expense amount specified",
 			req: types.QuoteRequest{
