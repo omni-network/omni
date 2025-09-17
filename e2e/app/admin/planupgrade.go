@@ -18,14 +18,10 @@ import (
 )
 
 var upgradePlans = map[netconf.ID]bindings.UpgradePlan{
-	netconf.Omega: {
+	netconf.Mainnet: {
 		Name:   earhart4.UpgradeName,
-		Height: 20_128_000, // Tue 26 Aug 13pm UTC
+		Height: 21_148_000, // Mon 22 Sep 2025 12h00 (noon) UTC.
 	},
-	// netconf.Mainnet: {
-	//	Name:   drake3.UpgradeName,
-	//	Height: 12_110_000, // Thu 22 May 12pm UTC
-	// },
 }
 
 // PlanUpgrade plans the above configured network upgrade.
