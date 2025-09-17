@@ -7,6 +7,8 @@ import (
 	"net"
 	"testing"
 
+	"github.com/omni-network/omni/lib/uni"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -32,6 +34,11 @@ func RandomAddress() common.Address {
 	_, _ = rand.Read(resp[:])
 
 	return resp
+}
+
+// RandomEVMAddress returns a random 20-byte ethereum address as a uni.Address.
+func RandomEVMAddress() uni.Address {
+	return uni.EVMAddress(RandomAddress())
 }
 
 func RandomListenAddress(t *testing.T) string {
