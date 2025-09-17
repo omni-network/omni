@@ -2,7 +2,10 @@
 package uni
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 
 	"github.com/omni-network/omni/lib/errors"
 
@@ -10,6 +13,9 @@ import (
 
 	"github.com/gagliardetto/solana-go"
 )
+
+var _ sql.Scanner = (*Address)(nil)
+var _ driver.Valuer = Address{}
 
 // Kind represents the type of blockchain execution environment.
 type Kind int
@@ -67,6 +73,31 @@ func (a *Address) UnmarshalJSON(bz []byte) error {
 	}
 
 	return errors.New("invalid address format", "address", string(bz))
+}
+
+// Scan implements sql.Scanner.
+func (a *Address) Scan(src any) error {
+	if src == nil {
+		return errors.New("cannot scan NULL into Address")
+	}
+
+	switch v := src.(type) {
+	case string:
+		var err error
+		*a, err = ParseAddress(v)
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("uni address only supports string", "type", fmt.Sprintf("%T", src))
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer.
+func (a Address) Value() (driver.Value, error) {
+	return a.String(), nil
 }
 
 func EVMAddress(evm common.Address) Address {
