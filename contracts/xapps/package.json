@@ -9,8 +9,8 @@
     "forge-std": "github:foundry-rs/forge-std"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.3.0",
-    "@openzeppelin/contracts-upgradeable": "^5.3.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
     "rlusd": "github:ripple/RLUSD-Implementation",
     "createx": "github:pcaversaccio/createx",
     "solady": "^0.1.7"
