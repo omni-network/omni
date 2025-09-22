@@ -85,6 +85,6 @@ contract Mainnet_Nomina_transfer is SolverNetMainnetFixtures {
     }
 
     function _setApprovals() internal {
-        omni.approve(address(inbox), type(uint256).max);
+        nomina.approve(address(inbox), type(uint256).max);
     }
 }

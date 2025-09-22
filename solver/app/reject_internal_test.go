@@ -6,9 +6,7 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -52,18 +50,6 @@ func TestShouldReject(t *testing.T) {
 	priceFunc := unaryPrice
 
 	for _, tt := range rejectTestCases(t, solver, outbox) {
-		// TODO(zodomo): Remove this once network upgrade is complete
-		if tt.order.SourceChainID == evmchain.IDOmniMainnet {
-			tt.reject = true
-			tt.reason = types.RejectUnsupportedSrcChain
-		}
-
-		// TODO(zodomo): Remove this once network upgrade is complete
-		if tt.order.pendingData.DestinationChainID == evmchain.IDOmniMainnet {
-			tt.reject = true
-			tt.reason = types.RejectUnsupportedDestChain
-		}
-
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 
