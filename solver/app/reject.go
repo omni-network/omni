@@ -71,18 +71,6 @@ func newShouldRejector(
 			return types.RejectNone, false, err
 		}
 
-		// TODO(zodomo): Remove this once network upgrade is complete
-		if order.SourceChainID == evmchain.IDOmniMainnet {
-			return types.RejectUnsupportedSrcChain, true, newRejection(types.RejectUnsupportedSrcChain,
-				errors.New("unsupported source chain", "chain_id", order.SourceChainID))
-		}
-
-		// TODO(zodomo): Remove this once network upgrade is complete
-		if pendingData.DestinationChainID == evmchain.IDOmniMainnet {
-			return types.RejectUnsupportedDestChain, true, newRejection(types.RejectUnsupportedDestChain,
-				errors.New("unsupported destination chain", "chain_id", pendingData.DestinationChainID))
-		}
-
 		// Internal logic just return errors (convert them to rejections below)
 		err = func(ctx context.Context, order Order) error {
 			_, ok := solvernet.Provider(order.SourceChainID, pendingData.DestinationChainID)
