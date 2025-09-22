@@ -19,22 +19,10 @@ import (
 // To update SolverNet spec, update this map.
 // Then run `ensure-solvernet-spec` to apply the changes.
 var solverNetSpec = map[netconf.ID]NetworkSolverNetSpec{
-	netconf.Devnet: {Global: DefaultSolverNetSpec()},
-	netconf.Staging: {Global: SolverNetSpec{
-		PauseAll:   false,
-		PauseOpen:  true,
-		PauseClose: false,
-	}},
-	netconf.Omega: {Global: SolverNetSpec{
-		PauseAll:   false,
-		PauseOpen:  true,
-		PauseClose: false,
-	}},
-	netconf.Mainnet: {Global: SolverNetSpec{
-		PauseAll:   false,
-		PauseOpen:  true,
-		PauseClose: false,
-	}},
+	netconf.Devnet:  {Global: DefaultSolverNetSpec()},
+	netconf.Staging: {Global: DefaultSolverNetSpec()},
+	netconf.Omega:   {Global: DefaultSolverNetSpec()},
+	netconf.Mainnet: {Global: DefaultSolverNetSpec()},
 }
 
 // SolverNetSpec is the specification for the SolverNetInbox contract.
