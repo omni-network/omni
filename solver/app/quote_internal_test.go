@@ -241,7 +241,7 @@ func TestQuote(t *testing.T) {
 			},
 		},
 		{
-			name: "valid native swap (OMNI for ETH)",
+			name: "valid native swap (NOM for ETH)",
 			req: types.QuoteRequest{
 				SourceChainID:      evmchain.IDOmniMainnet,
 				DestinationChainID: evmchain.IDEthereum,
@@ -249,26 +249,26 @@ func TestQuote(t *testing.T) {
 				Expense:            mockAddrAmt("1000000000000000000"),
 			},
 			res: types.QuoteResponse{
-				Deposit: mockAddrAmt("601800000000000000000"), // Price is 3000/5 ~= 600 OMNI/ETH
+				Deposit: mockAddrAmt("45135000000000000000000"), // Price is (3000/5) * 75 ~= 45000 NOM/ETH
 				Expense: mockAddrAmt("1000000000000000000"),
 			},
 		},
 		{
-			name: "valid erc20 to native swap (base USDC for OMNI)",
+			name: "valid erc20 to native swap (base USDC for NOM)",
 			req: types.QuoteRequest{
 				SourceChainID:      evmchain.IDBase,
 				DestinationChainID: evmchain.IDOmniMainnet,
 				Deposit: types.AddrAmt{
 					Token: erc20(evmchain.IDBase, tokens.USDC).UniAddress(),
 				},
-				Expense: mockAddrAmt("1000000000000000000"),
+				Expense: mockAddrAmt("75000000000000000000"),
 			},
 			res: types.QuoteResponse{
 				Deposit: types.AddrAmt{
 					Token:  erc20(evmchain.IDBase, tokens.USDC).UniAddress(),
-					Amount: parseInt("5015000"), // Price is $5/OMNI (USDC has 6 decimals)
+					Amount: parseInt("5015000"), // Price is $0.066667/OMNI (USDC has 6 decimals)
 				},
-				Expense: mockAddrAmt("1000000000000000000"),
+				Expense: mockAddrAmt("75000000000000000000"),
 			},
 		},
 		{

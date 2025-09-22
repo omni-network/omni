@@ -172,15 +172,15 @@ func nativeRateParams(ctx context.Context, pricer tokenpricer.Pricer, srcChainID
 func destNativeRateParams(ctx context.Context, pricer tokenpricer.Pricer, srcChain evmchain.Metadata, destToken tokens.Asset,
 ) (bindings.IFeeOracleV2ToNativeRateParams, error) {
 	// conversion rate from "dest token" to "src token"
-	// ex if dest chain is ETH, and src chain is OMNI, we need to know the rate of ETH to OMNI.
+	// ex if dest chain is ETH, and src chain is NOM, we need to know the rate of ETH to NOM.
 	toNativeRate, err := conversionRate(ctx, pricer, srcChain.NativeToken, destToken)
 	if err != nil {
 		if destToken == srcChain.NativeToken {
-			toNativeRate = 1 // 1 ETH = 1 ETH || 1 OMNI = 1 OMNI
-		} else if destToken == tokens.OMNI {
-			toNativeRate = 0.0025 // 1 OMNI = 0.0025 ETH
+			toNativeRate = 1 // 1 ETH = 1 ETH || 1 NOM = 1 NOM
+		} else if destToken == tokens.NOM {
+			toNativeRate = 0.0025 // 1 NOM = 0.000033 ETH
 		} else {
-			toNativeRate = 400 // 1 ETH = 400 OMNI
+			toNativeRate = 30000 // 1 ETH = 30000 NOM
 		}
 		log.Warn(ctx, "Failed fetching conversion rate, using default", err, "src_chain", srcChain.Name, "src_token", srcChain.NativeToken, "dest_token", destToken, "to_native_rate", toNativeRate)
 	}
@@ -197,8 +197,8 @@ func destNativeRateParams(ctx context.Context, pricer tokenpricer.Pricer, srcCha
 }
 
 // conversionRate returns the conversion rate C from token F to token T, where C = price(F) / price(T).
-// Ex. We want to convert from ETH to OMNI. We need to know the what X OMNI = 1 ETH.
-// If the price of OMNI is 10, the price of ETH is 1000. The conversion rate C is price(ETH) / price(OMNI) = 1000 / 10 = 100.
+// Ex. We want to convert from ETH to NOM. We need to know the what X NOM = 1 ETH.
+// If the price of NOM is 10, the price of ETH is 1000. The conversion rate C is price(ETH) / price(NOM) = 1000 / 10 = 100.
 func conversionRate(ctx context.Context, pricer tokenpricer.Pricer, from, to tokens.Asset) (float64, error) {
 	if from == to {
 		return 1, nil
