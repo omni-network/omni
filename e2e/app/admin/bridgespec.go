@@ -22,18 +22,7 @@ var bridgeSpec = map[netconf.ID]NetworkBridgeSpec{
 	netconf.Devnet:  DefaultBridgeSpec(),
 	netconf.Staging: DefaultBridgeSpec(),
 	netconf.Omega:   DefaultBridgeSpec(),
-	netconf.Mainnet: {
-		Native: BridgeSpec{
-			PauseAll:      false,
-			PauseWithdraw: false,
-			PauseBridge:   true,
-		},
-		L1: BridgeSpec{
-			PauseAll:      false,
-			PauseWithdraw: false,
-			PauseBridge:   true,
-		},
-	},
+	netconf.Mainnet: DefaultBridgeSpec(),
 }
 
 // BridgeSpec is the specification for a bridge contract (native or L1).
