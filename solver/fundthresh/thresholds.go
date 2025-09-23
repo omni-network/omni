@@ -103,16 +103,6 @@ func Get(token tokens.Token) FundThreshold {
 
 var (
 	thresholds = map[tokens.Token]FundThreshold{
-		// NOM
-		// TODO(zodomo): Remove this later, temporarily need to get NOM from solver
-		mustToken(evmchain.IDOmniMainnet, tokens.NOM): {
-			min:     30_000_000,
-			target:  32_500_000,
-			surplus: 35_000_000,
-			minSwap: 100_000,
-			maxSwap: 1_000_000,
-		},
-
 		// ETH
 		mustToken(evmchain.IDEthereum, tokens.ETH): {
 			min:     20,
