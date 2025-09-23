@@ -17,7 +17,6 @@ import (
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
@@ -455,16 +454,6 @@ func newFundOpsFromSolverCmd(def *app.Definition) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
-			chain, ok := evmchain.MetadataByName(chainName)
-			if !ok {
-				return errors.New("unknown chain", "name", chainName)
-			}
-
-			token, ok := tokens.BySymbol(chain.ChainID, tokenSymbol)
-			if !ok {
-				return errors.New("unknown token", "symbol", tokenSymbol, "chain", chainName)
-			}
-
 			network, err := networkFromDef(ctx, *def)
 			if err != nil {
 				return errors.Wrap(err, "network from def")
@@ -478,6 +467,16 @@ func newFundOpsFromSolverCmd(def *app.Definition) *cobra.Command {
 			}
 
 			network = solvernet.AddNetwork(ctx, network, solvernet.FilterByEndpoints(endpoints))
+
+			chain, ok := network.ChainByName(chainName)
+			if !ok {
+				return errors.New("unknown chain", "name", chainName)
+			}
+
+			token, ok := tokens.BySymbol(chain.ID, tokenSymbol)
+			if !ok {
+				return errors.New("unknown token", "symbol", tokenSymbol, "chain", chainName)
+			}
 
 			return solve.FundOpsFromSolver(ctx, network, endpoints, token, token.F64ToAmt(amount))
 		},
