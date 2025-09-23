@@ -161,11 +161,11 @@
   "target": "8 mETH"
  },
  "omni_evm:NOM": {
-  "maxSwap": "0 NOM",
-  "min": "0 NOM",
-  "minSwap": "0 NOM",
-  "surplus": "inf",
-  "target": "0 NOM"
+  "maxSwap": "1000000 NOM",
+  "min": "30000000 NOM",
+  "minSwap": "100000 NOM",
+  "surplus": "35000000 NOM",
+  "target": "32500000 NOM"
  },
  "optimism:ETH": {
   "maxSwap": "5 ETH",

@@ -65,7 +65,7 @@
   },
   "omni_evm": {
    "NOM": {
-    "min": "0 NOM"
+    "min": "30000000 NOM"
    }
   },
   "optimism": {
