@@ -30,7 +30,7 @@ require (
 	github.com/fragmetric-labs/solana-anchor-go v1.2.0
 	github.com/gagliardetto/binary v0.8.0
 	github.com/gagliardetto/gofuzz v1.2.2
-	github.com/gagliardetto/solana-go v1.13.0
+	github.com/gagliardetto/solana-go v1.14.0
 	github.com/gagliardetto/treeout v0.1.4
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/go-cmp v0.7.0
