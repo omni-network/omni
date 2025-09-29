@@ -6,14 +6,5 @@
     "decimals": 18,
     "chainId": 1,
     "logoURI": "https://raw.githubusercontent.com/omni-network/omni/refs/heads/main/docs/docs/public/img/logo.png"
-  },
-  {
-    "name": "Omni Network",
-    "address": "0x0000000000000000000000000000000000000000",
-    "symbol": "OMNI",
-    "decimals": 18,
-    "chainId": 166,
-    "logoURI": "https://raw.githubusercontent.com/omni-network/omni/refs/heads/main/docs/docs/public/img/logo.png",
-    "native": true
   }
 ]
