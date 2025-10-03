@@ -9,64 +9,62 @@ importers:
   .:
     dependencies:
       '@openzeppelin/contracts':
-        specifier: ^5.3.0
-        version: 5.3.0
+        specifier: ^5.4.0
+        version: 5.4.0
       '@openzeppelin/contracts-upgradeable':
-        specifier: ^5.3.0
-        version: 5.3.0(@openzeppelin/contracts@5.3.0)
+        specifier: ^5.4.0
+        version: 5.4.0(@openzeppelin/contracts@5.4.0)
       createx:
         specifier: github:pcaversaccio/createx
-        version: https://codeload.github.com/pcaversaccio/createx/tar.gz/ff43c668db7381216ce4e0059ff44ac0d119bfd6
+        version: git+https://git@github.com:pcaversaccio/createx.git#27d406819bfc5ec310a429b07857898f410b7293
       rlusd:
         specifier: github:ripple/RLUSD-Implementation
-        version: RLUSD-Implementation@https://codeload.github.com/ripple/RLUSD-Implementation/tar.gz/07a27d74863a22f6ad403b5a9f8bb3aea76e05eb
+        version: RLUSD-Implementation@git+https://git@github.com:ripple/RLUSD-Implementation.git#fd6e77b794250e764a7ae39b1a59445759ab8c09
       solady:
         specifier: ^0.1.7
         version: 0.1.8
     devDependencies:
       forge-std:
         specifier: github:foundry-rs/forge-std
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/2b59872eee0b8088ddcade39fe8c041e17bb79c0
+        version: git+https://git@github.com:foundry-rs/forge-std.git#551a2d30d7fecba7092ab45a587b5268149a48fb
 
 packages:
 
-  '@openzeppelin/contracts-upgradeable@5.3.0':
-    resolution: {integrity: sha512-yVzSSyTMWO6rapGI5tuqkcLpcGGXA0UA1vScyV5EhE5yw8By3Ewex9rDUw8lfVw0iTkvR/egjfcW5vpk03lqZg==}
+  '@openzeppelin/contracts-upgradeable@5.4.0':
+    resolution: {integrity: sha512-STJKyDzUcYuB35Zub1JpWW58JxvrFFVgQ+Ykdr8A9PGXgtq/obF5uoh07k2XmFyPxfnZdPdBdhkJ/n2YxJ87HQ==}
     peerDependencies:
-      '@openzeppelin/contracts': 5.3.0
+      '@openzeppelin/contracts': 5.4.0
 
-  '@openzeppelin/contracts@5.3.0':
-    resolution: {integrity: sha512-zj/KGoW7zxWUE8qOI++rUM18v+VeLTTzKs/DJFkSzHpQFPD/jKKF0TrMxBfGLl3kpdELCNccvB3zmofSzm4nlA==}
+  '@openzeppelin/contracts@5.4.0':
+    resolution: {integrity: sha512-eCYgWnLg6WO+X52I16TZt8uEjbtdkgLC0SUX/xnAksjjrQI4Xfn4iBRoI5j55dmlOhDv1Y7BoR3cU7e3WWhC6A==}
 
-  RLUSD-Implementation@https://codeload.github.com/ripple/RLUSD-Implementation/tar.gz/07a27d74863a22f6ad403b5a9f8bb3aea76e05eb:
-    resolution: {tarball: https://codeload.github.com/ripple/RLUSD-Implementation/tar.gz/07a27d74863a22f6ad403b5a9f8bb3aea76e05eb}
+  RLUSD-Implementation@git+https://git@github.com:ripple/RLUSD-Implementation.git#fd6e77b794250e764a7ae39b1a59445759ab8c09:
+    resolution: {commit: fd6e77b794250e764a7ae39b1a59445759ab8c09, repo: git@github.com:ripple/RLUSD-Implementation.git, type: git}
     version: 0.0.0
 
-  createx@https://codeload.github.com/pcaversaccio/createx/tar.gz/ff43c668db7381216ce4e0059ff44ac0d119bfd6:
-    resolution: {tarball: https://codeload.github.com/pcaversaccio/createx/tar.gz/ff43c668db7381216ce4e0059ff44ac0d119bfd6}
+  createx@git+https://git@github.com:pcaversaccio/createx.git#27d406819bfc5ec310a429b07857898f410b7293:
+    resolution: {commit: 27d406819bfc5ec310a429b07857898f410b7293, repo: git@github.com:pcaversaccio/createx.git, type: git}
     version: 1.0.0
 
-
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/2b59872eee0b8088ddcade39fe8c041e17bb79c0:
-    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/2b59872eee0b8088ddcade39fe8c041e17bb79c0}
-    version: 1.9.4
+  forge-std@git+https://git@github.com:foundry-rs/forge-std.git#551a2d30d7fecba7092ab45a587b5268149a48fb:
+    resolution: {commit: 551a2d30d7fecba7092ab45a587b5268149a48fb, repo: git@github.com:foundry-rs/forge-std.git, type: git}
+    version: 1.10.0
 
   solady@0.1.8:
     resolution: {integrity: sha512-r7qU0DbNjnT8NRwTyKkAmmC9iVoSQq3UXh6KEZjVbKYnjeH9wnYaSrimxocXPSR+o3ddWtzbtoGBT+KyDxxN7g==}
 
 snapshots:
 
-  '@openzeppelin/contracts-upgradeable@5.3.0(@openzeppelin/contracts@5.3.0)':
+  '@openzeppelin/contracts-upgradeable@5.4.0(@openzeppelin/contracts@5.4.0)':
     dependencies:
-      '@openzeppelin/contracts': 5.3.0
+      '@openzeppelin/contracts': 5.4.0
 
-  '@openzeppelin/contracts@5.3.0': {}
+  '@openzeppelin/contracts@5.4.0': {}
 
-  RLUSD-Implementation@https://codeload.github.com/ripple/RLUSD-Implementation/tar.gz/07a27d74863a22f6ad403b5a9f8bb3aea76e05eb: {}
+  RLUSD-Implementation@git+https://git@github.com:ripple/RLUSD-Implementation.git#fd6e77b794250e764a7ae39b1a59445759ab8c09: {}
 
-  createx@https://codeload.github.com/pcaversaccio/createx/tar.gz/ff43c668db7381216ce4e0059ff44ac0d119bfd6: {}
+  createx@git+https://git@github.com:pcaversaccio/createx.git#27d406819bfc5ec310a429b07857898f410b7293: {}
 
-
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/2b59872eee0b8088ddcade39fe8c041e17bb79c0: {}
+  forge-std@git+https://git@github.com:foundry-rs/forge-std.git#551a2d30d7fecba7092ab45a587b5268149a48fb: {}
 
   solady@0.1.8: {}
