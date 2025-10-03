@@ -9,7 +9,7 @@
       "forge-std": "github:foundry-rs/forge-std"
     },
     "dependencies": {
-      "solady": "github:vectorized/solady",
+      "solady": "^0.1.26",
       "@openzeppelin-v4/contracts": "npm:@openzeppelin/contracts@4.9.6"
     }
   }
