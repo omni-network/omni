@@ -12,8 +12,8 @@ importers:
         specifier: npm:@openzeppelin/contracts@4.9.6
         version: '@openzeppelin/contracts@4.9.6'
       solady:
-        specifier: github:vectorized/solady
-        version: https://codeload.github.com/vectorized/solady/tar.gz/834bbc4fd366ca8bce8c532a0e3b34eca6be709c
+        specifier: ^0.1.26
+        version: 0.1.26
     devDependencies:
       forge-std:
         specifier: github:foundry-rs/forge-std
@@ -28,9 +28,8 @@ packages:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/0c71116a218268ee8c0157be8efcb13af0f7beaf}
     version: 1.10.0
 
-  solady@https://codeload.github.com/vectorized/solady/tar.gz/834bbc4fd366ca8bce8c532a0e3b34eca6be709c:
-    resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/834bbc4fd366ca8bce8c532a0e3b34eca6be709c}
-    version: 0.1.24
+  solady@0.1.26:
+    resolution: {integrity: sha512-dhGr/ptJFdea/1KE6xgqgwEdbMhUiSfRc6A+jLeltPe16zyt9qtED3PElIBVRnzEmUO5aZTjKVAr6SlqXBBcIw==}
 
 snapshots:
 
@@ -38,4 +37,4 @@ snapshots:
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/0c71116a218268ee8c0157be8efcb13af0f7beaf: {}
 
-  solady@https://codeload.github.com/vectorized/solady/tar.gz/834bbc4fd366ca8bce8c532a0e3b34eca6be709c: {}
+  solady@0.1.26: {}
