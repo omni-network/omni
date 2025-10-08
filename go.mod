@@ -61,7 +61,7 @@ require (
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b
 	golang.org/x/sync v0.17.0
 	golang.org/x/tools v0.37.0
-	google.golang.org/grpc v1.75.1
+	google.golang.org/grpc v1.76.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1
 	google.golang.org/protobuf v1.36.10
 )
@@ -176,7 +176,7 @@ require (
 	github.com/garslo/gogen v0.0.0-20170306192744-1d203ffc1f61 // indirect
 	github.com/getsentry/sentry-go v0.27.0 // indirect
 	github.com/go-chi/chi/v5 v5.2.3 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.2 // indirect
 	github.com/go-kit/kit v0.13.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
