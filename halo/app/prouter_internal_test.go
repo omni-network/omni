@@ -257,6 +257,24 @@ func TestVerifyTx(t *testing.T) {
 			Error: "extension options not empty",
 		},
 		{
+			Name: "proto tx auth info nil",
+			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
+			Callback: func(b client.TxBuilder) {
+				ptx := b.(protoTxProvider).GetProtoTx()
+				ptx.AuthInfo = nil
+			},
+			Error: "proto tx auth info is nil",
+		},
+		{
+			Name: "proto tx auth info fee nil",
+			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
+			Callback: func(b client.TxBuilder) {
+				ptx := b.(protoTxProvider).GetProtoTx()
+				ptx.AuthInfo.Fee = nil
+			},
+			Error: "proto tx auth info fee is nil",
+		},
+		{
 			Name: "auth info tip",
 			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
 			Callback: func(b client.TxBuilder) {

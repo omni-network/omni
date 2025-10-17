@@ -113,6 +113,8 @@ func makeProcessProposalHandler(router *baseapp.MsgServiceRouter, txConfig clien
 }
 
 // verifyTX ensures a transaction is empty of all signing fields.
+//
+//nolint:gocyclo // Just lots of checks.
 func verifyTX(tx sdk.Tx) error {
 	if tx == nil {
 		return errors.New("nil tx")
@@ -121,6 +123,24 @@ func verifyTX(tx sdk.Tx) error {
 	stx, ok := tx.(signing.Tx)
 	if !ok {
 		return errors.New("not a signing tx")
+	}
+
+	// Convert to actual proto and verify fields explicitly.
+	hasProtoTx, ok := tx.(protoTxProvider)
+	if !ok {
+		return errors.New("tx does not implement protoTxProvider")
+	}
+
+	// Verify basic structure
+	ptx := hasProtoTx.GetProtoTx()
+	if ptx == nil {
+		return errors.New("proto tx is nil")
+	} else if ptx.AuthInfo == nil {
+		return errors.New("proto tx auth info is nil")
+	} else if ptx.AuthInfo.Fee == nil {
+		return errors.New("proto tx auth info fee is nil")
+	} else if ptx.Body == nil {
+		return errors.New("proto tx body is nil")
 	}
 
 	const addrLen = 20
@@ -183,13 +203,6 @@ func verifyTX(tx sdk.Tx) error {
 		return errors.New("msgs v2 count mismatch")
 	}
 
-	// Convert to actual proto and verify fieds explicitly.
-	hasProtoTx, ok := tx.(protoTxProvider)
-	if !ok {
-		return errors.New("tx does not implement protoTxProvider")
-	}
-
-	ptx := hasProtoTx.GetProtoTx()
 	if len(ptx.GetSignatures()) != 0 { //nolint:nestif // Multiple checks are needed
 		return errors.New("proto tx signatures not empty")
 	} else if ptx.AuthInfo.Tip != nil {
