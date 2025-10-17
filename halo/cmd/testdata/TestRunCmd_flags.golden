@@ -38,7 +38,7 @@
   "Genesis": ""
  },
  "Comet": {
-  "Version": "0.38.17",
+  "Version": "0.38.19",
   "RootDir": "foo",
   "ProxyApp": "",
   "Moniker": "testmoniker",
