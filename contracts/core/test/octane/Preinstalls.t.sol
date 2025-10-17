@@ -74,16 +74,13 @@ contract Preinstalls_Test is Test, AllocPredeploys {
     function test_multiCall3_aggregate_succeeds() public {
         IMultiCall3.Call[] memory calls = new IMultiCall3.Call[](3);
         calls[0] = IMultiCall3.Call({
-            target: Preinstalls.MultiCall3,
-            callData: abi.encodeWithSelector(IMultiCall3.getBlockNumber.selector)
+            target: Preinstalls.MultiCall3, callData: abi.encodeWithSelector(IMultiCall3.getBlockNumber.selector)
         });
         calls[1] = IMultiCall3.Call({
-            target: Preinstalls.MultiCall3,
-            callData: abi.encodeWithSelector(IMultiCall3.getLastBlockHash.selector)
+            target: Preinstalls.MultiCall3, callData: abi.encodeWithSelector(IMultiCall3.getLastBlockHash.selector)
         });
         calls[2] = IMultiCall3.Call({
-            target: Preinstalls.MultiCall3,
-            callData: abi.encodeWithSelector(IMultiCall3.getChainId.selector)
+            target: Preinstalls.MultiCall3, callData: abi.encodeWithSelector(IMultiCall3.getChainId.selector)
         });
         (, bytes[] memory returnData) = IMultiCall3(Preinstalls.MultiCall3).aggregate(calls);
 
@@ -110,12 +107,10 @@ contract Preinstalls_Test is Test, AllocPredeploys {
 
         // Calls 1 and 2 are to view functions on Safe_v130 and SafeL2_v130 respectively
         calls[1] = IMultiCall3.Call({
-            target: Preinstalls.Safe_v130,
-            callData: abi.encodeWithSelector(ISafe_v130.getChainId.selector)
+            target: Preinstalls.Safe_v130, callData: abi.encodeWithSelector(ISafe_v130.getChainId.selector)
         });
         calls[2] = IMultiCall3.Call({
-            target: Preinstalls.SafeL2_v130,
-            callData: abi.encodeWithSelector(ISafeL2_v130.domainSeparator.selector)
+            target: Preinstalls.SafeL2_v130, callData: abi.encodeWithSelector(ISafeL2_v130.domainSeparator.selector)
         });
 
         IMultiCall3.Result[] memory returnData = IMultiCall3(Preinstalls.MultiCall3).tryAggregate(true, calls);

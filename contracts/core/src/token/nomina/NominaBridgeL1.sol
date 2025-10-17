@@ -103,9 +103,9 @@ contract NominaBridgeL1 is NominaBridgeCommon {
         );
         require(NOMINA.transferFrom(payor, address(this), amount), "NominaBridge: transfer failed");
 
-        portal.xcall{ value: msg.value }(
-            omniChainId, ConfLevel.Finalized, Predeploys.NominaBridgeNative, xcalldata, XCALL_WITHDRAW_GAS_LIMIT
-        );
+        portal.xcall{
+            value: msg.value
+        }(omniChainId, ConfLevel.Finalized, Predeploys.NominaBridgeNative, xcalldata, XCALL_WITHDRAW_GAS_LIMIT);
 
         emit Bridge(payor, to, amount);
     }

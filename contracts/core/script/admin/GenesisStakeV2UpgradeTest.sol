@@ -3,7 +3,9 @@ pragma solidity 0.8.24;
 
 import { GenesisStakeV2 } from "src/token/GenesisStakeV2.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
 import { Test } from "forge-std/Test.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";

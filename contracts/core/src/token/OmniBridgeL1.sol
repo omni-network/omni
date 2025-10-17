@@ -90,9 +90,9 @@ contract OmniBridgeL1 is OmniBridgeCommon {
         );
         require(token.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
 
-        omni.xcall{ value: msg.value }(
-            omniChainId, ConfLevel.Finalized, Predeploys.OmniBridgeNative, xcalldata, XCALL_WITHDRAW_GAS_LIMIT
-        );
+        omni.xcall{
+            value: msg.value
+        }(omniChainId, ConfLevel.Finalized, Predeploys.OmniBridgeNative, xcalldata, XCALL_WITHDRAW_GAS_LIMIT);
 
         emit Bridge(payor, to, amount);
     }

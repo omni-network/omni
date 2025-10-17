@@ -104,7 +104,9 @@ contract OmniPortal_xcall_Test is Base {
 
         vm.expectRevert("OmniPortal: unsupported shard");
         vm.chainId(thisChainId);
-        portal.xcall{ value: 10 ether }(
+        portal.xcall{
+            value: 10 ether
+        }(
             xmsg.destChainId,
             2, // not added in MockXRegistryReplica, Finalized == 1 and Latest == 4
             xmsg.to,

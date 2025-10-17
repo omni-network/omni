@@ -59,10 +59,7 @@ contract Omega_Nomina_transfer is SolverNetOmegaFixtures {
 
         SolverNet.Call[] memory call = new SolverNet.Call[](1);
         call[0] = SolverNet.Call({
-            target: recipient != address(0) ? recipient : msg.sender,
-            selector: bytes4(""),
-            value: amount,
-            params: ""
+            target: recipient != address(0) ? recipient : msg.sender, selector: bytes4(""), value: amount, params: ""
         });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({

@@ -35,9 +35,9 @@ contract SolverNet_E2E_Test is TestBase {
         fundSolver(orderData, fillFee);
 
         vm.startPrank(solver);
-        outbox.fill{ value: defaultAmount + fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: defaultAmount + fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
         vm.stopPrank();
 
         vm.chainId(srcChainId);
@@ -92,9 +92,9 @@ contract SolverNet_E2E_Test is TestBase {
         fundSolver(orderData, fillFee);
 
         vm.startPrank(solver);
-        outbox.fill{ value: fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
         vm.stopPrank();
 
         vm.chainId(srcChainId);
@@ -150,9 +150,9 @@ contract SolverNet_E2E_Test is TestBase {
         fundSolver(orderData, fillFee);
 
         vm.startPrank(solver);
-        outbox.fill{ value: defaultAmount + fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: defaultAmount + fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
         vm.stopPrank();
 
         vm.chainId(srcChainId);
@@ -209,9 +209,9 @@ contract SolverNet_E2E_Test is TestBase {
         fundSolver(orderData, fillFee);
 
         vm.startPrank(solver);
-        outbox.fill{ value: fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
         vm.stopPrank();
 
         vm.chainId(srcChainId);
@@ -271,9 +271,9 @@ contract SolverNet_E2E_Test is TestBase {
         fundSolver(orderData, fillFee);
 
         vm.startPrank(solver);
-        outbox.fill{ value: defaultAmount + fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: defaultAmount + fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
         vm.stopPrank();
 
         vm.chainId(srcChainId);
@@ -331,9 +331,9 @@ contract SolverNet_E2E_Test is TestBase {
         fundSolver(orderData, fillFee);
 
         vm.prank(solver);
-        outbox.fill{ value: defaultAmount + fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: defaultAmount + fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
 
         vm.prank(solver);
         inbox.claim(resolvedOrder.orderId, solver);

@@ -78,7 +78,9 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      */
     modifier onlyBridge() {
         if (msg.sender == address(omni)) {
-            if (_routes[xmsg.sourceChainId].bridge != xmsg.sender) revert Unauthorized(xmsg.sourceChainId, xmsg.sender);
+            if (_routes[xmsg.sourceChainId].bridge != xmsg.sender) {
+                revert Unauthorized(xmsg.sourceChainId, xmsg.sender);
+            }
         } else {
             revert Unauthorized(uint64(block.chainid), msg.sender);
         }

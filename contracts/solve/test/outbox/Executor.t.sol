@@ -127,9 +127,9 @@ contract SolverNet_Outbox_Executor_Test is TestBase {
         address lstToken = address(lst.token());
         vm.deal(address(executor), 1 ether);
         vm.prank(address(executor));
-        executor.executeAndTransfer{ value: 1 ether }(
-            lstToken, user, address(lst), abi.encodeWithSelector(MockLST.deposit.selector)
-        );
+        executor.executeAndTransfer{
+            value: 1 ether
+        }(lstToken, user, address(lst), abi.encodeWithSelector(MockLST.deposit.selector));
         assertEq(lst.token().balanceOf(user), 1 ether, "user should have received 1 ether of the LST from executor");
     }
 

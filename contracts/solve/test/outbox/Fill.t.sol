@@ -137,9 +137,9 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         }
 
         vm.prank(solver);
-        outbox.fill{ value: defaultAmount + fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: defaultAmount + fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
 
         assertEq(address(outbox).balance, 0, "outbox native balance after");
         assertEq(address(outbox.executor()).balance, 0, "executor native balance after");
@@ -178,9 +178,9 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         }
 
         vm.prank(solver);
-        outbox.fill{ value: fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
 
         assertEq(token2.balanceOf(address(outbox)), 0, "outbox token2 balance after");
         assertEq(token2.balanceOf(address(outbox.executor())), 0, "executor token2 balance after");
@@ -220,9 +220,9 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         }
 
         vm.prank(solver);
-        outbox.fill{ value: defaultAmount + fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: defaultAmount + fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
 
         assertEq(address(outbox).balance, 0, "outbox native balance after");
         assertEq(address(outbox.executor()).balance, 0, "executor native balance after");
@@ -260,9 +260,9 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         }
 
         vm.prank(solver);
-        outbox.fill{ value: defaultAmount + (fillFee * 2) }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: defaultAmount + (fillFee * 2)
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
 
         assertEq(address(outbox).balance, 0, "outbox native balance after");
         assertEq(address(outbox.executor()).balance, 0, "executor native balance after");
@@ -302,9 +302,9 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         }
 
         vm.prank(solver);
-        outbox.fill{ value: fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
 
         assertEq(token2.balanceOf(address(outbox)), 0, "outbox token2 balance after");
         assertEq(token2.balanceOf(address(outbox.executor())), 0, "executor token2 balance after");
@@ -376,9 +376,9 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         }
 
         vm.prank(solver);
-        outbox.fill{ value: fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
 
         assertEq(token2.balanceOf(address(outbox)), 0, "outbox token2 balance after");
         assertEq(token2.balanceOf(address(outbox.executor())), 0, "executor token2 balance after");
@@ -420,9 +420,9 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         }
 
         vm.prank(solver);
-        outbox.fill{ value: fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
 
         assertEq(token2.balanceOf(address(outbox)), 0, "outbox token2 balance after");
         assertEq(token2.balanceOf(address(outbox.executor())), 0, "executor token2 balance after");
@@ -464,9 +464,9 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         }
 
         vm.prank(solver);
-        outbox.fill{ value: fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
+        outbox.fill{
+            value: fillFee
+        }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver));
 
         assertEq(token2.balanceOf(address(outbox)), 0, "outbox token2 balance after");
         assertEq(token2.balanceOf(address(outbox.executor())), 0, "executor token2 balance after");

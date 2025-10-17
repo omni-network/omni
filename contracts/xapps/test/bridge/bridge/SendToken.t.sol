@@ -125,10 +125,7 @@ contract SendTokenTest is TestBase {
             value: INITIAL_USER_BALANCE
         });
         _assertBalances({
-            addr: user,
-            tokenUserBal: 0,
-            tokenLockboxBal: INITIAL_USER_BALANCE,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: 0, tokenLockboxBal: INITIAL_USER_BALANCE, wrapperUserBal: INITIAL_USER_BALANCE
         });
     }
 
@@ -136,10 +133,7 @@ contract SendTokenTest is TestBase {
         vm.prank(user);
         lockbox.deposit(INITIAL_USER_BALANCE);
         _assertBalances({
-            addr: user,
-            tokenUserBal: 0,
-            tokenLockboxBal: INITIAL_USER_BALANCE,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: 0, tokenLockboxBal: INITIAL_USER_BALANCE, wrapperUserBal: INITIAL_USER_BALANCE
         });
 
         mockBridge({
@@ -153,10 +147,7 @@ contract SendTokenTest is TestBase {
             value: INITIAL_USER_BALANCE
         });
         _assertBalances({
-            addr: user,
-            tokenUserBal: 0,
-            tokenLockboxBal: INITIAL_USER_BALANCE,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: 0, tokenLockboxBal: INITIAL_USER_BALANCE, wrapperUserBal: INITIAL_USER_BALANCE
         });
     }
 
@@ -164,10 +155,7 @@ contract SendTokenTest is TestBase {
         vm.prank(user);
         lockbox.deposit(INITIAL_USER_BALANCE);
         _assertBalances({
-            addr: user,
-            tokenUserBal: 0,
-            tokenLockboxBal: INITIAL_USER_BALANCE,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: 0, tokenLockboxBal: INITIAL_USER_BALANCE, wrapperUserBal: INITIAL_USER_BALANCE
         });
 
         mockBridge({
@@ -195,20 +183,14 @@ contract SendTokenTest is TestBase {
             value: INITIAL_USER_BALANCE
         });
         _assertBalances({
-            addr: user,
-            tokenUserBal: 0,
-            tokenLockboxBal: INITIAL_USER_BALANCE,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: 0, tokenLockboxBal: INITIAL_USER_BALANCE, wrapperUserBal: INITIAL_USER_BALANCE
         });
 
         vm.startPrank(admin);
         wrapper.grantRole(wrapper.MINTER_ROLE(), admin);
         wrapper.mint(user, INITIAL_USER_BALANCE);
         _assertBalances({
-            addr: user,
-            tokenUserBal: 0,
-            tokenLockboxBal: INITIAL_USER_BALANCE,
-            wrapperUserBal: INITIAL_USER_BALANCE * 2
+            addr: user, tokenUserBal: 0, tokenLockboxBal: INITIAL_USER_BALANCE, wrapperUserBal: INITIAL_USER_BALANCE * 2
         });
         vm.stopPrank();
 
@@ -223,10 +205,7 @@ contract SendTokenTest is TestBase {
             value: INITIAL_USER_BALANCE
         });
         _assertBalances({
-            addr: user,
-            tokenUserBal: INITIAL_USER_BALANCE,
-            tokenLockboxBal: 0,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: INITIAL_USER_BALANCE, tokenLockboxBal: 0, wrapperUserBal: INITIAL_USER_BALANCE
         });
 
         mockBridge({
@@ -240,10 +219,7 @@ contract SendTokenTest is TestBase {
             value: INITIAL_USER_BALANCE
         });
         _assertBalances({
-            addr: user,
-            tokenUserBal: INITIAL_USER_BALANCE,
-            tokenLockboxBal: 0,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: INITIAL_USER_BALANCE, tokenLockboxBal: 0, wrapperUserBal: INITIAL_USER_BALANCE
         });
     }
 
@@ -259,20 +235,14 @@ contract SendTokenTest is TestBase {
             value: INITIAL_USER_BALANCE
         });
         _assertBalances({
-            addr: user,
-            tokenUserBal: 0,
-            tokenLockboxBal: INITIAL_USER_BALANCE,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: 0, tokenLockboxBal: INITIAL_USER_BALANCE, wrapperUserBal: INITIAL_USER_BALANCE
         });
 
         vm.startPrank(admin);
         wrapper.grantRole(wrapper.MINTER_ROLE(), admin);
         wrapper.mint(user, INITIAL_USER_BALANCE);
         _assertBalances({
-            addr: user,
-            tokenUserBal: 0,
-            tokenLockboxBal: INITIAL_USER_BALANCE,
-            wrapperUserBal: INITIAL_USER_BALANCE * 2
+            addr: user, tokenUserBal: 0, tokenLockboxBal: INITIAL_USER_BALANCE, wrapperUserBal: INITIAL_USER_BALANCE * 2
         });
         vm.stopPrank();
 
@@ -287,10 +257,7 @@ contract SendTokenTest is TestBase {
             value: INITIAL_USER_BALANCE * 2
         });
         _assertBalances({
-            addr: user,
-            tokenUserBal: 0,
-            tokenLockboxBal: INITIAL_USER_BALANCE,
-            wrapperUserBal: INITIAL_USER_BALANCE * 2
+            addr: user, tokenUserBal: 0, tokenLockboxBal: INITIAL_USER_BALANCE, wrapperUserBal: INITIAL_USER_BALANCE * 2
         });
     }
 
