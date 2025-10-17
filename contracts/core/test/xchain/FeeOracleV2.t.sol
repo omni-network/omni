@@ -37,41 +37,21 @@ contract FeeOracleV2_Test is Test {
 
         IFeeOracleV2.FeeParams[] memory feeParams = new IFeeOracleV2.FeeParams[](3);
         feeParams[0] = IFeeOracleV2.FeeParams({
-            gasToken: gasTokenA,
-            baseGasLimit: 100_000,
-            chainId: chainAId,
-            gasPrice: 2 gwei,
-            dataCostId: dataCostAId
+            gasToken: gasTokenA, baseGasLimit: 100_000, chainId: chainAId, gasPrice: 2 gwei, dataCostId: dataCostAId
         });
         feeParams[1] = IFeeOracleV2.FeeParams({
-            gasToken: gasTokenB,
-            baseGasLimit: 100_000,
-            chainId: chainBId,
-            gasPrice: 4 gwei,
-            dataCostId: dataCostBId
+            gasToken: gasTokenB, baseGasLimit: 100_000, chainId: chainBId, gasPrice: 4 gwei, dataCostId: dataCostBId
         });
         feeParams[2] = IFeeOracleV2.FeeParams({
-            gasToken: gasTokenA,
-            baseGasLimit: 100_000,
-            chainId: chainCId,
-            gasPrice: 6 gwei,
-            dataCostId: dataCostBId
+            gasToken: gasTokenA, baseGasLimit: 100_000, chainId: chainCId, gasPrice: 6 gwei, dataCostId: dataCostBId
         });
 
         IFeeOracleV2.DataCostParams[] memory dataCostParams = new IFeeOracleV2.DataCostParams[](2);
         dataCostParams[0] = IFeeOracleV2.DataCostParams({
-            gasToken: gasTokenA,
-            baseBytes: 100,
-            id: dataCostAId,
-            gasPrice: 1 gwei,
-            gasPerByte: 1e2
+            gasToken: gasTokenA, baseBytes: 100, id: dataCostAId, gasPrice: 1 gwei, gasPerByte: 1e2
         });
         dataCostParams[1] = IFeeOracleV2.DataCostParams({
-            gasToken: gasTokenB,
-            baseBytes: 200,
-            id: dataCostBId,
-            gasPrice: 2 gwei,
-            gasPerByte: 2e2
+            gasToken: gasTokenB, baseBytes: 200, id: dataCostBId, gasPrice: 2 gwei, gasPerByte: 2e2
         });
 
         IFeeOracleV2.ToNativeRateParams[] memory toNativeRateParams = new IFeeOracleV2.ToNativeRateParams[](2);
@@ -307,13 +287,11 @@ contract FeeOracleV2_Test is Test {
         IFeeOracleV2.ToNativeRateParams[] memory toNativeRateParams = new IFeeOracleV2.ToNativeRateParams[](3);
 
         toNativeRateParams[0] = IFeeOracleV2.ToNativeRateParams({
-            gasToken: gasTokenA,
-            nativeRate: feeOracle.tokenToNativeRate(gasTokenA) + 1
+            gasToken: gasTokenA, nativeRate: feeOracle.tokenToNativeRate(gasTokenA) + 1
         });
 
         toNativeRateParams[1] = IFeeOracleV2.ToNativeRateParams({
-            gasToken: gasTokenB,
-            nativeRate: feeOracle.tokenToNativeRate(gasTokenB) + 2
+            gasToken: gasTokenB, nativeRate: feeOracle.tokenToNativeRate(gasTokenB) + 2
         });
 
         toNativeRateParams[2] = IFeeOracleV2.ToNativeRateParams({ gasToken: 3, nativeRate: 3e18 });

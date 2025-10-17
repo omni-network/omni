@@ -430,7 +430,7 @@ contract SolverNetOutbox is
                 callsGas += 5000 + (FixedPointMathLib.divUp(call.params.length + 32, 32) * 2500);
                 // Plus memory expansion costs: 3 gas per 32 bytes + bytes^2 / 524288
                 callsGas += (3 * FixedPointMathLib.divUp(paramsLength, 32))
-                    + FixedPointMathLib.mulDivUp(paramsLength, paramsLength, 524_288);
+                + FixedPointMathLib.mulDivUp(paramsLength, paramsLength, 524_288);
             }
         }
 

@@ -210,8 +210,9 @@ library HashLib {
         address inbox
     ) internal view returns (bytes32) {
         // Hash TokenPermissions
-        bytes32 tokenPermissionsHash =
-            keccak256(abi.encode(PERMIT2_TOKEN_PERMISSIONS_TYPEHASH, orderData.deposit.token, orderData.deposit.amount));
+        bytes32 tokenPermissionsHash = keccak256(
+            abi.encode(PERMIT2_TOKEN_PERMISSIONS_TYPEHASH, orderData.deposit.token, orderData.deposit.amount)
+        );
 
         // Create final struct hash
         bytes32 structHash = keccak256(
@@ -245,8 +246,9 @@ library HashLib {
         address inbox
     ) internal view returns (bytes32) {
         // Hash TokenPermissions
-        bytes32 tokenPermissionsHash =
-            keccak256(abi.encode(PERMIT2_TOKEN_PERMISSIONS_TYPEHASH, orderData.deposit.token, orderData.deposit.amount));
+        bytes32 tokenPermissionsHash = keccak256(
+            abi.encode(PERMIT2_TOKEN_PERMISSIONS_TYPEHASH, orderData.deposit.token, orderData.deposit.amount)
+        );
 
         // Create final struct hash
         bytes32 structHash = keccak256(

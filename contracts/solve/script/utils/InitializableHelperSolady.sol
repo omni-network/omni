@@ -11,7 +11,8 @@ library InitializableHelperSolady {
     Vm internal constant vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
 
     // bytes32(~uint256(uint32(bytes4(keccak256("_INITIALIZABLE_SLOT")))))
-    bytes32 internal constant INITIALIZABLE_STORAGE = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffbf601132;
+    bytes32 internal constant INITIALIZABLE_STORAGE =
+        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffbf601132;
 
     // INITIALIZABLE_STORAGE stores data with the following layout:
     //

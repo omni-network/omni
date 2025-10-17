@@ -107,9 +107,7 @@ contract SolverNetPostUpgradeTest is Test {
         });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
-            fillDeadline: type(uint32).max,
-            orderDataType: ORDERDATA_TYPEHASH,
-            orderData: abi.encode(orderData)
+            fillDeadline: type(uint32).max, orderDataType: ORDERDATA_TYPEHASH, orderData: abi.encode(orderData)
         });
 
         bytes32 id = ISolverNetInboxTemp(address(inbox)).getNextOrderId(user);
@@ -157,16 +155,10 @@ contract SolverNetPostUpgradeTest is Test {
 
                 SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(0), amount: uint96(value) });
                 SolverNet.OrderData memory orderData = SolverNet.OrderData({
-                    owner: user,
-                    destChainId: uint64(block.chainid),
-                    deposit: deposit,
-                    calls: calls,
-                    expenses: expenses
+                    owner: user, destChainId: uint64(block.chainid), deposit: deposit, calls: calls, expenses: expenses
                 });
                 IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
-                    fillDeadline: type(uint32).max,
-                    orderDataType: ORDERDATA_TYPEHASH,
-                    orderData: abi.encode(orderData)
+                    fillDeadline: type(uint32).max, orderDataType: ORDERDATA_TYPEHASH, orderData: abi.encode(orderData)
                 });
                 assertTrue(inbox.validate(order), "order should be valid");
 

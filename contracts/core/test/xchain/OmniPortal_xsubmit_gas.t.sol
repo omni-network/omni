@@ -179,8 +179,9 @@ contract OmniPortal_xsubmit_gas_Test is Base {
         TestXTypes.Block memory xblock,
         uint64 destChainId
     ) internal {
-        XTypes.Submission memory xsub =
-            makeXSub(valSetId, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, destChainId));
+        XTypes.Submission memory xsub = makeXSub(
+            valSetId, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, destChainId)
+        );
 
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
         uint64 shardId = xsub.msgs[xsub.msgs.length - 1].shardId;

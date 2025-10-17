@@ -272,8 +272,9 @@ contract NominaPortal_xsubmit_Test is Base {
         INominaPortal portal_,
         Counter counter_
     ) internal {
-        XTypes.Submission memory xsub =
-            makeXSub(valSetId, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, destChainId));
+        XTypes.Submission memory xsub = makeXSub(
+            valSetId, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, destChainId)
+        );
 
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
         uint64 shardId = xsub.blockHeader.confLevel; // conf level is shard id
