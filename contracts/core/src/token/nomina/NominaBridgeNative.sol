@@ -141,7 +141,9 @@ contract NominaBridgeNative is NominaBridgeCommon {
 
         // if fee is overpaid, forward excess to portal.
         // balance of this contract should continue to reflect funds bridged to L1.
-        portal.xcall{ value: msg.value - amount }(
+        portal.xcall{
+            value: msg.value - amount
+        }(
             l1ChainId,
             ConfLevel.Finalized,
             l1Bridge,

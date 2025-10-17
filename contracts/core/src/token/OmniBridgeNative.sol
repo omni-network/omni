@@ -127,7 +127,9 @@ contract OmniBridgeNative is OmniBridgeCommon {
 
         // if fee is overpaid, forward excess to portal.
         // balance of this contract should continue to reflect funds bridged to L1.
-        omni.xcall{ value: msg.value - amount }(
+        omni.xcall{
+            value: msg.value - amount
+        }(
             l1ChainId,
             ConfLevel.Finalized,
             l1Bridge,

@@ -27,10 +27,7 @@ contract Funder is XApp, XGasPump {
      */
     function doThingAndMaybeGetOMNI() external payable {
         uint256 fee = xcall({
-            destChainId: omniChainId(),
-            to: thingDoer,
-            data: abi.encodeWithSignature("doThing()"),
-            gasLimit: 100_000
+            destChainId: omniChainId(), to: thingDoer, data: abi.encodeWithSignature("doThing()"), gasLimit: 100_000
         });
 
         require(msg.value >= fee, "Funder: insufficient fee");

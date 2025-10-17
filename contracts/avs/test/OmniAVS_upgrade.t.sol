@@ -7,7 +7,9 @@ import { OmniAVS } from "src/OmniAVS.sol";
 
 import { IDelegationManager } from "src/ext/IDelegationManager.sol";
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract OmniAVS_upgrade_Test is Base {
     function _checkAndHashState() internal view returns (bytes32) {

@@ -145,7 +145,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
      */
     function syncWithOmni() external payable whenNotPaused {
         Operator[] memory ops = _getOperators();
-        omni.xcall{ value: msg.value }(
+        omni.xcall{
+            value: msg.value
+        }(
             omniChainId,
             ConfLevel.Finalized,
             ethStakeInbox,

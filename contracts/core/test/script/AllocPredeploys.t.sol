@@ -3,7 +3,9 @@ pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { Preinstalls } from "src/octane/Preinstalls.sol";
@@ -222,7 +224,7 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
     /**
      * @notice Call f for all proxies in each namespace.
      */
-    function _forAllProxies(function (address) f) internal {
+    function _forAllProxies(function(address) f) internal {
         address[] memory namespaces = Predeploys.namespaces();
         for (uint256 i = 0; i < namespaces.length; i++) {
             address ns = namespaces[i];

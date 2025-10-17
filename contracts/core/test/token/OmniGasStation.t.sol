@@ -25,8 +25,7 @@ contract OmniGasStation_Test is Test {
         owner = makeAddr("owner");
 
         station = OmniGasStation(
-            payable(
-                address(
+            payable(address(
                     new TransparentUpgradeableProxy(
                         impl,
                         makeAddr("admin"),
@@ -34,8 +33,7 @@ contract OmniGasStation_Test is Test {
                             OmniGasStation.initialize, (address(portal), owner, new OmniGasStation.GasPump[](0))
                         )
                     )
-                )
-            )
+                ))
         );
     }
 
