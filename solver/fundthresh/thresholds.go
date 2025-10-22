@@ -210,7 +210,7 @@ var (
 
 		// mETH
 		mustToken(evmchain.IDMantle, tokens.METH): {
-			min:    1, // Alert on 4 mETH (rebalance is manual)
+			min:    1, // Alert on 1 mETH (rebalance is manual)
 			target: 3,
 		},
 
