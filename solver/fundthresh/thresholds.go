@@ -204,7 +204,7 @@ var (
 
 		// MNT
 		mustToken(evmchain.IDMantle, tokens.MNT): {
-			min:    1000, // Alert on 15k (rebalance is manual)
+			min:    1000, // Alert on 1k (rebalance is manual)
 			target: 3000,
 		},
 
