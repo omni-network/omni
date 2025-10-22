@@ -5,10 +5,10 @@
     "min": "1 ETH"
    },
    "USDC": {
-    "min": "5000 USDC"
+    "min": "1000 USDC"
    },
    "USDT": {
-    "min": "5000 USDT"
+    "min": "1000 USDT"
    },
    "USDT0": {
     "min": "0 USDT0"
@@ -22,7 +22,7 @@
     "min": "1 ETH"
    },
    "USDC": {
-    "min": "20000 USDC"
+    "min": "1000 USDC"
    },
    "WETH": {
     "min": "0 WETH"
@@ -33,7 +33,7 @@
   },
   "ethereum": {
    "ETH": {
-    "min": "20 ETH"
+    "min": "1 ETH"
    },
    "MNT": {
     "min": "0 MNT"
@@ -45,7 +45,7 @@
     "min": "0 OMNI"
    },
    "USDC": {
-    "min": "50000 USDC"
+    "min": "1000 USDC"
    },
    "USDT": {
     "min": "1000 USDT"
@@ -60,7 +60,7 @@
     "min": "0 stETH"
    },
    "wstETH": {
-    "min": "20 wstETH"
+    "min": "1 wstETH"
    }
   },
   "omni_evm": {
@@ -73,10 +73,10 @@
     "min": "1 ETH"
    },
    "USDC": {
-    "min": "5000 USDC"
+    "min": "1000 USDC"
    },
    "USDT": {
-    "min": "5000 USDT"
+    "min": "1000 USDT"
    },
    "USDT0": {
     "min": "0 USDT0"
