@@ -194,9 +194,13 @@ contract DebugMerkleDistributorWithoutDeadline is MerkleDistributor, OwnableUpgr
      * @param amount       Amount of tokens to claim
      * @param merkleProof  Merkle proof for the claim
      */
-    function _upgrade(address account, address validator, uint256 index, uint256 amount, bytes32[] calldata merkleProof)
-        internal
-    {
+    function _upgrade(
+        address account,
+        address validator,
+        uint256 index,
+        uint256 amount,
+        bytes32[] calldata merkleProof
+    ) internal {
         if (validator == address(0)) revert ZeroAddress();
 
         // Migrate user's stake, if any

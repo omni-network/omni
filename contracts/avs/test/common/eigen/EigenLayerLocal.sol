@@ -6,7 +6,9 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { IBeacon } from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
@@ -89,8 +91,9 @@ contract EigenLayerLocal is IEigenDeployer, CommonBase {
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
         EmptyContract emptyContract = new EmptyContract();
-        delegation =
-            DelegationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        delegation = DelegationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
+        );
         avsDirectory =
             AVSDirectory(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
         strategyManager =
@@ -140,7 +143,10 @@ contract EigenLayerLocal is IEigenDeployer, CommonBase {
             ITransparentUpgradeableProxy(payable(address(avsDirectory))),
             address(avsDirectoryImplementation),
             abi.encodeWithSelector(
-                AVSDirectory.initialize.selector, proxyAdminOwner, pauserReg, 0 /*initialPausedStatus*/
+                AVSDirectory.initialize.selector,
+                proxyAdminOwner,
+                pauserReg,
+                0 /*initialPausedStatus*/
             )
         );
         proxyAdmin.upgradeAndCall(
@@ -157,7 +163,12 @@ contract EigenLayerLocal is IEigenDeployer, CommonBase {
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(slasher))),
             address(slasherImplementation),
-            abi.encodeWithSelector(Slasher.initialize.selector, proxyAdminOwner, pauserReg, 0 /*initialPausedStatus*/ )
+            abi.encodeWithSelector(
+                Slasher.initialize.selector,
+                proxyAdminOwner,
+                pauserReg,
+                0 /*initialPausedStatus*/
+            )
         );
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(eigenPodManager))),

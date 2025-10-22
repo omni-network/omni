@@ -21,18 +21,15 @@ library StrategyParams {
         params = new IOmniAVS.StrategyParam[](4);
 
         params[0] = IOmniAVS.StrategyParam({
-            strategy: IStrategy(EigenM2HoleskyDeployments.stETHStrategy),
-            multiplier: STD_MULTIPLIER
+            strategy: IStrategy(EigenM2HoleskyDeployments.stETHStrategy), multiplier: STD_MULTIPLIER
         });
 
         params[1] = IOmniAVS.StrategyParam({
-            strategy: IStrategy(EigenM2HoleskyDeployments.rETHStrategy),
-            multiplier: STD_MULTIPLIER
+            strategy: IStrategy(EigenM2HoleskyDeployments.rETHStrategy), multiplier: STD_MULTIPLIER
         });
 
         params[2] = IOmniAVS.StrategyParam({
-            strategy: IStrategy(EigenM2HoleskyDeployments.WETHStrategy),
-            multiplier: STD_MULTIPLIER
+            strategy: IStrategy(EigenM2HoleskyDeployments.WETHStrategy), multiplier: STD_MULTIPLIER
         });
 
         params[3] =

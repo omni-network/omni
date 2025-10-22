@@ -43,7 +43,7 @@ contract OmniGasPump_Test is Test {
             gasPrice: 1e9, // 1 Gwei
             postsTo: portal.omniChainId(),
             toNativeRate: 1e5 // 10 OMNI * (1e5 / 1e6) = 1 ETH
-         });
+        });
 
         feeOracle = FeeOracleV1(
             address(
@@ -66,27 +66,23 @@ contract OmniGasPump_Test is Test {
 
         address pumpImpl = address(new OmniGasPump());
         pump = OmniGasPump(
-            payable(
-                address(
+            payable(address(
                     new TransparentUpgradeableProxy(
                         pumpImpl,
                         proxyAdminOwner,
                         abi.encodeCall(
                             OmniGasPump.initialize,
-                            (
-                                OmniGasPump.InitParams({
+                            (OmniGasPump.InitParams({
                                     oracle: address(feeOracle),
                                     gasStation: gasStation,
                                     maxSwap: maxSwap,
                                     toll: toll,
                                     portal: address(portal),
                                     owner: owner
-                                })
-                            )
+                                }))
                         )
                     )
-                )
-            )
+                ))
         );
     }
 

@@ -18,7 +18,7 @@ RetryTransferTest:test_receiveToken_caches_tokens_when_mint_reverts() (gas: 2193
 RetryTransferTest:test_retryTransfer_reverts() (gas: 186915)
 RetryTransferTest:test_retryTransfer_succeeds() (gas: 417435)
 SendTokenTest:test_sendToken_empty_lockbox_succeeds() (gas: 656874)
-SendTokenTest:test_sendToken_fee_overpayment_refunded() (gas: 371368)
+SendTokenTest:test_sendToken_fee_overpayment_refunded() (gas: 369368)
 SendTokenTest:test_sendToken_fee_overpayment_refunded_refundTo() (gas: 392761)
 SendTokenTest:test_sendToken_reverts() (gas: 658929)
 SendTokenTest:test_sendToken_withLockbox_token_succeeds() (gas: 320793)
