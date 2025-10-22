@@ -105,9 +105,9 @@ var (
 	thresholds = map[tokens.Token]FundThreshold{
 		// ETH
 		mustToken(evmchain.IDEthereum, tokens.ETH): {
-			min:     20,
-			target:  50,
-			surplus: 60,
+			min:     1,
+			target:  3,
+			surplus: 5,
 			minSwap: 1,
 			maxSwap: 5,
 		},
@@ -120,50 +120,50 @@ var (
 		},
 		mustToken(evmchain.IDArbitrumOne, tokens.ETH): {
 			min:     1,
-			target:  6,
-			surplus: 8,
+			target:  3,
+			surplus: 5,
 			minSwap: 1,
 			maxSwap: 5,
 		},
 		mustToken(evmchain.IDOptimism, tokens.ETH): {
 			min:     1,
-			target:  6,
-			surplus: 8,
+			target:  3,
+			surplus: 5,
 			minSwap: 1,
 			maxSwap: 5,
 		},
 
 		// USDC
 		mustToken(evmchain.IDEthereum, tokens.USDC): {
-			min:     50000,
-			target:  100000,
-			surplus: 120000,
+			min:     1000,
+			target:  5000,
+			surplus: 10000,
 			minSwap: 1000,
 			maxSwap: 10000,
 		},
 		mustToken(evmchain.IDBase, tokens.USDC): {
-			min:     20000,
-			target:  40000,
-			surplus: 50000,
+			min:     1000,
+			target:  5000,
+			surplus: 10000,
 			minSwap: 1000,
 			maxSwap: 10000,
 		},
 		mustToken(evmchain.IDArbitrumOne, tokens.USDC): {
-			min:     5000,
-			target:  15000,
-			surplus: 20000,
+			min:     1000,
+			target:  5000,
+			surplus: 10000,
 			minSwap: 1000,
 			maxSwap: 10000,
 		},
 		mustToken(evmchain.IDOptimism, tokens.USDC): {
-			min:     5000,
-			target:  15000,
-			surplus: 20000,
+			min:     1000,
+			target:  5000,
+			surplus: 10000,
 			minSwap: 1000,
 			maxSwap: 10000,
 		},
 		mustToken(evmchain.IDMantle, tokens.USDC): {
-			target: 10000,
+			target: 2_000,
 		},
 
 		// USDT
@@ -175,25 +175,25 @@ var (
 			maxSwap: 10000,
 		},
 		mustToken(evmchain.IDOptimism, tokens.USDT): {
-			min:     5000,
-			target:  10000,
-			surplus: 12000,
+			min:     1000,
+			target:  5000,
+			surplus: 10000,
 			minSwap: 1000,
 			maxSwap: 10000,
 		},
 		mustToken(evmchain.IDArbitrumOne, tokens.USDT): {
-			min:     5000,
-			target:  10000,
-			surplus: 12000,
+			min:     1000,
+			target:  5000,
+			surplus: 10000,
 			minSwap: 1000,
 			maxSwap: 10000,
 		},
 
 		// WSTETH
 		mustToken(evmchain.IDEthereum, tokens.WSTETH): {
-			min:     20,
-			target:  50,
-			surplus: 55,
+			min:     1,
+			target:  3,
+			surplus: 5,
 			minSwap: 1,
 			maxSwap: 5,
 		},
@@ -204,34 +204,20 @@ var (
 
 		// MNT
 		mustToken(evmchain.IDMantle, tokens.MNT): {
-			min:    15000, // Alert on 15k (rebalance is manual)
-			target: 30000,
+			min:    1000, // Alert on 15k (rebalance is manual)
+			target: 3000,
 		},
 
 		// mETH
 		mustToken(evmchain.IDMantle, tokens.METH): {
-			min:    4, // Alert on 4 mETH (rebalance is manual)
-			target: 8,
+			min:    1, // Alert on 4 mETH (rebalance is manual)
+			target: 3,
 		},
 
 		// WETH
 		mustToken(evmchain.IDMantle, tokens.WETH): {
-			min:    4, // Alert on 1 WETH (rebalance is manual)
-			target: 8,
-		},
-
-		// USDT0
-		mustToken(evmchain.IDHyperEVM, tokens.USDT0): {
-			min:     500_000,
-			target:  2_000_000,
-			surplus: inf,
-		},
-
-		// HYPE
-		mustToken(evmchain.IDHyperEVM, tokens.HYPE): {
-			min:     500,
-			target:  1000,
-			surplus: inf,
+			min:    1, // Alert on 1 WETH (rebalance is manual)
+			target: 3,
 		},
 	}
 )
