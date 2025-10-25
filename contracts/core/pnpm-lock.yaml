@@ -15,10 +15,10 @@ importers:
     dependencies:
       '@hyperlane-xyz/core':
         specifier: ^9.0.9
-        version: 9.0.9(@ethersproject/abi@5.8.0)(@ethersproject/providers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(@types/sinon-chai@4.0.0)(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))(typescript@5.6.3)(utf-8-validate@5.0.10)
+        version: 9.0.9(@ethersproject/abi@5.8.0)(@ethersproject/providers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(@types/sinon-chai@4.0.0)(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))(typescript@5.6.3)(utf-8-validate@5.0.10)
       '@nomad-xyz/excessively-safe-call':
         specifier: github:nomad-xyz/ExcessivelySafeCall
-        version: https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0
+        version: git+https://git@github.com:nomad-xyz/ExcessivelySafeCall.git#81cd99ce3e69117d665d7601c330ea03b97acce0
       '@openzeppelin-v4/contracts':
         specifier: npm:@openzeppelin/contracts@4.9.6
         version: '@openzeppelin/contracts@4.9.6'
@@ -33,22 +33,22 @@ importers:
         version: 5.3.0(@openzeppelin/contracts@5.3.0)
       '@uniswap/permit2':
         specifier: github:Uniswap/permit2
-        version: https://codeload.github.com/Uniswap/permit2/tar.gz/cc56ad0f3439c502c246fc5cfcc3db92bb8b7219
+        version: git+https://git@github.com:Uniswap/permit2.git#cc56ad0f3439c502c246fc5cfcc3db92bb8b7219
       createx:
         specifier: github:pcaversaccio/createx
-        version: https://codeload.github.com/pcaversaccio/createx/tar.gz/2cf6384594faa4594514fbc5bbf5844a015fde02
+        version: git+https://git@github.com:pcaversaccio/createx.git#45775c2f7b1b0d307daaae282e76117e2bc91a79
       eigenlayer-contracts:
         specifier: github:Layr-Labs/eigenlayer-contracts
-        version: https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/f14d9d669e853927c4e1ca30a20b89d0c48639c9(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
+        version: git+https://git@github.com:Layr-Labs/eigenlayer-contracts.git#fd56da82265933290741e1fd938cfe3ddf139c7b(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
       eigenlayer-middleware:
         specifier: github:Layr-Labs/eigenlayer-middleware
-        version: https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990
+        version: git+https://git@github.com:Layr-Labs/eigenlayer-middleware.git#6b4255aa7423b492069c48f6520ebabb2ce58f3c
       elliptic-curve-solidity:
         specifier: github:witnet/elliptic-curve-solidity
-        version: https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0
+        version: git+https://git@github.com:witnet/elliptic-curve-solidity.git#347547890840fd501809dfe0b855206407136ec0
       murky:
         specifier: github:dmfxyz/murky
-        version: https://codeload.github.com/dmfxyz/murky/tar.gz/6f67641219549ca78f575a12493e25fe193da727
+        version: git+https://git@github.com:dmfxyz/murky.git#991e371eb1dfa9f86701869eb08ec4e98c3cc0b0
       solady:
         specifier: ^0.1.26
         version: 0.1.26
@@ -58,10 +58,10 @@ importers:
     devDependencies:
       forge-std:
         specifier: github:foundry-rs/forge-std
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8ba9031ffcbe25aa0d1224d3ca263a995026e477
+        version: git+https://git@github.com:foundry-rs/forge-std.git#f90623596aecbf678c41d4d45ca81ce0e43c8219
       multiproof:
         specifier: github:sigp/multiproof
-        version: https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff
+        version: git+https://git@github.com:sigp/multiproof.git#d2fc889b524a58dc57d5ba7f9c51ec98869b8eff
 
 packages:
 
@@ -358,8 +358,8 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@nomad-xyz/excessively-safe-call@https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0':
-    resolution: {tarball: https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0}
+  '@nomad-xyz/excessively-safe-call@git+https://git@github.com:nomad-xyz/ExcessivelySafeCall.git#81cd99ce3e69117d665d7601c330ea03b97acce0':
+    resolution: {commit: 81cd99ce3e69117d665d7601c330ea03b97acce0, repo: git@github.com:nomad-xyz/ExcessivelySafeCall.git, type: git}
     version: 0.0.1-rc.1
 
   '@nomicfoundation/edr-darwin-arm64@0.5.2':
@@ -670,6 +670,9 @@ packages:
   '@types/node@24.3.1':
     resolution: {integrity: sha512-3vXmQDXy+woz+gnrTvuvNrPzekOi+Ds0ReMxw0LzBiK3a+1k0kQn9f2NWk+lgD4rJehFUmYy2gMhJ2ZI+7YP9g==}
 
+  '@types/node@24.7.0':
+    resolution: {integrity: sha512-IbKooQVqUBrlzWTi79E8Fw78l8k1RNtlDDNWsFZs7XonuQSJ8oNYfEeclhprUldXISRMLzBpILuKgPlIxm+/Yw==}
+
   '@types/pbkdf2@3.1.2':
     resolution: {integrity: sha512-uRwJqmiXmh9++aSu1VNEn3iIxWOhd8AHXNSdlaLfdAAdSTY9jYVeGWnzejM3dvrkbqE3/hyQkQQ29IFATEGlew==}
 
@@ -694,8 +697,8 @@ packages:
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
-  '@uniswap/permit2@https://codeload.github.com/Uniswap/permit2/tar.gz/cc56ad0f3439c502c246fc5cfcc3db92bb8b7219':
-    resolution: {tarball: https://codeload.github.com/Uniswap/permit2/tar.gz/cc56ad0f3439c502c246fc5cfcc3db92bb8b7219}
+  '@uniswap/permit2@git+https://git@github.com:Uniswap/permit2.git#cc56ad0f3439c502c246fc5cfcc3db92bb8b7219':
+    resolution: {commit: cc56ad0f3439c502c246fc5cfcc3db92bb8b7219, repo: git@github.com:Uniswap/permit2.git, type: git}
     version: 1.0.0
 
   '@yarnpkg/lockfile@1.1.0':
@@ -1086,8 +1089,8 @@ packages:
   create-require@1.1.1:
     resolution: {integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==}
 
-  createx@https://codeload.github.com/pcaversaccio/createx/tar.gz/2cf6384594faa4594514fbc5bbf5844a015fde02:
-    resolution: {tarball: https://codeload.github.com/pcaversaccio/createx/tar.gz/2cf6384594faa4594514fbc5bbf5844a015fde02}
+  createx@git+https://git@github.com:pcaversaccio/createx.git#45775c2f7b1b0d307daaae282e76117e2bc91a79:
+    resolution: {commit: 45775c2f7b1b0d307daaae282e76117e2bc91a79, repo: git@github.com:pcaversaccio/createx.git, type: git}
     version: 1.0.0
 
   cross-spawn@6.0.6:
@@ -1123,6 +1126,15 @@ packages:
 
   debug@4.4.1:
     resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
+    engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
+  debug@4.4.3:
+    resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
     engines: {node: '>=6.0'}
     peerDependencies:
       supports-color: '*'
@@ -1198,16 +1210,16 @@ packages:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
 
-  eigenlayer-contracts@https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/f14d9d669e853927c4e1ca30a20b89d0c48639c9:
-    resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/f14d9d669e853927c4e1ca30a20b89d0c48639c9}
+  eigenlayer-contracts@git+https://git@github.com:Layr-Labs/eigenlayer-contracts.git#fd56da82265933290741e1fd938cfe3ddf139c7b:
+    resolution: {commit: fd56da82265933290741e1fd938cfe3ddf139c7b, repo: git@github.com:Layr-Labs/eigenlayer-contracts.git, type: git}
     version: 1.0.0
 
-  eigenlayer-middleware@https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990:
-    resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990}
+  eigenlayer-middleware@git+https://git@github.com:Layr-Labs/eigenlayer-middleware.git#6b4255aa7423b492069c48f6520ebabb2ce58f3c:
+    resolution: {commit: 6b4255aa7423b492069c48f6520ebabb2ce58f3c, repo: git@github.com:Layr-Labs/eigenlayer-middleware.git, type: git}
     version: 0.0.0
 
-  elliptic-curve-solidity@https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0:
-    resolution: {tarball: https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0}
+  elliptic-curve-solidity@git+https://git@github.com:witnet/elliptic-curve-solidity.git#347547890840fd501809dfe0b855206407136ec0:
+    resolution: {commit: 347547890840fd501809dfe0b855206407136ec0, repo: git@github.com:witnet/elliptic-curve-solidity.git, type: git}
     version: 0.2.5
 
   elliptic@6.6.1:
@@ -1397,9 +1409,9 @@ packages:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
     engines: {node: '>= 0.4'}
 
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/8ba9031ffcbe25aa0d1224d3ca263a995026e477:
-    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8ba9031ffcbe25aa0d1224d3ca263a995026e477}
-    version: 1.9.6
+  forge-std@git+https://git@github.com:foundry-rs/forge-std.git#f90623596aecbf678c41d4d45ca81ce0e43c8219:
+    resolution: {commit: f90623596aecbf678c41d4d45ca81ce0e43c8219, repo: git@github.com:foundry-rs/forge-std.git, type: git}
+    version: 1.10.0
 
   form-data@4.0.4:
     resolution: {integrity: sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==}
@@ -1910,12 +1922,12 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  multiproof@https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff:
-    resolution: {tarball: https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff}
+  multiproof@git+https://git@github.com:sigp/multiproof.git#d2fc889b524a58dc57d5ba7f9c51ec98869b8eff:
+    resolution: {commit: d2fc889b524a58dc57d5ba7f9c51ec98869b8eff, repo: git@github.com:sigp/multiproof.git, type: git}
     version: 0.0.0
 
-  murky@https://codeload.github.com/dmfxyz/murky/tar.gz/6f67641219549ca78f575a12493e25fe193da727:
-    resolution: {tarball: https://codeload.github.com/dmfxyz/murky/tar.gz/6f67641219549ca78f575a12493e25fe193da727}
+  murky@git+https://git@github.com:dmfxyz/murky.git#991e371eb1dfa9f86701869eb08ec4e98c3cc0b0:
+    resolution: {commit: 991e371eb1dfa9f86701869eb08ec4e98c3cc0b0, repo: git@github.com:dmfxyz/murky.git, type: git}
     version: 0.1.0
 
   nan@2.22.2:
@@ -2474,11 +2486,11 @@ packages:
     resolution: {integrity: sha512-9kY+CygyYM6j02t5YFHbNz2FN5QmYGv9zAjVp4lCDjlCw7amdckXlEt/bjMhUIfj4ThGRE4gCUH5+yGnNuPo5A==}
     engines: {node: '>=10.0.0'}
 
-  tar-fs@1.16.5:
-    resolution: {integrity: sha512-1ergVCCysmwHQNrOS+Pjm4DQ4nrGp43+Xnu4MRGjCnQu/m3hEgLNS78d5z+B8OJ1hN5EejJdCSFZE1oM6AQXAQ==}
+  tar-fs@1.16.6:
+    resolution: {integrity: sha512-JkOgFt3FxM/2v2CNpAVHqMW2QASjc/Hxo7IGfNd3MHaDYSW/sBFiS7YVmmhmr8x6vwN1VFQDQGdT2MWpmIuVKA==}
 
-  tar-fs@2.1.3:
-    resolution: {integrity: sha512-090nwYJDmlhwFwEW3QQl+vaNnxsO2yVsd45eTKRBzSzu+hlb1w2K9inVq5b0ngXuLVqQ4ApvsUHHnu/zQNkWAg==}
+  tar-fs@2.1.4:
+    resolution: {integrity: sha512-mDAjwmZdh7LTT6pNleZ05Yt65HC3E+NiQzl672vQG38jIrehtJk/J3mNwIg+vShQPcLF/LV7CMnDW6vjj6sfYQ==}
 
   tar-stream@1.6.2:
     resolution: {integrity: sha512-rzS0heiNf8Xn7/mpdSVVSMAWAoy9bfb1WOTYC78Z0UQKeKa/CWS8FOq0lKGNa8DWKAn9gxjCvMLYc5PGXYlK2A==}
@@ -2616,6 +2628,9 @@ packages:
 
   undici-types@7.10.0:
     resolution: {integrity: sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag==}
+
+  undici-types@7.14.0:
+    resolution: {integrity: sha512-QQiYxHuyZ9gQUIrmPo3IA+hUl4KYk8uSA7cHrcKd/l3p1OTpZcM0Tbp9x7FAtXdAYhlasd60ncPpgu6ihG6TOA==}
 
   undici@5.29.0:
     resolution: {integrity: sha512-raqeBD6NQK4SkWhQzeYKd1KmIG6dllBOTt55Rmkt4HtI9mwdWtJljnrXjAFUBLTSN67HWrOIZ3EPF4kjUw80Bg==}
@@ -2813,14 +2828,14 @@ snapshots:
   '@bytecodealliance/preview2-shim@0.17.0':
     optional: true
 
-  '@chainlink/contracts-ccip@1.5.0(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)':
+  '@chainlink/contracts-ccip@1.5.0(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)':
     dependencies:
       '@arbitrum/nitro-contracts': 1.1.1
       '@arbitrum/token-bridge-contracts': 1.1.2
       '@changesets/changelog-github': 0.5.1
       '@changesets/cli': 2.27.12
       '@eth-optimism/contracts': 0.6.0(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
-      '@matterlabs/hardhat-zksync-verify': 1.7.1(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
+      '@matterlabs/hardhat-zksync-verify': 1.7.1(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
       '@openzeppelin/contracts': 4.9.3
       '@openzeppelin/contracts-upgradeable': 4.9.3
       '@scroll-tech/contracts': 0.1.0
@@ -3311,16 +3326,16 @@ snapshots:
       protobufjs: 7.5.0
       yargs: 17.7.2
 
-  '@hyperlane-xyz/core@9.0.9(@ethersproject/abi@5.8.0)(@ethersproject/providers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(@types/sinon-chai@4.0.0)(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))(typescript@5.6.3)(utf-8-validate@5.0.10)':
+  '@hyperlane-xyz/core@9.0.9(@ethersproject/abi@5.8.0)(@ethersproject/providers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(@types/sinon-chai@4.0.0)(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))(typescript@5.6.3)(utf-8-validate@5.0.10)':
     dependencies:
       '@arbitrum/nitro-contracts': 1.3.0
-      '@chainlink/contracts-ccip': 1.5.0(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+      '@chainlink/contracts-ccip': 1.5.0(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
       '@eth-optimism/contracts': 0.6.0(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
       '@ethersproject/abi': 5.8.0
       '@ethersproject/providers': 5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@hyperlane-xyz/utils': 18.2.0(bufferutil@4.0.9)(typescript@5.6.3)(utf-8-validate@5.0.10)
-      '@matterlabs/hardhat-zksync-solc': 1.2.5(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
-      '@matterlabs/hardhat-zksync-verify': 1.7.1(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
+      '@matterlabs/hardhat-zksync-solc': 1.2.5(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
+      '@matterlabs/hardhat-zksync-verify': 1.7.1(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
       '@openzeppelin/contracts': 4.9.6
       '@openzeppelin/contracts-upgradeable': 4.9.6
       '@types/sinon-chai': 4.0.0
@@ -3383,15 +3398,15 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 1.1.0
 
-  '@matterlabs/hardhat-zksync-solc@1.2.5(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))':
+  '@matterlabs/hardhat-zksync-solc@1.2.5(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))':
     dependencies:
       '@nomiclabs/hardhat-docker': 2.0.2
       chai: 4.5.0
       chalk: 4.1.2
-      debug: 4.4.1(supports-color@8.1.1)
+      debug: 4.4.1
       dockerode: 4.0.6
       fs-extra: 11.3.0
-      hardhat: 2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)
+      hardhat: 2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)
       proper-lockfile: 4.1.2
       semver: 7.7.1
       sinon: 18.0.1
@@ -3401,18 +3416,18 @@ snapshots:
       - encoding
       - supports-color
 
-  '@matterlabs/hardhat-zksync-verify@1.7.1(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))':
+  '@matterlabs/hardhat-zksync-verify@1.7.1(@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)))(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))':
     dependencies:
       '@ethersproject/abi': 5.8.0
       '@ethersproject/address': 5.7.0
-      '@matterlabs/hardhat-zksync-solc': 1.2.5(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
-      '@nomicfoundation/hardhat-verify': 2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
+      '@matterlabs/hardhat-zksync-solc': 1.2.5(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
+      '@nomicfoundation/hardhat-verify': 2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
       axios: 1.8.4(debug@4.4.1)
       cbor: 9.0.2
       chai: 4.5.0
       chalk: 4.1.2
-      debug: 4.4.1(supports-color@8.1.1)
-      hardhat: 2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)
+      debug: 4.4.1
+      hardhat: 2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)
       semver: 7.7.1
       sinon: 18.0.1
       sinon-chai: 3.7.0(chai@4.5.0)(sinon@18.0.1)
@@ -3456,7 +3471,7 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
-  '@nomad-xyz/excessively-safe-call@https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0': {}
+  '@nomad-xyz/excessively-safe-call@git+https://git@github.com:nomad-xyz/ExcessivelySafeCall.git#81cd99ce3e69117d665d7601c330ea03b97acce0': {}
 
   '@nomicfoundation/edr-darwin-arm64@0.5.2': {}
 
@@ -3502,13 +3517,13 @@ snapshots:
       '@nomicfoundation/ethereumjs-rlp': 5.0.4
       ethereum-cryptography: 0.1.3
 
-  '@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))':
+  '@nomicfoundation/hardhat-verify@2.0.13(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))':
     dependencies:
       '@ethersproject/abi': 5.8.0
       '@ethersproject/address': 5.8.0
       cbor: 8.1.0
-      debug: 4.4.1(supports-color@8.1.1)
-      hardhat: 2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)
+      debug: 4.4.3(supports-color@8.1.1)
+      hardhat: 2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)
       lodash.clonedeep: 4.5.0
       picocolors: 1.1.1
       semver: 6.3.1
@@ -3600,7 +3615,7 @@ snapshots:
       cbor: 10.0.3
       chalk: 4.1.2
       compare-versions: 6.1.1
-      debug: 4.4.1(supports-color@8.1.1)
+      debug: 4.4.1
       ethereumjs-util: 7.1.5
       minimatch: 9.0.5
       minimist: 1.2.8
@@ -3790,7 +3805,7 @@ snapshots:
 
   '@types/bn.js@4.11.6':
     dependencies:
-      '@types/node': 24.3.1
+      '@types/node': 24.7.0
 
   '@types/bn.js@5.2.0':
     dependencies:
@@ -3813,6 +3828,10 @@ snapshots:
   '@types/node@24.3.1':
     dependencies:
       undici-types: 7.10.0
+
+  '@types/node@24.7.0':
+    dependencies:
+      undici-types: 7.14.0
 
   '@types/pbkdf2@3.1.2':
     dependencies:
@@ -3843,7 +3862,7 @@ snapshots:
     dependencies:
       '@types/node': 24.3.1
 
-  '@uniswap/permit2@https://codeload.github.com/Uniswap/permit2/tar.gz/cc56ad0f3439c502c246fc5cfcc3db92bb8b7219': {}
+  '@uniswap/permit2@git+https://git@github.com:Uniswap/permit2.git#cc56ad0f3439c502c246fc5cfcc3db92bb8b7219': {}
 
   '@yarnpkg/lockfile@1.1.0': {}
 
@@ -3877,7 +3896,7 @@ snapshots:
 
   agent-base@6.0.2:
     dependencies:
-      debug: 4.4.1(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -4287,7 +4306,7 @@ snapshots:
   create-require@1.1.1:
     optional: true
 
-  createx@https://codeload.github.com/pcaversaccio/createx/tar.gz/2cf6384594faa4594514fbc5bbf5844a015fde02: {}
+  createx@git+https://git@github.com:pcaversaccio/createx.git#45775c2f7b1b0d307daaae282e76117e2bc91a79: {}
 
   cross-spawn@6.0.6:
     dependencies:
@@ -4327,7 +4346,11 @@ snapshots:
     dependencies:
       ms: 2.1.3
 
-  debug@4.4.1(supports-color@8.1.1):
+  debug@4.4.1:
+    dependencies:
+      ms: 2.1.3
+
+  debug@4.4.3(supports-color@8.1.1):
     dependencies:
       ms: 2.1.3
     optionalDependencies:
@@ -4379,7 +4402,7 @@ snapshots:
 
   docker-modem@5.0.6:
     dependencies:
-      debug: 4.4.1(supports-color@8.1.1)
+      debug: 4.4.1
       readable-stream: 3.6.2
       split-ca: 1.0.1
       ssh2: 1.16.0
@@ -4390,7 +4413,7 @@ snapshots:
     dependencies:
       concat-stream: 1.6.2
       docker-modem: 1.0.9
-      tar-fs: 1.16.5
+      tar-fs: 1.16.6
     transitivePeerDependencies:
       - supports-color
 
@@ -4401,7 +4424,7 @@ snapshots:
       '@grpc/proto-loader': 0.7.15
       docker-modem: 5.0.6
       protobufjs: 7.5.0
-      tar-fs: 2.1.3
+      tar-fs: 2.1.4
       uuid: 10.0.0
     transitivePeerDependencies:
       - supports-color
@@ -4414,15 +4437,15 @@ snapshots:
       es-errors: 1.3.0
       gopd: 1.2.0
 
-  eigenlayer-contracts@https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/f14d9d669e853927c4e1ca30a20b89d0c48639c9(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)):
+  eigenlayer-contracts@git+https://git@github.com:Layr-Labs/eigenlayer-contracts.git#fd56da82265933290741e1fd938cfe3ddf139c7b(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)):
     dependencies:
-      solidity-docgen: 0.6.0-beta.36(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
+      solidity-docgen: 0.6.0-beta.36(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10))
     transitivePeerDependencies:
       - hardhat
 
-  eigenlayer-middleware@https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990: {}
+  eigenlayer-middleware@git+https://git@github.com:Layr-Labs/eigenlayer-middleware.git#6b4255aa7423b492069c48f6520ebabb2ce58f3c: {}
 
-  elliptic-curve-solidity@https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0: {}
+  elliptic-curve-solidity@git+https://git@github.com:witnet/elliptic-curve-solidity.git#347547890840fd501809dfe0b855206407136ec0: {}
 
   elliptic@6.6.1:
     dependencies:
@@ -4706,7 +4729,11 @@ snapshots:
 
   follow-redirects@1.15.11(debug@4.4.1):
     optionalDependencies:
-      debug: 4.4.1(supports-color@8.1.1)
+      debug: 4.4.1
+
+  follow-redirects@1.15.11(debug@4.4.3):
+    optionalDependencies:
+      debug: 4.4.3(supports-color@8.1.1)
 
   for-each@0.3.3:
     dependencies:
@@ -4716,7 +4743,7 @@ snapshots:
     dependencies:
       is-callable: 1.2.7
 
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/8ba9031ffcbe25aa0d1224d3ca263a995026e477: {}
+  forge-std@git+https://git@github.com:foundry-rs/forge-std.git#f90623596aecbf678c41d4d45ca81ce0e43c8219: {}
 
   form-data@4.0.4:
     dependencies:
@@ -4865,7 +4892,7 @@ snapshots:
     optionalDependencies:
       uglify-js: 3.19.3
 
-  hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10):
+  hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10):
     dependencies:
       '@ethersproject/abi': 5.8.0
       '@metamask/eth-sig-util': 4.0.1
@@ -4884,7 +4911,7 @@ snapshots:
       chalk: 2.4.2
       chokidar: 3.6.0
       ci-info: 2.0.0
-      debug: 4.4.1(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@8.1.1)
       enquirer: 2.4.1
       env-paths: 2.2.1
       ethereum-cryptography: 1.2.0
@@ -4903,7 +4930,7 @@ snapshots:
       raw-body: 2.5.2
       resolve: 1.17.0
       semver: 6.3.1
-      solc: 0.8.26(debug@4.4.1)
+      solc: 0.8.26(debug@4.4.3)
       source-map-support: 0.5.21
       stacktrace-parser: 0.1.11
       tsort: 0.0.1
@@ -4911,7 +4938,7 @@ snapshots:
       uuid: 8.3.2
       ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     optionalDependencies:
-      ts-node: 10.9.2(@types/node@24.3.1)(typescript@5.6.3)
+      ts-node: 10.9.2(@types/node@24.7.0)(typescript@5.6.3)
       typescript: 5.6.3
     transitivePeerDependencies:
       - bufferutil
@@ -4980,7 +5007,7 @@ snapshots:
   https-proxy-agent@5.0.1:
     dependencies:
       agent-base: 6.0.2
-      debug: 4.4.1(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -5285,7 +5312,7 @@ snapshots:
       ansi-colors: 4.1.3
       browser-stdout: 1.3.1
       chokidar: 3.6.0
-      debug: 4.4.1(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@8.1.1)
       diff: 5.2.0
       escape-string-regexp: 4.0.0
       find-up: 5.0.0
@@ -5307,9 +5334,9 @@ snapshots:
 
   ms@2.1.3: {}
 
-  multiproof@https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff: {}
+  multiproof@git+https://git@github.com:sigp/multiproof.git#d2fc889b524a58dc57d5ba7f9c51ec98869b8eff: {}
 
-  murky@https://codeload.github.com/dmfxyz/murky/tar.gz/6f67641219549ca78f575a12493e25fe193da727: {}
+  murky@git+https://git@github.com:dmfxyz/murky.git#991e371eb1dfa9f86701869eb08ec4e98c3cc0b0: {}
 
   nan@2.22.2:
     optional: true
@@ -5763,11 +5790,11 @@ snapshots:
 
   solady@0.1.26: {}
 
-  solc@0.8.26(debug@4.4.1):
+  solc@0.8.26(debug@4.4.3):
     dependencies:
       command-exists: 1.2.9
       commander: 8.3.0
-      follow-redirects: 1.15.11(debug@4.4.1)
+      follow-redirects: 1.15.11(debug@4.4.3)
       js-sha3: 0.8.0
       memorystream: 0.3.1
       semver: 5.7.2
@@ -5782,10 +5809,10 @@ snapshots:
   solidity-ast@0.4.60:
     optional: true
 
-  solidity-docgen@0.6.0-beta.36(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)):
+  solidity-docgen@0.6.0-beta.36(hardhat@2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)):
     dependencies:
       handlebars: 4.7.8
-      hardhat: 2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)
+      hardhat: 2.22.10(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3))(typescript@5.6.3)(utf-8-validate@5.0.10)
       solidity-ast: 0.4.56
 
   solmate@6.8.0: {}
@@ -5914,14 +5941,14 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
 
-  tar-fs@1.16.5:
+  tar-fs@1.16.6:
     dependencies:
       chownr: 1.1.4
       mkdirp: 0.5.6
       pump: 1.0.3
       tar-stream: 1.6.2
 
-  tar-fs@2.1.3:
+  tar-fs@2.1.4:
     dependencies:
       chownr: 1.1.4
       mkdirp-classic: 0.5.3
@@ -5978,14 +6005,14 @@ snapshots:
 
   ts-mixer@6.0.4: {}
 
-  ts-node@10.9.2(@types/node@24.3.1)(typescript@5.6.3):
+  ts-node@10.9.2(@types/node@24.7.0)(typescript@5.6.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
       '@tsconfig/node12': 1.0.11
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
-      '@types/node': 24.3.1
+      '@types/node': 24.7.0
       acorn: 8.15.0
       acorn-walk: 8.3.4
       arg: 4.1.3
@@ -6072,6 +6099,8 @@ snapshots:
       which-boxed-primitive: 1.0.2
 
   undici-types@7.10.0: {}
+
+  undici-types@7.14.0: {}
 
   undici@5.29.0:
     dependencies:
