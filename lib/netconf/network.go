@@ -1,6 +1,7 @@
 package netconf
 
 import (
+	"slices"
 	"sort"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -72,13 +73,7 @@ var supported = map[ID]bool{
 
 // IsAny returns true if the `ID` matches any of the provided targets.
 func IsAny(id ID, targets ...ID) bool {
-	for _, target := range targets {
-		if id == target {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(targets, id)
 }
 
 // All returns all the supported network IDs.
