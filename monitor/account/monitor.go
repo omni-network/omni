@@ -23,9 +23,8 @@ import (
 // StartMonitoring starts the monitoring goroutines.
 func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients map[uint64]ethclient.Client) error {
 	accounts := eoa.AllAccounts(network.ID)
-	sponsors := eoa.AllSponsors(network.ID)
 	chains := network.EVMChains()
-	log.Info(ctx, "Monitoring accounts", "accounts", len(accounts), "sponsors", len(sponsors), "chains", len(chains))
+	log.Info(ctx, "Monitoring accounts", "accounts", len(accounts), "chains", len(chains))
 
 	for _, chain := range chains {
 		meta, ok := evmchain.MetadataByID(chain.ID)
@@ -49,14 +48,6 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 				solverCtx := log.WithCtx(ctx, "chain", chain.Name, "role", account.Role)
 				go monitorSolverNetRoleForever(solverCtx, network.ID, backend, account.Role, account.Address)
 			}
-		}
-
-		for _, sponsor := range sponsors {
-			if chain.ID != sponsor.ChainID {
-				continue
-			}
-
-			go monitorSponsorForever(ctx, sponsor, chain.Name, rpcClients[chain.ID])
 		}
 	}
 
@@ -215,84 +206,6 @@ func monitorSolverNetRoleTokenOnce(
 	}
 
 	tokenBalanceLow.WithLabelValues(chainName, string(role), meta.Symbol).Set(isLow)
-
-	return nil
-}
-
-// monitorSponsorForever blocks and periodically monitors the sponsor account for the given chain.
-func monitorSponsorForever(
-	ctx context.Context,
-	sponsor eoa.Sponsor,
-	chainName string,
-	client ethclient.Client,
-) {
-	ctx = log.WithCtx(ctx,
-		"chain", chainName,
-		"role", sponsor.Name,
-		"address", sponsor.Address,
-	)
-
-	log.Info(ctx, "Monitoring account")
-
-	ticker := time.NewTicker(time.Second * 30)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			err := monitorSponsorOnce(ctx, sponsor, chainName, client)
-			if ctx.Err() != nil {
-				return
-			} else if err != nil {
-				log.Error(ctx, "Monitoring account failed (will retry)", err)
-
-				continue
-			}
-		}
-	}
-}
-
-// monitorSponsorOnce monitors sponsor account for the given chain.
-func monitorSponsorOnce(
-	ctx context.Context,
-	sponsor eoa.Sponsor,
-	chainName string,
-	client ethclient.Client,
-) error {
-	balance, err := client.BalanceAt(ctx, sponsor.Address, nil)
-	if err != nil {
-		return err
-	}
-	// Convert to ether units
-	balanceEth := bi.ToEtherF64(balance)
-
-	nonce, err := client.NonceAt(ctx, sponsor.Address, nil)
-	if err != nil {
-		return err
-	}
-
-	accountBalance.WithLabelValues(chainName, sponsor.Name).Set(balanceEth)
-	accountNonce.WithLabelValues(chainName, sponsor.Name).Set(float64(nonce))
-
-	meta, ok := evmchain.MetadataByName(chainName)
-	if !ok {
-		return errors.New("invalid chain name [BUG]", "name", chainName)
-	}
-
-	if sponsor.ChainID != meta.ChainID {
-		return errors.New("sponsor chain mismatch [BUG]", "expected", meta.ChainID, "got", sponsor.ChainID)
-	}
-
-	thresholds := sponsor.FundThresholds
-
-	var isLow float64
-	if bi.LT(balance, thresholds.MinBalance()) {
-		isLow = 1
-	}
-
-	accountBalanceLow.WithLabelValues(chainName, sponsor.Name).Set(isLow)
 
 	return nil
 }

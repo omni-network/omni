@@ -128,30 +128,6 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 			continue // Skip contract / sponsor funding if hotOnly.
 		}
 
-		for _, sponsor := range eoa.AllSponsors(network.ID) {
-			if sponsor.ChainID != chain.ID {
-				continue
-			}
-
-			sponsorCtx := log.WithCtx(ctx,
-				"chain", chain.Name,
-				"role", sponsor.Name,
-				"address", sponsor.Address,
-			)
-
-			if err := fund(sponsorCtx, fundParams{
-				backend:       backend,
-				account:       sponsor.Address,
-				minBalance:    sponsor.FundThresholds.MinBalance(),
-				targetBalance: sponsor.FundThresholds.TargetBalance(),
-				saneMax:       saneMax(metadata.NativeToken),
-				dryRun:        dryRun,
-				funder:        funderAddr,
-			}); err != nil {
-				return errors.Wrap(err, "fund sponsor")
-			}
-		}
-
 		toFund, err := contracts.ToFund(ctx, network.ID)
 		if err != nil {
 			return errors.Wrap(err, "get contracts to fund")
