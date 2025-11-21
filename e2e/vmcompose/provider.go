@@ -317,7 +317,7 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 		for vmName := range p.Data.VMs {
 			log.Debug(ctx, "Ensuring VM SSH connection and permissions", "vm", vmName)
 			cmd := "sudo mkdir -p /omni/" + p.Testnet.Name + "&&" +
-				"sudo chmod -R o+w /omni/" + p.Testnet.Name
+				"sudo chmod -R $(whoami) /omni/" + p.Testnet.Name
 			if err := execOnVM(ctx, vmName, cmd); err != nil {
 				onceErr = errors.Wrap(err, "fix perms on vm", "vm", vmName)
 				return
