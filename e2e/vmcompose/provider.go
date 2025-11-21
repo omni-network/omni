@@ -315,6 +315,11 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 		timestampDir := time.Now()
 		identifier := fmt.Sprintf("DEPLOY%s", timestampDir.Format(time.RFC3339))
 		for vmName := range p.Data.VMs {
+			log.Debug(ctx, "Ensuring VM SSH connection and permissions", "vm", vmName)
+			if err := execOnVM(ctx, vmName, "sudo chmod -R o+w /omni/"+p.Testnet.Name); err != nil {
+				onceErr = errors.Wrap(err, "fix perms on vm", "vm", vmName)
+				return
+			}
 			err := copyToVM(ctx, vmName, p.Testnet.Dir)
 			if err != nil {
 				onceErr = errors.Wrap(err, "copy files to VM", "vm", vmName)
