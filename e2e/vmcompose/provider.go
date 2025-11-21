@@ -53,7 +53,7 @@ func (p *Provider) Setup() error {
 
 	// Group infra services by VM IP
 	for vmIP, services := range groupByVM(p.Data.Instances) {
-		// GetByMarket all halo nodes in this VM
+		// Get all halo nodes in this VM
 		var nodes []*e2e.Node
 		var halos []string
 		for _, node := range p.Testnet.Nodes {
@@ -77,7 +77,7 @@ func (p *Provider) Setup() error {
 			}
 		}
 
-		// GetByMarket all omniEVMs in this VM
+		// Get all omniEVMs in this VM
 		var omniEVMs []types.OmniEVM
 		for _, omniEVM := range p.Testnet.OmniEVMs {
 			if services[omniEVM.InstanceName] {
@@ -86,7 +86,7 @@ func (p *Provider) Setup() error {
 			}
 		}
 
-		// GetByMarket all anvil chains in this VM
+		// Get all anvil chains in this VM
 		var anvilChains []types.AnvilChain
 		for _, anvilChain := range p.Testnet.AnvilChains {
 			if services[anvilChain.Chain.Name] {
