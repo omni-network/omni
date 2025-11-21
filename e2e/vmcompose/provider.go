@@ -53,7 +53,7 @@ func (p *Provider) Setup() error {
 
 	// Group infra services by VM IP
 	for vmIP, services := range groupByVM(p.Data.Instances) {
-		// Get all halo nodes in this VM
+		// GetByMarket all halo nodes in this VM
 		var nodes []*e2e.Node
 		var halos []string
 		for _, node := range p.Testnet.Nodes {
@@ -77,7 +77,7 @@ func (p *Provider) Setup() error {
 			}
 		}
 
-		// Get all omniEVMs in this VM
+		// GetByMarket all omniEVMs in this VM
 		var omniEVMs []types.OmniEVM
 		for _, omniEVM := range p.Testnet.OmniEVMs {
 			if services[omniEVM.InstanceName] {
@@ -86,7 +86,7 @@ func (p *Provider) Setup() error {
 			}
 		}
 
-		// Get all anvil chains in this VM
+		// GetByMarket all anvil chains in this VM
 		var anvilChains []types.AnvilChain
 		for _, anvilChain := range p.Testnet.AnvilChains {
 			if services[anvilChain.Chain.Name] {
@@ -315,6 +315,14 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 		timestampDir := time.Now()
 		identifier := fmt.Sprintf("DEPLOY%s", timestampDir.Format(time.RFC3339))
 		for vmName := range p.Data.VMs {
+			log.Debug(ctx, "Ensuring VM SSH connection and permissions", "vm", vmName)
+			cmd := "sudo mkdir -p /omni/" + p.Testnet.Name + "&&" +
+				"sudo chmod -R o+w /omni/" + p.Testnet.Name
+			if err := execOnVM(ctx, vmName, cmd); err != nil {
+				onceErr = errors.Wrap(err, "fix perms on vm", "vm", vmName)
+				return
+			}
+
 			err := copyToVM(ctx, vmName, p.Testnet.Dir)
 			if err != nil {
 				onceErr = errors.Wrap(err, "copy files to VM", "vm", vmName)
