@@ -3,6 +3,7 @@ package expbackoff_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -64,11 +65,63 @@ func Test(t *testing.T) {
 		check := func(err error) bool {
 			return count < expect
 		}
-		err := expbackoff.Retry(ctx, func() error {
-			count++
-			return io.EOF
-		}, expbackoff.WithRetryCheck(check))
+		err := expbackoff.Retry(ctx,
+			func() error {
+				count++
+				return io.EOF
+			},
+			expbackoff.WithRetryCheck(check),
+			expbackoff.WithRetryLabel("Test"),
+		)
 		require.ErrorIs(t, err, io.EOF)
 		require.Equal(t, expect, count) // Not 3 retries
 	})
+
+	t.Run("retry error", func(t *testing.T) {
+		const expect = 3
+		var count int
+		retryErr := expbackoff.RetryError{Cause: io.EOF}
+		err := expbackoff.Retry(ctx, func() error {
+			count++
+			return retryErr
+		})
+		require.ErrorIs(t, err, retryErr)
+		require.Equal(t, expect, count) // Not 3 retries
+	})
+
+	t.Run("custom retry error", func(t *testing.T) {
+		const expect = 3
+		var count int
+		retryErr := customError{Cause: io.EOF}
+		err := expbackoff.Retry(ctx, func() error {
+			count++
+			return retryErr
+		})
+		require.ErrorIs(t, err, retryErr)
+		require.Equal(t, expect, count) // Not 3 retries
+	})
+
+}
+
+type customError struct {
+	Cause error
+}
+
+func (e customError) Error() string {
+	return fmt.Sprintf("custom sentinel: %s", e.Cause)
+}
+
+func (e customError) As(target any) bool {
+	if target == nil {
+		return false
+	}
+
+	rErr, ok := target.(*expbackoff.RetryError)
+	if !ok {
+		return false
+	}
+
+	rErr.Cause = e.Cause
+
+	return true
 }
