@@ -92,7 +92,7 @@ func Test(t *testing.T) {
 	t.Run("custom retry error", func(t *testing.T) {
 		const expect = 3
 		var count int
-		retryErr := customErr{Cause: io.EOF}
+		retryErr := customError{Cause: io.EOF}
 		err := expbackoff.Retry(ctx, func() error {
 			count++
 			return retryErr
@@ -103,15 +103,15 @@ func Test(t *testing.T) {
 
 }
 
-type customErr struct {
+type customError struct {
 	Cause error
 }
 
-func (e customErr) Error() string {
+func (e customError) Error() string {
 	return fmt.Sprintf("custom sentinel: %s", e.Cause)
 }
 
-func (e customErr) As(target any) bool {
+func (e customError) As(target any) bool {
 	if target == nil {
 		return false
 	}
