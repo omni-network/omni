@@ -100,7 +100,6 @@ func Test(t *testing.T) {
 		require.ErrorIs(t, err, retryErr)
 		require.Equal(t, expect, count) // Not 3 retries
 	})
-
 }
 
 type customError struct {
