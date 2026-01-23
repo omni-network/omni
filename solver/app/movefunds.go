@@ -23,6 +23,23 @@ var (
 
 	// moveFundsChains are the chains to move funds on. Add as ready.
 	moveFundsChains = []uint64{}
+
+	// moveFundsMax defines the maximum amount to transfer per token.
+	// If a token is not in this map, log a warning and do nothing.
+	// If the value is nil, we transfer the full balance.
+	moveFundsMax = map[tokens.Asset]*big.Int{
+		tokens.ETH:    bi.Ether(0.01), // 0.01 ETH
+		tokens.WETH:   bi.Ether(0.01), // 0.01 WETH
+		tokens.WSTETH: bi.Ether(0.01), // 0.01 wstETH
+		tokens.STETH:  bi.Ether(0.01), // 0.01 stETH
+		tokens.USDC:   bi.Dec6(1),     // 1 USDC
+		tokens.USDT:   bi.Dec6(1),     // 1 USDT
+		tokens.OMNI:   bi.Ether(1),    // 1 OMNI
+		tokens.HYPE:   bi.Ether(1),    // 1 HYPE
+		tokens.MNT:    bi.Ether(1),    // 1 MNT
+		tokens.NOM:    bi.Ether(1),    // 1 NOM
+		tokens.METH:   bi.Ether(0.01), // 0.01 mETH
+	}
 )
 
 // moveFunds moves all funds from the solver to hard coded address and chains.
@@ -39,21 +56,23 @@ func moveFunds(
 		return errors.New("no chains set")
 	}
 
-	// TODO: Add pricer, start with max $1 transfers
-
-	return moveFundsToOn(ctx, backends, solver, moveFundsTo, moveFundsChains)
+	return moveFundsToOn(ctx, backends, solver, moveFundsTo, moveFundsChains, moveFundsMax)
 }
 
 // moveFundsToOn moves all funds from the solver to the target address on specified chains.
+// maxTransfers map must contain an entry for each token.
+// If the value is nil, full balance is transferred.
+// If a token is not in the map, a warning is logged and no transfer is made.
 func moveFundsToOn(
 	ctx context.Context,
 	backends ethbackend.Backends,
 	solver common.Address,
 	to common.Address,
 	chains []uint64,
+	maxTransfers map[tokens.Asset]*big.Int,
 ) error {
 	for _, chainID := range chains {
-		if err := moveFundsOnChain(ctx, backends, solver, chainID, to); err != nil {
+		if err := moveFundsOnChain(ctx, backends, solver, chainID, to, maxTransfers); err != nil {
 			log.Warn(ctx, "Failed to move funds on chain", err, "chain", evmchain.Name(chainID), "to", to.Hex())
 		}
 	}
@@ -68,6 +87,7 @@ func moveFundsOnChain(
 	solver common.Address,
 	chainID uint64,
 	to common.Address,
+	maxTransfers map[tokens.Asset]*big.Int,
 ) error {
 	chainName := evmchain.Name(chainID)
 	ctx = log.WithCtx(ctx, "chain", chainName)
@@ -94,14 +114,14 @@ func moveFundsOnChain(
 
 	// Transfer all ERC20 tokens first (need native for gas)
 	for _, token := range erc20Tokens {
-		if err := transferToken(ctx, backend, token, solver, to); err != nil {
+		if err := transferToken(ctx, backend, token, solver, to, maxTransfers); err != nil {
 			return errors.Wrap(err, "transfer erc20", "token", token.Symbol)
 		}
 	}
 
 	// Transfer native token last
 	if hasNative {
-		if err := transferNativeMax(ctx, backend, nativeToken, solver, to); err != nil {
+		if err := transferNativeMax(ctx, backend, nativeToken, solver, to, maxTransfers); err != nil {
 			return errors.Wrap(err, "transfer native", "token", nativeToken.Symbol)
 		}
 	}
@@ -109,13 +129,15 @@ func moveFundsOnChain(
 	return nil
 }
 
-// transferToken transfers the full balance of an ERC20 token to the target address.
+// transferToken transfers up to the max amount of an ERC20 token to the target address.
+// Returns error if token not in maxTransfers map. If value is nil, transfers full balance.
 func transferToken(
 	ctx context.Context,
 	backend *ethbackend.Backend,
 	token tokens.Token,
 	solver common.Address,
 	to common.Address,
+	maxTransfers map[tokens.Asset]*big.Int,
 ) error {
 	balance, err := tokenutil.BalanceOf(ctx, backend, token, solver)
 	if err != nil {
@@ -127,33 +149,48 @@ func transferToken(
 		return nil
 	}
 
+	// Check if token has max transfer limit configured
+	maxAmt, ok := maxTransfers[token.Asset]
+	if !ok {
+		return errors.New("max transfer not configured for token", "token", token.Symbol)
+	}
+
+	// Apply max transfer limit (nil means transfer full balance)
+	amount := balance
+	if maxAmt != nil && bi.LT(maxAmt, balance) {
+		amount = maxAmt
+	}
+
 	log.Info(ctx, "Transferring ERC20 token",
 		"token", token.Symbol,
-		"balance", balance.String(),
+		"balance", token.FormatAmt(balance),
+		"amount", token.FormatAmt(amount),
 		"to", to.Hex(),
 	)
 
-	receipt, err := tokenutil.Transfer(ctx, backend, token, solver, to, balance)
+	receipt, err := tokenutil.Transfer(ctx, backend, token, solver, to, amount)
 	if err != nil {
 		return errors.Wrap(err, "transfer token")
 	}
 
 	log.Info(ctx, "ERC20 transfer complete",
 		"token", token.Symbol,
+		"amount", token.FormatAmt(amount),
 		"tx", receipt.TxHash.Hex(),
 	)
 
 	return nil
 }
 
-// transferNativeMax transfers the maximum possible native token balance to the target address,
-// leaving enough for gas.
+// transferNativeMax transfers up to the max amount of native token to the target address,
+// leaving enough for gas. Returns error if token not in maxTransfers map. If value is nil, transfers full balance (minus gas).
 func transferNativeMax(
 	ctx context.Context,
 	backend *ethbackend.Backend,
 	token tokens.Token,
 	solver common.Address,
 	to common.Address,
+	maxTransfers map[tokens.Asset]*big.Int,
 ) error {
 	balance, err := tokenutil.BalanceOf(ctx, backend, token, solver)
 	if err != nil {
@@ -179,28 +216,41 @@ func transferNativeMax(
 	if maxAmount.Sign() <= 0 {
 		log.Warn(ctx, "Insufficient native balance for gas", nil,
 			"token", token.Symbol,
-			"balance", balance.String(),
-			"gas_cost", gasCost.String(),
+			"balance", token.FormatAmt(balance),
+			"gas_cost", token.FormatAmt(gasCost),
 		)
 
 		return nil
 	}
 
+	// Check if token has max transfer limit configured
+	maxAmt, ok := maxTransfers[token.Asset]
+	if !ok {
+		return errors.New("max transfer not configured for token", "token", token.Symbol)
+	}
+
+	// Apply max transfer limit (nil means transfer full balance)
+	amount := maxAmount
+	if maxAmt != nil && bi.LT(maxAmt, maxAmount) {
+		amount = maxAmt
+	}
+
 	log.Info(ctx, "Transferring native token",
 		"token", token.Symbol,
-		"balance", balance.String(),
-		"amount", maxAmount.String(),
-		"gas_reserve", gasCost.String(),
+		"balance", token.FormatAmt(balance),
+		"amount", token.FormatAmt(amount),
+		"gas_reserve", token.FormatAmt(gasCost),
 		"to", to.Hex(),
 	)
 
-	receipt, err := tokenutil.Transfer(ctx, backend, token, solver, to, maxAmount)
+	receipt, err := tokenutil.Transfer(ctx, backend, token, solver, to, amount)
 	if err != nil {
 		return errors.Wrap(err, "transfer native token")
 	}
 
 	log.Info(ctx, "Native transfer complete",
 		"token", token.Symbol,
+		"amount", token.FormatAmt(amount),
 		"tx", receipt.TxHash.Hex(),
 	)
 

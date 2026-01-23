@@ -31,9 +31,16 @@ import (
 func TestMoveFundsConfig(t *testing.T) {
 	t.Parallel()
 
+	// Convert maxTransferAmounts to string map for golden file
+	maxTransfers := make(map[string]string)
+	for asset, amt := range moveFundsMax {
+		maxTransfers[asset.Symbol] = asset.FormatAmt(amt)
+	}
+
 	golden := map[string]any{
-		"moveFundsTo":     moveFundsTo.Hex(),
-		"moveFundsChains": moveFundsChains,
+		"moveFundsTo":        moveFundsTo.Hex(),
+		"moveFundsChains":    moveFundsChains,
+		"maxTransferAmounts": maxTransfers,
 	}
 
 	tutil.RequireGoldenJSON(t, golden)
@@ -176,32 +183,97 @@ func TestMoveFundsIntegration(t *testing.T) {
 		initialBalances[nativeToken.Symbol] = balance
 	}
 
-	// Run moveFundsToOn
+	// First test: try with empty map - should log warning but not transfer
+	log.Info(ctx, "Testing with empty max transfer map (should warn and skip)")
+	emptyMaxTransfers := make(map[tokens.Asset]*big.Int)
+	err = moveFundsToOn(ctx, backends, solver, targetAddr, []uint64{chainID}, emptyMaxTransfers)
+	tutil.RequireNoError(t, err) // No error, just warnings
+
+	// Verify no balances were transferred for any token
+	for _, token := range fundedERC20s {
+		targetBalance, err := tokenutil.BalanceOf(ctx, backend, token, targetAddr)
+		tutil.RequireNoError(t, err)
+		require.Equal(t, 0, targetBalance.Sign(),
+			"target should have zero %s balance when max transfers not configured, got %s",
+			token.Symbol, token.FormatAmt(targetBalance))
+
+		solverBalance, err := tokenutil.BalanceOf(ctx, backend, token, solver)
+		tutil.RequireNoError(t, err)
+		require.True(t, bi.EQ(solverBalance, initialBalances[token.Symbol]),
+			"solver %s balance should be unchanged, expected %s, got %s",
+			token.Symbol, token.FormatAmt(initialBalances[token.Symbol]), token.FormatAmt(solverBalance))
+	}
+
+	// Check native token too
+	if hasNative {
+		targetBalance, err := tokenutil.BalanceOf(ctx, backend, nativeToken, targetAddr)
+		tutil.RequireNoError(t, err)
+		require.Equal(t, 0, targetBalance.Sign(),
+			"target should have zero %s balance when max transfers not configured, got %s",
+			nativeToken.Symbol, nativeToken.FormatAmt(targetBalance))
+
+		solverBalance, err := tokenutil.BalanceOf(ctx, backend, nativeToken, solver)
+		tutil.RequireNoError(t, err)
+		require.True(t, bi.EQ(solverBalance, initialBalances[nativeToken.Symbol]),
+			"solver %s balance should be unchanged, expected %s, got %s",
+			nativeToken.Symbol, nativeToken.FormatAmt(initialBalances[nativeToken.Symbol]), nativeToken.FormatAmt(solverBalance))
+	}
+
+	log.Info(ctx, "Empty map correctly skipped transfers (all balances unchanged)")
+
+	// Create max transfer map - mostly nil (full balance) but with a limit on one token
+	testMaxTransfers := make(map[tokens.Asset]*big.Int)
+	for _, token := range allTokens {
+		if token.Is(tokens.USDC) {
+			// Set a low limit for USDC to test max transfer logic
+			testMaxTransfers[token.Asset] = bi.Dec6(50) // 50 USDC max
+		} else {
+			testMaxTransfers[token.Asset] = nil // nil means transfer full balance
+		}
+	}
+
+	// Run moveFundsToOn with properly configured map
 	log.Info(ctx, "Moving funds to target address", "target", targetAddr.Hex())
-	err = moveFundsToOn(ctx, backends, solver, targetAddr, []uint64{chainID})
+	err = moveFundsToOn(ctx, backends, solver, targetAddr, []uint64{chainID}, testMaxTransfers)
 	tutil.RequireNoError(t, err)
 
 	// Assert balances transferred correctly
 	log.Info(ctx, "Verifying balances")
 
-	// Check ERC20 tokens - should be fully transferred
+	// Check ERC20 tokens - verify transfer amounts respect max limits
 	for _, token := range fundedERC20s {
-		// Solver should have zero balance
-		solverBalance, err := tokenutil.BalanceOf(ctx, backend, token, solver)
-		tutil.RequireNoError(t, err)
-		require.Equal(t, 0, solverBalance.Sign(),
-			"solver should have zero %s balance, got %s", token.Symbol, token.FormatAmt(solverBalance))
-
-		// Target should have the initial balance
 		targetBalance, err := tokenutil.BalanceOf(ctx, backend, token, targetAddr)
 		tutil.RequireNoError(t, err)
-		require.True(t, bi.EQ(targetBalance, initialBalances[token.Symbol]),
+
+		solverBalance, err := tokenutil.BalanceOf(ctx, backend, token, solver)
+		tutil.RequireNoError(t, err)
+
+		initialBalance := initialBalances[token.Symbol]
+
+		// Determine expected transfer (min of initial balance and max transfer)
+		expectedTransfer := initialBalance
+		if maxAmt := testMaxTransfers[token.Asset]; maxAmt != nil && bi.LT(maxAmt, initialBalance) {
+			expectedTransfer = maxAmt
+		}
+
+		// Calculate expected remainder
+		expectedRemainder := bi.Sub(initialBalance, expectedTransfer)
+
+		// Verify target received expected amount
+		require.True(t, bi.EQ(targetBalance, expectedTransfer),
 			"target should have received %s %s, got %s",
-			token.FormatAmt(initialBalances[token.Symbol]), token.Symbol, token.FormatAmt(targetBalance))
+			token.FormatAmt(expectedTransfer), token.Symbol, token.FormatAmt(targetBalance))
+
+		// Verify solver has expected remainder
+		require.True(t, bi.EQ(solverBalance, expectedRemainder),
+			"solver should have %s %s remaining, got %s",
+			token.FormatAmt(expectedRemainder), token.Symbol, token.FormatAmt(solverBalance))
 
 		log.Info(ctx, "ERC20 transfer verified",
 			"token", token.Symbol,
-			"amount", token.FormatAmt(targetBalance))
+			"initial", token.FormatAmt(initialBalance),
+			"transferred", token.FormatAmt(targetBalance),
+			"remaining", token.FormatAmt(solverBalance))
 	}
 
 	// Check native token - should have transferred at least 99% of initial balance
