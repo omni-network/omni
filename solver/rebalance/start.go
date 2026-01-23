@@ -64,8 +64,12 @@ func Start(
 	}
 
 	go rebalanceCCTPForever(ctx, o.interval, cctpDB, network, pricer, backends, solver)
-	go rebalanceMantleForever(ctx, o.interval, backends, solver)
-	go rebalanceHyperEVMForever(ctx, o.interval, backends, solver, usdt0DB)
+
+	// No longer needed. Keeping for reference.
+	// go rebalanceMantleForever(ctx, o.interval, backends, solver)
+	// go rebalanceHyperEVMForever(ctx, o.interval, backends, solver, usdt0DB)
+	_ = rebalanceMantleForever
+	_ = rebalanceHyperEVMForever
 
 	return nil
 }

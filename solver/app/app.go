@@ -26,6 +26,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/solver/job"
+	"github.com/omni-network/omni/solver/rebalance"
 	"github.com/omni-network/omni/solver/targets"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -180,11 +181,9 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
-	_ = newCCTPClient
-	// No longer needed, kept for reference ("github.com/omni-network/omni/solver/rebalance")
-	// if err := rebalance.Start(ctx, network, newCCTPClient(network.ID), pricer, backends, solverAddr, cfg.DBDir); err != nil {
-	// 	log.Warn(ctx, "Failed to start rebalancing [BUG]", err)
-	// }
+	if err := rebalance.Start(ctx, network, newCCTPClient(network.ID), pricer, backends, solverAddr, cfg.DBDir); err != nil {
+		log.Warn(ctx, "Failed to start rebalancing [BUG]", err)
+	}
 
 	if err := moveFunds(ctx, backends, solverAddr); err != nil {
 		log.Warn(ctx, "Failed to move funds", err)

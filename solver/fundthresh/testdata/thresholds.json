@@ -1,24 +1,24 @@
 {
  "arbitrum_one:ETH": {
   "maxSwap": "5 ETH",
-  "min": "1 ETH",
-  "minSwap": "1 ETH",
-  "surplus": "5 ETH",
-  "target": "3 ETH"
+  "min": "0 ETH",
+  "minSwap": "0.0001 ETH",
+  "surplus": "0 ETH",
+  "target": "0 ETH"
  },
  "arbitrum_one:USDC": {
   "maxSwap": "10000 USDC",
-  "min": "1000 USDC",
-  "minSwap": "1000 USDC",
-  "surplus": "10000 USDC",
-  "target": "5000 USDC"
+  "min": "0 USDC",
+  "minSwap": "1 USDC",
+  "surplus": "0 USDC",
+  "target": "0 USDC"
  },
  "arbitrum_one:USDT": {
   "maxSwap": "10000 USDT",
-  "min": "1000 USDT",
-  "minSwap": "1000 USDT",
-  "surplus": "10000 USDT",
-  "target": "5000 USDT"
+  "min": "0 USDT",
+  "minSwap": "1 USDT",
+  "surplus": "0 USDT",
+  "target": "0 USDT"
  },
  "arbitrum_one:USDT0": {
   "maxSwap": "0 USDT0",
@@ -36,17 +36,17 @@
  },
  "base:ETH": {
   "maxSwap": "5 ETH",
-  "min": "1 ETH",
-  "minSwap": "1 ETH",
-  "surplus": "5 ETH",
-  "target": "3 ETH"
+  "min": "0 ETH",
+  "minSwap": "0.0001 ETH",
+  "surplus": "0 ETH",
+  "target": "0 ETH"
  },
  "base:USDC": {
   "maxSwap": "10000 USDC",
-  "min": "1000 USDC",
-  "minSwap": "1000 USDC",
-  "surplus": "10000 USDC",
-  "target": "5000 USDC"
+  "min": "0 USDC",
+  "minSwap": "1 USDC",
+  "surplus": "0 USDC",
+  "target": "0 USDC"
  },
  "base:WETH": {
   "maxSwap": "0 WETH",
@@ -58,16 +58,16 @@
  "base:wstETH": {
   "maxSwap": "5 wstETH",
   "min": "0 wstETH",
-  "minSwap": "1 wstETH",
+  "minSwap": "0.0001 wstETH",
   "surplus": "0 wstETH",
   "target": "0 wstETH"
  },
  "ethereum:ETH": {
   "maxSwap": "5 ETH",
-  "min": "1 ETH",
-  "minSwap": "1 ETH",
-  "surplus": "5 ETH",
-  "target": "3 ETH"
+  "min": "0 ETH",
+  "minSwap": "0.0001 ETH",
+  "surplus": "0.002 ETH",
+  "target": "0.002 ETH"
  },
  "ethereum:MNT": {
   "maxSwap": "0 MNT",
@@ -87,15 +87,15 @@
   "maxSwap": "10000 USDC",
   "min": "1000 USDC",
   "minSwap": "1000 USDC",
-  "surplus": "10000 USDC",
-  "target": "5000 USDC"
+  "surplus": "inf",
+  "target": "300000000 USDC"
  },
  "ethereum:USDT": {
   "maxSwap": "10000 USDT",
-  "min": "1000 USDT",
-  "minSwap": "1000 USDT",
-  "surplus": "10000 USDT",
-  "target": "5000 USDT"
+  "min": "0 USDT",
+  "minSwap": "1 USDT",
+  "surplus": "0 USDT",
+  "target": "0 USDT"
  },
  "ethereum:WETH": {
   "maxSwap": "0 WETH",
@@ -113,10 +113,10 @@
  },
  "ethereum:wstETH": {
   "maxSwap": "5 wstETH",
-  "min": "1 wstETH",
-  "minSwap": "1 wstETH",
-  "surplus": "5 wstETH",
-  "target": "3 wstETH"
+  "min": "0 wstETH",
+  "minSwap": "0.0001 wstETH",
+  "surplus": "0 wstETH",
+  "target": "0 wstETH"
  },
  "hyper_evm:HYPE": {
   "maxSwap": "0 HYPE",
@@ -134,31 +134,31 @@
  },
  "mantle:MNT": {
   "maxSwap": "0 MNT",
-  "min": "1000 MNT",
+  "min": "0 MNT",
   "minSwap": "0 MNT",
-  "surplus": "3000 MNT",
-  "target": "3000 MNT"
+  "surplus": "0 MNT",
+  "target": "0 MNT"
  },
  "mantle:USDC": {
   "maxSwap": "0 USDC",
   "min": "0 USDC",
   "minSwap": "0 USDC",
-  "surplus": "2000 USDC",
-  "target": "2000 USDC"
+  "surplus": "0 USDC",
+  "target": "0 USDC"
  },
  "mantle:WETH": {
   "maxSwap": "0 WETH",
-  "min": "1 WETH",
+  "min": "0 WETH",
   "minSwap": "0 WETH",
-  "surplus": "3 WETH",
-  "target": "3 WETH"
+  "surplus": "0 WETH",
+  "target": "0 WETH"
  },
  "mantle:mETH": {
   "maxSwap": "0 mETH",
-  "min": "1 mETH",
+  "min": "0 mETH",
   "minSwap": "0 mETH",
-  "surplus": "3 mETH",
-  "target": "3 mETH"
+  "surplus": "0 mETH",
+  "target": "0 mETH"
  },
  "omni_evm:NOM": {
   "maxSwap": "0 NOM",
@@ -169,24 +169,24 @@
  },
  "optimism:ETH": {
   "maxSwap": "5 ETH",
-  "min": "1 ETH",
-  "minSwap": "1 ETH",
-  "surplus": "5 ETH",
-  "target": "3 ETH"
+  "min": "0 ETH",
+  "minSwap": "0.0001 ETH",
+  "surplus": "0 ETH",
+  "target": "0 ETH"
  },
  "optimism:USDC": {
   "maxSwap": "10000 USDC",
-  "min": "1000 USDC",
-  "minSwap": "1000 USDC",
-  "surplus": "10000 USDC",
-  "target": "5000 USDC"
+  "min": "0 USDC",
+  "minSwap": "1 USDC",
+  "surplus": "0 USDC",
+  "target": "0 USDC"
  },
  "optimism:USDT": {
   "maxSwap": "10000 USDT",
-  "min": "1000 USDT",
-  "minSwap": "1000 USDT",
-  "surplus": "10000 USDT",
-  "target": "5000 USDT"
+  "min": "0 USDT",
+  "minSwap": "1 USDT",
+  "surplus": "0 USDT",
+  "target": "0 USDT"
  },
  "optimism:USDT0": {
   "maxSwap": "0 USDT0",
