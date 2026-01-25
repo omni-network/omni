@@ -343,11 +343,7 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
         });
     }
 
-    function _deadCall(uint64 destChainId, uint64 offset, bytes memory data)
-        internal
-        view
-        returns (XTypes.Msg memory)
-    {
+    function _deadCall(uint64 destChainId, uint64 offset, bytes memory data) internal view returns (XTypes.Msg memory) {
         return XTypes.Msg({
             destChainId: destChainId,
             shardId: uint64(ConfLevel.Finalized),
@@ -379,21 +375,21 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
             postsTo: thisChainId,
             gasPrice: 0.1 gwei, // 1 gwei
             toNativeRate: 1e6 // feeOracle.CONVERSION_RATE_DENOM , so 1:1
-         });
+        });
 
         feeParams[1] = IFeeOracleV1.ChainFeeParams({
             chainId: chainAId,
             postsTo: chainAId,
             gasPrice: 0.1 gwei, // 1 gwei
             toNativeRate: 1e6 // feeOracle.CONVERSION_RATE_DENOM , so 1:1
-         });
+        });
 
         feeParams[2] = IFeeOracleV1.ChainFeeParams({
             chainId: chainBId,
             postsTo: chainAId, // let's have chainB "rollup" to chainA
             gasPrice: 0.1 gwei, // 1 gwei
             toNativeRate: 1e6 // feeOracle.CONVERSION_RATE_DENOM , so 1:1
-         });
+        });
 
         feeOracleImpl = new FeeOracleV1();
         feeOracle = FeeOracleV1(

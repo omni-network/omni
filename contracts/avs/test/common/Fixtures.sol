@@ -3,7 +3,9 @@ pragma solidity =0.8.12;
 
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
@@ -174,7 +176,7 @@ contract Fixtures is EigenLayerFixtures {
             params[i] = IOmniAVS.StrategyParam({
                 strategy: IStrategy(strategies[i]),
                 multiplier: uint96(1e18) // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
-             });
+            });
         }
 
         return params;

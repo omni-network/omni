@@ -18,9 +18,8 @@ contract SolverNet_Inbox_Handle_Test is TestBase {
 
         // order must be pending
         bytes32 orderId = inbox.getNextOnchainOrderId(user);
-        bytes memory message = mailboxes[destinationDomain].buildMessage(
-            originDomain, bytes32(0), address(inbox).toBytes32(), abi.encode(orderId, bytes32(0), address(0))
-        );
+        bytes memory message = mailboxes[destinationDomain]
+        .buildMessage(originDomain, bytes32(0), address(inbox).toBytes32(), abi.encode(orderId, bytes32(0), address(0)));
         mailboxes[originDomain].addInboundMessage(message);
         vm.expectRevert(ISolverNetInbox.OrderNotPending.selector);
         mailboxes[originDomain].processNextInboundMessage();
@@ -35,23 +34,22 @@ contract SolverNet_Inbox_Handle_Test is TestBase {
         inbox.open{ value: defaultAmount }(order);
 
         // order must be filled on the correct chain
-        message = mailboxes[invalidDomain].buildMessage(
-            originDomain, bytes32(0), address(inbox).toBytes32(), abi.encode(orderId, bytes32(0), address(0))
-        );
+        message = mailboxes[invalidDomain]
+        .buildMessage(originDomain, bytes32(0), address(inbox).toBytes32(), abi.encode(orderId, bytes32(0), address(0)));
         mailboxes[originDomain].addInboundMessage(message);
         vm.expectRevert(ISolverNetInbox.WrongSourceChain.selector);
         mailboxes[originDomain].processInboundMessage(1);
 
         // order must be filled by the outbox
-        message = mailboxes[destinationDomain].buildMessage(
-            originDomain, bytes32(0), address(inbox).toBytes32(), abi.encode(orderId, bytes32(0), address(0))
-        );
+        message = mailboxes[destinationDomain]
+        .buildMessage(originDomain, bytes32(0), address(inbox).toBytes32(), abi.encode(orderId, bytes32(0), address(0)));
         mailboxes[originDomain].addInboundMessage(message);
         vm.expectRevert(Ownable.Unauthorized.selector);
         mailboxes[originDomain].processInboundMessage(2);
 
         // order must have a matching fill hash
-        message = mailboxes[destinationDomain].buildMessage(
+        message = mailboxes[destinationDomain]
+        .buildMessage(
             originDomain,
             address(outbox).toBytes32(),
             address(inbox).toBytes32(),
@@ -74,7 +72,8 @@ contract SolverNet_Inbox_Handle_Test is TestBase {
         inbox.open(order);
 
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
-        bytes memory message = mailboxes[destinationDomain].buildMessage(
+        bytes memory message = mailboxes[destinationDomain]
+        .buildMessage(
             originDomain,
             address(outbox).toBytes32(),
             address(inbox).toBytes32(),

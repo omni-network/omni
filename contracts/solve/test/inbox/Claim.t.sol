@@ -35,7 +35,8 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
                 abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
             );
         } else if (provider == 2) {
-            bytes memory message = mailboxes[destinationDomain].buildMessage(
+            bytes memory message = mailboxes[destinationDomain]
+            .buildMessage(
                 originDomain,
                 address(outbox).toBytes32(),
                 address(inbox).toBytes32(),
@@ -76,7 +77,8 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
                 abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
             );
         } else if (provider == 2) {
-            bytes memory message = mailboxes[destinationDomain].buildMessage(
+            bytes memory message = mailboxes[destinationDomain]
+            .buildMessage(
                 originDomain,
                 address(outbox).toBytes32(),
                 address(inbox).toBytes32(),
@@ -121,7 +123,8 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
                 abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
             );
         } else if (provider == 2) {
-            bytes memory message = mailboxes[destinationDomain].buildMessage(
+            bytes memory message = mailboxes[destinationDomain]
+            .buildMessage(
                 originDomain,
                 address(outbox).toBytes32(),
                 address(inbox).toBytes32(),

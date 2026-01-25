@@ -51,10 +51,7 @@ contract ReceiveTokenTest is TestBase {
         });
 
         _assertBalances({
-            addr: user,
-            tokenUserBal: INITIAL_USER_BALANCE,
-            tokenLockboxBal: 0,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: INITIAL_USER_BALANCE, tokenLockboxBal: 0, wrapperUserBal: INITIAL_USER_BALANCE
         });
     }
 
@@ -70,10 +67,7 @@ contract ReceiveTokenTest is TestBase {
         });
 
         _assertBalances({
-            addr: user,
-            tokenUserBal: INITIAL_USER_BALANCE,
-            tokenLockboxBal: 0,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: INITIAL_USER_BALANCE, tokenLockboxBal: 0, wrapperUserBal: INITIAL_USER_BALANCE
         });
     }
 
@@ -89,10 +83,7 @@ contract ReceiveTokenTest is TestBase {
         });
 
         _assertBalances({
-            addr: user,
-            tokenUserBal: INITIAL_USER_BALANCE,
-            tokenLockboxBal: 0,
-            wrapperUserBal: INITIAL_USER_BALANCE
+            addr: user, tokenUserBal: INITIAL_USER_BALANCE, tokenLockboxBal: 0, wrapperUserBal: INITIAL_USER_BALANCE
         });
     }
 
@@ -118,10 +109,7 @@ contract ReceiveTokenTest is TestBase {
         });
 
         _assertBalances({
-            addr: user,
-            tokenUserBal: INITIAL_USER_BALANCE,
-            tokenLockboxBal: 0,
-            wrapperUserBal: INITIAL_USER_BALANCE * 2
+            addr: user, tokenUserBal: INITIAL_USER_BALANCE, tokenLockboxBal: 0, wrapperUserBal: INITIAL_USER_BALANCE * 2
         });
     }
 }

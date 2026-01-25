@@ -413,10 +413,7 @@ contract MockSolverNetInbox is
      */
     function _getOrder(bytes32 id) internal view returns (SolverNet.Order memory) {
         return SolverNet.Order({
-            header: _orderHeader[id],
-            calls: _orderCalls[id],
-            deposit: _orderDeposit[id],
-            expenses: _orderExpenses[id]
+            header: _orderHeader[id], calls: _orderCalls[id], deposit: _orderDeposit[id], expenses: _orderExpenses[id]
         });
     }
 
@@ -427,10 +424,7 @@ contract MockSolverNetInbox is
     function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
         _validateOnchainOrder(order);
         (, SolverNet.Order memory _order) = _validateOrderData({
-            orderDataBytes: order.orderData,
-            fillDeadline: order.fillDeadline,
-            user: address(0),
-            gasless: false
+            orderDataBytes: order.orderData, fillDeadline: order.fillDeadline, user: address(0), gasless: false
         });
         return _order;
     }
@@ -446,10 +440,7 @@ contract MockSolverNetInbox is
     {
         _validateGaslessOrder(order);
         return _validateOrderData({
-            orderDataBytes: order.orderData,
-            fillDeadline: order.fillDeadline,
-            user: order.user,
-            gasless: true
+            orderDataBytes: order.orderData, fillDeadline: order.fillDeadline, user: order.user, gasless: true
         });
     }
 
@@ -514,8 +505,9 @@ contract MockSolverNetInbox is
             if (orderData.deposit.token == address(0) && orderData.deposit.amount > 0) revert InvalidNativeDeposit();
         }
 
-        SolverNet.Header memory header =
-            SolverNet.Header({ owner: orderData.owner, destChainId: orderData.destChainId, fillDeadline: fillDeadline });
+        SolverNet.Header memory header = SolverNet.Header({
+            owner: orderData.owner, destChainId: orderData.destChainId, fillDeadline: fillDeadline
+        });
 
         // Validate SolverNet.OrderData.Call
         SolverNet.Call[] memory calls = orderData.calls;
@@ -563,10 +555,7 @@ contract MockSolverNetInbox is
         }
         if (totalNativeValue > 0) {
             maxSpent[expenses.length] = IERC7683.Output({
-                token: bytes32(0),
-                amount: totalNativeValue,
-                recipient: bytes32(0),
-                chainId: header.destChainId
+                token: bytes32(0), amount: totalNativeValue, recipient: bytes32(0), chainId: header.destChainId
             });
         }
 
@@ -583,10 +572,7 @@ contract MockSolverNetInbox is
         IERC7683.Output[] memory minReceived = new IERC7683.Output[](deposit.amount > 0 ? 1 : 0);
         if (deposit.amount > 0) {
             minReceived[0] = IERC7683.Output({
-                token: deposit.token.toBytes32(),
-                amount: deposit.amount,
-                recipient: bytes32(0),
-                chainId: block.chainid
+                token: deposit.token.toBytes32(), amount: deposit.amount, recipient: bytes32(0), chainId: block.chainid
             });
         }
 
@@ -684,13 +670,10 @@ contract MockSolverNetInbox is
         ISignatureTransfer.TokenPermissions memory perms =
             ISignatureTransfer.TokenPermissions({ token: orderData.deposit.token, amount: orderData.deposit.amount });
         ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
-            permitted: perms,
-            nonce: order.nonce,
-            deadline: order.openDeadline
+            permitted: perms, nonce: order.nonce, deadline: order.openDeadline
         });
         ISignatureTransfer.SignatureTransferDetails memory details = ISignatureTransfer.SignatureTransferDetails({
-            to: address(this),
-            requestedAmount: orderData.deposit.amount
+            to: address(this), requestedAmount: orderData.deposit.amount
         });
 
         uint256 balance = orderData.deposit.token.balanceOf(address(this));

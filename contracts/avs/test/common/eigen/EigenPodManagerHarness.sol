@@ -28,14 +28,11 @@ contract EigenPodManagerHarness is EigenPodManager {
         podOwnerShares[podOwner] = updatedPodOwnerShares;
 
         int256 changeInDelegatableShares = _calculateChangeInDelegatableShares({
-            sharesBefore: currentPodOwnerShares,
-            sharesAfter: updatedPodOwnerShares
+            sharesBefore: currentPodOwnerShares, sharesAfter: updatedPodOwnerShares
         });
 
         delegationManager.increaseDelegatedShares({
-            staker: podOwner,
-            strategy: beaconChainETHStrategy,
-            shares: uint256(changeInDelegatableShares)
+            staker: podOwner, strategy: beaconChainETHStrategy, shares: uint256(changeInDelegatableShares)
         });
     }
 }
