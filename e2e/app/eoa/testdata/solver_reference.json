@@ -2,13 +2,13 @@
  "mainnet": {
   "arbitrum_one": {
    "ETH": {
-    "min": "1 ETH"
+    "min": "0 ETH"
    },
    "USDC": {
-    "min": "1000 USDC"
+    "min": "0 USDC"
    },
    "USDT": {
-    "min": "1000 USDT"
+    "min": "0 USDT"
    },
    "USDT0": {
     "min": "0 USDT0"
@@ -19,10 +19,10 @@
   },
   "base": {
    "ETH": {
-    "min": "1 ETH"
+    "min": "0 ETH"
    },
    "USDC": {
-    "min": "1000 USDC"
+    "min": "0 USDC"
    },
    "WETH": {
     "min": "0 WETH"
@@ -33,7 +33,7 @@
   },
   "ethereum": {
    "ETH": {
-    "min": "1 ETH"
+    "min": "0 ETH"
    },
    "MNT": {
     "min": "0 MNT"
@@ -48,7 +48,7 @@
     "min": "1000 USDC"
    },
    "USDT": {
-    "min": "1000 USDT"
+    "min": "0 USDT"
    },
    "WETH": {
     "min": "0 WETH"
@@ -60,7 +60,7 @@
     "min": "0 stETH"
    },
    "wstETH": {
-    "min": "1 wstETH"
+    "min": "0 wstETH"
    }
   },
   "omni_evm": {
@@ -70,13 +70,13 @@
   },
   "optimism": {
    "ETH": {
-    "min": "1 ETH"
+    "min": "0 ETH"
    },
    "USDC": {
-    "min": "1000 USDC"
+    "min": "0 USDC"
    },
    "USDT": {
-    "min": "1000 USDT"
+    "min": "0 USDT"
    },
    "USDT0": {
     "min": "0 USDT0"
