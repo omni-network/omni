@@ -3,6 +3,7 @@ package usdt0_test
 import (
 	"context"
 	"flag"
+	"log/slog"
 	"os"
 	"strings"
 	"testing"
@@ -37,6 +38,13 @@ func TestSendUSDT0(t *testing.T) {
 	}
 
 	ctx := t.Context()
+
+	logCfg := log.DefaultConfig()
+	logCfg.Level = slog.LevelDebug.String()
+	logCfg.Color = log.ColorForce
+
+	ctx, err := log.Init(ctx, logCfg)
+	tutil.RequireNoError(t, err)
 
 	// Private key needs at least 1 USDT on Ethereum to run this test, plus ETH for gas
 	pkHex := os.Getenv("TEST_PRIVATE_KEY")
@@ -88,7 +96,7 @@ func TestSendUSDT0(t *testing.T) {
 	lzClient := layerzero.NewClient(layerzero.MainnetAPI)
 
 	// Add 10 minute timeout to context
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Minute)
 	defer cancel()
 
 	usdt0.MonitorSendsForever(ctx, db, lzClient, []uint64{srcChainID, dstChainID})
@@ -109,6 +117,11 @@ func TestSendUSDT0(t *testing.T) {
 			// Check messages in db
 			msgs, err := db.GetMsgs(ctx)
 			require.NoError(t, err)
+
+			log.Info(ctx, "Checking for message delivery...", "msgs_in_db", len(msgs))
+			for _, m := range msgs {
+				log.Info(ctx, "Message in db", "tx_hash", m.TxHash, "status", m.Status)
+			}
 
 			if len(msgs) > 1 {
 				t.Fatalf("Expected 1 message in db, got %d", len(msgs))
