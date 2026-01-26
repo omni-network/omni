@@ -116,17 +116,11 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
 
         SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
         expenses[0] = SolverNet.TokenExpense({
-            spender: address(erc20Vault),
-            token: address(token2),
-            amount: uint96(defaultAmount)
+            spender: address(erc20Vault), token: address(token2), amount: uint96(defaultAmount)
         });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
-            owner: address(0),
-            destChainId: destChainId,
-            deposit: deposit,
-            calls: calls,
-            expenses: expenses
+            owner: address(0), destChainId: destChainId, deposit: deposit, calls: calls, expenses: expenses
         });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({

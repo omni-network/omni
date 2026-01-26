@@ -16,10 +16,7 @@ interface IMultiCall3 {
         bytes returnData;
     }
 
-    function aggregate(Call[] calldata calls)
-        external
-        payable
-        returns (uint256 blockNumber, bytes[] memory returnData);
+    function aggregate(Call[] calldata calls) external payable returns (uint256 blockNumber, bytes[] memory returnData);
     function tryAggregate(bool requireSuccess, Call[] calldata calls)
         external
         payable
@@ -38,10 +35,7 @@ interface ICreate2Deployer {
 interface ICreateX {
     function deployCreate2(bytes memory initCode) external payable returns (address newContract);
     function deployCreate2(bytes32 salt, bytes memory initCode) external payable returns (address newContract);
-    function computeCreate2Address(bytes32 salt, bytes32 initCodeHash)
-        external
-        view
-        returns (address computedAddress);
+    function computeCreate2Address(bytes32 salt, bytes32 initCodeHash) external view returns (address computedAddress);
 }
 
 interface ISafe_v130 {

@@ -2,7 +2,9 @@
 pragma solidity 0.8.24;
 
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { InitializableHelper } from "script/utils/InitializableHelper.sol";
 import { InitializableHelperSolady } from "script/utils/InitializableHelperSolady.sol";
 import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
