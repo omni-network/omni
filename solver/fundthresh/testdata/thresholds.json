@@ -66,8 +66,8 @@
   "maxSwap": "5 ETH",
   "min": "0 ETH",
   "minSwap": "0.0001 ETH",
-  "surplus": "0.002 ETH",
-  "target": "0.002 ETH"
+  "surplus": "0.1 ETH",
+  "target": "0.1 ETH"
  },
  "ethereum:MNT": {
   "maxSwap": "0 MNT",
