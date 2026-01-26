@@ -24,9 +24,7 @@ contract Utils is Fixtures {
     /// @dev register an operator with eigenlayer core
     function _registerAsOperator(address operator) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
-            earningsReceiver: operator,
-            delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
+            earningsReceiver: operator, delegationApprover: address(0), stakerOptOutWindowBlocks: 0
         });
 
         _testRegisterAsOperator(operator, operatorDetails);
@@ -36,16 +34,11 @@ contract Utils is Fixtures {
     function _registerOperatorWithAVS(address operator) internal {
         // don't matter
         ISignatureUtils.SignatureWithSaltAndExpiry memory sig = ISignatureUtils.SignatureWithSaltAndExpiry({
-            signature: new bytes(0),
-            salt: keccak256(abi.encodePacked(operator)),
-            expiry: block.timestamp + 1 days
+            signature: new bytes(0), salt: keccak256(abi.encodePacked(operator)), expiry: block.timestamp + 1 days
         });
 
         bytes32 operatorRegistrationDigestHash = avsDirectory.calculateOperatorAVSRegistrationDigestHash({
-            operator: operator,
-            avs: address(omniAVS),
-            salt: sig.salt,
-            expiry: sig.expiry
+            operator: operator, avs: address(omniAVS), salt: sig.salt, expiry: sig.expiry
         });
 
         sig.signature = _sign(operator, operatorRegistrationDigestHash);

@@ -233,9 +233,7 @@ contract TestBase is Test, TestStorage, MockHyperlaneEnvironment {
         });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
-            fillDeadline: fillDeadline,
-            orderDataType: HashLib.OLD_ORDERDATA_TYPEHASH,
-            orderData: abi.encode(orderData)
+            fillDeadline: fillDeadline, orderDataType: HashLib.OLD_ORDERDATA_TYPEHASH, orderData: abi.encode(orderData)
         });
 
         return (orderData, order);
@@ -293,11 +291,7 @@ contract TestBase is Test, TestStorage, MockHyperlaneEnvironment {
         SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](0);
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
-            owner: address(0),
-            destChainId: destChainId,
-            deposit: deposit,
-            calls: calls,
-            expenses: expenses
+            owner: address(0), destChainId: destChainId, deposit: deposit, calls: calls, expenses: expenses
         });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
@@ -326,17 +320,11 @@ contract TestBase is Test, TestStorage, MockHyperlaneEnvironment {
 
         SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
         expenses[0] = SolverNet.TokenExpense({
-            spender: address(erc20Vault),
-            token: address(token2),
-            amount: uint96(expenseAmount)
+            spender: address(erc20Vault), token: address(token2), amount: uint96(expenseAmount)
         });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
-            owner: address(0),
-            destChainId: destChainId,
-            deposit: deposit,
-            calls: calls,
-            expenses: expenses
+            owner: address(0), destChainId: destChainId, deposit: deposit, calls: calls, expenses: expenses
         });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
@@ -382,18 +370,12 @@ contract TestBase is Test, TestStorage, MockHyperlaneEnvironment {
             }
 
             expenses[i - bias] = SolverNet.TokenExpense({
-                spender: address(erc20Vault),
-                token: expenseTokens[i],
-                amount: expenseAmounts[i]
+                spender: address(erc20Vault), token: expenseTokens[i], amount: expenseAmounts[i]
             });
         }
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
-            owner: address(0),
-            destChainId: destChainId,
-            deposit: deposit,
-            calls: calls,
-            expenses: expenses
+            owner: address(0), destChainId: destChainId, deposit: deposit, calls: calls, expenses: expenses
         });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
@@ -466,12 +448,10 @@ contract TestBase is Test, TestStorage, MockHyperlaneEnvironment {
 
     function deploySolverNetExecutor(address expectedExecutorAddr, address expectedOutboxAddr) internal {
         executor = SolverNetExecutor(
-            payable(
-                create3.deploy(
+            payable(create3.deploy(
                     keccak256("executor"),
                     abi.encodePacked(type(SolverNetExecutor).creationCode, abi.encode(address(expectedOutboxAddr)))
-                )
-            )
+                ))
         );
         require(address(executor) == expectedExecutorAddr, "executor address mismatch");
     }
