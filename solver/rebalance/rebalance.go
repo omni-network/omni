@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	"github.com/omni-network/omni/lib/uniswap"
 	"github.com/omni-network/omni/solver/fundthresh"
 
@@ -138,9 +139,23 @@ func sendSurplusOnce(
 		return nil
 	}
 
-	// Subtract deficit here from available surplus.
+	usdcBalance, err := tokenutil.BalanceOf(ctx, backend, usdc, solver)
+	if err != nil {
+		return errors.Wrap(err, "get usdc balance")
+	}
+
+	log.Debug(ctx, "Preparing to send surplus",
+		"deficit_here", formatUSD(deficitHere.Amount),
+		"usdc_balance", usdc.FormatAmt(usdcBalance),
+		"surplus", usdc.FormatAmt(surplus),
+		"min_send", usdc.FormatAmt(minSend),
+		"max_send", usdc.FormatAmt(maxSend))
+
+	// Subtract deficit here from available surplus (if positive).
 	// Decrement surplus each time we send USDC.
-	surplus = bi.Sub(surplus, deficitHere.Amount)
+	if bi.GT(deficitHere.Amount, bi.Zero()) {
+		surplus = bi.Sub(surplus, deficitHere.Amount)
+	}
 
 	for _, d := range deficits {
 		if d.ChainID == thisChainID { // Skip self.
@@ -249,6 +264,18 @@ func swapTokenSurplusOnce(
 	if bi.GT(toSwap, maxSwap) { // Cap swap to maxSwap.
 		log.Debug(ctx, "Surplus > maxSwap, capping swap", "amount", token.FormatAmt(toSwap), "max", token.FormatAmt(maxSwap))
 		toSwap = maxSwap
+	}
+
+	// If native, leave some buffer for gas.
+	nativeBuffer := bi.Ether(0.05) // 0.05 ETH
+	if token.IsNative() {
+		if bi.LTE(toSwap, nativeBuffer) { // Not enough to leave buffer, skip.
+			log.Debug(ctx, "Surplus <= native buffer, skipping", "amount", token.FormatAmt(toSwap), "buffer", token.FormatAmt(nativeBuffer))
+			return nil
+		}
+
+		toSwap = bi.Sub(toSwap, nativeBuffer)
+		log.Debug(ctx, "Token is native, leaving gas buffer", "buffer", token.FormatAmt(nativeBuffer), "to_swap", token.FormatAmt(toSwap))
 	}
 
 	log.Debug(ctx, "Swapping surplus", "amount", token.FormatAmt(toSwap))

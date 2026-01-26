@@ -106,8 +106,8 @@ var (
 		// ETH
 		mustToken(evmchain.IDEthereum, tokens.ETH): {
 			min:     0,
-			target:  0.002,
-			surplus: 0.002,
+			target:  0.1,
+			surplus: 0.1,
 			minSwap: 0.0001,
 			maxSwap: 5,
 		},

@@ -1,3 +1,4 @@
+//nolint:unused // Unused code left for reference
 package rebalance_test
 
 import (
@@ -25,6 +26,7 @@ import (
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
@@ -41,6 +43,136 @@ var (
 )
 
 // Usage: go test . -integration -v -run=TestIntegration
+
+// TestIntegration tests integration rebalance package, currently configured
+// to move USDC back to Ethereum L1. Original rebalance tests left commented
+// out below for reference.
+func TestIntegration(t *testing.T) {
+	t.Parallel()
+
+	if !*integration {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := t.Context()
+
+	logCfg := log.DefaultConfig()
+	logCfg.Level = slog.LevelDebug.String()
+	logCfg.Color = log.ColorForce
+
+	ctx, err := log.Init(ctx, logCfg)
+	tutil.RequireNoError(t, err)
+
+	// Handle interrupts
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	rpcs := getRPCs(t)
+	chains := getChains(t)
+	network := makeNetwork(t, chains)
+	pricer := newPricer(ctx)
+
+	clients, stop := testutil.StartAnvilForks(t, ctx, rpcs, chains)
+	defer stop()
+
+	// Stop anvil on interrupt
+	go func() {
+		<-ctx.Done()
+		stop()
+	}()
+
+	solverPk, solver := testutil.NewAccount(t)
+
+	backends, err := ethbackend.BackendsFromClients(clients, solverPk)
+	tutil.RequireNoError(t, err)
+	xprov := xprovider.New(network, clients, nil)
+
+	// Start attesting CCTP messages
+	cctpClient := cctp.StartTestClient(ctx, t, xprov, chains, clients)
+
+	// Fund all tokens except USDC on Ethereum L1
+	fundAllExceptEthL1USDC(t, ctx, clients, solver)
+
+	// getEthL1USDCBalance returns USDC balance on Ethereum L1
+	getEthL1USDCBalance := func() *big.Int {
+		usdc, ok := tokens.ByAsset(evmchain.IDEthereum, tokens.USDC)
+		require.True(t, ok)
+
+		client, ok := clients[evmchain.IDEthereum]
+		require.True(t, ok)
+
+		balance, err := tokenutil.BalanceOf(ctx, client, usdc, solver)
+		tutil.RequireNoError(t, err)
+
+		return balance
+	}
+
+	logSnapshot := func() {
+		for _, tkn := range rebalance.SwappableTokens() {
+			if !cctp.IsSupportedChain(tkn.ChainID) {
+				continue
+			}
+
+			client, ok := clients[tkn.ChainID]
+			require.True(t, ok)
+
+			b, err := tokenutil.BalanceOf(ctx, client, tkn, solver)
+			tutil.RequireNoError(t, err)
+
+			bUSD, err := rebalance.AmtToUSD(ctx, pricer, tkn, b)
+			tutil.RequireNoError(t, err)
+
+			log.Info(ctx, "Token balance",
+				"chain", evmchain.Name(tkn.ChainID),
+				"token", tkn.Asset,
+				"balance", tkn.FormatAmt(b),
+				"usd_value", formatUSD(bUSD))
+		}
+	}
+
+	// Log initial state
+	initialBalance := getEthL1USDCBalance()
+	log.Info(ctx, "Starting Ethereum L1 USDC balance", "balance", formatUSDC(initialBalance))
+
+	// Start rebalancing
+	interval := 5 * time.Second // Fast interval for testing
+	dbDir := ""                 // Use in-memory db
+	err = rebalance.Start(ctx, network, cctpClient, pricer, backends, solver, dbDir, rebalance.WithInterval(interval))
+	tutil.RequireNoError(t, err)
+
+	// Wait for USDC to return to Ethereum L1
+	tutil.RequireEventually(t, ctx, func() bool {
+		logSnapshot()
+
+		currentBalance := getEthL1USDCBalance()
+		log.Info(ctx, "Current Ethereum L1 USDC balance", "balance", formatUSDC(currentBalance))
+
+		// Target: accumulate most USDC on Ethereum L1
+		// Consider > 90% of target as success to account for gas costs and rounding
+		targetUSD := float64(150_000) // Should match funding amount
+		targetBalance := bi.Dec6(int64(targetUSD))
+		threshold := bi.MulF64(targetBalance, 0.9)
+
+		if bi.LT(currentBalance, threshold) {
+			log.Info(ctx, "Rebalance not complete",
+				"current", formatUSDC(currentBalance),
+				"target", formatUSDC(targetBalance),
+				"threshold", formatUSDC(threshold))
+
+			return false
+		}
+
+		log.Info(ctx, "Rebalance complete - USDC returned to Ethereum L1",
+			"balance", formatUSDC(currentBalance),
+			"threshold", formatUSDC(threshold))
+
+		return true
+	}, 4*time.Minute, 10*time.Second)
+}
+
+/*
+Comment out original test. Leaving for reference.
+Rewriting above to test returning USDC to eth l1 w/ new fund thresholds.
 
 func TestIntegration(t *testing.T) {
 	t.Parallel()
@@ -169,6 +301,92 @@ func TestIntegration(t *testing.T) {
 
 		return true
 	}, 4*time.Minute, 10*time.Second)
+}
+
+*/
+
+// fundAllExceptEthL1USDC funds all tokens except USDC on Ethereum L1.
+// The goal is to have USDC distributed on other chains, and rebalance should move it to Ethereum L1.
+func fundAllExceptEthL1USDC(t *testing.T, ctx context.Context, clients map[uint64]ethclient.Client, solver common.Address) {
+	t.Helper()
+
+	// Make sure we have enough ETH for gas on all chains
+	for _, client := range clients {
+		err := anvil.FundAccounts(ctx, client, bi.Ether(1), solver)
+		tutil.RequireNoError(t, err)
+	}
+
+	totalFundingUSD := float64(150_000) // Total USDC to distribute across chains (except Ethereum L1)
+
+	// Get all USDC tokens except Ethereum L1
+	var usdcTokens []tokens.Token
+	for _, token := range rebalance.SwappableTokens() {
+		if !token.Is(tokens.USDC) {
+			continue
+		}
+		if token.ChainID == evmchain.IDEthereum {
+			continue
+		}
+		if !cctp.IsSupportedChain(token.ChainID) {
+			continue
+		}
+		usdcTokens = append(usdcTokens, token)
+	}
+
+	require.NotEmpty(t, usdcTokens, "need at least one USDC token to fund")
+
+	// Distribute USDC evenly across other chains
+	perChainUSD := totalFundingUSD / float64(len(usdcTokens))
+
+	for _, token := range usdcTokens {
+		// Fund with target threshold + surplus amount
+		thresh := fundthresh.Get(token)
+		surplusAmt := bi.Dec6(int64(perChainUSD))
+		toFund := bi.Add(thresh.Target(), surplusAmt)
+
+		fundToken(t, ctx, clients[token.ChainID], token, solver, toFund)
+
+		log.Info(ctx, "Funded USDC surplus",
+			"chain", evmchain.Name(token.ChainID),
+			"token", token.Asset,
+			"amount", token.FormatAmt(toFund),
+			"thresh_target", token.FormatAmt(thresh.Target()),
+			"surplus", token.FormatAmt(surplusAmt))
+	}
+
+	// Fund Ethereum L1 with all other tokens at their target thresholds
+	// This ensures USDC is the only token with surplus that needs rebalancing
+	for _, token := range rebalance.SwappableTokens() {
+		if !cctp.IsSupportedChain(token.ChainID) {
+			continue
+		}
+		if token.ChainID != evmchain.IDEthereum {
+			continue
+		}
+		if token.Is(tokens.USDC) {
+			// Don't fund Ethereum L1 USDC - we want it to accumulate there
+			continue
+		}
+
+		thresh := fundthresh.Get(token)
+		toFund := thresh.Target()
+
+		if bi.LTE(toFund, bi.Zero()) {
+			continue
+		}
+
+		fundToken(t, ctx, clients[token.ChainID], token, solver, toFund)
+
+		log.Info(ctx, "Funded Ethereum L1 token at target",
+			"chain", evmchain.Name(token.ChainID),
+			"token", token.Asset,
+			"amount", token.FormatAmt(toFund),
+			"thresh_target", token.FormatAmt(thresh.Target()))
+	}
+}
+
+func formatUSDC(amt *big.Int) string {
+	return formatUSD(amt)
 }
 
 // fundUnbalanced funds the solver w/ unbalanced tokens (based on threshold values).
