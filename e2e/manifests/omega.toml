@@ -6,8 +6,8 @@ prometheus = true
 
 pinned_halo_tag = "883cc00" # disbale holesky
 pinned_relayer_tag = "883cc00"
-pinned_monitor_tag = "98293a8"
-pinned_solver_tag = "98293a8"
+pinned_monitor_tag = "0e3f937"
+pinned_solver_tag = "0e3f937"
 
 [node.validator01]
 [node.validator02]
