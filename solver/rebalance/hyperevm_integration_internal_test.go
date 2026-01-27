@@ -29,6 +29,10 @@ import (
 func TestRebalanceHyperEVMOnce(t *testing.T) {
 	t.Parallel()
 
+	// Currently timeing out waiting for OFTSent event. Contracts likely upgraded, and bindings / tests need updating.
+	// USDT0 sends still functioning. Solver hyper evm rebalance paused.
+	t.Skip()
+
 	if f := flag.Lookup("integration"); f != nil && !f.Value.(flag.Getter).Get().(bool) {
 		t.Skip("Skipping integration test")
 	}

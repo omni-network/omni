@@ -42,6 +42,8 @@ func monitorSends(ctx context.Context, db *DB, client layerzero.Client, chainIDs
 	gaugePending(chainIDs, msgs)
 	guageOldest(ctx, msgs, db)
 
+	log.Info(ctx, "Monitoring USDT0 sends", "num_msgs", len(msgs))
+
 	for _, msg := range msgs {
 		ctx := log.WithCtx(ctx,
 			"tx", msg.TxHash.Hex(),
@@ -72,6 +74,8 @@ func monitorSend(ctx context.Context, db *DB, client layerzero.Client, msg MsgSe
 	}
 
 	status := layerzero.MsgStatus(messages[0].Status.Name)
+
+	log.Debug(ctx, "Fetched message status", "status", status.String(), "tx", msg.TxHash.Hex())
 
 	if err := status.Verify(); err != nil {
 		return errors.Wrap(err, "unexpected message status [BUG]", "status", status.String())
