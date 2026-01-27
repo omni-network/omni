@@ -187,14 +187,19 @@ func sendUSDTToHyperEVM(
 // Note: USDT0 from HyperEVM -> Ethereum L1 takes 12 hours to finalize.
 func drainHyperEVMUSDT0(
 	ctx context.Context,
-	hypBackend *ethbackend.Backend,
+	backends ethbackend.Backends,
 	solver common.Address,
 	db *usdt0.DB,
 ) error {
+	backend, err := backends.Backend(evmchain.IDHyperEVM)
+	if err != nil {
+		return errors.New("hypervm backend")
+	}
+
 	// Start with just 1 USDT0
 	amount := bi.Dec6(1)
 
-	bal, err := tokenutil.BalanceOf(ctx, hypBackend, hypUSDT0, solver)
+	bal, err := tokenutil.BalanceOf(ctx, backend, hypUSDT0, solver)
 	if err != nil {
 		return errors.Wrap(err, "balance of")
 	}
@@ -203,7 +208,7 @@ func drainHyperEVMUSDT0(
 
 	_, err = usdt0.Send(
 		ctx,
-		hypBackend,
+		backend,
 		solver,
 		evmchain.IDHyperEVM, // source: HyperEVM
 		evmchain.IDEthereum, // destination: Ethereum L1
