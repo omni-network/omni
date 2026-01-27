@@ -6,8 +6,8 @@ prometheus   = true
 
 pinned_halo_tag = "0609013" # redenom concurrency fix
 pinned_relayer_tag = "813a5e6"
-pinned_monitor_tag = "813a5e6"
-pinned_solver_tag = "ab95a0b"
+pinned_monitor_tag = "fbb22c3"
+pinned_solver_tag = "fbb22c3"
 
 [node.validator01]
 [node.validator02]
