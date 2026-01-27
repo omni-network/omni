@@ -22,11 +22,11 @@ import (
 )
 
 var (
-	// minSend = bi.Dec6(1000) // 1k USDC.
+	// minSend is the minimum amount of surplus USDC to send to other chains.
 	minSend = bi.Dec6(0) // No minimum
 
-	// maxSend = bi.Dec6(10000) // 10k USDC.
-	maxSend = bi.Dec6(1) // 1 USDC
+	// maxSend is the maximum amount of USDC allowed in a single send.
+	maxSend = bi.Dec6(10000) // 10k USDC
 )
 
 // rebalanceCCTPForever starts rebalancing loops for each chain in the cctp network.
