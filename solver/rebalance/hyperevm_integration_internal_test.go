@@ -3,6 +3,7 @@ package rebalance
 import (
 	"context"
 	"flag"
+	"log/slog"
 	"math/big"
 	"os"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/layerzero"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/usdt0"
@@ -162,5 +164,108 @@ func fundToken(t *testing.T, ctx context.Context, client ethclient.Client, token
 		return
 	}
 
+	if token.Is(tokens.USDT0) && token.ChainID == evmchain.IDHyperEVM {
+		// USDT0 on HyperEVM is at slot 51 (same storage layout as Arb USDT)
+		err := anvil.FundERC20(ctx, client, token.Address, amt, account, anvil.WithSlotIdx(51))
+		tutil.RequireNoError(t, err)
+
+		return
+	}
+
 	t.Fatalf("unsupported token %s", token)
+}
+
+func TestDrainHyperEVMUSDT0(t *testing.T) {
+	t.Parallel()
+
+	if f := flag.Lookup("integration"); f != nil && !f.Value.(flag.Getter).Get().(bool) {
+		t.Skip("Skipping integration test")
+	}
+
+	rpcs := map[uint64]string{
+		evmchain.IDEthereum: mustEnv(t, "ETH_RPC"),
+		evmchain.IDHyperEVM: mustEnv(t, "HYPER_EVM_RPC"),
+	}
+
+	chains := []evmchain.Metadata{
+		mustMeta(t, evmchain.IDEthereum),
+		mustMeta(t, evmchain.IDHyperEVM),
+	}
+
+	ctx := t.Context()
+
+	logCfg := log.DefaultConfig()
+	logCfg.Level = slog.LevelDebug.String()
+	logCfg.Color = log.ColorForce
+
+	ctx, err := log.Init(ctx, logCfg)
+	tutil.RequireNoError(t, err)
+
+	clients, stop := testutil.StartAnvilForks(t, ctx, rpcs, chains)
+	defer stop()
+
+	solverPk, solver := testutil.NewAccount(t)
+
+	backends, err := ethbackend.BackendsFromClients(clients, solverPk)
+	tutil.RequireNoError(t, err)
+
+	hypBackend, err := backends.Backend(evmchain.IDHyperEVM)
+	tutil.RequireNoError(t, err)
+
+	// Fund gas on HyperEVM
+	err = anvil.FundAccounts(ctx, clients[evmchain.IDHyperEVM], bi.Ether(1), solver)
+	tutil.RequireNoError(t, err)
+
+	// Fund 10 USDT0 on HyperEVM to drain
+	usdt0Token := mustToken(evmchain.IDHyperEVM, tokens.USDT0)
+	fundToken(t, ctx, clients[evmchain.IDHyperEVM], usdt0Token, solver, bi.Dec6(10))
+
+	// Get HyperEVM OFT contract for event filtering
+	oftAddr := usdt0.OFTByChain(evmchain.IDHyperEVM)
+	oft, err := usdt0.NewIOFT(oftAddr, clients[evmchain.IDHyperEVM])
+	tutil.RequireNoError(t, err)
+
+	// Get latest block, used as startBlock for OFTSent event filtering
+	startBlock, err := clients[evmchain.IDHyperEVM].BlockNumber(ctx)
+	tutil.RequireNoError(t, err)
+
+	// Test draining 1 USDT0 from HyperEVM to Ethereum
+	err = drainHyperEVMUSDT0(ctx, hypBackend, solver, nil)
+	tutil.RequireNoError(t, err)
+
+	timeout := time.After(30 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	// Wait for OFTSent event to be emitted
+	for {
+		select {
+		case <-timeout:
+			t.Fatal("timeout waiting for OFTSent event")
+		case <-ticker.C:
+			// Query OFTSent logs from start block to latest
+			endBlock, err := clients[evmchain.IDHyperEVM].BlockNumber(ctx)
+			tutil.RequireNoError(t, err)
+			logs, err := oft.FilterOFTSent(&bind.FilterOpts{
+				Start: startBlock,
+				End:   &endBlock,
+			}, nil, []common.Address{solver})
+			tutil.RequireNoError(t, err)
+
+			// Any event must match (we are only eoa transacting)
+			for logs.Next() {
+				event := logs.Event
+				require.Equal(t, mustEID(t, evmchain.IDEthereum), event.DstEid)
+				require.Equal(t, solver, event.FromAddress)
+
+				// Verify amount sent is 1 USDT0
+				tutil.RequireGT(t, event.AmountSentLD, bi.Dec6(0))
+				require.Equal(t, bi.Dec6(1), event.AmountSentLD)
+
+				return
+			}
+
+			tutil.RequireNoError(t, logs.Error())
+		}
+	}
 }
