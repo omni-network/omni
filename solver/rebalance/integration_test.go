@@ -149,14 +149,18 @@ func TestIntegration(t *testing.T) {
 
 		// Target: accumulate most USDC on Ethereum L1
 		// Consider > 90% of target as success to account for gas costs and rounding
-		targetUSD := float64(150_000) // Should match funding amount
-		targetBalance := bi.Dec6(int64(targetUSD))
-		threshold := bi.MulF64(targetBalance, 0.9)
+		// targetUSD := float64(150_000) // Should match funding amount
+		// targetBalance := bi.Dec6(int64(targetUSD))
+		// threshold := bi.MulF64(targetBalance, 0.9)
+
+		// Swap / send maxes are temporarily lowered to avoid large moves.
+		// Revert to above when swap / send maxes increased back to normal.
+		// This threshold makes sure pipes are still functioning.
+		threshold := bi.Dec6(1000)
 
 		if bi.LT(currentBalance, threshold) {
 			log.Info(ctx, "Rebalance not complete",
 				"current", formatUSDC(currentBalance),
-				"target", formatUSDC(targetBalance),
 				"threshold", formatUSDC(threshold))
 
 			return false
@@ -368,8 +372,14 @@ func fundAllExceptEthL1USDC(t *testing.T, ctx context.Context, clients map[uint6
 			continue
 		}
 
-		thresh := fundthresh.Get(token)
-		toFund := thresh.Target()
+		// Fund with large amount (fund targets are zero)
+		toFund := func() *big.Int {
+			if token.Decimals == 6 {
+				return bi.Dec6(100_000)
+			}
+
+			return bi.Ether(100)
+		}()
 
 		if bi.LTE(toFund, bi.Zero()) {
 			continue
@@ -380,8 +390,7 @@ func fundAllExceptEthL1USDC(t *testing.T, ctx context.Context, clients map[uint6
 		log.Info(ctx, "Funded Ethereum L1 token at target",
 			"chain", evmchain.Name(token.ChainID),
 			"token", token.Asset,
-			"amount", token.FormatAmt(toFund),
-			"thresh_target", token.FormatAmt(thresh.Target()))
+			"amount", token.FormatAmt(toFund))
 	}
 }
 
