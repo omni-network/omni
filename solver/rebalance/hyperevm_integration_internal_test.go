@@ -209,9 +209,6 @@ func TestDrainHyperEVMUSDT0(t *testing.T) {
 	backends, err := ethbackend.BackendsFromClients(clients, solverPk)
 	tutil.RequireNoError(t, err)
 
-	hypBackend, err := backends.Backend(evmchain.IDHyperEVM)
-	tutil.RequireNoError(t, err)
-
 	// Fund gas on HyperEVM
 	err = anvil.FundAccounts(ctx, clients[evmchain.IDHyperEVM], bi.Ether(1), solver)
 	tutil.RequireNoError(t, err)
@@ -230,7 +227,7 @@ func TestDrainHyperEVMUSDT0(t *testing.T) {
 	tutil.RequireNoError(t, err)
 
 	// Test draining 1 USDT0 from HyperEVM to Ethereum
-	err = drainHyperEVMUSDT0(ctx, hypBackend, solver, nil)
+	err = drainHyperEVMUSDT0(ctx, backends, solver, nil)
 	tutil.RequireNoError(t, err)
 
 	timeout := time.After(30 * time.Second)
