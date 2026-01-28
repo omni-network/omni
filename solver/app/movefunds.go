@@ -32,16 +32,17 @@ var (
 	// If the value is nil, we transfer the full balance.
 	moveFundsMax = map[tokens.Asset]*big.Int{
 		tokens.ETH:    bi.Ether(0.01), // 0.01 ETH
-		tokens.WETH:   bi.Ether(0.01), // 0.01 WETH
+		tokens.WETH:   nil,            // Full balance
 		tokens.WSTETH: bi.Ether(0.01), // 0.01 wstETH
 		tokens.STETH:  bi.Ether(0.01), // 0.01 stETH
-		tokens.USDC:   bi.Dec6(1),     // 1 USDC
+		tokens.USDC:   nil,            // Full balance
 		tokens.USDT:   bi.Dec6(1),     // 1 USDT
+		tokens.USDT0:  bi.Dec6(1),     // 1 USDT0
 		tokens.OMNI:   bi.Ether(1),    // 1 OMNI
 		tokens.HYPE:   bi.Ether(1),    // 1 HYPE
-		tokens.MNT:    bi.Ether(1),    // 1 MNT
+		tokens.MNT:    nil,            // Full balance
 		tokens.NOM:    bi.Ether(1),    // 1 NOM
-		tokens.METH:   bi.Ether(0.01), // 0.01 mETH
+		tokens.METH:   nil,            // Full balance
 	}
 )
 
