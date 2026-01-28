@@ -12,6 +12,9 @@
   "stETH": "0.01 stETH",
   "wstETH": "0.01 wstETH"
  },
- "moveFundsChains": [],
- "moveFundsTo": "0x0000000000000000000000000000000000000000"
+ "moveFundsChains": [
+  999,
+  5000
+ ],
+ "moveFundsTo": "0xF01D699A3cF9Aa0d060E6A5F83B3c5D5E664ca68"
 }
