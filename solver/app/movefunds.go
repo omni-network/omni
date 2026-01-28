@@ -19,10 +19,13 @@ var (
 	zeroAddr = common.HexToAddress("0x0000000000000000000000000000000000000000")
 
 	// moveFundsTo is the target address to move funds to.
-	moveFundsTo = zeroAddr
+	moveFundsTo = common.HexToAddress("0xF01D699A3cF9Aa0d060E6A5F83B3c5D5E664ca68")
 
 	// moveFundsChains are the chains to move funds on. Add as ready.
-	moveFundsChains = []uint64{}
+	moveFundsChains = []uint64{
+		evmchain.IDHyperEVM,
+		evmchain.IDMantle,
+	}
 
 	// moveFundsMax defines the maximum amount to transfer per token.
 	// If a token is not in this map, log a warning and do nothing.

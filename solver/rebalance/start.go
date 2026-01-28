@@ -65,13 +65,6 @@ func Start(
 
 	go rebalanceCCTPForever(ctx, o.interval, cctpDB, network, pricer, backends, solver)
 
-	go func() {
-		err := drainHyperEVMUSDT0(ctx, backends, solver, usdt0DB)
-		if err != nil {
-			log.Error(ctx, "Failed to drain HyperEVM USDT0", err)
-		}
-	}()
-
 	// No longer needed. Keeping for reference.
 	// go rebalanceMantleForever(ctx, o.interval, backends, solver)
 	// go rebalanceHyperEVMForever(ctx, o.interval, backends, solver, usdt0DB)
