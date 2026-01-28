@@ -37,6 +37,7 @@ var (
 		tokens.STETH:  bi.Ether(0.01), // 0.01 stETH
 		tokens.USDC:   bi.Dec6(1),     // 1 USDC
 		tokens.USDT:   bi.Dec6(1),     // 1 USDT
+		tokens.USDT0:  bi.Dec6(1),     // 1 USDT0
 		tokens.OMNI:   bi.Ether(1),    // 1 OMNI
 		tokens.HYPE:   bi.Ether(1),    // 1 HYPE
 		tokens.MNT:    bi.Ether(1),    // 1 MNT
