@@ -2,19 +2,18 @@
  "maxTransferAmounts": {
   "ETH": "0.01 ETH",
   "HYPE": "1 HYPE",
-  "MNT": "1 MNT",
+  "MNT": "nil",
   "NOM": "1 NOM",
   "OMNI": "1 OMNI",
-  "USDC": "1 USDC",
+  "USDC": "nil",
   "USDT": "1 USDT",
   "USDT0": "1 USDT0",
-  "WETH": "0.01 WETH",
-  "mETH": "0.01 mETH",
+  "WETH": "nil",
+  "mETH": "nil",
   "stETH": "0.01 stETH",
   "wstETH": "0.01 wstETH"
  },
  "moveFundsChains": [
-  999,
   5000
  ],
  "moveFundsTo": "0xF01D699A3cF9Aa0d060E6A5F83B3c5D5E664ca68"
