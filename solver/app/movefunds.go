@@ -23,7 +23,7 @@ var (
 
 	// moveFundsChains are the chains to move funds on. Add as ready.
 	moveFundsChains = []uint64{
-		// evmchain.IDHyperEVM,
+		evmchain.IDHyperEVM,
 		evmchain.IDMantle,
 	}
 
@@ -37,9 +37,9 @@ var (
 		tokens.STETH:  bi.Ether(0.01), // 0.01 stETH
 		tokens.USDC:   nil,            // Full balance (Mantle)
 		tokens.USDT:   bi.Dec6(1),     // 1 USDT
-		tokens.USDT0:  bi.Dec6(1),     // 1 USDT0
+		tokens.USDT0:  nil,            // Full balance (HyperEVM)
 		tokens.OMNI:   bi.Ether(1),    // 1 OMNI
-		tokens.HYPE:   bi.Ether(1),    // 1 HYPE
+		tokens.HYPE:   nil,            // Full balance (HyperEVM)
 		tokens.MNT:    nil,            // Full balance (Mantle)
 		tokens.NOM:    bi.Ether(1),    // 1 NOM
 		tokens.METH:   nil,            // Full balance (Mantle)
@@ -206,22 +206,24 @@ func transferNativeMax(
 		return nil
 	}
 
-	gasPrice, err := backend.SuggestGasPrice(ctx)
-	if err != nil {
-		return errors.Wrap(err, "suggest gas price")
+	// Gas buffer
+	buffer := bi.Ether(0.01)
+
+	if token.Is(tokens.MNT) {
+		buffer = bi.Ether(1)
 	}
 
-	// Standard ETH transfer gas is 21000. Add buffer to be safe on L2s, where gas price does not include L1 gas costs.
-	const transferGas = 21000
-	gasCost := new(big.Int).Mul(gasPrice, big.NewInt(transferGas*25))
-	maxAmount := bi.Sub(balance, gasCost)
+	if token.Is(tokens.HYPE) {
+		buffer = bi.Ether(0.1)
+	}
+
+	maxAmount := bi.Sub(balance, buffer)
 
 	// Skip if we can't afford
 	if maxAmount.Sign() <= 0 {
 		log.Warn(ctx, "Insufficient native balance for gas", nil,
 			"token", token.Symbol,
 			"balance", token.FormatAmt(balance),
-			"gas_cost", token.FormatAmt(gasCost),
 		)
 
 		return nil
@@ -243,7 +245,6 @@ func transferNativeMax(
 		"token", token.Symbol,
 		"balance", token.FormatAmt(balance),
 		"amount", token.FormatAmt(amount),
-		"gas_reserve", token.FormatAmt(gasCost),
 		"to", to.Hex(),
 	)
 
