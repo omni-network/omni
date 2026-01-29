@@ -211,9 +211,9 @@ func transferNativeMax(
 		return errors.Wrap(err, "suggest gas price")
 	}
 
-	// Standard ETH transfer gas is 21000
+	// Standard ETH transfer gas is 21000. Add buffer to be safe on L2s, where gas price does not include L1 gas costs.
 	const transferGas = 21000
-	gasCost := new(big.Int).Mul(gasPrice, big.NewInt(transferGas*5))
+	gasCost := new(big.Int).Mul(gasPrice, big.NewInt(transferGas*25))
 	maxAmount := bi.Sub(balance, gasCost)
 
 	// Skip if we can't afford
