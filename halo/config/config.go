@@ -95,6 +95,17 @@ type Config struct {
 	EVMRedenomSubmit   evmredenomsubmit.Config // EVM redenomination submit config
 }
 
+// HaltHeight returns the consensus halt height for the given network.
+// Returns 0 if no halt height is configured for the network.
+func HaltHeight(network netconf.ID) uint64 {
+	switch network {
+	case netconf.Staging:
+		return 1180000
+	default:
+		return 0
+	}
+}
+
 // RPCConfig is an abridged version of CosmosSDK srvconfig.API/GRPCConfig.
 type RPCConfig struct {
 	Enable  bool

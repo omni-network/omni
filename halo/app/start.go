@@ -383,6 +383,7 @@ func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {
 		baseapp.SetInterBlockCache(store.NewCommitKVStoreCacheManager()),
 		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
 		baseapp.SetMempool(mempool.NoOpMempool{}),
+		baseapp.SetHaltHeight(halocfg.HaltHeight(cfg.Network)),
 	}, nil
 }
 
