@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	halocfg "github.com/omni-network/omni/halo/config"
 	evmredenomsubmit "github.com/omni-network/omni/halo/evmredenom/submit"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cast"
@@ -41,13 +42,11 @@ func Start(
 		return
 	}
 
-	// Only run on staging network
-	if network != netconf.Staging {
+	// Get halt height for this network (0 means disabled)
+	haltHeight := halocfg.HaltHeight(network)
+	if haltHeight == 0 {
 		return
 	}
-
-	// Set halt height for staging
-	haltHeight := uint64(1180000)
 
 	go func() {
 		if err := run(ctx, haltHeight, evmRedenomCfg, homeDir, consensusClient, cprov); err != nil {
