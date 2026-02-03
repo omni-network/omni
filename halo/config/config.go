@@ -100,7 +100,7 @@ type Config struct {
 func HaltHeight(network netconf.ID) uint64 {
 	switch network {
 	case netconf.Staging:
-		return 1180000
+		return 1190000
 	default:
 		return 0
 	}
