@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/omni-network/omni/halo/balancesnap"
 	"github.com/omni-network/omni/halo/comet"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/evmredenom"
@@ -226,6 +227,8 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), status)
 	go monitorEVMForever(ctx, cfg, engineCl, status)
+
+	balancesnap.Start(ctx, cfg.Network, cfg.EVMRedenomSubmit, cfg.HomeDir, rpcClient, cProvider, asyncAbort)
 
 	stopProxy := startEVMProxy(ctx, asyncAbort, cfg.EVMProxyListen, cfg.EVMProxyTarget)
 
