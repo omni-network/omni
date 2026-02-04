@@ -22,9 +22,15 @@ import (
 	"github.com/cometbft/cometbft/rpc/client"
 
 	"github.com/ethereum/go-ethereum/common"
+	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
+
+// EVMEngineKeeper defines the interface for accessing EVM engine execution head.
+type EVMEngineKeeper interface {
+	GetExecutionHeader(ctx context.Context) (*etypes.Header, error)
+}
 
 // Start starts a goroutine that waits for halt height and snapshots balances.
 // Returns immediately if not enabled or network is not staging/devnet.
@@ -35,6 +41,7 @@ func Start(
 	homeDir string,
 	consensusClient client.Client,
 	cprov cchain.Provider,
+	evmengKeeper EVMEngineKeeper,
 	asyncAbort chan<- error,
 ) {
 	// Only enabled if evmredenom is enabled
@@ -49,8 +56,8 @@ func Start(
 	}
 
 	go func() {
-		if err := run(ctx, haltHeight, evmRedenomCfg, homeDir, consensusClient, cprov); err != nil {
-			log.Error(ctx, "Balance snapshot failed", err)
+		if err := run(ctx, haltHeight, evmRedenomCfg, homeDir, consensusClient, cprov, evmengKeeper); err != nil {
+			log.Error(ctx, "BalanceSnap: balance snapshot failed", err)
 			asyncAbort <- errors.Wrap(err, "balance snapshot")
 		}
 	}()
@@ -64,32 +71,25 @@ func run(
 	homeDir string,
 	consensusClient client.Client,
 	cprov cchain.Provider,
+	evmengKeeper EVMEngineKeeper,
 ) error {
-	log.Info(ctx, "Balance snapshot enabled", "halt_height", haltHeight)
+	log.Info(ctx, "BalanceSnap: waiting for halt height", "halt_height", haltHeight)
 
 	// Wait for consensus to reach halt height
 	if err := waitForHeight(ctx, consensusClient, haltHeight); err != nil {
 		return errors.Wrap(err, "wait for halt height")
 	}
 
-	log.Info(ctx, "Halt height reached, querying EVM head", "height", haltHeight)
+	log.Info(ctx, "BalanceSnap: halt height reached, querying EVM head", "height", haltHeight)
 
-	// Connect to archive RPC to get latest EVM header
-	archive, err := ethclient.DialContext(ctx, "omni_evm", evmRedenomCfg.RPCArchive)
+	execHead, err := evmengKeeper.GetExecutionHeader(ctx)
 	if err != nil {
-		return errors.Wrap(err, "dial archive RPC")
-	}
-	defer archive.Close()
-
-	// Query latest EVM block header
-	evmHeader, err := archive.HeaderByType(ctx, ethclient.HeadLatest)
-	if err != nil {
-		return errors.Wrap(err, "get latest EVM header")
+		return errors.Wrap(err, "get execution header")
 	}
 
-	log.Info(ctx, "EVM head retrieved",
-		"block_number", evmHeader.Number.Uint64(),
-		"state_root", evmHeader.Root.Hex(),
+	log.Info(ctx, "BalanceSnap: evm head retrieved",
+		"block_number", execHead.Number.Uint64(),
+		"state_root", execHead.Root.Hex(),
 	)
 
 	// Hardcode output paths
@@ -97,18 +97,23 @@ func run(
 	stakeOutputPath := filepath.Join(homeDir, "data", "staking_balances_halt.json")
 
 	// Snapshot EVM balances
-	log.Info(ctx, "Snapshotting EVM balances", "output", evmOutputPath)
-	if err := snapshotEVMBalances(ctx, evmRedenomCfg, evmHeader.Root, evmHeader.Number.Uint64(), evmOutputPath); err != nil {
+	log.Info(ctx, "BalanceSnap: snapshotting EVM balances", "output", evmOutputPath)
+	if err := snapshotEVMBalances(ctx, evmRedenomCfg, execHead.Root, execHead.Number.Uint64(), haltHeight, evmOutputPath); err != nil {
 		return errors.Wrap(err, "snapshot EVM balances")
 	}
 
 	// Snapshot staking balances
-	log.Info(ctx, "Snapshotting staking balances", "output", stakeOutputPath)
-	if err := snapshotStakingBalances(ctx, cprov, stakeOutputPath); err != nil {
+	log.Info(ctx, "BalanceSnap: snapshotting staking balances", "output", stakeOutputPath)
+	if err := snapshotStakingBalances(ctx, cprov, haltHeight, stakeOutputPath); err != nil {
 		return errors.Wrap(err, "snapshot staking balances")
 	}
 
-	log.Info(ctx, "Balance snapshot completed successfully")
+	// Ensure height isn't increasing
+	if err := waitForHeight(ctx, consensusClient, haltHeight); err != nil {
+		return errors.Wrap(err, "wait for halt height")
+	}
+
+	log.Info(ctx, "BalanceSnap: balance snapshot completed successfully")
 
 	return nil
 }
@@ -125,22 +130,31 @@ func waitForHeight(ctx context.Context, cl client.Client, targetHeight uint64) e
 		case <-ticker.C:
 			status, err := cl.Status(ctx)
 			if err != nil {
-				log.Warn(ctx, "Failed to get consensus status (will retry)", err)
+				log.Warn(ctx, "BalanceSnap: failed to get consensus status (will retry)", err)
 				continue
 			}
 
 			if status.SyncInfo.LatestBlockHeight < 0 {
-				log.Warn(ctx, "Invalid block height (will retry)", nil, "height", status.SyncInfo.LatestBlockHeight)
+				log.Warn(ctx, "BalanceSnap: invalid block height (will retry)", nil, "height", status.SyncInfo.LatestBlockHeight)
 				continue
 			}
 
 			currentHeight := uint64(status.SyncInfo.LatestBlockHeight) //nolint:gosec // Validated >= 0 above
+
+			// Error if consensus height is above halt height
+			if currentHeight > targetHeight {
+				return errors.New("consensus height exceeded halt height",
+					"current_height", currentHeight,
+					"halt_height", targetHeight,
+				)
+			}
+
 			if currentHeight >= targetHeight {
 				return nil
 			}
 
 			if currentHeight%100 == 0 {
-				log.Debug(ctx, "Waiting for halt height",
+				log.Debug(ctx, "BalanceSnap: waiting for halt height",
 					"current", currentHeight,
 					"target", targetHeight,
 				)
@@ -155,6 +169,7 @@ func snapshotEVMBalances(
 	evmRedenomCfg evmredenomsubmit.Config,
 	stateRoot common.Hash,
 	blockNumber uint64,
+	consensusHeight uint64,
 	outputPath string,
 ) error {
 	// Parse ENR
@@ -182,7 +197,7 @@ func snapshotEVMBalances(
 		return errors.Wrap(err, "load genesis preimages")
 	}
 
-	log.Info(ctx, "Fetching EVM balances via snap protocol",
+	log.Info(ctx, "BalanceSnap: fetching EVM balances via snap protocol",
 		"peer", peer.String(),
 		"state_root", stateRoot.Hex(),
 		"preimages", len(preimages),
@@ -202,6 +217,7 @@ func snapshotEVMBalances(
 
 	// Prepare output structure
 	output := map[string]any{
+		"consensus_height":    consensusHeight,
 		"block_number":        blockNumber,
 		"state_root":          stateRoot.Hex(),
 		"total_supply":        totalSupply.String(),
@@ -220,7 +236,7 @@ func snapshotEVMBalances(
 		return errors.Wrap(err, "write file")
 	}
 
-	log.Info(ctx, "EVM balances written",
+	log.Info(ctx, "BalanceSnap: evm balances written",
 		"path", outputPath,
 		"accounts", len(balances),
 		"total_supply", FormatBalance(totalSupply),
@@ -230,8 +246,8 @@ func snapshotEVMBalances(
 }
 
 // snapshotStakingBalances fetches staking balances from consensus and writes to JSON.
-func snapshotStakingBalances(ctx context.Context, cprov cchain.Provider, outputPath string) error {
-	log.Info(ctx, "Fetching staking balances from consensus chain")
+func snapshotStakingBalances(ctx context.Context, cprov cchain.Provider, consensusHeight uint64, outputPath string) error {
+	log.Info(ctx, "BalanceSnap: fetching staking balances from consensus chain")
 
 	// Call GetStakingBalances
 	stakes, err := GetStakingBalances(ctx, cprov)
@@ -254,6 +270,7 @@ func snapshotStakingBalances(ctx context.Context, cprov cchain.Provider, outputP
 
 	// Prepare output structure
 	output := map[string]any{
+		"consensus_height":   consensusHeight,
 		"total_stake":        totalStake.String(),
 		"total_stake_pretty": FormatBalance(totalStake),
 		"total_delegation":   FormatBalance(totalDelegation),
@@ -273,7 +290,7 @@ func snapshotStakingBalances(ctx context.Context, cprov cchain.Provider, outputP
 		return errors.Wrap(err, "write file")
 	}
 
-	log.Info(ctx, "Staking balances written",
+	log.Info(ctx, "BalanceSnap: staking balances written",
 		"path", outputPath,
 		"delegators", len(stakes),
 		"total_stake", FormatBalance(totalStake),
