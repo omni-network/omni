@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethp2p"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/cometbft/cometbft/rpc/client"
@@ -46,7 +47,10 @@ func Start(
 	}
 
 	go func() {
-		if err := run(ctx, haltHeight, evmRedenomCfg, homeDir, consensusClient, cprov); err != nil {
+		err := expbackoff.Retry(ctx, func() error {
+			return run(ctx, haltHeight, evmRedenomCfg, homeDir, consensusClient, cprov)
+		}, expbackoff.WithRetryLabel("BalanceSnap"))
+		if err != nil {
 			log.Error(ctx, "BalanceSnap: balance snapshot failed", err)
 			asyncAbort <- errors.Wrap(err, "balance snapshot")
 		}
