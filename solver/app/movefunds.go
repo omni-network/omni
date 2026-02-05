@@ -23,26 +23,28 @@ var (
 
 	// moveFundsChains are the chains to move funds on. Add as ready.
 	moveFundsChains = []uint64{
-		evmchain.IDHyperEVM,
-		evmchain.IDMantle,
+		evmchain.IDEthereum,
+		evmchain.IDOptimism,
+		evmchain.IDArbitrumOne,
+		evmchain.IDBase,
 	}
 
 	// moveFundsMax defines the maximum amount to transfer per token.
 	// If a token is not in this map, log a warning and do nothing.
 	// If the value is nil, we transfer the full balance.
 	moveFundsMax = map[tokens.Asset]*big.Int{
-		tokens.ETH:    bi.Ether(0.01), // 0.01 ETH
-		tokens.WETH:   nil,            // Full balance (Mantle)
-		tokens.WSTETH: bi.Ether(0.01), // 0.01 wstETH
-		tokens.STETH:  bi.Ether(0.01), // 0.01 stETH
-		tokens.USDC:   nil,            // Full balance (Mantle)
-		tokens.USDT:   bi.Dec6(1),     // 1 USDT
-		tokens.USDT0:  nil,            // Full balance (HyperEVM)
-		tokens.OMNI:   bi.Ether(1),    // 1 OMNI
-		tokens.HYPE:   nil,            // Full balance (HyperEVM)
-		tokens.MNT:    nil,            // Full balance (Mantle)
-		tokens.NOM:    bi.Ether(1),    // 1 NOM
-		tokens.METH:   nil,            // Full balance (Mantle)
+		tokens.ETH:    nil, // Full balance
+		tokens.WETH:   nil, // Full balance
+		tokens.WSTETH: nil, // Full balance
+		tokens.STETH:  nil, // Full balance
+		tokens.USDC:   nil, // Full balance
+		tokens.USDT:   nil, // Full balance
+		tokens.USDT0:  nil, // Full balance
+		tokens.OMNI:   nil, // Full balance
+		tokens.HYPE:   nil, // Full balance
+		tokens.MNT:    nil, // Full balance
+		tokens.NOM:    nil, // Full balance
+		tokens.METH:   nil, // Full balance
 	}
 )
 
