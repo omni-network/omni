@@ -576,9 +576,16 @@ func newABCIExecutionHeadFunc(cl evmengtypes.QueryClient) executionHeadFunc {
 			return cchain.ExecutionHead{}, errors.Wrap(err, "cast block hash")
 		}
 
+		blockTime, err := umath.ToInt64(resp.BlockTime)
+		if err != nil {
+			return cchain.ExecutionHead{}, errors.Wrap(err, "cast block time")
+		}
+
 		return cchain.ExecutionHead{
-			BlockNumber: resp.BlockNumber,
-			BlockHash:   blockHash,
+			CreatedHeight: resp.CreatedHeight,
+			BlockNumber:   resp.BlockNumber,
+			BlockHash:     blockHash,
+			BlockTime:     time.Unix(blockTime, 0),
 		}, nil
 	}
 }

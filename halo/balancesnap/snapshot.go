@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
-	"math/big"
 	"os"
 	"path/filepath"
 	"time"
@@ -86,8 +85,7 @@ func run(
 	defer archive.Close()
 
 	// Query EVM header by block number to get state root
-	blockNum := new(big.Int).SetUint64(execHead.BlockNumber)
-	evmHeader, err := archive.HeaderByNumber(ctx, blockNum)
+	evmHeader, err := archive.HeaderByHash(ctx, execHead.BlockHash)
 	if err != nil {
 		return errors.Wrap(err, "get EVM header from archive")
 	}

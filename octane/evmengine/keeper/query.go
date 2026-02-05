@@ -46,7 +46,9 @@ func (k *Keeper) ExecutionHead(
 	}
 
 	return &types.ExecutionHeadResponse{
-		BlockNumber: head.GetBlockHeight(),
-		BlockHash:   head.GetBlockHash(),
+		CreatedHeight: head.GetCreatedHeight(),
+		BlockNumber:   head.GetBlockHeight(),
+		BlockHash:     head.GetBlockHash(),
+		BlockTime:     head.GetBlockTime(),
 	}, nil
 }

@@ -2,6 +2,7 @@ package cchain
 
 import (
 	"crypto/ecdsa"
+	"time"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
@@ -157,6 +158,8 @@ func (v SDKValidator) ConsensusPublicKey() (*ecdsa.PublicKey, error) {
 
 // ExecutionHead represents the current execution chain head from the evmengine module.
 type ExecutionHead struct {
-	BlockNumber uint64
-	BlockHash   common.Hash
+	CreatedHeight uint64      // Consensus chain height when this execution block was created
+	BlockNumber   uint64      // Execution block height
+	BlockHash     common.Hash // Execution block hash
+	BlockTime     time.Time   // Execution block time
 }
