@@ -31,3 +31,24 @@ func (k *Keeper) SumPendingWithdrawalsByAddress(
 
 	return &types.SumPendingWithdrawalsByAddressResponse{SumGwei: sumGwei}, nil
 }
+
+func (k *Keeper) ExecutionHead(
+	ctx context.Context,
+	req *types.ExecutionHeadRequest,
+) (*types.ExecutionHeadResponse, error) {
+	if req == nil {
+		return nil, errors.New("nil request")
+	}
+
+	head, err := k.getExecutionHead(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get execution head")
+	}
+
+	return &types.ExecutionHeadResponse{
+		CreatedHeight: head.GetCreatedHeight(),
+		BlockNumber:   head.GetBlockHeight(),
+		BlockHash:     head.GetBlockHash(),
+		BlockTime:     head.GetBlockTime(),
+	}, nil
+}

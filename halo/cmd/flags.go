@@ -40,6 +40,7 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 	flags.BoolVar(&cfg.EVMBuildOptimistic, "evm-build-optimistic", cfg.EVMBuildOptimistic, "Enables optimistic building of EVM payloads on previous block finalize")
 	flags.StringVar(&cfg.EVMProxyListen, "evm-proxy-listen", cfg.EVMProxyListen, "The address to listen for EVM proxy requests on. Empty string disables the proxy")
 	flags.StringVar(&cfg.EVMProxyTarget, "evm-proxy-target", cfg.EVMProxyTarget, "The target address to proxy EVM requests to. Empty string disables the proxy")
+	flags.Uint64Var(&cfg.HaltHeight, "halt-height", cfg.HaltHeight, "Consensus halt height (0 = disabled)")
 	flags.IntSliceVar(&cfg.UnsafeSkipUpgrades, sdkserver.FlagUnsafeSkipUpgrades, cfg.UnsafeSkipUpgrades, "Skip a set of upgrade heights to continue the old binary")
 }
 

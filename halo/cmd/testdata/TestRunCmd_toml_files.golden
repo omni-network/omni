@@ -43,6 +43,7 @@
   "Concurrency": 0,
   "Genesis": ""
  },
+ "HaltHeight": 0,
  "Comet": {
   "Version": "0.38.19",
   "RootDir": "testinput/input1",

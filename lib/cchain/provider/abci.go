@@ -11,6 +11,7 @@ import (
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
@@ -107,24 +108,25 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 	ncl := node.NewServiceClient(cc)
 
 	p := Provider{
-		fetch:       newABCIFetchFunc(acl, cmtcl, namer),
-		allAtts:     newABCIAllAttsFunc(acl),
-		latest:      newABCILatestFunc(acl),
-		window:      newABCIWindowFunc(acl),
-		valset:      newABCIValsetFunc(vcl),
-		val:         newABCIValFunc(scl),
-		vals:        newABCIValsFunc(scl),
-		signing:     newABCISigningFunc(slcl),
-		rewards:     newABCIRewards(dcl),
-		portalBlock: newABCIPortalBlockFunc(pcl),
-		networkFunc: newABCINetworkFunc(rcl),
-		genesisFunc: newABCIGenesisFunc(gcl),
-		plannedFunc: newABCIPlannedUpgradeFunc(ucl),
-		appliedFunc: newABCIAppliedUpgradeFunc(ucl),
-		chainID:     newChainIDFunc(cmtcl),
-		backoffFunc: backoffFunc,
-		chainNamer:  namer,
-		network:     network,
+		fetch:         newABCIFetchFunc(acl, cmtcl, namer),
+		allAtts:       newABCIAllAttsFunc(acl),
+		latest:        newABCILatestFunc(acl),
+		window:        newABCIWindowFunc(acl),
+		valset:        newABCIValsetFunc(vcl),
+		val:           newABCIValFunc(scl),
+		vals:          newABCIValsFunc(scl),
+		signing:       newABCISigningFunc(slcl),
+		rewards:       newABCIRewards(dcl),
+		portalBlock:   newABCIPortalBlockFunc(pcl),
+		networkFunc:   newABCINetworkFunc(rcl),
+		genesisFunc:   newABCIGenesisFunc(gcl),
+		plannedFunc:   newABCIPlannedUpgradeFunc(ucl),
+		appliedFunc:   newABCIAppliedUpgradeFunc(ucl),
+		executionHead: newABCIExecutionHeadFunc(evmengcl),
+		chainID:       newChainIDFunc(cmtcl),
+		backoffFunc:   backoffFunc,
+		chainNamer:    namer,
+		network:       network,
 		queryClients: cchain.QueryClients{
 			Attest:       acl,
 			Portal:       pcl,
@@ -552,6 +554,39 @@ func newABCIGenesisFunc(gcl genserve.QueryClient) genesisFunc {
 		}
 
 		return resp.ExecutionGenesisJson, resp.ConsensusGenesisJson, nil
+	}
+}
+
+func newABCIExecutionHeadFunc(cl evmengtypes.QueryClient) executionHeadFunc {
+	return func(ctx context.Context) (cchain.ExecutionHead, error) {
+		const endpoint = "execution_head"
+		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
+		resp, err := cl.ExecutionHead(ctx, &evmengtypes.ExecutionHeadRequest{})
+		if err != nil {
+			incQueryErr(endpoint)
+			return cchain.ExecutionHead{}, errors.Wrap(err, "abci query execution head")
+		}
+
+		blockHash, err := cast.EthHash(resp.BlockHash)
+		if err != nil {
+			return cchain.ExecutionHead{}, errors.Wrap(err, "cast block hash")
+		}
+
+		blockTime, err := umath.ToInt64(resp.BlockTime)
+		if err != nil {
+			return cchain.ExecutionHead{}, errors.Wrap(err, "cast block time")
+		}
+
+		return cchain.ExecutionHead{
+			CreatedHeight: resp.CreatedHeight,
+			BlockNumber:   resp.BlockNumber,
+			BlockHash:     blockHash,
+			BlockTime:     time.Unix(blockTime, 0),
+		}, nil
 	}
 }
 

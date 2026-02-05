@@ -453,6 +453,7 @@ func writeHaloConfig(
 	cfg.Tracer.Endpoint = def.Cfg.TracingEndpoint
 	cfg.Tracer.Headers = def.Cfg.TracingHeaders
 	cfg.FeatureFlags = filterFeatureFlags(node, def.Manifest.FeatureFlags)
+	cfg.HaltHeight = def.Manifest.HaltHeight
 	cfg.SDKGRPC.Address = "0.0.0.0:9999" // VM port 9090 used by grafana-agent, so use 9999 instead.
 
 	if testCfg {

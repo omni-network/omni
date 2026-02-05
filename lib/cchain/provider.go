@@ -90,4 +90,7 @@ type Provider interface {
 
 	// QueryClients returns the query clients for the various modules.
 	QueryClients() QueryClients
+
+	// ExecutionHead returns the current execution head from the evmengine module.
+	ExecutionHead(ctx context.Context) (ExecutionHead, error)
 }

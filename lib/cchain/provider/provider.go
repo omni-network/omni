@@ -50,6 +50,7 @@ type genesisFunc func(ctx context.Context) (execution []byte, consensus []byte, 
 type planedUpgradeFunc func(ctx context.Context) (upgradetypes.Plan, bool, error)
 type appliedUpgradeFunc func(ctx context.Context, name string) (upgradetypes.Plan, bool, error)
 type signingFunc func(ctx context.Context) ([]cchain.SDKSigningInfo, error)
+type executionHeadFunc func(ctx context.Context) (cchain.ExecutionHead, error)
 
 type valSetResponse struct {
 	ValSetID        uint64
@@ -60,25 +61,26 @@ type valSetResponse struct {
 
 // Provider implements cchain.Provider.
 type Provider struct {
-	fetch        fetchFunc
-	allAtts      allAttsFunc
-	latest       latestFunc
-	window       windowFunc
-	valset       valsetFunc
-	val          valFunc
-	signing      signingFunc
-	vals         valsFunc
-	rewards      rewardsFunc
-	chainID      chainIDFunc
-	portalBlock  portalBlockFunc
-	networkFunc  networkFunc
-	genesisFunc  genesisFunc
-	plannedFunc  planedUpgradeFunc
-	appliedFunc  appliedUpgradeFunc
-	backoffFunc  func(context.Context) func()
-	chainNamer   func(xchain.ChainVersion) string
-	network      netconf.ID
-	queryClients cchain.QueryClients
+	fetch         fetchFunc
+	allAtts       allAttsFunc
+	latest        latestFunc
+	window        windowFunc
+	valset        valsetFunc
+	val           valFunc
+	signing       signingFunc
+	vals          valsFunc
+	rewards       rewardsFunc
+	chainID       chainIDFunc
+	portalBlock   portalBlockFunc
+	networkFunc   networkFunc
+	genesisFunc   genesisFunc
+	plannedFunc   planedUpgradeFunc
+	appliedFunc   appliedUpgradeFunc
+	executionHead executionHeadFunc
+	backoffFunc   func(context.Context) func()
+	chainNamer    func(xchain.ChainVersion) string
+	network       netconf.ID
+	queryClients  cchain.QueryClients
 }
 
 // NewProviderForT creates a new provider for testing.
@@ -279,6 +281,10 @@ func (p Provider) Portals(ctx context.Context) ([]rtypes.Portal, bool, error) {
 	}
 
 	return netResp.Portals, true, nil
+}
+
+func (p Provider) ExecutionHead(ctx context.Context) (cchain.ExecutionHead, error) {
+	return p.executionHead(ctx)
 }
 
 // ErrHistoryPruned indicates that the necessary state for the requested height isn't found in the store.

@@ -228,7 +228,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), status)
 	go monitorEVMForever(ctx, cfg, engineCl, status)
 
-	balancesnap.Start(ctx, cfg.Network, cfg.EVMRedenomSubmit, cfg.HomeDir, rpcClient, cProvider, app.EVMEngKeeper, asyncAbort)
+	balancesnap.Start(ctx, cfg.HaltHeight, cfg.EVMRedenomSubmit, cfg.HomeDir, rpcClient, cProvider, asyncAbort)
 
 	stopProxy := startEVMProxy(ctx, asyncAbort, cfg.EVMProxyListen, cfg.EVMProxyTarget)
 
@@ -383,7 +383,7 @@ func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {
 		baseapp.SetInterBlockCache(store.NewCommitKVStoreCacheManager()),
 		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
 		baseapp.SetMempool(mempool.NoOpMempool{}),
-		baseapp.SetHaltHeight(halocfg.HaltHeight(cfg.Network)),
+		baseapp.SetHaltHeight(cfg.HaltHeight),
 	}, nil
 }
 

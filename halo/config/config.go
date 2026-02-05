@@ -93,17 +93,7 @@ type Config struct {
 	EVMProxyListen     string                  // The address to listen for evm proxy requests on
 	EVMProxyTarget     string                  // The target address to proxy evm requests to
 	EVMRedenomSubmit   evmredenomsubmit.Config // EVM redenomination submit config
-}
-
-// HaltHeight returns the consensus halt height for the given network.
-// Returns 0 if no halt height is configured for the network.
-func HaltHeight(network netconf.ID) uint64 {
-	switch network {
-	case netconf.Staging:
-		return 1210000
-	default:
-		return 0
-	}
+	HaltHeight         uint64                  // Consensus halt height (0 = disabled)
 }
 
 // RPCConfig is an abridged version of CosmosSDK srvconfig.API/GRPCConfig.

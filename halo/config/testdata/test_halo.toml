@@ -78,6 +78,8 @@ app-db-backend = "goleveldb"
 # Skip a set of upgrade heights to continue the old binary
 unsafe-skip-upgrades = [1,2,3]
 
+# Consensus halt height (0 = disabled)
+halt-height = 0
 
 ###############################################################################
 ###                    Cosmos SDK API Configuration                         ###

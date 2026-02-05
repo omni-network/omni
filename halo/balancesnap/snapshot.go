@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"time"
 
-	halocfg "github.com/omni-network/omni/halo/config"
 	evmredenomsubmit "github.com/omni-network/omni/halo/evmredenom/submit"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cast"
@@ -17,31 +16,23 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethp2p"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/cometbft/cometbft/rpc/client"
 
 	"github.com/ethereum/go-ethereum/common"
-	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
-// EVMEngineKeeper defines the interface for accessing EVM engine execution head.
-type EVMEngineKeeper interface {
-	GetExecutionHeader(ctx context.Context) (*etypes.Header, error)
-}
-
 // Start starts a goroutine that waits for halt height and snapshots balances.
-// Returns immediately if not enabled or network is not staging/devnet.
+// Returns immediately if not enabled or halt height is 0.
 func Start(
 	ctx context.Context,
-	network netconf.ID,
+	haltHeight uint64,
 	evmRedenomCfg evmredenomsubmit.Config,
 	homeDir string,
 	consensusClient client.Client,
 	cprov cchain.Provider,
-	evmengKeeper EVMEngineKeeper,
 	asyncAbort chan<- error,
 ) {
 	// Only enabled if evmredenom is enabled
@@ -49,14 +40,13 @@ func Start(
 		return
 	}
 
-	// Get halt height for this network (0 means disabled)
-	haltHeight := halocfg.HaltHeight(network)
+	// Skip if halt height is disabled
 	if haltHeight == 0 {
 		return
 	}
 
 	go func() {
-		if err := run(ctx, haltHeight, evmRedenomCfg, homeDir, consensusClient, cprov, evmengKeeper); err != nil {
+		if err := run(ctx, haltHeight, evmRedenomCfg, homeDir, consensusClient, cprov); err != nil {
 			log.Error(ctx, "BalanceSnap: balance snapshot failed", err)
 			asyncAbort <- errors.Wrap(err, "balance snapshot")
 		}
@@ -71,7 +61,6 @@ func run(
 	homeDir string,
 	consensusClient client.Client,
 	cprov cchain.Provider,
-	evmengKeeper EVMEngineKeeper,
 ) error {
 	log.Info(ctx, "BalanceSnap: waiting for halt height", "halt_height", haltHeight)
 
@@ -82,14 +71,38 @@ func run(
 
 	log.Info(ctx, "BalanceSnap: halt height reached, querying EVM head", "height", haltHeight)
 
-	execHead, err := evmengKeeper.GetExecutionHeader(ctx)
+	// Get ExecutionHead from cprovider to verify consensus state
+	execHead, err := cprov.ExecutionHead(ctx)
 	if err != nil {
-		return errors.Wrap(err, "get execution header")
+		return errors.Wrap(err, "get execution head from consensus")
+	}
+
+	// Connect to archive RPC to get full header with state root
+	archive, err := ethclient.DialContext(ctx, "omni_evm", evmRedenomCfg.RPCArchive)
+	if err != nil {
+		return errors.Wrap(err, "dial archive RPC")
+	}
+	defer archive.Close()
+
+	// Query EVM header by block number to get state root
+	evmHeader, err := archive.HeaderByHash(ctx, execHead.BlockHash)
+	if err != nil {
+		return errors.Wrap(err, "get EVM header from archive")
+	}
+
+	// Verify archive header matches ExecutionHead
+	if evmHeader.Number.Uint64() != execHead.BlockNumber || evmHeader.Hash() != execHead.BlockHash {
+		return errors.New("archive header mismatch with execution head",
+			"archive_number", evmHeader.Number.Uint64(),
+			"exec_number", execHead.BlockNumber,
+			"archive_hash", evmHeader.Hash().Hex(),
+			"exec_hash", execHead.BlockHash.Hex(),
+		)
 	}
 
 	log.Info(ctx, "BalanceSnap: evm head retrieved",
-		"block_number", execHead.Number.Uint64(),
-		"state_root", execHead.Root.Hex(),
+		"block_number", evmHeader.Number.Uint64(),
+		"state_root", evmHeader.Root.Hex(),
 	)
 
 	// Hardcode output paths
@@ -98,7 +111,7 @@ func run(
 
 	// Snapshot EVM balances
 	log.Info(ctx, "BalanceSnap: snapshotting EVM balances", "output", evmOutputPath)
-	if err := snapshotEVMBalances(ctx, evmRedenomCfg, execHead.Root, execHead.Number.Uint64(), haltHeight, evmOutputPath); err != nil {
+	if err := snapshotEVMBalances(ctx, evmRedenomCfg, evmHeader.Root, evmHeader.Number.Uint64(), haltHeight, evmOutputPath); err != nil {
 		return errors.Wrap(err, "snapshot EVM balances")
 	}
 
