@@ -136,6 +136,9 @@ type Manifest struct {
 
 	// FeatureFlags defines the feature flags to enable.
 	FeatureFlags feature.Flags `toml:"feature_flags"`
+
+	// HaltHeight defines the consensus halt height for testing (0 = disabled).
+	HaltHeight uint64 `toml:"halt_height"`
 }
 
 // Seeds returns a map of seed nodes by name.

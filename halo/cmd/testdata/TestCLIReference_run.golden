@@ -24,6 +24,7 @@ Flags:
       --feature-flags strings                     Comma separated list of enabled feature flags
       --grpc-address string                       Address defines the GRPC server to listen on (default "0.0.0.0:9090")
       --grpc-enable                               Enable defines if the GRPC server should be enabled. (default true)
+      --halt-height uint                          Consensus halt height (0 = disabled)
   -h, --help                                      help for run
       --home string                               The application home directory containing config and data (default "./halo")
       --log-color string                          Log color (only applicable to console format); auto, force, disable (default "auto")

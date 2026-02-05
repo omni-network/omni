@@ -79,6 +79,8 @@ app-db-backend = "{{ .BackendType }}"
 # Skip a set of upgrade heights to continue the old binary
 unsafe-skip-upgrades = {{ FmtIntSlice .UnsafeSkipUpgrades }}
 
+# Consensus halt height (0 = disabled)
+halt-height = {{ .HaltHeight }}
 
 ###############################################################################
 ###                    Cosmos SDK API Configuration                         ###

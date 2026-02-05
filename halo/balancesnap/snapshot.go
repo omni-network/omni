@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"time"
 
-	halocfg "github.com/omni-network/omni/halo/config"
 	evmredenomsubmit "github.com/omni-network/omni/halo/evmredenom/submit"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cast"
@@ -18,7 +17,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethp2p"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/cometbft/cometbft/rpc/client"
 
@@ -28,10 +26,10 @@ import (
 )
 
 // Start starts a goroutine that waits for halt height and snapshots balances.
-// Returns immediately if not enabled or network is not staging/devnet.
+// Returns immediately if not enabled or halt height is 0.
 func Start(
 	ctx context.Context,
-	network netconf.ID,
+	haltHeight uint64,
 	evmRedenomCfg evmredenomsubmit.Config,
 	homeDir string,
 	consensusClient client.Client,
@@ -43,8 +41,7 @@ func Start(
 		return
 	}
 
-	// Get halt height for this network (0 means disabled)
-	haltHeight := halocfg.HaltHeight(network)
+	// Skip if halt height is disabled
 	if haltHeight == 0 {
 		return
 	}
