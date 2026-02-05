@@ -5,7 +5,7 @@ prometheus = true
 
 ephemeral_genesis = "3_drake" # vm_compose evm proxy only supported in 3_drake.
 feature_flags = []
-halt_height = 1211200
+halt_height = 1211300
 
 [node.validator01]
 [node.validator02]
