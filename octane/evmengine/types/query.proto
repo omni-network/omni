@@ -10,6 +10,9 @@ option go_package = "octane/evmengine/types";
 service Query {
   // SumPendingWithdrawalsByAddress returns the sum of pending withdrawal amounts (in gwei) to requested address or 0 if none.
   rpc SumPendingWithdrawalsByAddress(SumPendingWithdrawalsByAddressRequest) returns (SumPendingWithdrawalsByAddressResponse) {}
+
+  // ExecutionHead returns the current execution chain head.
+  rpc ExecutionHead(ExecutionHeadRequest) returns (ExecutionHeadResponse) {}
 }
 
 message SumPendingWithdrawalsByAddressRequest {
@@ -18,4 +21,11 @@ message SumPendingWithdrawalsByAddressRequest {
 
 message SumPendingWithdrawalsByAddressResponse {
     uint64 sum_gwei = 1; // Sum of pending withdrawal amounts (in gwei) to requested address or 0 if none.
+}
+
+message ExecutionHeadRequest {}
+
+message ExecutionHeadResponse {
+    uint64 block_number = 1; // Execution block height
+    bytes block_hash = 2;    // Execution block hash
 }

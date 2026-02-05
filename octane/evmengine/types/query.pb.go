@@ -111,9 +111,99 @@ func (m *SumPendingWithdrawalsByAddressResponse) GetSumGwei() uint64 {
 	return 0
 }
 
+type ExecutionHeadRequest struct {
+}
+
+func (m *ExecutionHeadRequest) Reset()         { *m = ExecutionHeadRequest{} }
+func (m *ExecutionHeadRequest) String() string { return proto.CompactTextString(m) }
+func (*ExecutionHeadRequest) ProtoMessage()    {}
+func (*ExecutionHeadRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6e58696b8f23d7ac, []int{2}
+}
+func (m *ExecutionHeadRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ExecutionHeadRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ExecutionHeadRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ExecutionHeadRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExecutionHeadRequest.Merge(m, src)
+}
+func (m *ExecutionHeadRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ExecutionHeadRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ExecutionHeadRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ExecutionHeadRequest proto.InternalMessageInfo
+
+type ExecutionHeadResponse struct {
+	BlockNumber uint64 `protobuf:"varint,1,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	BlockHash   []byte `protobuf:"bytes,2,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+}
+
+func (m *ExecutionHeadResponse) Reset()         { *m = ExecutionHeadResponse{} }
+func (m *ExecutionHeadResponse) String() string { return proto.CompactTextString(m) }
+func (*ExecutionHeadResponse) ProtoMessage()    {}
+func (*ExecutionHeadResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6e58696b8f23d7ac, []int{3}
+}
+func (m *ExecutionHeadResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ExecutionHeadResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ExecutionHeadResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ExecutionHeadResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExecutionHeadResponse.Merge(m, src)
+}
+func (m *ExecutionHeadResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *ExecutionHeadResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ExecutionHeadResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ExecutionHeadResponse proto.InternalMessageInfo
+
+func (m *ExecutionHeadResponse) GetBlockNumber() uint64 {
+	if m != nil {
+		return m.BlockNumber
+	}
+	return 0
+}
+
+func (m *ExecutionHeadResponse) GetBlockHash() []byte {
+	if m != nil {
+		return m.BlockHash
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*SumPendingWithdrawalsByAddressRequest)(nil), "octane.evmengine.types.SumPendingWithdrawalsByAddressRequest")
 	proto.RegisterType((*SumPendingWithdrawalsByAddressResponse)(nil), "octane.evmengine.types.SumPendingWithdrawalsByAddressResponse")
+	proto.RegisterType((*ExecutionHeadRequest)(nil), "octane.evmengine.types.ExecutionHeadRequest")
+	proto.RegisterType((*ExecutionHeadResponse)(nil), "octane.evmengine.types.ExecutionHeadResponse")
 }
 
 func init() {
@@ -121,24 +211,29 @@ func init() {
 }
 
 var fileDescriptor_6e58696b8f23d7ac = []byte{
-	// 259 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0xca, 0x4f, 0x2e, 0x49,
-	0xcc, 0x4b, 0xd5, 0x4f, 0x2d, 0xcb, 0x4d, 0xcd, 0x4b, 0xcf, 0xcc, 0x4b, 0xd5, 0x2f, 0xa9, 0x2c,
-	0x48, 0x2d, 0xd6, 0x2f, 0x2c, 0x4d, 0x2d, 0xaa, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12,
-	0x83, 0xa8, 0xd1, 0x83, 0xab, 0xd1, 0x03, 0xab, 0x91, 0x12, 0x49, 0xcf, 0x4f, 0xcf, 0x07, 0x2b,
-	0xd1, 0x07, 0xb1, 0x20, 0xaa, 0x95, 0x82, 0xb8, 0x54, 0x83, 0x4b, 0x73, 0x03, 0x52, 0xf3, 0x52,
-	0x32, 0xf3, 0xd2, 0xc3, 0x33, 0x4b, 0x32, 0x52, 0x8a, 0x12, 0xcb, 0x13, 0x73, 0x8a, 0x9d, 0x2a,
-	0x1d, 0x53, 0x52, 0x8a, 0x52, 0x8b, 0x8b, 0x83, 0x52, 0x0b, 0x4b, 0x53, 0x8b, 0x4b, 0x84, 0x34,
-	0xb9, 0xd8, 0x13, 0x21, 0x22, 0x12, 0x8c, 0x0a, 0x8c, 0x1a, 0x3c, 0x4e, 0xfc, 0x27, 0xee, 0xc9,
-	0x33, 0xdc, 0xba, 0x27, 0xcf, 0x0e, 0x53, 0x08, 0x93, 0x57, 0x72, 0xe6, 0x52, 0x23, 0x64, 0x66,
-	0x71, 0x41, 0x7e, 0x5e, 0x71, 0xaa, 0x90, 0x24, 0x17, 0x47, 0x71, 0x69, 0x6e, 0x7c, 0x7a, 0x79,
-	0x6a, 0x26, 0xd8, 0x54, 0x96, 0x20, 0xf6, 0xe2, 0xd2, 0x5c, 0xf7, 0xf2, 0xd4, 0x4c, 0xa3, 0xd5,
-	0x8c, 0x5c, 0xac, 0x81, 0x20, 0x6f, 0x09, 0x2d, 0x64, 0xe4, 0x92, 0xc3, 0x6f, 0x9e, 0x90, 0xad,
-	0x1e, 0x76, 0x4f, 0xeb, 0x11, 0xe5, 0x37, 0x29, 0x3b, 0x72, 0xb5, 0x43, 0xbc, 0xa1, 0xc4, 0xe0,
-	0x64, 0x70, 0xe2, 0x91, 0x1c, 0xe3, 0x85, 0x47, 0x72, 0x8c, 0x0f, 0x1e, 0xc9, 0x31, 0x4e, 0x78,
-	0x2c, 0xc7, 0x70, 0xe1, 0xb1, 0x1c, 0xc3, 0x8d, 0xc7, 0x72, 0x0c, 0x51, 0x62, 0xd8, 0xa3, 0x2c,
-	0x89, 0x0d, 0x1c, 0xfe, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0xba, 0x5d, 0xeb, 0xc3, 0xd3,
-	0x01, 0x00, 0x00,
+	// 351 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0xc1, 0x4b, 0x02, 0x41,
+	0x14, 0xc6, 0x77, 0xa5, 0xb2, 0x5e, 0x46, 0x30, 0x98, 0x98, 0xd0, 0x5a, 0x0b, 0x45, 0x41, 0xed,
+	0x46, 0x9d, 0x0b, 0x32, 0x22, 0x4f, 0x51, 0xdb, 0x21, 0xea, 0x22, 0xa3, 0xfb, 0xd8, 0x5d, 0x72,
+	0x67, 0x74, 0x67, 0x27, 0xf3, 0xbf, 0xe8, 0xde, 0xa9, 0xff, 0xc6, 0xa3, 0xc7, 0xe8, 0x20, 0xa1,
+	0xff, 0x48, 0x38, 0xab, 0x41, 0x61, 0x25, 0xdd, 0x86, 0x6f, 0x7e, 0xf3, 0xcd, 0xfb, 0x3e, 0x1e,
+	0x98, 0xbc, 0x16, 0x53, 0x86, 0x36, 0x3e, 0x84, 0xc8, 0xbc, 0x80, 0xa1, 0x1d, 0xb7, 0x1b, 0x28,
+	0xec, 0xa6, 0xc4, 0xa8, 0x6d, 0x35, 0x22, 0x1e, 0x73, 0x92, 0x4b, 0x18, 0xeb, 0x93, 0xb1, 0x14,
+	0x53, 0xc8, 0x7a, 0xdc, 0xe3, 0x0a, 0xb1, 0x87, 0xa7, 0x84, 0x36, 0x1d, 0xd8, 0xbc, 0x96, 0xe1,
+	0x25, 0x32, 0x37, 0x60, 0xde, 0x4d, 0x10, 0xfb, 0x6e, 0x44, 0x5b, 0xb4, 0x2e, 0x4a, 0xed, 0x13,
+	0xd7, 0x8d, 0x50, 0x08, 0x07, 0x9b, 0x12, 0x45, 0x4c, 0x76, 0x20, 0x4d, 0x13, 0x25, 0xaf, 0xaf,
+	0xeb, 0xdb, 0x99, 0xd2, 0x72, 0xa7, 0x57, 0xd4, 0xde, 0x7a, 0xc5, 0xf4, 0x18, 0x1c, 0xdf, 0x9b,
+	0xa7, 0xb0, 0xf5, 0x97, 0xa7, 0x68, 0x70, 0x26, 0x90, 0xac, 0xc2, 0xbc, 0x90, 0x61, 0xc5, 0x6b,
+	0x61, 0xa0, 0x5c, 0x67, 0x9c, 0xb4, 0x90, 0xe1, 0x79, 0x0b, 0x03, 0x33, 0x07, 0xd9, 0xb3, 0x47,
+	0xac, 0xc9, 0x38, 0xe0, 0xac, 0x8c, 0xd4, 0x1d, 0xcd, 0x61, 0xde, 0xc2, 0xca, 0x37, 0x7d, 0xe4,
+	0xb5, 0x01, 0x99, 0x6a, 0x9d, 0xd7, 0xee, 0x2b, 0x4c, 0x86, 0x55, 0x8c, 0x46, 0x7e, 0x8b, 0x4a,
+	0xbb, 0x50, 0x12, 0x59, 0x03, 0x48, 0x10, 0x9f, 0x0a, 0x3f, 0x9f, 0x1a, 0xc6, 0x70, 0x16, 0x94,
+	0x52, 0xa6, 0xc2, 0x3f, 0x78, 0x4e, 0xc1, 0xec, 0xd5, 0xb0, 0x49, 0xf2, 0xa2, 0x83, 0xf1, 0x7b,
+	0x04, 0x72, 0x64, 0x4d, 0xee, 0xd9, 0x9a, 0xaa, 0xce, 0xc2, 0xf1, 0x7f, 0x9f, 0x27, 0x69, 0x4d,
+	0x8d, 0x30, 0x58, 0xfa, 0x52, 0x04, 0xd9, 0xfd, 0xc9, 0x72, 0x52, 0x8f, 0x85, 0xbd, 0x29, 0xe9,
+	0xf1, 0x7f, 0xa5, 0xfd, 0x4e, 0xdf, 0xd0, 0xbb, 0x7d, 0x43, 0x7f, 0xef, 0x1b, 0xfa, 0xd3, 0xc0,
+	0xd0, 0xba, 0x03, 0x43, 0x7b, 0x1d, 0x18, 0xda, 0x5d, 0x6e, 0xf2, 0x56, 0x56, 0xe7, 0xd4, 0x8a,
+	0x1d, 0x7e, 0x04, 0x00, 0x00, 0xff, 0xff, 0x51, 0xad, 0x39, 0xd1, 0xb6, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -155,6 +250,8 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// SumPendingWithdrawalsByAddress returns the sum of pending withdrawal amounts (in gwei) to requested address or 0 if none.
 	SumPendingWithdrawalsByAddress(ctx context.Context, in *SumPendingWithdrawalsByAddressRequest, opts ...grpc.CallOption) (*SumPendingWithdrawalsByAddressResponse, error)
+	// ExecutionHead returns the current execution chain head.
+	ExecutionHead(ctx context.Context, in *ExecutionHeadRequest, opts ...grpc.CallOption) (*ExecutionHeadResponse, error)
 }
 
 type queryClient struct {
@@ -174,10 +271,21 @@ func (c *queryClient) SumPendingWithdrawalsByAddress(ctx context.Context, in *Su
 	return out, nil
 }
 
+func (c *queryClient) ExecutionHead(ctx context.Context, in *ExecutionHeadRequest, opts ...grpc.CallOption) (*ExecutionHeadResponse, error) {
+	out := new(ExecutionHeadResponse)
+	err := c.cc.Invoke(ctx, "/octane.evmengine.types.Query/ExecutionHead", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// SumPendingWithdrawalsByAddress returns the sum of pending withdrawal amounts (in gwei) to requested address or 0 if none.
 	SumPendingWithdrawalsByAddress(context.Context, *SumPendingWithdrawalsByAddressRequest) (*SumPendingWithdrawalsByAddressResponse, error)
+	// ExecutionHead returns the current execution chain head.
+	ExecutionHead(context.Context, *ExecutionHeadRequest) (*ExecutionHeadResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -186,6 +294,9 @@ type UnimplementedQueryServer struct {
 
 func (*UnimplementedQueryServer) SumPendingWithdrawalsByAddress(ctx context.Context, req *SumPendingWithdrawalsByAddressRequest) (*SumPendingWithdrawalsByAddressResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SumPendingWithdrawalsByAddress not implemented")
+}
+func (*UnimplementedQueryServer) ExecutionHead(ctx context.Context, req *ExecutionHeadRequest) (*ExecutionHeadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExecutionHead not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -210,6 +321,24 @@ func _Query_SumPendingWithdrawalsByAddress_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_ExecutionHead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExecutionHeadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ExecutionHead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/octane.evmengine.types.Query/ExecutionHead",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ExecutionHead(ctx, req.(*ExecutionHeadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "octane.evmengine.types.Query",
@@ -218,6 +347,10 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SumPendingWithdrawalsByAddress",
 			Handler:    _Query_SumPendingWithdrawalsByAddress_Handler,
+		},
+		{
+			MethodName: "ExecutionHead",
+			Handler:    _Query_ExecutionHead_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -285,6 +418,64 @@ func (m *SumPendingWithdrawalsByAddressResponse) MarshalToSizedBuffer(dAtA []byt
 	return len(dAtA) - i, nil
 }
 
+func (m *ExecutionHeadRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExecutionHeadRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExecutionHeadRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *ExecutionHeadResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExecutionHeadResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExecutionHeadResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.BlockHash) > 0 {
+		i -= len(m.BlockHash)
+		copy(dAtA[i:], m.BlockHash)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.BlockHash)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.BlockNumber != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.BlockNumber))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -315,6 +506,31 @@ func (m *SumPendingWithdrawalsByAddressResponse) Size() (n int) {
 	_ = l
 	if m.SumGwei != 0 {
 		n += 1 + sovQuery(uint64(m.SumGwei))
+	}
+	return n
+}
+
+func (m *ExecutionHeadRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *ExecutionHeadResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.BlockNumber != 0 {
+		n += 1 + sovQuery(uint64(m.BlockNumber))
+	}
+	l = len(m.BlockHash)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
@@ -456,6 +672,159 @@ func (m *SumPendingWithdrawalsByAddressResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExecutionHeadRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExecutionHeadRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExecutionHeadRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExecutionHeadResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExecutionHeadResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExecutionHeadResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockNumber", wireType)
+			}
+			m.BlockNumber = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlockNumber |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BlockHash = append(m.BlockHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.BlockHash == nil {
+				m.BlockHash = []byte{}
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])

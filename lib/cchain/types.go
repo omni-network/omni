@@ -154,3 +154,9 @@ func (v SDKValidator) ConsensusPublicKey() (*ecdsa.PublicKey, error) {
 
 	return pubkey, nil
 }
+
+// ExecutionHead represents the current execution chain head from the evmengine module.
+type ExecutionHead struct {
+	BlockNumber uint64
+	BlockHash   common.Hash
+}

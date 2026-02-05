@@ -33,6 +33,28 @@ func TestUpgradeQueries(t *testing.T) {
 	require.False(t, ok)
 }
 
+func TestExecutionHead(t *testing.T) {
+	t.Parallel()
+	if !*integration {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := t.Context()
+
+	cprov, err := provider.Dial(netconf.Omega)
+	require.NoError(t, err)
+
+	head, err := cprov.ExecutionHead(ctx)
+	require.NoError(t, err)
+	require.NotZero(t, head.BlockNumber, "block number should not be zero")
+	require.NotEqual(t, "0x0000000000000000000000000000000000000000000000000000000000000000", head.BlockHash.Hex(), "block hash should not be zero")
+
+	log.Info(ctx, "ExecutionHead retrieved",
+		"block_number", head.BlockNumber,
+		"block_hash", head.BlockHash.Hex(),
+	)
+}
+
 func TestSigningInfos(t *testing.T) {
 	t.Parallel()
 	if !*integration {
