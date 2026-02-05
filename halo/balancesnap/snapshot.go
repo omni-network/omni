@@ -47,9 +47,14 @@ func Start(
 	}
 
 	go func() {
-		err := expbackoff.Retry(ctx, func() error {
-			return run(ctx, haltHeight, evmRedenomCfg, homeDir, consensusClient, cprov)
-		}, expbackoff.WithRetryLabel("BalanceSnap"))
+		err := expbackoff.Retry(ctx,
+			func() error {
+				return run(ctx, haltHeight, evmRedenomCfg, homeDir, consensusClient, cprov)
+			},
+			expbackoff.WithRetryLabel("BalanceSnap"),
+			expbackoff.WithRetryCount(10),
+			expbackoff.WithPeriodicConfig(time.Minute), // Mitigate geth 30s inboundThrottleTime
+		)
 		if err != nil {
 			log.Error(ctx, "BalanceSnap: balance snapshot failed", err)
 			asyncAbort <- errors.Wrap(err, "balance snapshot")
