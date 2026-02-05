@@ -6,7 +6,6 @@ multi_omni_evms = true
 prometheus = true
 all_e2e_tests = true
 ephemeral_genesis = "2_magellan"
-halt_height = 100
 
 [node.validator01]
 [node.validator02]
