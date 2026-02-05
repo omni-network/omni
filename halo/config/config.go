@@ -102,7 +102,7 @@ func HaltHeight(network netconf.ID) uint64 {
 	case netconf.Staging:
 		return 1950000
 	case netconf.Devnet:
-		return 1000
+		return 100
 	default:
 		return 0
 	}
