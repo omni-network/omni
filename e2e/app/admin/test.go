@@ -4,7 +4,7 @@ package admin
 import (
 	"context"
 	"math/rand"
-	"sort"
+	"slices"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
@@ -398,7 +398,7 @@ func randBridgeSpec() BridgeSpec {
 }
 
 func sortUint64(ns []uint64) {
-	sort.Slice(ns, func(i, j int) bool { return ns[i] < ns[j] })
+	slices.Sort(ns)
 }
 
 func randChain(chains []types.EVMChain) types.EVMChain {
