@@ -2,6 +2,8 @@
 pragma solidity 0.8.24;
 
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import { MerkleGen } from "multiproof/src/MerkleGen.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { Predeploys } from "src/libraries/nomina/Predeploys.sol";
@@ -22,6 +24,7 @@ contract NominaBridgeL1_Test is Test {
     // events copied from NominaBridgeL1.sol
     event Bridge(address indexed payor, address indexed to, uint256 amount);
     event Withdraw(address indexed to, uint256 amount);
+    event PostHaltWithdraw(address indexed to, uint256 amount);
 
     MockPortal portal;
     MockOmni omni;
@@ -36,6 +39,42 @@ contract NominaBridgeL1_Test is Test {
     uint8 conversionRate = 75;
     uint256 amount = 1 ether;
     uint256 totalSupply = 100_000_000 ether;
+
+    /// @notice Helper struct for withdrawal data
+    struct WithdrawalData {
+        address account;
+        uint256 amount;
+    }
+
+    /// @notice Helper function to generate merkle multiproof for withdrawals
+    function _generateWithdrawalProof(WithdrawalData[] memory withdrawals, uint256[] memory selectedIndices)
+        internal
+        pure
+        returns (
+            address[] memory accounts,
+            uint256[] memory amounts,
+            bytes32[] memory multiProof,
+            bool[] memory multiProofFlags,
+            bytes32 root
+        )
+    {
+        // create leaves for all withdrawals
+        bytes32[] memory leaves = new bytes32[](withdrawals.length);
+        for (uint256 i = 0; i < withdrawals.length; i++) {
+            leaves[i] = keccak256(bytes.concat(keccak256(abi.encode(withdrawals[i].account, withdrawals[i].amount))));
+        }
+
+        // generate multiproof
+        (multiProof, multiProofFlags, root) = MerkleGen.generateMultiproof(leaves, selectedIndices);
+
+        // prepare accounts and amounts arrays for selected indices
+        accounts = new address[](selectedIndices.length);
+        amounts = new uint256[](selectedIndices.length);
+        for (uint256 i = 0; i < selectedIndices.length; i++) {
+            accounts[i] = withdrawals[selectedIndices[i]].account;
+            amounts[i] = withdrawals[selectedIndices[i]].amount;
+        }
+    }
 
     function setUp() public {
         initialSupplyRecipient = makeAddr("initialSupplyRecipient");
@@ -282,6 +321,490 @@ contract NominaBridgeL1_Test is Test {
 
         assertFalse(b.isPaused(b.ACTION_BRIDGE()));
         assertFalse(b.isPaused(b.ACTION_WITHDRAW()));
+    }
+
+    function test_initializeV3() public {
+        bytes32 root = keccak256("test root");
+
+        // should not be paused initially
+        assertFalse(b.isPaused(b.ACTION_BRIDGE()));
+        assertFalse(b.isPaused(b.ACTION_WITHDRAW()));
+
+        // initialize v3
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // assert root is set
+        assertEq(b.postHaltRoot(), root);
+
+        // assert both actions are paused
+        assertTrue(b.isPaused(b.ACTION_BRIDGE()));
+        assertTrue(b.isPaused(b.ACTION_WITHDRAW()));
+    }
+
+    function test_initializeV3_cannotReinitialize() public {
+        bytes32 root = keccak256("test root");
+
+        // initialize v3
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // cannot reinitialize
+        vm.expectRevert();
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+    }
+
+    function test_postHaltWithdraw_singleAccount() public {
+        // setup
+        address account = makeAddr("account");
+        uint256 withdrawAmount = 5 ether;
+
+        // fund bridge
+        vm.startPrank(initialSupplyRecipient);
+        omni.approve(address(nomina), withdrawAmount);
+        nomina.convert(address(b), withdrawAmount);
+        vm.stopPrank();
+
+        // create withdrawal data
+        WithdrawalData[] memory withdrawals = new WithdrawalData[](1);
+        withdrawals[0] = WithdrawalData(account, withdrawAmount);
+
+        uint256[] memory selectedIndices = new uint256[](1);
+        selectedIndices[0] = 0;
+
+        (
+            address[] memory accounts,
+            uint256[] memory amounts,
+            bytes32[] memory multiProof,
+            bool[] memory multiProofFlags,
+            bytes32 root
+        ) = _generateWithdrawalProof(withdrawals, selectedIndices);
+
+        // initialize v3 with root
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // expect event
+        vm.expectEmit();
+        emit PostHaltWithdraw(account, withdrawAmount);
+
+        // withdraw
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+
+        // assert balance
+        assertEq(nomina.balanceOf(account), withdrawAmount);
+        assertTrue(b.postHaltClaimed(account));
+    }
+
+    function test_postHaltWithdraw_twoAccounts() public {
+        // setup
+        address account1 = makeAddr("account1");
+        address account2 = makeAddr("account2");
+        uint256 amount1 = 1 ether;
+        uint256 amount2 = 2 ether;
+
+        // fund bridge
+        vm.startPrank(initialSupplyRecipient);
+        omni.approve(address(nomina), amount1 + amount2);
+        nomina.convert(address(b), amount1 + amount2);
+        vm.stopPrank();
+
+        // create withdrawal data
+        WithdrawalData[] memory withdrawals = new WithdrawalData[](2);
+        withdrawals[0] = WithdrawalData(account1, amount1);
+        withdrawals[1] = WithdrawalData(account2, amount2);
+
+        uint256[] memory selectedIndices = new uint256[](2);
+        selectedIndices[0] = 0;
+        selectedIndices[1] = 1;
+
+        (
+            address[] memory accounts,
+            uint256[] memory amounts,
+            bytes32[] memory multiProof,
+            bool[] memory multiProofFlags,
+            bytes32 root
+        ) = _generateWithdrawalProof(withdrawals, selectedIndices);
+
+        // initialize v3 with root
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // expect events
+        vm.expectEmit();
+        emit PostHaltWithdraw(account1, amount1);
+        vm.expectEmit();
+        emit PostHaltWithdraw(account2, amount2);
+
+        // withdraw
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+
+        // assert balances
+        assertEq(nomina.balanceOf(account1), amount1);
+        assertEq(nomina.balanceOf(account2), amount2);
+        assertTrue(b.postHaltClaimed(account1));
+        assertTrue(b.postHaltClaimed(account2));
+    }
+
+    function test_postHaltWithdraw_multipleAccounts() public {
+        // setup
+        uint256 numAccounts = 5;
+        uint256 totalAmount = 0;
+
+        WithdrawalData[] memory withdrawals = new WithdrawalData[](numAccounts);
+        for (uint256 i = 0; i < numAccounts; i++) {
+            address account = makeAddr(string(abi.encodePacked("account", i)));
+            uint256 amt = (i + 1) * 1 ether;
+            withdrawals[i] = WithdrawalData(account, amt);
+            totalAmount += amt;
+        }
+
+        // fund bridge
+        vm.startPrank(initialSupplyRecipient);
+        omni.approve(address(nomina), totalAmount);
+        nomina.convert(address(b), totalAmount);
+        vm.stopPrank();
+
+        // select all accounts
+        uint256[] memory selectedIndices = new uint256[](numAccounts);
+        for (uint256 i = 0; i < numAccounts; i++) {
+            selectedIndices[i] = i;
+        }
+
+        (
+            address[] memory accounts,
+            uint256[] memory amounts,
+            bytes32[] memory multiProof,
+            bool[] memory multiProofFlags,
+            bytes32 root
+        ) = _generateWithdrawalProof(withdrawals, selectedIndices);
+
+        // initialize v3 with root
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // withdraw all
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+
+        // assert all claimed
+        for (uint256 i = 0; i < numAccounts; i++) {
+            assertEq(nomina.balanceOf(withdrawals[i].account), withdrawals[i].amount);
+            assertTrue(b.postHaltClaimed(withdrawals[i].account));
+        }
+    }
+
+    function test_postHaltWithdraw_partialClaim() public {
+        // setup three accounts
+        WithdrawalData[] memory withdrawals = new WithdrawalData[](3);
+        withdrawals[0] = WithdrawalData(makeAddr("account1"), 1 ether);
+        withdrawals[1] = WithdrawalData(makeAddr("account2"), 2 ether);
+        withdrawals[2] = WithdrawalData(makeAddr("account3"), 3 ether);
+
+        // fund bridge
+        vm.startPrank(initialSupplyRecipient);
+        omni.approve(address(nomina), 6 ether);
+        nomina.convert(address(b), 6 ether);
+        vm.stopPrank();
+
+        // get root from all withdrawals
+        bytes32 root;
+        {
+            uint256[] memory allIndices = new uint256[](3);
+            allIndices[0] = 0;
+            allIndices[1] = 1;
+            allIndices[2] = 2;
+            (,,,, root) = _generateWithdrawalProof(withdrawals, allIndices);
+        }
+
+        // initialize v3 with root
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // first claim account1 and account3 (indices 0 and 2)
+        {
+            uint256[] memory batch1Indices = new uint256[](2);
+            batch1Indices[0] = 0;
+            batch1Indices[1] = 2;
+
+            (address[] memory accounts, uint256[] memory amounts, bytes32[] memory proof, bool[] memory flags,) =
+                _generateWithdrawalProof(withdrawals, batch1Indices);
+
+            b.postHaltWithdraw(accounts, amounts, proof, flags);
+
+            // assert batch 1 claimed
+            assertTrue(b.postHaltClaimed(withdrawals[0].account));
+            assertFalse(b.postHaltClaimed(withdrawals[1].account));
+            assertTrue(b.postHaltClaimed(withdrawals[2].account));
+        }
+
+        // now claim account2 (index 1)
+        {
+            uint256[] memory batch2Indices = new uint256[](1);
+            batch2Indices[0] = 1;
+
+            (address[] memory accounts, uint256[] memory amounts, bytes32[] memory proof, bool[] memory flags,) =
+                _generateWithdrawalProof(withdrawals, batch2Indices);
+
+            b.postHaltWithdraw(accounts, amounts, proof, flags);
+        }
+
+        // assert all claimed
+        assertTrue(b.postHaltClaimed(withdrawals[0].account));
+        assertTrue(b.postHaltClaimed(withdrawals[1].account));
+        assertTrue(b.postHaltClaimed(withdrawals[2].account));
+    }
+
+    function test_postHaltWithdraw_revertsWhenNoRootSet() public {
+        address account = makeAddr("account");
+        uint256 withdrawAmount = 1 ether;
+
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = withdrawAmount;
+
+        bytes32[] memory multiProof = new bytes32[](0);
+        bool[] memory multiProofFlags = new bool[](0);
+
+        // should revert when no root set
+        vm.expectRevert("NominaBridge: no root set");
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+    }
+
+    function test_postHaltWithdraw_revertsWhenLengthMismatch() public {
+        bytes32 root = keccak256("test root");
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        address[] memory accounts = new address[](2);
+        accounts[0] = makeAddr("account1");
+        accounts[1] = makeAddr("account2");
+
+        uint256[] memory amounts = new uint256[](1); // wrong length
+        amounts[0] = 1 ether;
+
+        bytes32[] memory multiProof = new bytes32[](0);
+        bool[] memory multiProofFlags = new bool[](0);
+
+        vm.expectRevert("NominaBridge: length mismatch");
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+    }
+
+    function test_postHaltWithdraw_revertsWhenAlreadyClaimed() public {
+        address account = makeAddr("account");
+        uint256 withdrawAmount = 1 ether;
+
+        // fund bridge
+        vm.startPrank(initialSupplyRecipient);
+        omni.approve(address(nomina), withdrawAmount * 2);
+        nomina.convert(address(b), withdrawAmount * 2);
+        vm.stopPrank();
+
+        // create withdrawal data
+        WithdrawalData[] memory withdrawals = new WithdrawalData[](1);
+        withdrawals[0] = WithdrawalData(account, withdrawAmount);
+
+        uint256[] memory selectedIndices = new uint256[](1);
+        selectedIndices[0] = 0;
+
+        (
+            address[] memory accounts,
+            uint256[] memory amounts,
+            bytes32[] memory multiProof,
+            bool[] memory multiProofFlags,
+            bytes32 root
+        ) = _generateWithdrawalProof(withdrawals, selectedIndices);
+
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // first claim succeeds
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+
+        // second claim reverts
+        vm.expectRevert("NominaBridge: already claimed");
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+    }
+
+    function test_postHaltWithdraw_revertsWhenZeroAddress() public {
+        bytes32 root = keccak256("test root");
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        address[] memory accounts = new address[](1);
+        accounts[0] = address(0);
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1 ether;
+
+        bytes32[] memory multiProof = new bytes32[](0);
+        bool[] memory multiProofFlags = new bool[](0);
+
+        vm.expectRevert("NominaBridge: no zero addr");
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+    }
+
+    function test_postHaltWithdraw_revertsWhenZeroAmount() public {
+        bytes32 root = keccak256("test root");
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        address[] memory accounts = new address[](1);
+        accounts[0] = makeAddr("account");
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 0;
+
+        bytes32[] memory multiProof = new bytes32[](0);
+        bool[] memory multiProofFlags = new bool[](0);
+
+        vm.expectRevert("NominaBridge: amount must be > 0");
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+    }
+
+    function test_postHaltWithdraw_revertsWhenInvalidProof() public {
+        address account = makeAddr("account");
+        uint256 withdrawAmount = 1 ether;
+
+        // create valid withdrawal
+        WithdrawalData[] memory withdrawals = new WithdrawalData[](1);
+        withdrawals[0] = WithdrawalData(account, withdrawAmount);
+
+        uint256[] memory selectedIndices = new uint256[](1);
+        selectedIndices[0] = 0;
+
+        (,,,, bytes32 root) = _generateWithdrawalProof(withdrawals, selectedIndices);
+
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // try to claim different amount (invalid proof)
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = withdrawAmount + 1; // wrong amount
+
+        bytes32[] memory multiProof = new bytes32[](0);
+        bool[] memory multiProofFlags = new bool[](0);
+
+        vm.expectRevert("NominaBridge: invalid proof");
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+    }
+
+    function test_postHaltWithdraw_revertsWhenWrongAccount() public {
+        address account1 = makeAddr("account1");
+        address account2 = makeAddr("account2");
+        uint256 withdrawAmount = 1 ether;
+
+        // create valid withdrawal for account1
+        WithdrawalData[] memory withdrawals = new WithdrawalData[](1);
+        withdrawals[0] = WithdrawalData(account1, withdrawAmount);
+
+        uint256[] memory selectedIndices = new uint256[](1);
+        selectedIndices[0] = 0;
+
+        (,,,, bytes32 root) = _generateWithdrawalProof(withdrawals, selectedIndices);
+
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // try to claim for account2 (invalid proof)
+        address[] memory accounts = new address[](1);
+        accounts[0] = account2; // wrong account
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = withdrawAmount;
+
+        bytes32[] memory multiProof = new bytes32[](0);
+        bool[] memory multiProofFlags = new bool[](0);
+
+        vm.expectRevert("NominaBridge: invalid proof");
+        b.postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
+    }
+
+    function test_bridgeAndWithdrawPausedAfterInitializeV3() public {
+        bytes32 root = keccak256("test root");
+
+        // initialize v3
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // bridge should be paused
+        address to = makeAddr("to");
+
+        vm.expectRevert("NominaBridge: paused");
+        b.bridge(to, amount);
+
+        // withdraw should be paused
+        vm.expectRevert("NominaBridge: paused");
+        b.withdraw(to, amount);
+    }
+
+    function test_postHaltWithdraw_multipleBatches() public {
+        // setup 6 accounts
+        WithdrawalData[] memory withdrawals = new WithdrawalData[](6);
+        uint256 totalAmount = 21 ether; // 1+2+3+4+5+6
+
+        for (uint256 i = 0; i < 6; i++) {
+            withdrawals[i] = WithdrawalData(makeAddr(string(abi.encodePacked("account", i))), (i + 1) * 1 ether);
+        }
+
+        // fund bridge
+        vm.startPrank(initialSupplyRecipient);
+        omni.approve(address(nomina), totalAmount);
+        nomina.convert(address(b), totalAmount);
+        vm.stopPrank();
+
+        // generate proof for all and get root
+        uint256[] memory allIndices = new uint256[](6);
+        for (uint256 i = 0; i < 6; i++) {
+            allIndices[i] = i;
+        }
+        (,,,, bytes32 root) = _generateWithdrawalProof(withdrawals, allIndices);
+
+        // initialize v3 with root
+        vm.prank(proxyAdmin);
+        b.initializeV3(root);
+
+        // claim first batch (accounts 0, 1, 2)
+        {
+            uint256[] memory batch1Indices = new uint256[](3);
+            batch1Indices[0] = 0;
+            batch1Indices[1] = 1;
+            batch1Indices[2] = 2;
+
+            (address[] memory accounts, uint256[] memory amounts, bytes32[] memory proof, bool[] memory flags,) =
+                _generateWithdrawalProof(withdrawals, batch1Indices);
+
+            b.postHaltWithdraw(accounts, amounts, proof, flags);
+
+            // verify first batch claimed
+            assertTrue(b.postHaltClaimed(withdrawals[0].account));
+            assertTrue(b.postHaltClaimed(withdrawals[1].account));
+            assertTrue(b.postHaltClaimed(withdrawals[2].account));
+        }
+
+        // claim second batch (accounts 3, 4, 5)
+        {
+            uint256[] memory batch2Indices = new uint256[](3);
+            batch2Indices[0] = 3;
+            batch2Indices[1] = 4;
+            batch2Indices[2] = 5;
+
+            (address[] memory accounts, uint256[] memory amounts, bytes32[] memory proof, bool[] memory flags,) =
+                _generateWithdrawalProof(withdrawals, batch2Indices);
+
+            b.postHaltWithdraw(accounts, amounts, proof, flags);
+        }
+
+        // verify all claimed
+        for (uint256 i = 0; i < 6; i++) {
+            assertTrue(b.postHaltClaimed(withdrawals[i].account));
+            assertEq(nomina.balanceOf(withdrawals[i].account), withdrawals[i].amount);
+        }
     }
 }
 

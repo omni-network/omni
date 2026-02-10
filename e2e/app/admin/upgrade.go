@@ -379,14 +379,7 @@ func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	var l1BridgeABI = mustGetABI(bindings.NominaBridgeL1MetaData)
-
-	initializer, err := l1BridgeABI.Pack("initializeV2")
-	if err != nil {
-		return errors.Wrap(err, "pack initializer")
-	}
-
-	calldata, err := adminABI.Pack("upgradeBridgeL1", s.upgrader, s.deployer, addrs.L1Bridge, addrs.NomToken, initializer)
+	calldata, err := adminABI.Pack("upgradeBridgeL1", s.upgrader, s.deployer, addrs.L1Bridge)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}

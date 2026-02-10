@@ -16,7 +16,6 @@ import { OmniGasPump } from "src/token/OmniGasPump.sol";
 import { OmniGasStation } from "src/token/OmniGasStation.sol";
 import { OmniBridgeCommon } from "src/token/OmniBridgeCommon.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
-import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
 import { NominaBridgeNative } from "src/token/nomina/NominaBridgeNative.sol";
 import { NominaBridgeL1 } from "src/token/nomina/NominaBridgeL1.sol";
 import { Staking } from "src/octane/Staking.sol";
@@ -30,6 +29,7 @@ import { BridgeL1PostUpgradeTest } from "./BridgeL1PostUpgradeTest.sol";
 import { BridgeNativePostUpgradeTest } from "./BridgeNativePostUpgradeTest.sol";
 import { StakingPostUpgradeTest } from "./StakingPostUpgradeTest.sol";
 import { FeeOracleV2PostUpdateTest } from "./FeeOracleV2PostUpdateTest.sol";
+import { PostHaltNominaL1BridgeWithdrawals } from "./PostHaltNominaL1BridgeWithdrawals.s.sol";
 
 /**
  * @title Admin
@@ -408,37 +408,40 @@ contract Admin is Script {
      * @param deployer  The address of the account that will deploy the new implementation.
      * @param proxy     The address of the proxy to upgrade.
      */
-    function upgradeBridgeL1(address admin, address deployer, address proxy, address nomina, bytes calldata data)
-        public
-    {
-        // replace with NominaBridgeL1 on next upgrade
-        OmniBridgeL1 b = OmniBridgeL1(proxy);
+    function upgradeBridgeL1(address admin, address deployer, address proxy) public {
+        // TODO: Remove when ready for upgrade and post-halt-withdrawals.json is set.
+        revert("not allowed");
 
-        // retrieve pause states
-        bool allPaused = b.isPaused(b.KeyPauseAll());
-        bool bridgePaused = b.isPaused(b.ACTION_BRIDGE());
-        bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
+        // replace with NominaBridgeL1 on next upgrade
+        NominaBridgeL1 b = NominaBridgeL1(proxy);
 
         // read storage pre-upgrade
         address owner = b.owner();
-        address omni = address(b.token());
-        address portal = address(b.omni());
+        address omni = address(b.OMNI());
+        address nomina = address(b.NOMINA());
+        address portal = address(b.portal());
 
         vm.startBroadcast(deployer);
         address impl = address(new NominaBridgeL1(omni, nomina));
         vm.stopBroadcast();
 
-        _upgradeProxy(admin, proxy, impl, data);
+        // Get merkle root for post-halt withdrawals
+        PostHaltNominaL1BridgeWithdrawals withdrawalScript = new PostHaltNominaL1BridgeWithdrawals();
+        bytes32 postHaltRoot = withdrawalScript.getWithdrawalRoot();
+
+        // Generate initializeV3 calldata with the merkle root
+        bytes memory initializeV3Data = abi.encodeCall(NominaBridgeL1.initializeV3, (postHaltRoot));
+
+        _upgradeProxy(admin, proxy, impl, initializeV3Data);
 
         // assert storage unchanged
         require(b.owner() == owner, "owner changed");
-        // remove castings on next upgrade, vars were renamed
-        require(address(NominaBridgeL1(address(b)).OMNI()) == omni, "omni token changed");
-        require(address(NominaBridgeL1(address(b)).NOMINA()) == nomina, "nomina token changed");
-        require(address(NominaBridgeL1(address(b)).portal()) == portal, "portal changed");
-        require(b.isPaused(b.KeyPauseAll()) == allPaused, "all paused state changed");
-        require(b.isPaused(b.ACTION_BRIDGE()) == bridgePaused, "bridge paused state changed");
-        require(b.isPaused(b.ACTION_WITHDRAW()) == withdrawPaused, "withdraw paused state changed");
+        require(address(b.OMNI()) == omni, "omni token changed");
+        require(address(b.NOMINA()) == nomina, "nomina token changed");
+        require(address(b.portal()) == portal, "portal changed");
+        require(b.isPaused(b.ACTION_BRIDGE()), "bridge should be paused");
+        require(b.isPaused(b.ACTION_WITHDRAW()), "withdraw should be paused");
+        require(b.postHaltRoot() == postHaltRoot, "postHaltRoot not set");
 
         new BridgeL1PostUpgradeTest().run(proxy);
     }
@@ -486,7 +489,7 @@ contract Admin is Script {
      * @param impl      The address of the new implementation.
      * @param data      Calldata to execute after upgrading the contract.
      */
-    function _upgradeProxy(address admin, address proxy, address impl, bytes calldata data) internal {
+    function _upgradeProxy(address admin, address proxy, address impl, bytes memory data) internal {
         _upgradeProxy(admin, proxy, impl, data, true, false);
     }
 
@@ -503,7 +506,7 @@ contract Admin is Script {
         address admin,
         address proxy,
         address impl,
-        bytes calldata data,
+        bytes memory data,
         bool initializable,
         bool soladyInitializable
     ) internal {
