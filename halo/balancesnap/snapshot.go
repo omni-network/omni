@@ -25,8 +25,10 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
-// Start starts a goroutine that waits for halt height and snapshots balances.
-// Returns immediately if not enabled or halt height is 0.
+// Start starts a goroutine that snapshots balances.
+// Returns immediately if not enabled.
+// If haltHeight is 0, snapshots at latest height immediately.
+// If haltHeight is set, waits for halt height before snapshotting.
 func Start(
 	ctx context.Context,
 	haltHeight uint64,
@@ -34,15 +36,10 @@ func Start(
 	homeDir string,
 	consensusClient client.Client,
 	cprov cchain.Provider,
-	asyncAbort chan<- error,
+	_ chan<- error,
 ) {
 	// Only enabled if evmredenom is enabled
 	if !evmRedenomCfg.Enabled {
-		return
-	}
-
-	// Skip if halt height is disabled
-	if haltHeight == 0 {
 		return
 	}
 
@@ -57,7 +54,7 @@ func Start(
 		)
 		if err != nil {
 			log.Error(ctx, "BalanceSnap: balance snapshot failed", err)
-			asyncAbort <- errors.Wrap(err, "balance snapshot")
+			// Don't abort the app, just log the error
 		}
 	}()
 }
@@ -71,14 +68,39 @@ func run(
 	consensusClient client.Client,
 	cprov cchain.Provider,
 ) error {
-	log.Info(ctx, "BalanceSnap: waiting for halt height", "halt_height", haltHeight)
+	var consensusHeight uint64
+	var outputSuffix string
 
-	// Wait for consensus to reach halt height
-	if err := waitForHeight(ctx, consensusClient, haltHeight); err != nil {
-		return errors.Wrap(err, "wait for halt height")
+	if haltHeight == 0 {
+		// No halt height configured, snapshot at latest height
+		log.Info(ctx, "BalanceSnap: no halt height configured, snapshotting at latest height")
+
+		status, err := consensusClient.Status(ctx)
+		if err != nil {
+			return errors.Wrap(err, "get consensus status")
+		}
+
+		if status.SyncInfo.LatestBlockHeight < 0 {
+			return errors.New("invalid block height", "height", status.SyncInfo.LatestBlockHeight)
+		}
+
+		consensusHeight = uint64(status.SyncInfo.LatestBlockHeight) //nolint:gosec // Validated >= 0 above
+		outputSuffix = "latest.json"
+
+		log.Info(ctx, "BalanceSnap: snapshotting at latest consensus height", "height", consensusHeight)
+	} else {
+		// Halt height configured, wait for it
+		log.Info(ctx, "BalanceSnap: waiting for halt height", "halt_height", haltHeight)
+
+		if err := waitForHeight(ctx, consensusClient, haltHeight); err != nil {
+			return errors.Wrap(err, "wait for halt height")
+		}
+
+		consensusHeight = haltHeight
+		outputSuffix = "halt.json"
+
+		log.Info(ctx, "BalanceSnap: halt height reached, querying EVM head", "height", haltHeight)
 	}
-
-	log.Info(ctx, "BalanceSnap: halt height reached, querying EVM head", "height", haltHeight)
 
 	// Get ExecutionHead from cprovider to verify consensus state
 	execHead, err := cprov.ExecutionHead(ctx)
@@ -114,28 +136,33 @@ func run(
 		"state_root", evmHeader.Root.Hex(),
 	)
 
-	// Hardcode output paths
-	evmOutputPath := filepath.Join(homeDir, "data", "evm_balances_halt.json")
-	stakeOutputPath := filepath.Join(homeDir, "data", "staking_balances_halt.json")
+	// Output paths based on whether we're at halt or latest
+	evmOutputPath := filepath.Join(homeDir, "data", "evm_balances_"+outputSuffix)
+	stakeOutputPath := filepath.Join(homeDir, "data", "staking_balances_"+outputSuffix)
 
 	// Snapshot EVM balances
 	log.Info(ctx, "BalanceSnap: snapshotting EVM balances", "output", evmOutputPath)
-	if err := snapshotEVMBalances(ctx, evmRedenomCfg, evmHeader.Root, evmHeader.Number.Uint64(), haltHeight, evmOutputPath); err != nil {
+	if err := snapshotEVMBalances(ctx, evmRedenomCfg, evmHeader.Root, evmHeader.Number.Uint64(), consensusHeight, evmOutputPath); err != nil {
 		return errors.Wrap(err, "snapshot EVM balances")
 	}
 
 	// Snapshot staking balances
 	log.Info(ctx, "BalanceSnap: snapshotting staking balances", "output", stakeOutputPath)
-	if err := snapshotStakingBalances(ctx, cprov, haltHeight, stakeOutputPath); err != nil {
+	if err := snapshotStakingBalances(ctx, cprov, consensusHeight, stakeOutputPath); err != nil {
 		return errors.Wrap(err, "snapshot staking balances")
 	}
 
-	// Ensure height isn't increasing
-	if err := waitForHeight(ctx, consensusClient, haltHeight); err != nil {
-		return errors.Wrap(err, "wait for halt height")
+	// Only verify height isn't increasing if we're expecting halt
+	if haltHeight != 0 {
+		if err := waitForHeight(ctx, consensusClient, haltHeight); err != nil {
+			return errors.Wrap(err, "verify halt height")
+		}
 	}
 
-	log.Info(ctx, "BalanceSnap: balance snapshot completed successfully")
+	log.Info(ctx, "BalanceSnap: balance snapshot completed successfully",
+		"consensus_height", consensusHeight,
+		"evm_block", evmHeader.Number.Uint64(),
+	)
 
 	return nil
 }
