@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import { INomina } from "src/interfaces/nomina/INomina.sol";
 import { NominaBridgeCommon } from "./NominaBridgeCommon.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
@@ -27,6 +28,11 @@ contract NominaBridgeL1 is NominaBridgeCommon {
     event Withdraw(address indexed to, uint256 amount);
 
     /**
+     * @notice Emitted when NOM tokens are withdrawn via post-halt mechanism.
+     */
+    event PostHaltWithdraw(address indexed to, uint256 amount);
+
+    /**
      * @notice xcall gas limit for NominaBridgeNative.withdraw
      */
     uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 80_000;
@@ -46,6 +52,16 @@ contract NominaBridgeL1 is NominaBridgeCommon {
      */
     IOmniPortal public portal;
 
+    /**
+     * @notice Merkle root for post-halt withdrawals.
+     */
+    bytes32 public postHaltRoot;
+
+    /**
+     * @notice Mapping to track claimed post-halt withdrawals.
+     */
+    mapping(address => bool) public postHaltClaimed;
+
     constructor(address omni, address nomina) {
         OMNI = IERC20(omni);
         NOMINA = IERC20(nomina);
@@ -61,6 +77,12 @@ contract NominaBridgeL1 is NominaBridgeCommon {
     function initializeV2() external reinitializer(2) {
         OMNI.approve(address(NOMINA), type(uint256).max);
         INomina(address(NOMINA)).convert(address(this), OMNI.balanceOf(address(this)));
+    }
+
+    function initializeV3(bytes32 postHaltRoot_) external reinitializer(3) {
+        postHaltRoot = postHaltRoot_;
+        if (!_isPaused(ACTION_WITHDRAW)) _pause(ACTION_WITHDRAW);
+        if (!_isPaused(ACTION_BRIDGE)) _pause(ACTION_BRIDGE);
     }
 
     /**
@@ -119,5 +141,47 @@ contract NominaBridgeL1 is NominaBridgeCommon {
             abi.encodeCall(NominaBridgeNative.withdraw, (payor, to, amount)),
             XCALL_WITHDRAW_GAS_LIMIT
         );
+    }
+
+    /**
+     * @notice Withdraw tokens for multiple accounts using merkle multi-proof verification.
+     * @param accounts Array of addresses to withdraw tokens for.
+     * @param amounts Array of amounts corresponding to each account.
+     * @param multiProof Array of proof hashes for the multi-proof.
+     * @param multiProofFlags Array of boolean flags for the multi-proof.
+     */
+    function postHaltWithdraw(
+        address[] calldata accounts,
+        uint256[] calldata amounts,
+        bytes32[] calldata multiProof,
+        bool[] calldata multiProofFlags
+    ) external {
+        require(accounts.length == amounts.length, "NominaBridge: length mismatch");
+        require(postHaltRoot != bytes32(0), "NominaBridge: no root set");
+
+        bytes32[] memory leaves = new bytes32[](accounts.length);
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            address account = accounts[i];
+            uint256 amount = amounts[i];
+
+            require(!postHaltClaimed[account], "NominaBridge: already claimed");
+            require(account != address(0), "NominaBridge: no zero addr");
+            require(amount > 0, "NominaBridge: amount must be > 0");
+
+            leaves[i] = keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
+        }
+
+        require(
+            MerkleProof.multiProofVerify(multiProof, multiProofFlags, postHaltRoot, leaves),
+            "NominaBridge: invalid proof"
+        );
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            postHaltClaimed[accounts[i]] = true;
+            NOMINA.transfer(accounts[i], amounts[i]);
+
+            emit PostHaltWithdraw(accounts[i], amounts[i]);
+        }
     }
 }
