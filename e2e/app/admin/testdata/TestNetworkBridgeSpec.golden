@@ -15,12 +15,12 @@
   "Native": {
    "PauseAll": false,
    "PauseWithdraw": false,
-   "PauseBridge": false
+   "PauseBridge": true
   },
   "L1": {
    "PauseAll": false,
    "PauseWithdraw": false,
-   "PauseBridge": false
+   "PauseBridge": true
   }
  },
  "omega": {
