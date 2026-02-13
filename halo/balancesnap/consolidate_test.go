@@ -1,13 +1,11 @@
 package balancesnap_test
 
 import (
-	"context"
 	"math/big"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/balancesnap"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/netconf"
@@ -17,13 +15,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testL1RPC = "https://eth.llamarpc.com"
+
 func TestConsolidateBalances(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-
-	// Use dummy foundation address
-	foundationAddr := common.HexToAddress("0x1111111111111111111111111111111111111111")
+	ctx := t.Context()
 
 	// Paths to mainnet balance files in ops repo
 	opsDir := filepath.Join(os.Getenv("HOME"), "repos", "ops")
@@ -38,19 +35,19 @@ func TestConsolidateBalances(t *testing.T) {
 		t.Skipf("Staking balances file not found: %s", stakingBalancesPath)
 	}
 
-	// Create temp output file
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "combined_balances_mainnet.json")
+	// Create output file in ops repo
+	outputPath := filepath.Join(opsDir, "combined_balances_mainnet.json")
 
-	// Run consolidation without L1 RPC check (empty string skips L1 query)
-	// In production, provide real L1 RPC URL to verify bridge balance
+	// Run consolidation with L1 RPC to verify bridge balance
+	// L1 RPC URL is now required for mainnet consolidation
+	l1RPC := testL1RPC
+
 	result, summary, err := balancesnap.ConsolidateBalances(
 		ctx,
 		netconf.Mainnet,
 		evmBalancesPath,
 		stakingBalancesPath,
-		foundationAddr,
-		"", // Empty = skip L1 bridge balance check
+		l1RPC,
 		outputPath,
 	)
 	require.NoError(t, err)
@@ -83,9 +80,10 @@ func TestConsolidateBalances(t *testing.T) {
 	require.False(t, exists, "Dead address should be burned, not in payout")
 
 	// Verify foundation address received consolidated funds
+	foundationAddr := common.HexToAddress("0xfdb3e9cdc5f016cff6cfaf28fef141ae76efd31d")
 	foundationBalance, exists := result[foundationAddr]
 	require.True(t, exists, "Foundation should have received consolidated funds")
-	require.True(t, foundationBalance.Cmp(big.NewInt(0)) > 0, "Foundation balance should be positive")
+	require.Positive(t, foundationBalance.Cmp(big.NewInt(0)), "Foundation balance should be positive")
 	t.Logf("Foundation balance: %s", balancesnap.FormatBalance(foundationBalance))
 
 	// Verify total payable equals the sum of all result balances
@@ -96,13 +94,27 @@ func TestConsolidateBalances(t *testing.T) {
 	require.Equal(t, summary.TotalPayable.String(), calculatedTotal.String(),
 		"Total payable should equal sum of all result balances")
 
-	// Verify the calculation formula:
-	// Total Payable = EVM Total - Burned + Consensus Staking
-	expectedTotal := new(big.Int).Set(summary.TotalEVMSupply)
-	expectedTotal.Sub(expectedTotal, summary.TotalBurned)
-	expectedTotal.Add(expectedTotal, summary.TotalConsensusStake)
-	require.Equal(t, expectedTotal.String(), summary.TotalPayable.String(),
-		"Total payable should match formula: EVM Total - Burned + Consensus Staking")
+	// Verify the calculation formula accounting for L1 bridge shortfall:
+	// If Total Payable > L1 Bridge Balance, foundation covers the shortfall
+	// Expected Total (before shortfall) = EVM Total - Burned + Consensus Staking
+	expectedTotalBeforeShortfall := new(big.Int).Set(summary.TotalEVMSupply)
+	expectedTotalBeforeShortfall.Sub(expectedTotalBeforeShortfall, summary.TotalBurned)
+	expectedTotalBeforeShortfall.Add(expectedTotalBeforeShortfall, summary.TotalConsensusStake)
+
+	// If there's a shortfall, total payable should equal L1 bridge balance
+	if summary.FoundationShortfall.Cmp(big.NewInt(0)) > 0 {
+		require.Equal(t, summary.L1BridgeBalance.String(), summary.TotalPayable.String(),
+			"Total payable should equal L1 bridge balance when foundation covers shortfall")
+
+		// Verify shortfall calculation
+		expectedShortfall := new(big.Int).Sub(expectedTotalBeforeShortfall, summary.L1BridgeBalance)
+		require.Equal(t, expectedShortfall.String(), summary.FoundationShortfall.String(),
+			"Foundation shortfall should equal difference between expected total and bridge balance")
+	} else {
+		// No shortfall - total payable should match formula
+		require.Equal(t, expectedTotalBeforeShortfall.String(), summary.TotalPayable.String(),
+			"Total payable should match formula: EVM Total - Burned + Consensus Staking")
+	}
 
 	t.Logf("Number of payout addresses: %d", len(result))
 	t.Logf("Burned Staking: %s", balancesnap.FormatBalance(summary.BurnedStaking))
@@ -117,8 +129,7 @@ func TestConsolidateBalances(t *testing.T) {
 func TestConsolidateBalances_OnlyMainnet(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-	foundationAddr := common.HexToAddress("0x1111111111111111111111111111111111111111")
+	ctx := t.Context()
 	tempDir := t.TempDir()
 
 	// Try with non-mainnet network
@@ -127,8 +138,7 @@ func TestConsolidateBalances_OnlyMainnet(t *testing.T) {
 		netconf.Omega, // Not mainnet
 		"dummy.json",
 		"dummy.json",
-		foundationAddr,
-		"",
+		testL1RPC,
 		filepath.Join(tempDir, "output.json"),
 	)
 	require.Error(t, err)
@@ -138,8 +148,7 @@ func TestConsolidateBalances_OnlyMainnet(t *testing.T) {
 func TestConsolidateBalances_InvalidFiles(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-	foundationAddr := common.HexToAddress("0x1111111111111111111111111111111111111111")
+	ctx := t.Context()
 	tempDir := t.TempDir()
 
 	// Try with non-existent files
@@ -148,11 +157,40 @@ func TestConsolidateBalances_InvalidFiles(t *testing.T) {
 		netconf.Mainnet,
 		"nonexistent.json",
 		"nonexistent.json",
-		foundationAddr,
-		"",
+		testL1RPC,
 		filepath.Join(tempDir, "output.json"),
 	)
 	require.Error(t, err)
+}
+
+func TestConsolidateBalances_RequiresL1RPC(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	tempDir := t.TempDir()
+
+	opsDir := filepath.Join(os.Getenv("HOME"), "repos", "ops")
+	evmBalancesPath := filepath.Join(opsDir, "evm_balances_latest.json")
+	stakingBalancesPath := filepath.Join(opsDir, "staking_balances_latest.json")
+
+	if _, err := os.Stat(evmBalancesPath); os.IsNotExist(err) {
+		t.Skipf("EVM balances file not found: %s", evmBalancesPath)
+	}
+	if _, err := os.Stat(stakingBalancesPath); os.IsNotExist(err) {
+		t.Skipf("Staking balances file not found: %s", stakingBalancesPath)
+	}
+
+	// Try with empty L1 RPC URL - should error
+	_, _, err := balancesnap.ConsolidateBalances(
+		ctx,
+		netconf.Mainnet,
+		evmBalancesPath,
+		stakingBalancesPath,
+		"", // Empty RPC URL should error
+		filepath.Join(tempDir, "output.json"),
+	)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "l1 rpc url required")
 }
 
 func TestValidatorAddressFormat(t *testing.T) {
@@ -162,8 +200,7 @@ func TestValidatorAddressFormat(t *testing.T) {
 	// are in the expected format: 0x-prefixed, 42 characters
 	// The consolidation code will error if the format is invalid
 
-	ctx := context.Background()
-	foundationAddr := common.HexToAddress("0x1111111111111111111111111111111111111111")
+	ctx := t.Context()
 
 	opsDir := filepath.Join(os.Getenv("HOME"), "repos", "ops")
 	evmBalancesPath := filepath.Join(opsDir, "evm_balances_latest.json")
@@ -179,14 +216,16 @@ func TestValidatorAddressFormat(t *testing.T) {
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "combined_balances_test.json")
 
+	// Use L1 RPC for validation
+	l1RPC := testL1RPC
+
 	// Should not error - mainnet manifest has valid format
 	_, _, err := balancesnap.ConsolidateBalances(
 		ctx,
 		netconf.Mainnet,
 		evmBalancesPath,
 		stakingBalancesPath,
-		foundationAddr,
-		"", // Skip L1 query
+		l1RPC,
 		outputPath,
 	)
 	require.NoError(t, err, "Mainnet manifest should have valid validator address format")
@@ -195,9 +234,7 @@ func TestValidatorAddressFormat(t *testing.T) {
 func TestConsolidateBalances_WithL1RPC(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-	// Use an address with sufficient balance to cover shortfall (101M NOM)
-	foundationAddr := common.HexToAddress("0x07089a437290558280110b49598623db5653ef38")
+	ctx := t.Context()
 
 	opsDir := filepath.Join(os.Getenv("HOME"), "repos", "ops")
 	evmBalancesPath := filepath.Join(opsDir, "evm_balances_latest.json")
@@ -213,15 +250,14 @@ func TestConsolidateBalances_WithL1RPC(t *testing.T) {
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "combined_balances_mainnet_l1.json")
 
-	// Use default Ethereum mainnet RPC from e2e package
-	l1RPC := types.PublicRPCByName("ethereum")
+	// Use working Ethereum mainnet RPC
+	l1RPC := testL1RPC
 
 	result, summary, err := balancesnap.ConsolidateBalances(
 		ctx,
 		netconf.Mainnet,
 		evmBalancesPath,
 		stakingBalancesPath,
-		foundationAddr,
 		l1RPC,
 		outputPath,
 	)
@@ -231,6 +267,7 @@ func TestConsolidateBalances_WithL1RPC(t *testing.T) {
 	if err != nil {
 		t.Logf("Consolidation error (may be expected): %v", err)
 		require.Contains(t, err.Error(), "insufficient funds", "Should be shortfall error")
+
 		return
 	}
 
@@ -250,6 +287,7 @@ func TestConsolidateBalances_WithL1RPC(t *testing.T) {
 		t.Logf("Foundation Shortfall: %s NOM (deducted from foundation)", balancesnap.FormatBalance(summary.FoundationShortfall))
 
 		// Verify foundation balance was reduced
+		foundationAddr := common.HexToAddress("0xfdb3e9cdc5f016cff6cfaf28fef141ae76efd31d")
 		foundationBalance := result[foundationAddr]
 		t.Logf("Foundation final balance: %s NOM", balancesnap.FormatBalance(foundationBalance))
 	} else if summary.L1BridgeBalance.Cmp(summary.TotalPayable) >= 0 {

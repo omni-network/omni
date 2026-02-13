@@ -228,7 +228,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), status)
 	go monitorEVMForever(ctx, cfg, engineCl, status)
 
-	balancesnap.Start(ctx, cfg.HaltHeight, cfg.EVMRedenomSubmit, cfg.HomeDir, rpcClient, cProvider, asyncAbort)
+	balancesnap.Start(ctx, cfg.Network, cfg.HaltHeight, cfg.EVMRedenomSubmit, cfg.HomeDir, cProvider, cfg.RPCEndpoints, asyncAbort)
 
 	stopProxy := startEVMProxy(ctx, asyncAbort, cfg.EVMProxyListen, cfg.EVMProxyTarget)
 

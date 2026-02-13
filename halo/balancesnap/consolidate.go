@@ -8,12 +8,12 @@ import (
 	"os"
 
 	"github.com/omni-network/omni/contracts/allocs"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -58,12 +58,13 @@ type ConsolidationSummary struct {
 // - Deducts shortfall from foundation if total exceeds L1 bridge balance
 //
 // Returns a map of address -> wei amount representing L1 payouts.
+//
+//nolint:maintidx // Complex but clear sequential flow
 func ConsolidateBalances(
 	ctx context.Context,
 	network netconf.ID,
 	evmBalancesPath string,
 	stakingBalancesPath string,
-	foundationAddr common.Address,
 	l1RPCURL string,
 	outputPath string,
 ) (map[common.Address]*big.Int, *ConsolidationSummary, error) {
@@ -71,6 +72,9 @@ func ConsolidateBalances(
 	if network != netconf.Mainnet {
 		return nil, nil, errors.New("consolidation only allowed for mainnet")
 	}
+
+	// Foundation address for mainnet consolidation
+	foundationAddr := common.HexToAddress("0xfdb3e9cdc5f016cff6cfaf28fef141ae76efd31d")
 
 	log.Info(ctx, "Starting balance consolidation", "network", network, "foundation", foundationAddr.Hex())
 
@@ -110,7 +114,7 @@ func ConsolidateBalances(
 	}
 
 	// Get all internal addresses to consolidate
-	internalAddrs, err := getInternalAddresses(network)
+	internalAddrs, err := getInternalAddresses(ctx, network)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "get internal addresses")
 	}
@@ -146,25 +150,29 @@ func ConsolidateBalances(
 			summary.ConsolidatedEOAs.Add(summary.ConsolidatedEOAs, amount)
 			summary.TotalConsolidated.Add(summary.TotalConsolidated, amount)
 			addToResult(result, foundationAddr, amount)
-			log.Debug(ctx, "Consolidating EOA", "address", addr.Hex(), "amount", FormatBalance(amount))
+			name := internalAddrs.eoaAddrs[addr]
+			log.Debug(ctx, "Consolidating EOA", "name", name, "address", addr.Hex(), "amount", FormatBalance(amount))
 
 		case actionConsolidateContract:
 			summary.ConsolidatedContracts.Add(summary.ConsolidatedContracts, amount)
 			summary.TotalConsolidated.Add(summary.TotalConsolidated, amount)
 			addToResult(result, foundationAddr, amount)
-			log.Debug(ctx, "Consolidating contract", "address", addr.Hex(), "amount", FormatBalance(amount))
+			name := internalAddrs.contractAddrs[addr]
+			log.Debug(ctx, "Consolidating contract", "name", name, "address", addr.Hex(), "amount", FormatBalance(amount))
 
 		case actionConsolidatePredeploy:
 			summary.ConsolidatedPredeploys.Add(summary.ConsolidatedPredeploys, amount)
 			summary.TotalConsolidated.Add(summary.TotalConsolidated, amount)
 			addToResult(result, foundationAddr, amount)
-			log.Debug(ctx, "Consolidating predeploy", "address", addr.Hex(), "amount", FormatBalance(amount))
+			name := internalAddrs.predeployAddrs[addr]
+			log.Debug(ctx, "Consolidating predeploy", "name", name, "address", addr.Hex(), "amount", FormatBalance(amount))
 
 		case actionConsolidateValidator:
 			summary.ConsolidatedValidators.Add(summary.ConsolidatedValidators, amount)
 			summary.TotalConsolidated.Add(summary.TotalConsolidated, amount)
 			addToResult(result, foundationAddr, amount)
-			log.Debug(ctx, "Consolidating validator", "address", addr.Hex(), "amount", FormatBalance(amount))
+			name := internalAddrs.validatorAddrs[addr]
+			log.Debug(ctx, "Consolidating validator", "name", name, "address", addr.Hex(), "amount", FormatBalance(amount))
 
 		case actionKeep:
 			// Regular user balance, keep it
@@ -178,12 +186,12 @@ func ConsolidateBalances(
 		addr := common.HexToAddress(stake.Address)
 
 		// Check if this is a validator address
-		if internalAddrs.validatorAddrs[addr] {
+		if name, ok := internalAddrs.validatorAddrs[addr]; ok {
 			// Consolidate validator staking to foundation
 			summary.ConsolidatedValidators.Add(summary.ConsolidatedValidators, stake.Total)
 			summary.TotalConsolidated.Add(summary.TotalConsolidated, stake.Total)
 			addToResult(result, foundationAddr, stake.Total)
-			log.Debug(ctx, "Consolidating validator staking", "address", addr.Hex(), "amount", FormatBalance(stake.Total))
+			log.Debug(ctx, "Consolidating validator staking", "name", name, "address", addr.Hex(), "amount", FormatBalance(stake.Total))
 		} else {
 			// Regular delegator, keep their staking
 			addToResult(result, addr, stake.Total)
@@ -204,23 +212,23 @@ func ConsolidateBalances(
 	l1BridgeAddr := contractAddrs.L1Bridge
 	summary.L1BridgeAddress = l1BridgeAddr
 
-	if l1RPCURL != "" {
-		l1BridgeBalance, err := queryL1BridgeBalance(ctx, l1RPCURL, l1BridgeAddr)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "query L1 bridge balance")
-		}
-		summary.L1BridgeBalance = l1BridgeBalance
-
-		log.Info(ctx, "L1 bridge NOM token balance queried",
-			"bridge_address", l1BridgeAddr.Hex(),
-			"balance", FormatBalance(l1BridgeBalance),
-		)
-	} else {
-		log.Warn(ctx, "L1 RPC URL not provided, skipping L1 bridge balance check", nil)
+	if l1RPCURL == "" {
+		return nil, nil, errors.New("l1 rpc url required for mainnet consolidation")
 	}
 
-	// Check if we have enough funds on L1 (only if L1 balance was queried)
-	if l1RPCURL != "" && summary.L1BridgeBalance.Cmp(bi.Zero()) > 0 && summary.TotalPayable.Cmp(summary.L1BridgeBalance) > 0 {
+	l1BridgeBalance, err := queryL1BridgeBalance(ctx, l1RPCURL, l1BridgeAddr)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "query L1 bridge balance")
+	}
+	summary.L1BridgeBalance = l1BridgeBalance
+
+	log.Info(ctx, "L1 bridge NOM token balance queried",
+		"bridge_address", l1BridgeAddr.Hex(),
+		"balance", FormatBalance(l1BridgeBalance),
+	)
+
+	// Check if we have enough funds on L1
+	if summary.TotalPayable.Cmp(summary.L1BridgeBalance) > 0 {
 		// Calculate shortfall
 		shortfall := new(big.Int).Sub(summary.TotalPayable, summary.L1BridgeBalance)
 		summary.FoundationShortfall = shortfall
@@ -238,6 +246,7 @@ func ConsolidateBalances(
 			if exists {
 				foundationBal = foundationBalance
 			}
+
 			return nil, nil, errors.New("insufficient funds: foundation cannot cover shortfall",
 				"shortfall", FormatBalance(shortfall),
 				"foundation_balance", FormatBalance(foundationBal),
@@ -293,31 +302,50 @@ const (
 )
 
 type internalAddresses struct {
-	eoaAddrs       map[common.Address]bool
-	contractAddrs  map[common.Address]bool
-	validatorAddrs map[common.Address]bool
-	predeployAddrs map[common.Address]bool
+	eoaAddrs       map[common.Address]string
+	contractAddrs  map[common.Address]string
+	validatorAddrs map[common.Address]string
+	predeployAddrs map[common.Address]string
 }
 
 // getInternalAddresses returns all internal addresses that should be consolidated or burned.
-func getInternalAddresses(network netconf.ID) (*internalAddresses, error) {
+func getInternalAddresses(ctx context.Context, network netconf.ID) (*internalAddresses, error) {
 	addrs := &internalAddresses{
-		eoaAddrs:       make(map[common.Address]bool),
-		contractAddrs:  make(map[common.Address]bool),
-		validatorAddrs: make(map[common.Address]bool),
-		predeployAddrs: make(map[common.Address]bool),
+		eoaAddrs:       make(map[common.Address]string),
+		contractAddrs:  make(map[common.Address]string),
+		validatorAddrs: make(map[common.Address]string),
+		predeployAddrs: make(map[common.Address]string),
 	}
 
 	// Get EOA addresses
 	for _, account := range eoa.AllAccounts(network) {
-		addrs.eoaAddrs[account.Address] = true
+		addrs.eoaAddrs[account.Address] = string(account.Role)
 	}
 
 	// Get contract addresses from genesis allocs
 	genesisAllocs, err := allocs.Alloc(network)
 	if err == nil {
 		for addr := range genesisAllocs {
-			addrs.contractAddrs[addr] = true
+			addrs.contractAddrs[addr] = "genesis-alloc"
+		}
+	}
+
+	// Get deployed contract addresses
+	contractAddrs, err := contracts.GetAddresses(ctx, network)
+	if err == nil {
+		// Add all deployed contracts that should be consolidated
+		deployedContracts := map[common.Address]string{
+			contractAddrs.GasStation:     "GasStation",
+			contractAddrs.Portal:         "Portal",
+			contractAddrs.FeeOracleV2:    "FeeOracleV2",
+			contractAddrs.GasPump:        "GasPump",
+			contractAddrs.Create3Factory: "Create3Factory",
+			contractAddrs.CreateXFactory: "CreateXFactory",
+		}
+		for addr, name := range deployedContracts {
+			if addr != (common.Address{}) {
+				addrs.contractAddrs[addr] = name
+			}
 		}
 	}
 
@@ -337,25 +365,25 @@ func getInternalAddresses(network netconf.ID) (*internalAddresses, error) {
 					"expected", "0x-prefixed address (42 chars)",
 				)
 			}
-			addrs.validatorAddrs[common.HexToAddress(valAddr)] = true
+			addrs.validatorAddrs[common.HexToAddress(valAddr)] = nodeName
 		}
 	}
 
 	// Add predeploy addresses
-	predeployList := []string{
-		predeploys.PortalRegistry,
-		predeploys.OmniBridgeNative,
-		predeploys.WOmni,
-		predeploys.WNomina,
-		predeploys.Staking,
-		predeploys.Slashing,
-		predeploys.Upgrade,
-		predeploys.Distribution,
-		predeploys.Redenom,
+	predeployList := map[string]string{
+		predeploys.PortalRegistry:   "PortalRegistry",
+		predeploys.OmniBridgeNative: "OmniBridgeNative",
+		predeploys.WOmni:            "WOmni",
+		predeploys.WNomina:          "WNomina",
+		predeploys.Staking:          "Staking",
+		predeploys.Slashing:         "Slashing",
+		predeploys.Upgrade:          "Upgrade",
+		predeploys.Distribution:     "Distribution",
+		predeploys.Redenom:          "Redenom",
 	}
 
-	for _, addr := range predeployList {
-		addrs.predeployAddrs[common.HexToAddress(addr)] = true
+	for addr, name := range predeployList {
+		addrs.predeployAddrs[common.HexToAddress(addr)] = name
 	}
 
 	return addrs, nil
@@ -377,22 +405,22 @@ func categorizeAddress(addr common.Address, internal *internalAddresses) action 
 	}
 
 	// Consolidate other predeploys
-	if internal.predeployAddrs[addr] {
+	if _, ok := internal.predeployAddrs[addr]; ok {
 		return actionConsolidatePredeploy
 	}
 
 	// Consolidate EOAs
-	if internal.eoaAddrs[addr] {
+	if _, ok := internal.eoaAddrs[addr]; ok {
 		return actionConsolidateEOA
 	}
 
 	// Consolidate validators
-	if internal.validatorAddrs[addr] {
+	if _, ok := internal.validatorAddrs[addr]; ok {
 		return actionConsolidateValidator
 	}
 
 	// Consolidate contracts
-	if internal.contractAddrs[addr] {
+	if _, ok := internal.contractAddrs[addr]; ok {
 		return actionConsolidateContract
 	}
 
@@ -450,7 +478,7 @@ func printConsolidationSummary(ctx context.Context, s *ConsolidationSummary) {
 	log.Info(ctx, fmt.Sprintf("  Total Consolidated:      %s NOM", FormatBalance(s.TotalConsolidated)))
 	log.Info(ctx, "")
 	log.Info(ctx, "L1 BRIDGE:")
-	log.Info(ctx, fmt.Sprintf("  Address:                 %s", s.L1BridgeAddress.Hex()))
+	log.Info(ctx, "  Address:                 "+s.L1BridgeAddress.Hex())
 	log.Info(ctx, fmt.Sprintf("  Available Balance:       %s NOM", FormatBalance(s.L1BridgeBalance)))
 	log.Info(ctx, "")
 	log.Info(ctx, "═══════════════════════════════════════════════════════════")
