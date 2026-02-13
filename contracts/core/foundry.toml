@@ -23,6 +23,7 @@ fs_permissions = [
 
 allow_paths = ["../avs", "../solve", "../nomina"]
 gas_limit = 9223372036854775807 # prev foundry default
+memory_limit = 100000000000000
 ffi = true
 
 # TODO: upgrade solc
