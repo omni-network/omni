@@ -4,7 +4,7 @@ public_chains = ["ethereum","arbitrum_one","base","optimism"]
 multi_omni_evms = true
 prometheus   = true
 
-pinned_halo_tag = "a5e8a6e" # balancesnap
+pinned_halo_tag = "4fc0399" # balancesnap
 pinned_relayer_tag = "813a5e6"
 pinned_monitor_tag = "1b55102"
 pinned_solver_tag = "1b55102"
