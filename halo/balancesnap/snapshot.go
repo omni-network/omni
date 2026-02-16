@@ -17,8 +17,8 @@ import (
 	"github.com/omni-network/omni/lib/ethp2p"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
-
-	"github.com/cometbft/cometbft/rpc/client"
+	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -31,11 +31,12 @@ import (
 // If haltHeight is set, waits for halt height before snapshotting.
 func Start(
 	ctx context.Context,
+	network netconf.ID,
 	haltHeight uint64,
 	evmRedenomCfg evmredenomsubmit.Config,
 	homeDir string,
-	consensusClient client.Client,
 	cprov cchain.Provider,
+	rpcEndpoints xchain.RPCEndpoints,
 	_ chan<- error,
 ) {
 	// Only enabled if evmredenom is enabled
@@ -46,7 +47,7 @@ func Start(
 	go func() {
 		err := expbackoff.Retry(ctx,
 			func() error {
-				return run(ctx, haltHeight, evmRedenomCfg, homeDir, consensusClient, cprov)
+				return run(ctx, network, haltHeight, evmRedenomCfg, homeDir, cprov, rpcEndpoints)
 			},
 			expbackoff.WithRetryLabel("BalanceSnap"),
 			expbackoff.WithRetryCount(10),
@@ -62,11 +63,12 @@ func Start(
 // run executes the balance snapshot workflow.
 func run(
 	ctx context.Context,
+	network netconf.ID,
 	haltHeight uint64,
 	evmRedenomCfg evmredenomsubmit.Config,
 	homeDir string,
-	consensusClient client.Client,
 	cprov cchain.Provider,
+	rpcEndpoints xchain.RPCEndpoints,
 ) error {
 	var consensusHeight uint64
 	var outputSuffix string
@@ -75,16 +77,12 @@ func run(
 		// No halt height configured, snapshot at latest height
 		log.Info(ctx, "BalanceSnap: no halt height configured, snapshotting at latest height")
 
-		status, err := consensusClient.Status(ctx)
+		status, err := cprov.NodeStatus(ctx)
 		if err != nil {
 			return errors.Wrap(err, "get consensus status")
 		}
 
-		if status.SyncInfo.LatestBlockHeight < 0 {
-			return errors.New("invalid block height", "height", status.SyncInfo.LatestBlockHeight)
-		}
-
-		consensusHeight = uint64(status.SyncInfo.LatestBlockHeight) //nolint:gosec // Validated >= 0 above
+		consensusHeight = status.Height
 		outputSuffix = "latest.json"
 
 		log.Info(ctx, "BalanceSnap: snapshotting at latest consensus height", "height", consensusHeight)
@@ -92,7 +90,7 @@ func run(
 		// Halt height configured, wait for it
 		log.Info(ctx, "BalanceSnap: waiting for halt height", "halt_height", haltHeight)
 
-		if err := waitForHeight(ctx, consensusClient, haltHeight); err != nil {
+		if err := waitForHeight(ctx, cprov, haltHeight); err != nil {
 			return errors.Wrap(err, "wait for halt height")
 		}
 
@@ -154,7 +152,7 @@ func run(
 
 	// Only verify height isn't increasing if we're expecting halt
 	if haltHeight != 0 {
-		if err := waitForHeight(ctx, consensusClient, haltHeight); err != nil {
+		if err := waitForHeight(ctx, cprov, haltHeight); err != nil {
 			return errors.Wrap(err, "verify halt height")
 		}
 	}
@@ -164,11 +162,59 @@ func run(
 		"evm_block", evmHeader.Number.Uint64(),
 	)
 
+	// Only consolidate balances on mainnet
+	if network != netconf.Mainnet {
+		log.Warn(ctx, "BalanceSnap: skipping consolidation (only runs on mainnet)", nil, "network", network)
+
+		return nil
+	}
+
+	// Get L1 RPC from endpoints
+	l1ChainID, ok := netconf.EthereumChainID(network)
+	if !ok {
+		log.Warn(ctx, "BalanceSnap: skipping consolidation (no L1 chain for network)", nil, "network", network)
+
+		return nil
+	}
+
+	l1RPC, err := rpcEndpoints.ByNameOrID("ethereum", l1ChainID)
+	if err != nil {
+		log.Warn(ctx, "BalanceSnap: skipping consolidation (no L1 RPC endpoint configured)", err)
+
+		return nil
+	}
+
+	consolidatedOutputPath := filepath.Join(homeDir, "data", "combined_balances_"+outputSuffix)
+
+	log.Info(ctx, "BalanceSnap: consolidating balances", "output", consolidatedOutputPath, "l1_rpc", l1RPC)
+
+	_, summary, err := ConsolidateBalances(
+		ctx,
+		network,
+		evmOutputPath,
+		stakeOutputPath,
+		l1RPC,
+		consolidatedOutputPath,
+	)
+	if err != nil {
+		// Don't fail the snapshot if consolidation fails - just log the error
+		log.Warn(ctx, "BalanceSnap: consolidation failed (snapshot still succeeded)", err)
+
+		return nil
+	}
+
+	log.Info(ctx, "BalanceSnap: consolidation completed",
+		"total_payable", FormatBalance(summary.TotalPayable),
+		"l1_bridge_balance", FormatBalance(summary.L1BridgeBalance),
+		"foundation_shortfall", FormatBalance(summary.FoundationShortfall),
+		"output", consolidatedOutputPath,
+	)
+
 	return nil
 }
 
-// waitForHeight polls consensus client until target height is reached.
-func waitForHeight(ctx context.Context, cl client.Client, targetHeight uint64) error {
+// waitForHeight polls consensus provider until target height is reached.
+func waitForHeight(ctx context.Context, cprov cchain.Provider, targetHeight uint64) error {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
@@ -177,18 +223,13 @@ func waitForHeight(ctx context.Context, cl client.Client, targetHeight uint64) e
 		case <-ctx.Done():
 			return errors.Wrap(ctx.Err(), "context done")
 		case <-ticker.C:
-			status, err := cl.Status(ctx)
+			status, err := cprov.NodeStatus(ctx)
 			if err != nil {
 				log.Warn(ctx, "BalanceSnap: failed to get consensus status (will retry)", err)
 				continue
 			}
 
-			if status.SyncInfo.LatestBlockHeight < 0 {
-				log.Warn(ctx, "BalanceSnap: invalid block height (will retry)", nil, "height", status.SyncInfo.LatestBlockHeight)
-				continue
-			}
-
-			currentHeight := uint64(status.SyncInfo.LatestBlockHeight) //nolint:gosec // Validated >= 0 above
+			currentHeight := status.Height
 
 			// Error if consensus height is above halt height
 			if currentHeight > targetHeight {
