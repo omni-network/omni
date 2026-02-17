@@ -23,26 +23,44 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
     }
 
     /// @notice Path to the withdrawals JSON file
-    string constant WITHDRAWALS_FILE = "script/admin/post-halt-withdrawals.json";
+    string public constant WITHDRAWALS_FILE = "script/admin/post-halt-withdrawals.json";
 
     /// @notice Maximum number of withdrawals to process in a single batch
-    uint256 constant BATCH_SIZE = 100;
+    uint256 public constant BATCH_SIZE = 100;
+
+    /// @notice Total number of withdrawals in the JSON file
+    uint256 public constant TOTAL_WITHDRAWALS = 7526;
+
+    /// @notice Cached withdrawals array to avoid multiple file reads
+    Withdrawal[] private _withdrawals;
 
     /**
      * @notice Returns the list of withdrawals from JSON file.
      * @dev Reads from post-halt-withdrawals.json in the script/admin directory.
+     *      Reads each withdrawal individually to handle large datasets efficiently.
      * @return withdrawals Array of (address, balance) pairs.
      */
-    function getWithdrawals() public view returns (Withdrawal[] memory withdrawals) {
+    function getWithdrawals() public returns (Withdrawal[] memory withdrawals) {
+        if (_withdrawals.length > 0) {
+            return _withdrawals;
+        }
+
         string memory root = vm.projectRoot();
         string memory path = string.concat(root, "/", WITHDRAWALS_FILE);
         string memory json = vm.readFile(path);
 
-        // Parse the withdrawals array
-        bytes memory rawWithdrawals = json.parseRaw(".withdrawals");
-        withdrawals = abi.decode(rawWithdrawals, (Withdrawal[]));
+        // Read each withdrawal individually to avoid memory issues with large arrays
+        for (uint256 i = 0; i < TOTAL_WITHDRAWALS; i++) {
+            string memory basePath = string.concat(".[", vm.toString(i), "]");
 
-        require(withdrawals.length > 0, "No withdrawals found in JSON file");
+            // Parse individual fields using type-specific parsers to avoid ABI decoding issues
+            address account = vm.parseJsonAddress(json, string.concat(basePath, ".account"));
+            uint256 balance = vm.parseJsonUint(json, string.concat(basePath, ".balance"));
+
+            _withdrawals.push(Withdrawal({ account: account, balance: balance }));
+        }
+
+        return _withdrawals;
     }
 
     /**
@@ -50,7 +68,7 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
      * @dev This should match the root set in initializeV3.
      * @return root The merkle root of all withdrawals.
      */
-    function getWithdrawalRoot() public view returns (bytes32 root) {
+    function getWithdrawalRoot() public returns (bytes32 root) {
         Withdrawal[] memory withdrawals = getWithdrawals();
 
         // Create leaves for all withdrawals
@@ -136,11 +154,11 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
                 string(
                     abi.encodePacked(
                         "Balance mismatch for account ",
-                        _addressToString(accounts[i]),
+                        vm.toString(accounts[i]),
                         ": expected ",
-                        _uint256ToString(expectedIncrease),
+                        vm.toString(expectedIncrease),
                         ", got ",
-                        _uint256ToString(actualIncrease)
+                        vm.toString(actualIncrease)
                     )
                 )
             );
@@ -222,7 +240,7 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
     /**
      * @notice Print all withdrawals for verification.
      */
-    function printWithdrawals() external view {
+    function printWithdrawals() external {
         Withdrawal[] memory withdrawals = getWithdrawals();
 
         console.log("=== All Withdrawals ===");
@@ -241,39 +259,5 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
         console.log("\nTotal balance:", totalBalance);
         console.log("\nMerkle Root:");
         console.logBytes32(getWithdrawalRoot());
-    }
-
-    // Helper function to convert address to string
-    function _addressToString(address addr) internal pure returns (string memory) {
-        bytes memory data = abi.encodePacked(addr);
-        bytes memory alphabet = "0123456789abcdef";
-        bytes memory str = new bytes(42);
-        str[0] = "0";
-        str[1] = "x";
-        for (uint256 i = 0; i < 20; i++) {
-            str[2 + i * 2] = alphabet[uint8(data[i] >> 4)];
-            str[3 + i * 2] = alphabet[uint8(data[i] & 0x0f)];
-        }
-        return string(str);
-    }
-
-    // Helper function to convert uint256 to string
-    function _uint256ToString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 }

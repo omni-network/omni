@@ -2,9 +2,6 @@
 pragma solidity 0.8.24;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
-import { ConfLevel } from "src/libraries/ConfLevel.sol";
-import { NominaBridgeNative } from "src/token/nomina/NominaBridgeNative.sol";
 import { NominaBridgeL1 } from "src/token/nomina/NominaBridgeL1.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
@@ -31,7 +28,6 @@ contract BridgeL1PostUpgradeTest is Test {
         _setup(addr);
         _testBridge();
         _testWithdraw();
-        _testPauseUnpause();
         _testPostHaltWithdrawals();
     }
 
@@ -45,15 +41,8 @@ contract BridgeL1PostUpgradeTest is Test {
         vm.store(addr, bytes32(0), bytes32(uint256(uint160(address(portal)))));
 
         // After initializeV3, bridge and withdraw are paused
-        // Verify they are paused as expected from initializeV3
         assertTrue(b.isPaused(b.ACTION_BRIDGE()), "Bridge should be paused after initializeV3");
         assertTrue(b.isPaused(b.ACTION_WITHDRAW()), "Withdraw should be paused after initializeV3");
-
-        // Unpause for testing bridge and withdraw functionality
-        vm.startPrank(owner);
-        b.unpause(b.ACTION_BRIDGE());
-        b.unpause(b.ACTION_WITHDRAW());
-        vm.stopPrank();
     }
 
     function _testBridge() internal {
@@ -61,40 +50,21 @@ contract BridgeL1PostUpgradeTest is Test {
         uint256 amount = 1e18;
         address payor = address(this);
         uint256 fee = b.bridgeFee(payor, to, amount);
-        uint256 bridgeBalance = nomina.balanceOf(address(b));
-
-        vm.expectCall(
-            address(portal),
-            fee,
-            abi.encodeCall(
-                IOmniPortal.xcall,
-                (
-                    portal.omniChainId(),
-                    ConfLevel.Finalized,
-                    Predeploys.OmniBridgeNative,
-                    abi.encodeCall(NominaBridgeNative.withdraw, (payor, to, amount)),
-                    b.XCALL_WITHDRAW_GAS_LIMIT()
-                )
-            )
-        );
 
         deal(address(nomina), payor, amount);
         vm.deal(payor, fee);
         vm.startPrank(payor);
         nomina.approve(address(b), amount);
+        vm.expectRevert("NominaBridge: paused");
         b.bridge{ value: fee }(to, amount);
         vm.stopPrank();
-
-        assertEq(nomina.balanceOf(address(b)), bridgeBalance + amount);
-        assertEq(nomina.balanceOf(payor), 0);
     }
 
     function _testWithdraw() internal {
         address to = makeAddr("to");
         uint256 amount = 1e18;
-        uint256 bridgeBalance = nomina.balanceOf(address(b));
 
-        vm.expectCall(address(nomina), abi.encodeCall(nomina.transfer, (to, amount)));
+        vm.expectRevert("NominaBridge: paused");
         portal.mockXCall({
             sourceChainId: portal.omniChainId(),
             sender: Predeploys.OmniBridgeNative,
@@ -102,23 +72,6 @@ contract BridgeL1PostUpgradeTest is Test {
             data: abi.encodeCall(NominaBridgeL1.withdraw, (to, amount)),
             gasLimit: 100_000
         });
-
-        assertEq(nomina.balanceOf(to), amount);
-        assertEq(nomina.balanceOf(address(b)), bridgeBalance - amount);
-    }
-
-    function _testPauseUnpause() internal {
-        vm.prank(owner);
-        b.pause();
-
-        assertTrue(b.isPaused(b.ACTION_BRIDGE()));
-        assertTrue(b.isPaused(b.ACTION_WITHDRAW()));
-
-        vm.prank(owner);
-        b.unpause();
-
-        assertFalse(b.isPaused(b.ACTION_BRIDGE()));
-        assertFalse(b.isPaused(b.ACTION_WITHDRAW()));
     }
 
     function _testPostHaltWithdrawals() internal {

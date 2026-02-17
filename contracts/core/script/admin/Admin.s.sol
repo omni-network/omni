@@ -409,9 +409,6 @@ contract Admin is Script {
      * @param proxy     The address of the proxy to upgrade.
      */
     function upgradeBridgeL1(address admin, address deployer, address proxy) public {
-        // TODO: Remove when ready for upgrade and post-halt-withdrawals.json is set.
-        revert("not allowed");
-
         // replace with NominaBridgeL1 on next upgrade
         NominaBridgeL1 b = NominaBridgeL1(proxy);
 
