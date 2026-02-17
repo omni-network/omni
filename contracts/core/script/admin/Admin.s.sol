@@ -29,7 +29,6 @@ import { BridgeL1PostUpgradeTest } from "./BridgeL1PostUpgradeTest.sol";
 import { BridgeNativePostUpgradeTest } from "./BridgeNativePostUpgradeTest.sol";
 import { StakingPostUpgradeTest } from "./StakingPostUpgradeTest.sol";
 import { FeeOracleV2PostUpdateTest } from "./FeeOracleV2PostUpdateTest.sol";
-import { PostHaltNominaL1BridgeWithdrawals } from "./PostHaltNominaL1BridgeWithdrawals.s.sol";
 
 /**
  * @title Admin
@@ -422,9 +421,9 @@ contract Admin is Script {
         address impl = address(new NominaBridgeL1(omni, nomina));
         vm.stopBroadcast();
 
-        // Get merkle root for post-halt withdrawals
-        PostHaltNominaL1BridgeWithdrawals withdrawalScript = new PostHaltNominaL1BridgeWithdrawals();
-        bytes32 postHaltRoot = withdrawalScript.getWithdrawalRoot();
+        // Merkle root for post-halt withdrawals.
+        // Confirmed in PostHaltNominaL1BridgeWithdrawals.t.sol and BridgeL1PostUpgradeTest.t.sol
+        bytes32 postHaltRoot = 0xd3a7b265fb589d5808e6d7b3f390af8d964c8af96fe7009f301e282366c5461a;
 
         // Generate initializeV3 calldata with the merkle root
         bytes memory initializeV3Data = abi.encodeCall(NominaBridgeL1.initializeV3, (postHaltRoot));

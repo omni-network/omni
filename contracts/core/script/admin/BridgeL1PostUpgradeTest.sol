@@ -7,7 +7,6 @@ import { Predeploys } from "src/libraries/Predeploys.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { Test } from "forge-std/Test.sol";
 import { VmSafe } from "forge-std/Vm.sol";
-import { PostHaltNominaL1BridgeWithdrawals } from "./PostHaltNominaL1BridgeWithdrawals.s.sol";
 
 // solhint-disable state-visibility
 
@@ -74,29 +73,9 @@ contract BridgeL1PostUpgradeTest is Test {
         });
     }
 
-    function _testPostHaltWithdrawals() internal {
-        // Create the withdrawal script
-        PostHaltNominaL1BridgeWithdrawals script = new PostHaltNominaL1BridgeWithdrawals();
-
+    function _testPostHaltWithdrawals() internal view {
         // Verify the merkle root was set correctly during initializeV3
-        bytes32 expectedRoot = script.getWithdrawalRoot();
+        bytes32 expectedRoot = 0xd3a7b265fb589d5808e6d7b3f390af8d964c8af96fe7009f301e282366c5461a;
         assertEq(b.postHaltRoot(), expectedRoot, "Post halt root should match");
-        assertEq(expectedRoot, 0xd3a7b265fb589d5808e6d7b3f390af8d964c8af96fe7009f301e282366c5461a);
-
-        // Run first 50 and last 50 withdrawals to test without processing all 7526
-        uint256 n = 50;
-        uint256 total = script.TOTAL_WITHDRAWALS();
-
-        script.runNoBroadcastRange(address(b), 0, n);
-        script.runNoBroadcastRange(address(b), total - n, n);
-
-        // Verify tested accounts are marked as claimed
-        PostHaltNominaL1BridgeWithdrawals.Withdrawal[] memory withdrawals = script.getWithdrawals();
-        for (uint256 i = 0; i < n; i++) {
-            assertTrue(b.postHaltClaimed(withdrawals[i].account), "First 50 should be claimed");
-        }
-        for (uint256 i = total - n; i < total; i++) {
-            assertTrue(b.postHaltClaimed(withdrawals[i].account), "Last 50 should be claimed");
-        }
     }
 }
