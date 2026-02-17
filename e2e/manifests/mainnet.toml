@@ -5,7 +5,7 @@ multi_omni_evms = true
 prometheus   = true
 halt_height = 31300100
 
-pinned_halo_tag = "4fc0399" # balancesnap
+pinned_halo_tag = "6f284c6" # balancesnap
 pinned_relayer_tag = "813a5e6"
 pinned_monitor_tag = "1b55102"
 pinned_solver_tag = "1b55102"
