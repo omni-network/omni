@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -214,9 +215,12 @@ func run(
 }
 
 // waitForHeight polls consensus provider until target height is reached.
+// Also returns successfully if height halts at targetHeight-1 for 3 consecutive attempts.
 func waitForHeight(ctx context.Context, cprov cchain.Provider, targetHeight uint64) error {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
+
+	var haltedAtPrevCount int
 
 	for {
 		select {
@@ -241,6 +245,21 @@ func waitForHeight(ctx context.Context, cprov cchain.Provider, targetHeight uint
 
 			if currentHeight >= targetHeight {
 				return nil
+			}
+
+			// Check if halted at targetHeight - 1
+			if currentHeight == umath.SubtractOrZero(targetHeight, 1) {
+				haltedAtPrevCount++
+				if haltedAtPrevCount >= 3 {
+					log.Info(ctx, "BalanceSnap: height halted at target-1, treating as halt",
+						"current_height", currentHeight,
+						"target_height", targetHeight,
+					)
+
+					return nil
+				}
+			} else {
+				haltedAtPrevCount = 0
 			}
 
 			if currentHeight%100 == 0 {
