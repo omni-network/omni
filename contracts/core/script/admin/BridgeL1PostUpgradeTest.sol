@@ -62,10 +62,11 @@ contract BridgeL1PostUpgradeTest is Test {
     function _testWithdraw() internal {
         address to = makeAddr("to");
         uint256 amount = 1e18;
+        uint64 omniChainId = portal.omniChainId();
 
         vm.expectRevert("NominaBridge: paused");
         portal.mockXCall({
-            sourceChainId: portal.omniChainId(),
+            sourceChainId: omniChainId,
             sender: Predeploys.OmniBridgeNative,
             to: address(b),
             data: abi.encodeCall(NominaBridgeL1.withdraw, (to, amount)),
