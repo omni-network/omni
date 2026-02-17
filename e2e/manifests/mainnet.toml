@@ -3,7 +3,7 @@ public_chains = ["ethereum","arbitrum_one","base","optimism"]
 
 multi_omni_evms = true
 prometheus   = true
-halt_height = 31300000
+halt_height = 31300050
 
 pinned_halo_tag = "4fc0399" # balancesnap
 pinned_relayer_tag = "813a5e6"
