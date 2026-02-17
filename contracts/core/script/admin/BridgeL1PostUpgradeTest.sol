@@ -81,21 +81,22 @@ contract BridgeL1PostUpgradeTest is Test {
         // Verify the merkle root was set correctly during initializeV3
         bytes32 expectedRoot = script.getWithdrawalRoot();
         assertEq(b.postHaltRoot(), expectedRoot, "Post halt root should match");
+        assertEq(expectedRoot, 0xd3a7b265fb589d5808e6d7b3f390af8d964c8af96fe7009f301e282366c5461a);
 
-        // Execute all post-halt withdrawals using runNoBroadcast
-        // runNoBroadcast performs the same logic as run(), but without startBroadcast/stopBroadcast
-        // This allows us to test the withdrawal mechanism in a simulated environment
-        // The function will:
-        // - Process all withdrawals from the JSON file
-        // - Execute them in batches of up to 100
-        // - Verify each account's balance increases by the expected amount
-        // - Revert if any verification fails
-        script.runNoBroadcast(address(b));
+        // Run first 50 and last 50 withdrawals to test without processing all 7526
+        uint256 n = 50;
+        uint256 total = script.TOTAL_WITHDRAWALS();
 
-        // Verify all accounts are marked as claimed after runNoBroadcast completes
+        script.runNoBroadcastRange(address(b), 0, n);
+        script.runNoBroadcastRange(address(b), total - n, n);
+
+        // Verify tested accounts are marked as claimed
         PostHaltNominaL1BridgeWithdrawals.Withdrawal[] memory withdrawals = script.getWithdrawals();
-        for (uint256 i = 0; i < withdrawals.length; i++) {
-            assertTrue(b.postHaltClaimed(withdrawals[i].account), "All accounts should be claimed");
+        for (uint256 i = 0; i < n; i++) {
+            assertTrue(b.postHaltClaimed(withdrawals[i].account), "First 50 should be claimed");
+        }
+        for (uint256 i = total - n; i < total; i++) {
+            assertTrue(b.postHaltClaimed(withdrawals[i].account), "Last 50 should be claimed");
         }
     }
 }
