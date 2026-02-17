@@ -238,6 +238,34 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
     }
 
     /**
+     * @notice Execute a specific range of post-halt withdrawals without broadcasting.
+     * @dev Useful for testing a subset of withdrawals (e.g. first N and last N).
+     * @param bridge The address of the NominaBridgeL1 contract.
+     * @param start The starting index (inclusive).
+     * @param count The number of withdrawals to process.
+     */
+    function runNoBroadcastRange(address bridge, uint256 start, uint256 count) external {
+        require(bridge != address(0), "Invalid bridge address");
+
+        Withdrawal[] memory allWithdrawals = getWithdrawals();
+        require(start + count <= allWithdrawals.length, "Range out of bounds");
+
+        // Verify the merkle root is set correctly
+        bytes32 expectedRoot = getWithdrawalRoot();
+        bytes32 actualRoot = NominaBridgeL1(bridge).postHaltRoot();
+        require(actualRoot == expectedRoot, "Post halt root mismatch");
+
+        // Create leaves for all withdrawals (needed for multiproof generation)
+        bytes32[] memory leaves = new bytes32[](allWithdrawals.length);
+        for (uint256 i = 0; i < allWithdrawals.length; i++) {
+            leaves[i] =
+                keccak256(bytes.concat(keccak256(abi.encode(allWithdrawals[i].account, allWithdrawals[i].balance))));
+        }
+
+        _executeBatch(bridge, allWithdrawals, leaves, start, count, false);
+    }
+
+    /**
      * @notice Print all withdrawals for verification.
      */
     function printWithdrawals() external {
