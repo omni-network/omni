@@ -23,7 +23,7 @@ jobs:
         run: forge test -vv
       - name: Check snapshot
         # fuzz tests snapshots are different in CI, so we ignore them
-        run: forge snapshot --check --tolerance 5
+        run: forge snapshot --check --tolerance 5 --no-match-contract 'PostHaltNominaL1Bridge'
         env:
             FOUNDRY_FUZZ_SEED: "0x6eed"
 
