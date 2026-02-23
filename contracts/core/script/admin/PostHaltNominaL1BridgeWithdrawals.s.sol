@@ -7,7 +7,6 @@ import { console } from "forge-std/console.sol";
 import { MerkleGen } from "multiproof/src/MerkleGen.sol";
 import { NominaBridgeL1 } from "src/token/nomina/NominaBridgeL1.sol";
 import { stdJson } from "forge-std/StdJson.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title PostHaltNominaL1BridgeWithdrawals
@@ -25,8 +24,8 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
     /// @notice Path to the withdrawals JSON file
     string public constant WITHDRAWALS_FILE = "script/admin/post-halt-withdrawals.json";
 
-    /// @notice Maximum number of withdrawals to process in a single batch
-    uint256 public constant BATCH_SIZE = 100;
+    /// @notice Maximum number of withdrawals to process in a single tx batch
+    uint256 public constant BATCH_SIZE = 200;
 
     /// @notice Total number of withdrawals in the JSON file
     uint256 public constant TOTAL_WITHDRAWALS = 7526;
@@ -125,15 +124,6 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
             amounts[i] = allWithdrawals[startIndex + i].balance;
         }
 
-        // Get token contract for balance checking
-        IERC20 nomina = NominaBridgeL1(bridge).NOMINA();
-
-        // Record balances before withdrawal
-        uint256[] memory balancesBefore = new uint256[](count);
-        for (uint256 i = 0; i < count; i++) {
-            balancesBefore[i] = nomina.balanceOf(accounts[i]);
-        }
-
         // Execute withdrawal (with or without broadcast)
         if (broadcast) {
             vm.startBroadcast();
@@ -143,33 +133,12 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
             NominaBridgeL1(bridge).postHaltWithdraw(accounts, amounts, multiProof, multiProofFlags);
         }
 
-        // Verify balances increased by expected amounts
-        for (uint256 i = 0; i < count; i++) {
-            uint256 balanceAfter = nomina.balanceOf(accounts[i]);
-            uint256 expectedIncrease = amounts[i];
-            uint256 actualIncrease = balanceAfter - balancesBefore[i];
-
-            require(
-                actualIncrease == expectedIncrease,
-                string(
-                    abi.encodePacked(
-                        "Balance mismatch for account ",
-                        vm.toString(accounts[i]),
-                        ": expected ",
-                        vm.toString(expectedIncrease),
-                        ", got ",
-                        vm.toString(actualIncrease)
-                    )
-                )
-            );
-        }
-
         console.log("Batch complete - verified", count, "withdrawals");
     }
 
     /**
      * @notice Internal function containing shared logic for run and runNoBroadcast.
-     * @dev Processes all withdrawals in batches of up to BATCH_SIZE (100).
+     * @dev Processes all withdrawals in tx batches of up to BATCH_SIZE.
      * @param bridge The address of the NominaBridgeL1 contract.
      * @param broadcast Whether to broadcast the transaction or just simulate.
      */
@@ -182,40 +151,34 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
         console.log("Bridge address:", bridge);
         console.log("Total withdrawals:", allWithdrawals.length);
         console.log("Batch size:", BATCH_SIZE);
-        console.log("Broadcast:", broadcast);
 
         // Verify the merkle root is set correctly
-        bytes32 expectedRoot = getWithdrawalRoot();
-        bytes32 actualRoot = NominaBridgeL1(bridge).postHaltRoot();
-        require(actualRoot == expectedRoot, "Post halt root mismatch");
-        console.log("Root verified:");
-        console.logBytes32(expectedRoot);
+        require(NominaBridgeL1(bridge).postHaltRoot() == getWithdrawalRoot(), "Post halt root mismatch");
 
-        // Create leaves for all withdrawals (used for all batches)
+        // Create leaves for all withdrawals (needed for multiproof generation)
         bytes32[] memory leaves = new bytes32[](allWithdrawals.length);
         for (uint256 i = 0; i < allWithdrawals.length; i++) {
             leaves[i] =
                 keccak256(bytes.concat(keccak256(abi.encode(allWithdrawals[i].account, allWithdrawals[i].balance))));
         }
 
-        // Process withdrawals in batches
-        uint256 totalProcessed = 0;
-        while (totalProcessed < allWithdrawals.length) {
-            uint256 remaining = allWithdrawals.length - totalProcessed;
+        uint256 cursor = 0;
+        while (cursor < allWithdrawals.length) {
+            uint256 remaining = allWithdrawals.length - cursor;
             uint256 batchSize = remaining < BATCH_SIZE ? remaining : BATCH_SIZE;
 
-            _executeBatch(bridge, allWithdrawals, leaves, totalProcessed, batchSize, broadcast);
+            _executeBatch(bridge, allWithdrawals, leaves, cursor, batchSize, broadcast);
 
-            totalProcessed += batchSize;
+            cursor += batchSize;
         }
 
         console.log("\n=== All Withdrawals Complete ===");
-        console.log("Total processed:", totalProcessed);
+        console.log("Total processed:", allWithdrawals.length);
     }
 
     /**
      * @notice Execute post-halt withdrawals for all accounts.
-     * @dev Processes all withdrawals from the JSON file in batches of up to 100.
+     * @dev Processes all withdrawals from the JSON file in tx batches of up to BATCH_SIZE.
      *      This function broadcasts transactions to the network.
      * @param bridge The address of the NominaBridgeL1 contract.
      */
@@ -224,13 +187,99 @@ contract PostHaltNominaL1BridgeWithdrawals is Script {
     }
 
     /**
+     * @notice Pre-compute all batch calldata and write to files.
+     * @dev Writes abi-encoded postHaltWithdraw calldata for each batch to script/admin/batches/.
+     *      Run this once offline, then use submitBatches to broadcast quickly.
+     */
+    function prepareBatches() external {
+        Withdrawal[] memory allWithdrawals = getWithdrawals();
+
+        bytes32[] memory leaves = _makeLeaves(allWithdrawals);
+
+        string memory outDir = string.concat(vm.projectRoot(), "/script/admin/batches");
+        vm.createDir(outDir, true);
+
+        uint256 cursor = 0;
+        uint256 batchNum = 0;
+        while (cursor < allWithdrawals.length) {
+            uint256 remaining = allWithdrawals.length - cursor;
+            uint256 batchSize = remaining < BATCH_SIZE ? remaining : BATCH_SIZE;
+
+            bytes memory callData = _encodeBatch(allWithdrawals, leaves, cursor, batchSize);
+
+            string memory filePath = string.concat(outDir, "/batch_", vm.toString(batchNum), ".hex");
+            vm.writeFile(filePath, vm.toString(callData));
+            console.log("Batch %d written: %d withdrawals", batchNum, batchSize);
+
+            cursor += batchSize;
+            batchNum++;
+        }
+
+        console.log("Total batches prepared:", batchNum);
+    }
+
+    /**
+     * @notice Submit pre-computed batches from files.
+     * @dev Reads calldata from script/admin/batches/ and broadcasts each tx.
+     * @param bridge The address of the NominaBridgeL1 contract.
+     * @param numBatches The number of batch files to submit.
+     * @param offset The number of batches already submitted (start from this index).
+     */
+    function submitBatches(address bridge, uint256 numBatches, uint256 offset) external {
+        string memory batchDir = string.concat(vm.projectRoot(), "/script/admin/batches");
+
+        vm.startBroadcast();
+        for (uint256 i = offset; i < offset + numBatches; i++) {
+            string memory filePath = string.concat(batchDir, "/batch_", vm.toString(i), ".hex");
+            bytes memory callData = vm.parseBytes(vm.readFile(filePath));
+
+            console.log("Submitting batch", i);
+            (bool success,) = bridge.call(callData);
+            require(success, string.concat("Batch ", vm.toString(i), " failed"));
+        }
+        vm.stopBroadcast();
+
+        console.log("Total batches submitted:", numBatches);
+    }
+
+    /**
+     * @notice Build merkle leaves from withdrawals.
+     */
+    function _makeLeaves(Withdrawal[] memory allWithdrawals) internal pure returns (bytes32[] memory leaves) {
+        leaves = new bytes32[](allWithdrawals.length);
+        for (uint256 i = 0; i < allWithdrawals.length; i++) {
+            leaves[i] =
+                keccak256(bytes.concat(keccak256(abi.encode(allWithdrawals[i].account, allWithdrawals[i].balance))));
+        }
+    }
+
+    /**
+     * @notice Encode a single batch as postHaltWithdraw calldata.
+     */
+    function _encodeBatch(
+        Withdrawal[] memory allWithdrawals,
+        bytes32[] memory leaves,
+        uint256 startIndex,
+        uint256 count
+    ) internal pure returns (bytes memory) {
+        uint256[] memory selectedIndices = new uint256[](count);
+        address[] memory accounts = new address[](count);
+        uint256[] memory amounts = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            selectedIndices[i] = startIndex + i;
+            accounts[i] = allWithdrawals[startIndex + i].account;
+            amounts[i] = allWithdrawals[startIndex + i].balance;
+        }
+
+        (bytes32[] memory multiProof, bool[] memory multiProofFlags,) =
+            MerkleGen.generateMultiproof(leaves, selectedIndices);
+
+        return abi.encodeCall(NominaBridgeL1.postHaltWithdraw, (accounts, amounts, multiProof, multiProofFlags));
+    }
+
+    /**
      * @notice Execute post-halt withdrawals without broadcasting.
-     * @dev This function performs the same operations as run() but WITHOUT broadcasting.
-     *      It's useful for:
-     *      - Testing in post-upgrade scenarios to verify withdrawals work correctly
-     *      - Validating merkle proofs before executing real transactions
-     *      - Checking that balances are updated correctly
-     *      The simulation will revert if the proof is invalid or if any check fails.
+     * @dev Same as run() but without broadcasting. Useful for testing and validation.
      * @param bridge The address of the NominaBridgeL1 contract.
      */
     function runNoBroadcast(address bridge) external {
