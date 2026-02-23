@@ -91,7 +91,7 @@ contract PostHaltNominaL1BridgeWithdrawals_Test is Test {
     function test_runNoBroadcast() public {
         PostHaltNominaL1BridgeWithdrawals.Withdrawal[] memory withdrawals = script.getWithdrawals();
 
-        // Execute all withdrawals in batches of 100
+        // Execute all withdrawals in batches
         script.runNoBroadcast(address(bridge));
 
         // Verify bridge balance is now zero (all funds withdrawn)
