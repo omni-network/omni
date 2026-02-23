@@ -60,16 +60,6 @@ func Test(ctx context.Context, def app.Definition) error {
 		return err
 	}
 
-	/*
-		if err := testUpgradeBridgeNative(ctx, def); err != nil {
-			return err
-		}
-	*/
-
-	if err := testUpgradeBridgeL1(ctx, def); err != nil {
-		return err
-	}
-
 	log.Info(ctx, "Done.")
 
 	return nil
@@ -149,26 +139,6 @@ func testUpgradeStaking(ctx context.Context, def app.Definition) error {
 	err := UpgradeStaking(ctx, def, Config{Broadcast: true})
 	if err != nil {
 		return errors.Wrap(err, "upgrade staking")
-	}
-
-	return nil
-}
-
-/*
-func testUpgradeBridgeNative(ctx context.Context, def app.Definition) error {
-	err := UpgradeBridgeNative(ctx, def, Config{Broadcast: true})
-	if err != nil {
-		return errors.Wrap(err, "upgrade bridge native")
-	}
-
-	return nil
-}
-*/
-
-func testUpgradeBridgeL1(ctx context.Context, def app.Definition) error {
-	err := UpgradeBridgeL1(ctx, def, Config{Broadcast: true})
-	if err != nil {
-		return errors.Wrap(err, "upgrade bridge l1")
 	}
 
 	return nil
