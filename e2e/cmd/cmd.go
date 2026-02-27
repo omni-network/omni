@@ -20,6 +20,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/spf13/cobra"
 )
@@ -51,7 +52,7 @@ func New() *cobra.Command {
 		}
 
 		// Some commands do not require a full definition.
-		if matchAny(cmd.Use, "hyperliquid-use-big-blocks") {
+		if matchAny(cmd.Use, "hyperliquid-use-big-blocks", "drain-relayer-monitor") {
 			return nil
 		}
 
@@ -105,7 +106,7 @@ func New() *cobra.Command {
 		fundAccounts(&def),
 		newFundOpsFromSolverCmd(&def),
 		newConvertOmniCmd(&def),
-		newDrainRelayerMonitorCmd(&def),
+		newDrainRelayerMonitorCmd(&defCfg),
 	)
 
 	return cmd
@@ -525,21 +526,50 @@ func newConvertOmniCmd(def *app.Definition) *cobra.Command {
 	return cmd
 }
 
-func newDrainRelayerMonitorCmd(def *app.Definition) *cobra.Command {
+func newDrainRelayerMonitorCmd(defCfg *app.DefinitionConfig) *cobra.Command {
 	var dryRun bool
 
 	cmd := &cobra.Command{
 		Use:   "drain-relayer-monitor",
 		Short: "Transfers relayer and monitor ETH balances to ops wallet on all chains",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := app.DrainAllowed(def.Testnet.Network); err != nil {
-				return err
-			}
-			if err := def.InitLazyNetwork(); err != nil {
-				return errors.Wrap(err, "init network")
+			ctx := cmd.Context()
+
+			manifest, err := app.LoadManifest(defCfg.ManifestFile)
+			if err != nil {
+				return errors.Wrap(err, "load manifest")
 			}
 
-			return app.DrainRelayerMonitor(cmd.Context(), *def, dryRun)
+			networkID := manifest.Network
+
+			// Build network and endpoints.
+			// Partial & inline, because old utils rely on halted infra.
+			endpoints := make(xchain.RPCEndpoints)
+			var chains []netconf.Chain
+			for _, name := range manifest.PublicChains {
+				if rpc, ok := defCfg.RPCOverrides[name]; ok {
+					endpoints[name] = rpc
+				} else {
+					endpoints[name] = types.PublicRPCByName(name)
+				}
+
+				chain, err := types.PublicChainByName(name)
+				if err != nil {
+					return errors.Wrap(err, "public chain", "name", name)
+				}
+
+				chains = append(chains, netconf.Chain{
+					ID:   chain.ChainID,
+					Name: chain.Name,
+				})
+			}
+
+			network := netconf.Network{
+				ID:     networkID,
+				Chains: chains,
+			}
+
+			return app.DrainRelayerMonitor(ctx, network, endpoints, dryRun)
 		},
 	}
 
