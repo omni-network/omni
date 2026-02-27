@@ -105,6 +105,7 @@ func New() *cobra.Command {
 		fundAccounts(&def),
 		newFundOpsFromSolverCmd(&def),
 		newConvertOmniCmd(&def),
+		newDrainRelayerMonitorCmd(&def),
 	)
 
 	return cmd
@@ -520,6 +521,29 @@ func newConvertOmniCmd(def *app.Definition) *cobra.Command {
 			return nomina.ConvertOmni(ctx, network, backends)
 		},
 	}
+
+	return cmd
+}
+
+func newDrainRelayerMonitorCmd(def *app.Definition) *cobra.Command {
+	var dryRun bool
+
+	cmd := &cobra.Command{
+		Use:   "drain-relayer-monitor",
+		Short: "Transfers relayer and monitor ETH balances to ops wallet on all chains",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := app.DrainAllowed(def.Testnet.Network); err != nil {
+				return err
+			}
+			if err := def.InitLazyNetwork(); err != nil {
+				return errors.Wrap(err, "init network")
+			}
+
+			return app.DrainRelayerMonitor(cmd.Context(), *def, dryRun)
+		},
+	}
+
+	cmd.Flags().BoolVar(&dryRun, "dry-run", dryRun, "Enables dry-run mode (no transactions sent)")
 
 	return cmd
 }
