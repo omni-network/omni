@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -25,9 +26,7 @@ const drainRecipient = "0x79Ef4d1224a055Ad4Ee5e2226d0cb3720d929AE7"
 const ethTransferGas uint64 = 21000
 
 // DrainRelayerMonitor transfers all relayer and monitor ETH balances to the drain recipient on all chains.
-func DrainRelayerMonitor(ctx context.Context, def Definition, dryRun bool) error {
-	network := networkFromDef(def)
-	endpoints := ExternalEndpoints(def)
+func DrainRelayerMonitor(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, dryRun bool) error {
 	roles := []eoa.Role{eoa.RoleRelayer, eoa.RoleMonitor}
 	recipient := common.HexToAddress(drainRecipient)
 
@@ -184,13 +183,4 @@ func transferNativeMax(
 	}
 
 	return nil, nil, errors.New("transfer failed after retries", "retries", maxDrainRetries)
-}
-
-// DrainAllowed returns an error if the drain command is not allowed for the given network.
-func DrainAllowed(network netconf.ID) error {
-	if network == netconf.Simnet || network == netconf.Devnet {
-		return errors.New("cannot drain on simnet or devnet")
-	}
-
-	return nil
 }
