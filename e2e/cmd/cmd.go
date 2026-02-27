@@ -559,8 +559,9 @@ func newDrainRelayerMonitorCmd(defCfg *app.DefinitionConfig) *cobra.Command {
 				}
 
 				chains = append(chains, netconf.Chain{
-					ID:   chain.ChainID,
-					Name: chain.Name,
+					ID:          chain.ChainID,
+					Name:        chain.Name,
+					BlockPeriod: chain.BlockPeriod,
 				})
 			}
 
