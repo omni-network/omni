@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"slices"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/registry/types"
@@ -127,13 +128,7 @@ func mergePortal(existing []*Portal, portal *Portal) ([]*Portal, error) {
 // newShards returns the new shards that are not in the existing list.
 func newShards(existing []uint64, shards []uint64) []uint64 {
 	exists := func(s uint64) bool {
-		for _, e := range existing {
-			if e == s {
-				return true
-			}
-		}
-
-		return false
+		return slices.Contains(existing, s)
 	}
 
 	var resp []uint64

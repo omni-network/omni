@@ -4,6 +4,7 @@ package eoa
 import (
 	"context"
 	"crypto/ecdsa"
+	"slices"
 
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/lib/errors"
@@ -75,10 +76,8 @@ func AllRoles() []Role {
 }
 
 func (r Role) Verify() error {
-	for _, role := range AllRoles() {
-		if r == role {
-			return nil
-		}
+	if slices.Contains(AllRoles(), r) {
+		return nil
 	}
 
 	return errors.New("invalid role", "role", r)

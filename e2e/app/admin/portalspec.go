@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"reflect"
+	"slices"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
@@ -445,11 +446,5 @@ func isEmpty(v any) bool {
 }
 
 func contains[T comparable](ts []T, t T) bool {
-	for _, x := range ts {
-		if x == t {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ts, t)
 }

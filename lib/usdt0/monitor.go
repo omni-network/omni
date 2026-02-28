@@ -3,6 +3,7 @@ package usdt0
 import (
 	"context"
 	"math/big"
+	"slices"
 	"time"
 
 	"github.com/omni-network/omni/lib/bi"
@@ -116,13 +117,7 @@ func monitorSend(ctx context.Context, db *DB, client layerzero.Client, msg MsgSe
 }
 
 func isPending(status layerzero.MsgStatus) bool {
-	for _, s := range nonFinalStatuses() {
-		if status == s {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(nonFinalStatuses(), status)
 }
 
 func nonFinalStatuses() []layerzero.MsgStatus {
