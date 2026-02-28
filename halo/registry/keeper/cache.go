@@ -2,7 +2,7 @@ package keeper
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"sync"
 
 	"github.com/omni-network/omni/halo/registry/types"
@@ -72,9 +72,7 @@ func (k Keeper) ConfLevels(ctx context.Context) (map[uint64][]xchain.ConfLevel, 
 			confLevels = append(confLevels, confLevel)
 		}
 
-		sort.Slice(confLevels, func(i, j int) bool {
-			return confLevels[i] < confLevels[j]
-		})
+		slices.Sort(confLevels)
 
 		resp[portal.GetChainId()] = confLevels
 	}

@@ -4,7 +4,7 @@ package netconf
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -385,9 +385,7 @@ func (c Chain) ConfLevels() []xchain.ConfLevel {
 	}
 
 	// Sort for deterministic ordering.
-	sort.Slice(confs, func(i, j int) bool {
-		return confs[i] < confs[j]
-	})
+	slices.Sort(confs)
 
 	return confs
 }
