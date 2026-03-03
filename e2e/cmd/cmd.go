@@ -17,6 +17,8 @@ import (
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
@@ -52,7 +54,7 @@ func New() *cobra.Command {
 		}
 
 		// Some commands do not require a full definition.
-		if matchAny(cmd.Use, "hyperliquid-use-big-blocks", "drain-relayer-monitor") {
+		if matchAny(cmd.Use, "hyperliquid-use-big-blocks", "drain-relayer-monitor", "lock-nom-mint") {
 			return nil
 		}
 
@@ -106,6 +108,7 @@ func New() *cobra.Command {
 		fundAccounts(&def),
 		newFundOpsFromSolverCmd(&def),
 		newConvertOmniCmd(&def),
+		newLockNomMintCmd(&defCfg),
 		newDrainRelayerMonitorCmd(&defCfg),
 	)
 
@@ -520,6 +523,45 @@ func newConvertOmniCmd(def *app.Definition) *cobra.Command {
 			}
 
 			return nomina.ConvertOmni(ctx, network, backends)
+		},
+	}
+
+	return cmd
+}
+
+func newLockNomMintCmd(defCfg *app.DefinitionConfig) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "lock-nom-mint",
+		Short: "Sets the NOM mint authority to the NominaMintLock contract",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
+
+			chain, err := types.PublicChainByName("ethereum")
+			if err != nil {
+				return errors.Wrap(err, "public chain")
+			}
+
+			rpc := types.PublicRPCByName(chain.Name)
+			if override, ok := defCfg.RPCOverrides[chain.Name]; ok {
+				rpc = override
+			}
+
+			ethCl, err := ethclient.DialContext(ctx, chain.Name, rpc)
+			if err != nil {
+				return errors.Wrap(err, "dial ethereum")
+			}
+
+			fireCl, err := app.NewFireblocksClient(*defCfg, netconf.Mainnet, cmd.Name())
+			if err != nil {
+				return errors.Wrap(err, "new fireblocks client")
+			}
+
+			backend, err := ethbackend.NewFireBackend(ctx, chain.Name, chain.ChainID, chain.BlockPeriod, ethCl, fireCl)
+			if err != nil {
+				return errors.Wrap(err, "new fire backend")
+			}
+
+			return nomina.LockNomMint(ctx, backend)
 		},
 	}
 
