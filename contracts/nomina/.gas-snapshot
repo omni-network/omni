@@ -1,3 +1,6 @@
+NominaMintLock_Test:test_acceptMintAuthority() (gas: 34792)
+NominaMintLock_Test:test_acceptMintAuthority_reverts_notPending() (gas: 13525)
+NominaMintLock_Test:test_mintLocked() (gas: 36214)
 Nomina_Test:testAcceptMintAuthority() (gas: 32024)
 Nomina_Test:testAcceptMintAuthorityReverts() (gas: 13134)
 Nomina_Test:testBurn() (gas: 105554)
