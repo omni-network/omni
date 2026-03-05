@@ -573,22 +573,16 @@ func newDrainRelayerMonitorCmd(defCfg *app.DefinitionConfig) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "drain-relayer-monitor",
-		Short: "Transfers relayer and monitor ETH balances to ops wallet on all chains",
+		Short: "Transfers relayer and monitor ETH balances to ops wallet on hyper_evm and mantle",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
-			manifest, err := app.LoadManifest(defCfg.ManifestFile)
-			if err != nil {
-				return errors.Wrap(err, "load manifest")
-			}
+			// All other chains have been drained, this is cleanup.
+			chainNames := []string{"hyper_evm", "mantle"}
 
-			networkID := manifest.Network
-
-			// Build network and endpoints.
-			// Partial & inline, because old utils rely on halted infra.
 			endpoints := make(xchain.RPCEndpoints)
 			var chains []netconf.Chain
-			for _, name := range manifest.PublicChains {
+			for _, name := range chainNames {
 				if rpc, ok := defCfg.RPCOverrides[name]; ok {
 					endpoints[name] = rpc
 				} else {
@@ -608,7 +602,7 @@ func newDrainRelayerMonitorCmd(defCfg *app.DefinitionConfig) *cobra.Command {
 			}
 
 			network := netconf.Network{
-				ID:     networkID,
+				ID:     netconf.Mainnet,
 				Chains: chains,
 			}
 
