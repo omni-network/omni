@@ -2,6 +2,7 @@ package feature
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/omni-network/omni/lib/log"
@@ -78,11 +79,5 @@ func enabled(ctx context.Context, flag Flag) bool {
 		return false
 	}
 
-	for _, f := range flags {
-		if f == flag {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(flags, flag)
 }

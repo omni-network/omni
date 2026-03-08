@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -211,11 +212,5 @@ func monitorSolverNetRoleTokenOnce(
 }
 
 func isSolverNetRole(role eoa.Role) bool {
-	for _, r := range eoa.SolverNetRoles() {
-		if role == r {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(eoa.SolverNetRoles(), role)
 }

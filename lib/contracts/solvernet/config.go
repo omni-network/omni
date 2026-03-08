@@ -1,6 +1,8 @@
 package solvernet
 
 import (
+	"slices"
+
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/xchain"
@@ -88,10 +90,8 @@ func IsHL(chainID uint64) bool {
 // IsTrusted returns true if the chain ID is solver-trusted chain, like solana.
 func IsTrusted(chainID uint64) bool {
 	for _, chains := range trustedChains {
-		for _, id := range chains {
-			if id == chainID {
-				return true
-			}
+		if slices.Contains(chains, chainID) {
+			return true
 		}
 	}
 

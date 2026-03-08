@@ -1,6 +1,8 @@
 package types
 
 import (
+	"slices"
+
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
@@ -155,13 +157,7 @@ func (m Manifest) Seeds() map[string]bool {
 
 func (m Manifest) Validate() error {
 	hasAnvilChain := func(name string) bool {
-		for _, chain := range m.AnvilChains {
-			if chain == name {
-				return true
-			}
-		}
-
-		return false
+		return slices.Contains(m.AnvilChains, name)
 	}
 
 	for name, fork := range m.Forks {
