@@ -17,7 +17,7 @@
     "multiproof": "github:sigp/multiproof"
   },
   "dependencies": {
-    "@hyperlane-xyz/core": "^9.0.9",
+    "@hyperlane-xyz/core": "^10.1.1",
     "@nomad-xyz/excessively-safe-call": "github:nomad-xyz/ExcessivelySafeCall",
     "@openzeppelin-v4/contracts": "npm:@openzeppelin/contracts@4.9.6",
     "@openzeppelin-v4/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.9.6",
